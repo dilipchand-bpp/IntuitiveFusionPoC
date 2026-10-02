@@ -13,3 +13,5 @@ coverage/
 _work/register.json
 _work/coverage.json
 __pycache__/
+spikes/node_modules/
+spikes/package-lock.json
