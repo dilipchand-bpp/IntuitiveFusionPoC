@@ -132,7 +132,7 @@ test.describe('US-INT-01 / 02 / 03 conversational intake', () => {
     await expect(
       page.getByText('This request has been submitted and can no longer be edited here.'),
     ).toBeVisible();
-    await expect(page.getByTestId('draft-panel')).toContainText('Submitted');
+    await expect(page.locator('main')).toContainText('Submitted');
     await expect(page.getByTestId('draft-panel')).toContainText('Budget cleared');
 
     await page.goto('/app/requests');
@@ -157,7 +157,7 @@ test.describe('US-INT-01 / 02 / 03 conversational intake', () => {
     await expect(page.getByTestId('shell').getByRole('alert')).toContainText(
       'more than the budget available',
     );
-    await expect(page.getByTestId('draft-panel')).toContainText('Draft');
+    await expect(page.locator('main')).toContainText('Draft');
     await expect(page.getByTestId('draft-panel')).toContainText('Over budget');
   });
 

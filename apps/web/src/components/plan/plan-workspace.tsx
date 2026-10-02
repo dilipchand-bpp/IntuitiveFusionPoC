@@ -1,8 +1,19 @@
 'use client';
-import { CheckCircle2, CircleDashed, Lock, Undo2 } from 'lucide-react';
+import {
+  Banknote,
+  CheckCircle2,
+  CircleDashed,
+  ClipboardCheck,
+  Gauge,
+  Lock,
+  Pencil,
+  ShieldCheck,
+  Undo2,
+  type LucideIcon,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { AiBadge, Badge, Button, Card, Dialog, Field, Input, Stamp, Textarea } from '@if/ui';
+import { AiBadge, Badge, Button, Dialog, Field, Input, Stamp, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
   COI_LABEL,
@@ -18,6 +29,65 @@ import { VoiceButton, VoiceStatus } from '../voice/voice-button';
 import type { PlanConflict, PlanField, PlanView } from './types';
 
 const when = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
+
+/** A card in the right-hand rail. `accent` marks the panel the viewer is expected to act on. */
+function Panel({
+  id,
+  title,
+  children,
+  accent,
+  badge,
+  testId,
+}: {
+  id: string;
+  title: string;
+  children: ReactNode;
+  accent?: 'accent' | 'warning';
+  badge?: ReactNode;
+  testId?: string;
+}) {
+  return (
+    <section
+      aria-labelledby={id}
+      data-testid={testId}
+      className={cn(
+        'relative overflow-hidden rounded-lg border bg-surface p-5 shadow-sm',
+        accent === 'accent' && 'border-accent',
+        accent === 'warning' && 'border-warning',
+        !accent && 'border-border',
+      )}
+    >
+      {accent && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'absolute inset-x-0 top-0 h-1',
+            accent === 'accent' ? 'bg-brand-gradient' : 'bg-warning',
+          )}
+        />
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 id={id} className="font-heading text-lg font-bold">
+          {title}
+        </h2>
+        {badge}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Fact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-border bg-surface-alt/60 p-3">
+      <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-text-muted">
+        <Icon className="size-4 shrink-0 text-accent" aria-hidden="true" />
+        {label}
+      </dt>
+      <dd className="mt-1 min-w-0 break-words font-heading text-lg font-bold leading-tight">{children}</dd>
+    </div>
+  );
+}
 
 /** Everything about one plan: key points, sections with per-paragraph numbering, instruction box, conflicts, decisions. */
 export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: string; userId: string }) {
@@ -91,33 +161,92 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
 
   const statusTone = PLAN_STATUS_TONE[plan.status] ?? 'neutral';
   const approverBox = p.canApprove || (plan.status === 'AWAITING_APPROVAL' && p.reason);
+  const gatesDone = plan.gates.filter((g) => g.status === 'SATISFIED').length;
+  const stampOf = (a: PlanView['approvals'][number]) => ({
+    who: a.userName || (a.stamp ?? '').split(' · ')[1] || '',
+    role: a.role.replace('_', ' '),
+    when: when.format(new Date(a.decidedAt)),
+  });
 
   return (
     <div className="flex flex-col gap-6" data-testid="plan-workspace" data-plan-status={plan.status}>
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={statusTone} className="text-sm">
-            {plan.locked && <Lock className="size-3.5" aria-hidden="true" />}
-            {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+      <header className="flex flex-wrap items-center gap-2">
+        <Badge tone={statusTone} className="text-sm">
+          {plan.locked && <Lock className="size-3.5" aria-hidden="true" />}
+          {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+        </Badge>
+        {plan.complexity && (
+          <Badge tone={COMPLEXITY_TONE[plan.complexity] ?? 'neutral'}>
+            Complexity: {COMPLEXITY_LABEL[plan.complexity]}
           </Badge>
-          {plan.complexity && (
-            <Badge tone={COMPLEXITY_TONE[plan.complexity] ?? 'neutral'}>
-              Complexity: {COMPLEXITY_LABEL[plan.complexity]}
-            </Badge>
-          )}
-          <Badge tone="neutral">{aud.format(plan.estimatedValue)}</Badge>
+        )}
+        <Badge tone="neutral">{aud.format(plan.estimatedValue)}</Badge>
+      </header>
+
+      {error && (
+        <p
+          role="alert"
+          className="rounded-md border border-error bg-error-bg p-3 text-sm font-medium text-error"
+        >
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p
+          role="status"
+          className="rounded-md border border-success bg-success-bg p-3 text-sm font-medium text-success"
+        >
+          {notice}
+        </p>
+      )}
+
+      {/* Key points first: on a phone the approver sees what they need, then the decision, then the detail. */}
+      <section
+        aria-labelledby="kp-h"
+        className="relative overflow-hidden rounded-lg border border-border bg-surface p-5 shadow-sm"
+        data-testid="key-points"
+      >
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" />
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 id="kp-h" className="font-heading text-xl font-bold">
+            Key points
+          </h2>
+          <AiBadge />
         </div>
+
+        <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Fact icon={Banknote} label="Value">
+            {aud.format(plan.estimatedValue)}
+          </Fact>
+          <Fact icon={Gauge} label="Complexity">
+            {plan.complexity ? COMPLEXITY_LABEL[plan.complexity] : '–'}
+          </Fact>
+          <Fact icon={ShieldCheck} label="Plan status">
+            {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+          </Fact>
+          <Fact icon={ClipboardCheck} label="Checks">
+            {plan.gates.length === 0 ? 'None needed' : `${gatesDone} of ${plan.gates.length} done`}
+          </Fact>
+        </dl>
+
+        <ul className="mt-4 flex flex-col gap-2 text-sm">
+          {plan.summaryPoints.map((s) => (
+            <li key={s} className="flex gap-2">
+              <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-accent" />
+              {s}
+            </li>
+          ))}
+        </ul>
+
         {plan.approvals.length > 0 && (
-          <ul className="flex flex-wrap gap-3" aria-label="Approval record">
+          <ul
+            className="mt-4 flex flex-wrap items-start gap-3 border-t border-border pt-4"
+            aria-label="Approval record"
+          >
             {plan.approvals.map((a) =>
               a.decision === 'APPROVED' ? (
                 <li key={a.id}>
-                  <Stamp
-                    label={a.subject === 'PLAN_RISK' ? 'Risk signed off' : 'Approved'}
-                    who={(a.stamp ?? '').split(' · ')[1] ?? ''}
-                    role={a.role.replace('_', ' ')}
-                    when={when.format(new Date(a.decidedAt))}
-                  />
+                  <Stamp label={a.subject === 'PLAN_RISK' ? 'Risk signed off' : 'Approved'} {...stampOf(a)} />
                 </li>
               ) : (
                 <li key={a.id} className="text-sm text-text-muted">
@@ -131,341 +260,315 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
             )}
           </ul>
         )}
-      </header>
-
-      {error && (
-        <p
-          role="alert"
-          className="rounded-sm border border-error bg-error-bg p-3 text-sm font-medium text-error"
-        >
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p
-          role="status"
-          className="rounded-sm border border-success bg-success-bg p-3 text-sm font-medium text-success"
-        >
-          {notice}
-        </p>
-      )}
-
-      {/* Key points first: on a phone the approver sees what they need, then the decision, then the detail. */}
-      <section
-        aria-labelledby="kp-h"
-        className="rounded-md border border-border bg-surface p-4"
-        data-testid="key-points"
-      >
-        <div className="flex items-center gap-2">
-          <h2 id="kp-h" className="font-heading text-lg font-semibold">
-            Key points
-          </h2>
-          <AiBadge />
-        </div>
-        <ul className="mt-2 list-disc pl-5 text-sm">
-          {plan.summaryPoints.map((s) => (
-            <li key={s}>{s}</li>
-          ))}
-        </ul>
       </section>
 
-      {approverBox && (
-        <section
-          aria-labelledby="dec-h"
-          className="rounded-md border-2 border-accent bg-surface p-4"
-          data-testid="decision-panel"
-        >
-          <h2 id="dec-h" className="font-heading text-lg font-semibold">
-            Your decision
-          </h2>
-          {p.reason && !p.canApprove && <p className="mt-1 text-sm font-medium text-warning">{p.reason}</p>}
-          <div className="mt-2 flex flex-col gap-3">
-            <Field label="Comment (required to return the plan)">
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={2}
-                maxLength={2000}
-              />
-            </Field>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="accent"
-                disabled={!p.canApprove}
-                loading={busy === 'approve'}
-                onClick={() =>
-                  run('approve', () =>
-                    post(`/plans/${plan.id}/decision`, {
-                      decision: 'APPROVE',
-                      comment: comment || undefined,
-                    }),
-                  )
-                }
-              >
-                Approve and lock
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={comment.trim().length < 5}
-                loading={busy === 'reject'}
-                onClick={() =>
-                  run('reject', () => post(`/plans/${plan.id}/decision`, { decision: 'REJECT', comment }))
-                }
-              >
-                Return to procurement
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {p.canSignOffRisk && (
-        <section
-          aria-labelledby="risk-h"
-          className="rounded-md border-2 border-warning bg-surface p-4"
-          data-testid="risk-panel"
-        >
-          <h2 id="risk-h" className="font-heading text-lg font-semibold">
-            Independent risk sign-off
-          </h2>
-          <p className="mt-1 text-sm text-text-muted">
-            This plan cannot go to the approver until you have reviewed the risks and conflicts below.
-          </p>
-          <div className="mt-2 flex flex-col gap-3">
-            <Field label="Comment">
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={2}
-                maxLength={2000}
-              />
-            </Field>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                loading={busy === 'risk'}
-                onClick={() =>
-                  run('risk', () =>
-                    post(`/plans/${plan.id}/decision`, {
-                      decision: 'APPROVE',
-                      gate: 'RISK_SIGNOFF',
-                      comment: comment || undefined,
-                    }),
-                  )
-                }
-              >
-                Sign off risk
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={comment.trim().length < 5}
-                onClick={() =>
-                  run('riskrej', () =>
-                    post(`/plans/${plan.id}/decision`, { decision: 'REJECT', gate: 'RISK_SIGNOFF', comment }),
-                  )
-                }
-              >
-                Return to procurement
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section aria-labelledby="gates-h" className="rounded-md border border-border bg-surface p-4">
-        <h2 id="gates-h" className="font-heading text-lg font-semibold">
-          Required checks
-        </h2>
-        {plan.gates.length === 0 ? (
-          <p className="mt-1 text-sm text-text-muted">
-            No extra checks are required for a plan at this complexity.
-          </p>
-        ) : (
-          <ul className="mt-2 flex flex-col gap-1 text-sm">
-            {plan.gates.map((g) => (
-              <li key={g.key} className="flex items-start gap-2" data-gate={g.key} data-status={g.status}>
-                {g.status === 'SATISFIED' ? (
-                  <CheckCircle2 className="mt-0.5 size-4 text-success" aria-hidden="true" />
-                ) : (
-                  <CircleDashed className="mt-0.5 size-4 text-warning" aria-hidden="true" />
-                )}
-                <span>
-                  <strong>{g.label}</strong>{' '}
-                  <span className="text-text-muted">– {g.status === 'SATISFIED' ? 'done' : 'required'}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <ConflictPanel
-        plan={plan}
-        userId={userId}
-        mode={conflictMode}
-        setMode={setConflictMode}
-        nature={nature}
-        setNature={setNature}
-        busy={busy}
-        onDeclare={() =>
-          run(
-            'declare',
-            () =>
-              post(
-                `/plans/${plan.id}/coi`,
-                conflictMode === 'none' ? { none: true } : { none: false, nature },
-              ),
-            () => setNature(''),
-          )
-        }
-        onDecide={(id, disposition) => run('decide', () => post(`/coi/${id}/decision`, { disposition }))}
-      />
-
-      {p.canEdit && (
-        <section aria-labelledby="ins-h" className="rounded-md border border-border bg-surface p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 id="ins-h" className="font-heading text-lg font-semibold">
-              Tell the assistant what to change
-            </h2>
-            <AiBadge />
-          </div>
-          <form
-            className="mt-2 flex flex-col gap-2"
-            aria-label="Plan instruction"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (instruction.trim()) void sendInstruction();
-            }}
-          >
-            <Field
-              label="Instruction"
-              hint='For example: "change paragraph 3 of the background to ..." or "add to the risks: supplier insolvency".'
-            >
-              <Input value={instruction} onChange={(e) => setInstruction(e.target.value)} maxLength={2000} />
-            </Field>
-            <VoiceStatus state={voice.state} interim={voice.interim} error={voice.error} />
-            <div className="flex flex-wrap gap-2">
-              <VoiceButton state={voice.state} onStart={voice.start} onStop={voice.stop} />
-              <Button type="submit" loading={busy === 'instruct'} disabled={!instruction.trim()}>
-                Apply
-              </Button>
-              {(undoToken || plan.undoAvailable) && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  loading={busy === 'undo'}
-                  onClick={() =>
-                    run(
-                      'undo',
-                      () =>
-                        post(`/plans/${plan.id}/instructions/undo`, {
-                          undoToken: undoToken ?? plan.undoToken,
-                        }),
-                      () => setUndoToken(undefined),
-                    )
-                  }
-                >
-                  <Undo2 className="size-4" aria-hidden="true" />
-                  Undo last change
-                </Button>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+        {/* The rail comes first in the page so a phone shows the decision before the long plan text. */}
+        <aside aria-label="Decision, checks and assistant" className="flex flex-col gap-4 lg:order-2">
+          {approverBox && (
+            <Panel id="dec-h" title="Your decision" accent="accent" testId="decision-panel">
+              {p.reason && !p.canApprove && (
+                <p className="mt-2 text-sm font-medium text-warning">{p.reason}</p>
               )}
-            </div>
-          </form>
-          {hint && (
-            <p role="status" className="mt-2 text-sm text-warning" data-testid="instruction-hint">
-              {hint}
-            </p>
-          )}
-        </section>
-      )}
-
-      <section aria-labelledby="sec-h" className="flex flex-col gap-3">
-        <h2 id="sec-h" className="font-heading text-xl font-semibold">
-          Plan
-        </h2>
-        {plan.fields.map((f) => (
-          <Card key={f.key} className="p-4" data-field={f.key}>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-heading text-base font-semibold">{f.label}</h3>
-              {f.aiDrafted && <AiBadge kind="drafted" />}
-              {p.canEdit && editKey !== f.key && (
-                <Button
-                  variant="ghost"
-                  className="ml-auto"
-                  onClick={() => {
-                    setEditKey(f.key);
-                    setDraft(f.value);
-                  }}
-                  aria-label={`Edit ${f.label}`}
-                >
-                  Edit
-                </Button>
-              )}
-            </div>
-            {editKey === f.key ? (
-              <div className="mt-2 flex flex-col gap-2">
-                <Field label={`${f.label} (separate paragraphs with a blank line)`}>
+              <div className="mt-3 flex flex-col gap-3">
+                <Field label="Comment (required to return the plan)">
                   <Textarea
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    rows={8}
-                    maxLength={8000}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows={2}
+                    maxLength={2000}
                   />
                 </Field>
-                <div className="flex gap-2">
-                  <Button loading={busy === 'save'} onClick={() => void saveField(f)}>
-                    Save
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="accent"
+                    disabled={!p.canApprove}
+                    loading={busy === 'approve'}
+                    onClick={() =>
+                      run('approve', () =>
+                        post(`/plans/${plan.id}/decision`, {
+                          decision: 'APPROVE',
+                          comment: comment || undefined,
+                        }),
+                      )
+                    }
+                  >
+                    Approve and lock
                   </Button>
-                  <Button variant="secondary" onClick={() => setEditKey(null)}>
-                    Cancel
+                  <Button
+                    variant="secondary"
+                    disabled={comment.trim().length < 5}
+                    loading={busy === 'reject'}
+                    onClick={() =>
+                      run('reject', () => post(`/plans/${plan.id}/decision`, { decision: 'REJECT', comment }))
+                    }
+                  >
+                    Return to procurement
                   </Button>
                 </div>
               </div>
-            ) : (
-              <ol className="mt-2 flex flex-col gap-2 text-sm">
-                {f.paragraphs.map((para, i) => (
-                  <li key={i} className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
-                    <span
-                      className="mt-0.5 inline-flex size-5 items-center justify-center rounded-full bg-surface-alt text-xs font-semibold text-text-muted"
-                      aria-label={`Paragraph ${i + 1}`}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0 whitespace-pre-wrap break-words" data-paragraph={i + 1}>
-                      {para}
-                    </span>
-                  </li>
-                ))}
-                {f.paragraphs.length === 0 && <li className="text-text-muted">Not set</li>}
-              </ol>
-            )}
-          </Card>
-        ))}
-      </section>
+            </Panel>
+          )}
 
-      {(p.canSubmit || p.canReopen) && (
-        <section
-          aria-labelledby="act-h"
-          className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface p-4"
-        >
-          <h2 id="act-h" className="sr-only">
-            Plan actions
-          </h2>
-          {p.canSubmit && (
-            <Button
-              variant="accent"
-              loading={busy === 'submit'}
-              onClick={() => run('submit', () => post(`/plans/${plan.id}/submit-for-approval`))}
+          {p.canSignOffRisk && (
+            <Panel id="risk-h" title="Independent risk sign-off" accent="warning" testId="risk-panel">
+              <p className="mt-2 text-sm text-text-muted">
+                This plan cannot go to the approver until you have reviewed the risks and conflicts.
+              </p>
+              <div className="mt-3 flex flex-col gap-3">
+                <Field label="Comment">
+                  <Textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows={2}
+                    maxLength={2000}
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    loading={busy === 'risk'}
+                    onClick={() =>
+                      run('risk', () =>
+                        post(`/plans/${plan.id}/decision`, {
+                          decision: 'APPROVE',
+                          gate: 'RISK_SIGNOFF',
+                          comment: comment || undefined,
+                        }),
+                      )
+                    }
+                  >
+                    Sign off risk
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={comment.trim().length < 5}
+                    onClick={() =>
+                      run('riskrej', () =>
+                        post(`/plans/${plan.id}/decision`, {
+                          decision: 'REJECT',
+                          gate: 'RISK_SIGNOFF',
+                          comment,
+                        }),
+                      )
+                    }
+                  >
+                    Return to procurement
+                  </Button>
+                </div>
+              </div>
+            </Panel>
+          )}
+
+          <Panel id="gates-h" title="Required checks">
+            {plan.gates.length === 0 ? (
+              <p className="mt-2 text-sm text-text-muted">
+                No extra checks are required for a plan at this complexity.
+              </p>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-2">
+                {plan.gates.map((g) => {
+                  const done = g.status === 'SATISFIED';
+                  return (
+                    <li
+                      key={g.key}
+                      className="flex items-center gap-3 rounded-md border border-border bg-surface-alt/60 px-3 py-2"
+                      data-gate={g.key}
+                      data-status={g.status}
+                    >
+                      {done ? (
+                        <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
+                      ) : (
+                        <CircleDashed className="size-5 shrink-0 text-warning" aria-hidden="true" />
+                      )}
+                      <span className="min-w-0 flex-1 text-sm">
+                        <strong>{g.label}</strong>{' '}
+                        <span className="text-text-muted">– {done ? 'done' : 'required'}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <ConflictPanel
+            plan={plan}
+            userId={userId}
+            mode={conflictMode}
+            setMode={setConflictMode}
+            nature={nature}
+            setNature={setNature}
+            busy={busy}
+            onDeclare={() =>
+              run(
+                'declare',
+                () =>
+                  post(
+                    `/plans/${plan.id}/coi`,
+                    conflictMode === 'none' ? { none: true } : { none: false, nature },
+                  ),
+                () => setNature(''),
+              )
+            }
+            onDecide={(id, disposition) => run('decide', () => post(`/coi/${id}/decision`, { disposition }))}
+          />
+
+          {p.canEdit && (
+            <Panel id="ins-h" title="Tell the assistant what to change" badge={<AiBadge />}>
+              <form
+                className="mt-3 flex flex-col gap-2"
+                aria-label="Plan instruction"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (instruction.trim()) void sendInstruction();
+                }}
+              >
+                <Field
+                  label="Instruction"
+                  hint='For example: "change paragraph 3 of the background to ..." or "add to the risks: supplier insolvency".'
+                >
+                  <Input
+                    value={instruction}
+                    onChange={(e) => setInstruction(e.target.value)}
+                    maxLength={2000}
+                  />
+                </Field>
+                <VoiceStatus state={voice.state} interim={voice.interim} error={voice.error} />
+                <div className="flex flex-wrap gap-2">
+                  <VoiceButton state={voice.state} onStart={voice.start} onStop={voice.stop} />
+                  <Button type="submit" loading={busy === 'instruct'} disabled={!instruction.trim()}>
+                    Apply
+                  </Button>
+                  {(undoToken || plan.undoAvailable) && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      loading={busy === 'undo'}
+                      onClick={() =>
+                        run(
+                          'undo',
+                          () =>
+                            post(`/plans/${plan.id}/instructions/undo`, {
+                              undoToken: undoToken ?? plan.undoToken,
+                            }),
+                          () => setUndoToken(undefined),
+                        )
+                      }
+                    >
+                      <Undo2 className="size-4" aria-hidden="true" />
+                      Undo last change
+                    </Button>
+                  )}
+                </div>
+              </form>
+              {hint && (
+                <p role="status" className="mt-2 text-sm text-warning" data-testid="instruction-hint">
+                  {hint}
+                </p>
+              )}
+            </Panel>
+          )}
+        </aside>
+
+        <div className="flex min-w-0 flex-col gap-4 lg:order-1">
+          <section aria-labelledby="sec-h" className="flex flex-col gap-4">
+            <h2 id="sec-h" className="font-heading text-2xl font-extrabold tracking-tight">
+              Plan
+            </h2>
+            {plan.fields.map((f) => (
+              <div
+                key={f.key}
+                className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+                data-field={f.key}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-heading text-lg font-bold">{f.label}</h3>
+                  {f.aiDrafted && <AiBadge kind="drafted" />}
+                  {p.canEdit && editKey !== f.key && (
+                    <Button
+                      variant="ghost"
+                      className="ml-auto"
+                      onClick={() => {
+                        setEditKey(f.key);
+                        setDraft(f.value);
+                      }}
+                      aria-label={`Edit ${f.label}`}
+                    >
+                      <Pencil className="size-4" aria-hidden="true" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+                {editKey === f.key ? (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <Field label={`${f.label} (separate paragraphs with a blank line)`}>
+                      <Textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        rows={8}
+                        maxLength={8000}
+                      />
+                    </Field>
+                    <div className="flex gap-2">
+                      <Button loading={busy === 'save'} onClick={() => void saveField(f)}>
+                        Save
+                      </Button>
+                      <Button variant="secondary" onClick={() => setEditKey(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <ol className="mt-3 flex flex-col gap-3 text-base leading-relaxed">
+                    {f.paragraphs.map((para, i) => (
+                      <li key={i} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+                        <span
+                          className="mt-1 inline-flex size-6 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent"
+                          aria-label={`Paragraph ${i + 1}`}
+                        >
+                          {i + 1}
+                        </span>
+                        <span
+                          className="min-w-0 max-w-prose whitespace-pre-wrap break-words"
+                          data-paragraph={i + 1}
+                        >
+                          {para}
+                        </span>
+                      </li>
+                    ))}
+                    {f.paragraphs.length === 0 && <li className="text-text-muted">Not set</li>}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </section>
+
+          {(p.canSubmit || p.canReopen) && (
+            <section
+              aria-labelledby="act-h"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-4 shadow-sm"
             >
-              Submit for approval
-            </Button>
+              <h2 id="act-h" className="sr-only">
+                Plan actions
+              </h2>
+              {p.canSubmit && (
+                <Button
+                  variant="accent"
+                  loading={busy === 'submit'}
+                  onClick={() => run('submit', () => post(`/plans/${plan.id}/submit-for-approval`))}
+                >
+                  Submit for approval
+                </Button>
+              )}
+              {p.canReopen && (
+                <Button variant="secondary" onClick={() => setReopen(true)}>
+                  Reopen plan
+                </Button>
+              )}
+            </section>
           )}
-          {p.canReopen && (
-            <Button variant="secondary" onClick={() => setReopen(true)}>
-              Reopen plan
-            </Button>
-          )}
-        </section>
-      )}
+        </div>
+      </div>
 
       <Dialog
         open={reopen}
@@ -520,20 +623,17 @@ function ConflictPanel(props: {
   const { plan, mode, setMode, nature, setNature, busy, onDeclare, onDecide } = props;
   const p = plan.permissions;
   return (
-    <section
-      aria-labelledby="coi-h"
-      className="rounded-md border border-border bg-surface p-4"
-      data-testid="coi-panel"
-    >
-      <h2 id="coi-h" className="font-heading text-lg font-semibold">
-        Conflicts of interest
-      </h2>
+    <Panel id="coi-h" title="Conflicts of interest" testId="coi-panel">
       {plan.conflicts.length === 0 ? (
-        <p className="mt-1 text-sm text-text-muted">No declarations yet.</p>
+        <p className="mt-2 text-sm text-text-muted">No declarations yet.</p>
       ) : (
-        <ul className="mt-2 flex flex-col gap-2 text-sm">
+        <ul className="mt-3 flex flex-col gap-2">
           {plan.conflicts.map((c: PlanConflict) => (
-            <li key={c.id} className="flex flex-wrap items-center gap-2" data-coi={c.disposition}>
+            <li
+              key={c.id}
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface-alt/60 px-3 py-2 text-sm"
+              data-coi={c.disposition}
+            >
               <strong>{c.userName}</strong>
               <span className="text-text-muted">
                 {c.none ? 'declared no conflict' : `declared: ${c.nature}`}
@@ -560,7 +660,7 @@ function ConflictPanel(props: {
       )}
       {p.canDeclareConflict && (
         <form
-          className="mt-3 flex flex-col gap-2"
+          className="mt-4 flex flex-col gap-2 border-t border-border pt-4"
           aria-label="Declare a conflict of interest"
           onSubmit={(e) => {
             e.preventDefault();
@@ -604,6 +704,6 @@ function ConflictPanel(props: {
           </div>
         </form>
       )}
-    </section>
+    </Panel>
   );
 }

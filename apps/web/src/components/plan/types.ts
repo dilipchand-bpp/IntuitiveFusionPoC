@@ -9,6 +9,7 @@ export interface PlanField {
 export interface PlanApproval {
   id: string;
   subject: string;
+  userName?: string;
   role: string;
   decision: 'APPROVED' | 'REJECTED' | 'SUPERSEDED';
   comment?: string;

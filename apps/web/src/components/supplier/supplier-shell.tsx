@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Logo, ThemeToggle } from '@if/ui';
+import { PreviewLink } from '@/components/preview/preview-link';
 import { NotificationBell } from '@/components/shell/notification-bell';
 import { ProfileMenu } from '@/components/shell/profile-menu';
 import { getSessionUser } from '@/lib/session';
@@ -30,6 +31,7 @@ export async function SupplierShell({ children }: { children: ReactNode }) {
           Supplier portal
         </span>
         <div className="ml-auto flex items-center gap-1">
+          <PreviewLink />
           <ThemeToggle />
           <NotificationBell csrfToken={user.csrfToken} />
           <ProfileMenu name={user.name} role={user.role} email={user.email} csrfToken={user.csrfToken} />

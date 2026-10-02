@@ -134,6 +134,7 @@ test.describe
     await page.goto(`/app/tenders/${tenderId}`);
     await page.getByRole('button', { name: 'Publish tender' }).click(); // default is 26 days out
     await expect(workspace(page)).toHaveAttribute('data-status', 'PUBLISHED');
+    await page.getByRole('tab', { name: /Invitations/ }).click();
     await page.getByLabel('Contact email').fill(supplierMail);
     await page.getByLabel('Company').fill(company);
     await page.getByRole('button', { name: 'Invite' }).click();
@@ -188,6 +189,7 @@ test.describe
 
     await staffSignIn(page, 'procurement');
     await page.goto(`/app/tenders/${tenderId}`);
+    await page.getByRole('tab', { name: /Questions and addenda/ }).click();
     const q = page.getByTestId('question').filter({ hasText: 'site visit mandatory' });
     await expect(q).toContainText('Needs an answer');
     await expect(q).not.toContainText(company); // who asked is never shown
@@ -249,6 +251,7 @@ test.describe
 
     await staffSignIn(page, 'procurement');
     await page.goto(`/app/tenders/${tenderId}`);
+    await page.getByRole('tab', { name: /Bids/ }).click();
     await expect(page.getByTestId('bids-sealed')).toContainText('1 bid(s) received');
     await expect(page.getByTestId('bids-sealed')).not.toContainText(company);
   });

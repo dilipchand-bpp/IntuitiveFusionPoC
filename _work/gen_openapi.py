@@ -50,7 +50,7 @@ schemas = {
  "FieldUpdate": obj({"value": S, "paragraph": {"type": "integer", "minimum": 1}, "expectedVersion": I}, ["value", "expectedVersion"]),
  "Instruction": obj({"text": {"type": "string", "minLength": 1, "maxLength": 2000}, "channel": enum("TEXT", "VOICE")}, ["text"]),
  "InstructionResult": obj({"applied": arr(ref("FieldValue")), "undoToken": S, "explanation": S, "fallbackHint": S}, ["applied", "explanation"]),
- "Approval": obj({"id": UUID, "subject": S, "userId": UUID, "role": S, "decision": enum("APPROVED", "REJECTED", "SUPERSEDED"), "comment": S, "decidedAt": DT, "stamp": S}, ["id", "decision", "decidedAt"]),
+ "Approval": obj({"id": UUID, "subject": S, "userId": UUID, "userName": S, "role": S, "decision": enum("APPROVED", "REJECTED", "SUPERSEDED"), "comment": S, "decidedAt": DT, "stamp": S}, ["id", "decision", "decidedAt"]),
  "Decision": obj({"decision": enum("APPROVE", "REJECT"), "comment": {"type": "string", "maxLength": 2000}, "gate": enum("RISK_SIGNOFF")}, ["decision"]),
  "Reopen": obj({"reason": {"type": "string", "minLength": 10, "maxLength": 1000}}, ["reason"]),
  "CoiDeclaration": obj({"subjectOrg": S, "nature": {"type": "string", "minLength": 3, "maxLength": 2000}, "none": B}, ["none"]),

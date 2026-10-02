@@ -23,13 +23,13 @@ export function Tabs({
 }) {
   return (
     <RadixTabs.Root defaultValue={defaultValue ?? items[0]?.value}>
-      <RadixTabs.List aria-label={label} className="flex gap-1 border-b border-border">
+      <RadixTabs.List aria-label={label} className="flex gap-1 overflow-x-auto border-b border-border">
         {items.map((t) => (
           <RadixTabs.Trigger
             key={t.value}
             value={t.value}
             className={cn(
-              'min-h-[44px] border-b-2 border-transparent px-4 text-sm font-semibold text-text-muted',
+              'min-h-[44px] shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 text-sm font-semibold text-text-muted',
               'data-[state=active]:border-accent data-[state=active]:text-text',
               'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
             )}

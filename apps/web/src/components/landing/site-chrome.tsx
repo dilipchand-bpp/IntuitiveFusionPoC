@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button, Logo, ThemeToggle } from '@if/ui';
+import { PreviewLink } from '@/components/preview/preview-link';
 
 export const CONTACT_EMAIL = 'hello@intuitivefusion.example';
 
@@ -27,6 +28,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1">
+          <PreviewLink />
           <ThemeToggle />
           <Button asChild variant="accent">
             <Link href="/login" className="text-gradient-fg no-underline">

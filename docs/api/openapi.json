@@ -5159,6 +5159,9 @@
       "type": "string",
       "format": "uuid"
      },
+     "userName": {
+      "type": "string"
+     },
      "role": {
       "type": "string"
      },

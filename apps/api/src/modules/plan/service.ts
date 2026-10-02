@@ -401,6 +401,15 @@ export class PlanService {
       topRisk: firstRisk,
     });
     const undo = await this.readUndo(tx, planId);
+    // Approver names come from the user records, not from parsing the printed stamp.
+    const approverIds = [...new Set(approvals.map((a) => a.userId))];
+    const approverRows = approverIds.length
+      ? await tx
+          .select({ id: appUser.id, name: appUser.name })
+          .from(appUser)
+          .where(inArray(appUser.id, approverIds))
+      : [];
+    const approverName = new Map(approverRows.map((r) => [r.id, r.name]));
     return {
       id: l.plan.id,
       requestId: l.req.id,
@@ -415,6 +424,7 @@ export class PlanService {
         id: a.id,
         subject: a.subjectType,
         userId: a.userId,
+        userName: approverName.get(a.userId) ?? '',
         role: a.role,
         decision: a.decision,
         ...(a.comment ? { comment: a.comment } : {}),

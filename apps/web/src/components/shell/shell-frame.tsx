@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { Button, Drawer, Logo, ThemeToggle } from '@if/ui';
 import type { NavItem } from '@/lib/nav';
 import { CommandPalette } from './command-palette';
+import { PreviewLink } from '@/components/preview/preview-link';
 import { NavLinks } from './nav-links';
 import { NotificationBell } from './notification-bell';
 import { ProfileMenu } from './profile-menu';
@@ -58,6 +59,7 @@ export function ShellFrame({
         </span>
         <div className="ml-auto flex items-center gap-1">
           <CommandPalette items={items} />
+          <PreviewLink />
           <ThemeToggle />
           <NotificationBell csrfToken={user.csrfToken} />
           <ProfileMenu name={user.name} role={user.role} email={user.email} csrfToken={user.csrfToken} />

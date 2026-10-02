@@ -2,6 +2,7 @@ import { ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Logo, ThemeToggle } from '@if/ui';
+import { PreviewLink } from '@/components/preview/preview-link';
 import { LoginForm } from './login-form';
 
 export const metadata = { title: 'Sign in – Intuitive Fusion' };
@@ -46,7 +47,10 @@ export default function LoginPage() {
           <Link href="/" className="text-text no-underline lg:hidden" aria-label="Intuitive Fusion home">
             <Logo withName size={36} />
           </Link>
-          <ThemeToggle />
+          <span className="flex items-center gap-1">
+            <PreviewLink />
+            <ThemeToggle />
+          </span>
         </div>
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 pb-16">
           <div className="flex flex-col gap-6 rounded-lg border border-border bg-surface p-8 shadow-lg">

@@ -417,7 +417,7 @@ export async function seedDatabase(
             userId: userId(Number(r.value) > 250000 ? 'exec' : 'delegate'),
             role: Number(r.value) > 250000 ? 'EXEC' : 'DELEGATE',
             decision: 'APPROVED',
-            stamp: `APPROVED ${dateOnly(day(-40))}`,
+            stamp: `APPROVED · ${SEED_USERS.find((u) => u.key === (Number(r.value) > 250000 ? 'exec' : 'delegate'))!.name} · ${Number(r.value) > 250000 ? 'EXEC' : 'DELEGATE'} · ${dateOnly(day(-40))} 09:00 UTC`,
             decidedAt: day(-40),
           });
           await log(

@@ -1,7 +1,7 @@
 'use client';
 import { CheckCircle2, Copy, Lock, Send } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { Badge, Button, Card, Field, Input, Stepper, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Stepper, Tabs, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
   TENDER_STATUS_LABEL,
@@ -39,6 +39,7 @@ export function TenderWorkspace({ initial, csrf }: { initial: TenderView; csrf: 
   const [closeAt, setCloseAt] = useState(defaultClose);
   const [comment, setComment] = useState('');
 
+  const toAnswer = t.questions.filter((q) => q.status !== 'PUBLISHED').length;
   const refresh = useCallback(async () => setT(await api<TenderView>(`/tenders/${t.id}`)), [t.id]);
   async function run(name: string, fn: () => Promise<void>, ok?: string) {
     setBusy(name);
@@ -196,66 +197,87 @@ export function TenderWorkspace({ initial, csrf }: { initial: TenderView; csrf: 
         )}
       </Card>
 
-      {/* ---------------------------------------------------------- pack */}
-      <section aria-labelledby="pack-h" className="flex flex-col gap-3">
-        <h2 id="pack-h" className="font-heading text-xl font-bold">
-          Tender pack
-        </h2>
-        {!t.permissions.canEdit && (
-          <p className="text-sm text-text-muted">
-            {t.status === 'STAGED'
-              ? 'You can read the pack. Procurement and legal edit it while it is staged.'
-              : 'The pack is locked now that it is published. Issue an addendum to change what suppliers see.'}
-          </p>
-        )}
-        {t.fields.map((f) => (
-          <PackSection
-            key={f.key}
-            tenderId={t.id}
-            field={f}
-            version={t.version}
-            canEdit={t.permissions.canEdit}
-            csrf={csrf}
-            onSaved={setT}
-          />
-        ))}
-      </section>
-
-      {/* ---------------------------------------------------------- invitations */}
-      <InvitePanel t={t} csrf={csrf} onDone={refresh} />
-
-      {/* ---------------------------------------------------------- Q&A and addenda */}
-      <QaPanel t={t} csrf={csrf} onDone={refresh} />
-
-      {/* ---------------------------------------------------------- bids */}
-      <Card role="region" aria-labelledby="bids-h">
-        <h2 id="bids-h" className="font-heading text-xl font-bold">
-          Bids
-        </h2>
-        {t.submissions.sealed ? (
-          <p className="mt-2 flex items-start gap-2 text-sm text-text-muted" data-testid="bids-sealed">
-            <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            {t.submissions.count} bid(s) received. Who bid, and what they sent, stays sealed until the tender
-            closes. Nobody, including administrators, can open it before then.
-          </p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2" aria-label="Bids received">
-            {(t.submissions.items ?? []).length === 0 && (
-              <li className="text-sm text-text-muted">No bids were received.</li>
-            )}
-            {(t.submissions.items ?? []).map((b) => (
-              <li
-                key={b.supplierId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
-              >
-                <span className="font-semibold">{b.company}</span>
-                <span className="font-mono text-xs">{b.receipt}</span>
-                <span className="text-text-muted">{formatDateTime(b.submittedAt)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <Tabs
+        label="Tender sections"
+        items={[
+          {
+            value: 'pack',
+            label: 'Tender pack',
+            content: (
+              <section aria-labelledby="pack-h" className="flex flex-col gap-3">
+                <h2 id="pack-h" className="font-heading text-xl font-bold">
+                  Tender pack
+                </h2>
+                {!t.permissions.canEdit && (
+                  <p className="text-sm text-text-muted">
+                    {t.status === 'STAGED'
+                      ? 'You can read the pack. Procurement and legal edit it while it is staged.'
+                      : 'The pack is locked now that it is published. Issue an addendum to change what suppliers see.'}
+                  </p>
+                )}
+                {t.fields.map((f) => (
+                  <PackSection
+                    key={f.key}
+                    tenderId={t.id}
+                    field={f}
+                    version={t.version}
+                    canEdit={t.permissions.canEdit}
+                    csrf={csrf}
+                    onSaved={setT}
+                  />
+                ))}
+              </section>
+            ),
+          },
+          {
+            value: 'invitations',
+            label: `Invitations (${t.invitations.length})`,
+            content: <InvitePanel t={t} csrf={csrf} onDone={refresh} />,
+          },
+          {
+            value: 'qa',
+            label: toAnswer > 0 ? `Questions and addenda (${toAnswer} to answer)` : 'Questions and addenda',
+            content: <QaPanel t={t} csrf={csrf} onDone={refresh} />,
+          },
+          {
+            value: 'bids',
+            label: `Bids (${t.submissions.count})`,
+            content: (
+              <Card role="region" aria-labelledby="bids-h">
+                <h2 id="bids-h" className="font-heading text-xl font-bold">
+                  Bids
+                </h2>
+                {t.submissions.sealed ? (
+                  <p
+                    className="mt-2 flex items-start gap-2 text-sm text-text-muted"
+                    data-testid="bids-sealed"
+                  >
+                    <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    {t.submissions.count} bid(s) received. Who bid, and what they sent, stays sealed until the
+                    tender closes. Nobody, including administrators, can open it before then.
+                  </p>
+                ) : (
+                  <ul className="mt-3 flex flex-col gap-2" aria-label="Bids received">
+                    {(t.submissions.items ?? []).length === 0 && (
+                      <li className="text-sm text-text-muted">No bids were received.</li>
+                    )}
+                    {(t.submissions.items ?? []).map((b) => (
+                      <li
+                        key={b.supplierId}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
+                      >
+                        <span className="font-semibold">{b.company}</span>
+                        <span className="font-mono text-xs">{b.receipt}</span>
+                        <span className="text-text-muted">{formatDateTime(b.submittedAt)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

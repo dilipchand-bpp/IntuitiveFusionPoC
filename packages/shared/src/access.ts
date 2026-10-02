@@ -75,6 +75,7 @@ export const PUBLIC_PATHS = [
   '/forgot-password',
   '/ui-kit',
   '/supplier/register',
+  '/preview',
 ];
 
 /** Returns the roles allowed for a path, or null when the path is public / not guarded. */
