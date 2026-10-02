@@ -24,6 +24,9 @@
   --if-color-error-bg: #FCE8E6;
   --if-color-info: #1A5FA8;
   --if-color-info-bg: #E5F0FB;
+  --if-color-gradient-from: #4254C5;
+  --if-color-gradient-to: #7A45D6;
+  --if-color-gradient-fg: #FFFFFF;
   --if-color-overlay: rgba(20, 23, 30, 0.55);
   --if-font-heading: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
   --if-font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
@@ -56,13 +59,13 @@
   --if-space-12: 48px;
   --if-space-16: 64px;
   --if-space-24: 96px;
-  --if-radius-sm: 6px;
-  --if-radius-md: 10px;
-  --if-radius-lg: 16px;
+  --if-radius-sm: 8px;
+  --if-radius-md: 12px;
+  --if-radius-lg: 20px;
   --if-radius-full: 999px;
-  --if-shadow-sm: 0 1px 2px rgba(20, 23, 30, 0.08);
-  --if-shadow-md: 0 4px 12px rgba(20, 23, 30, 0.10);
-  --if-shadow-lg: 0 12px 32px rgba(20, 23, 30, 0.14);
+  --if-shadow-sm: 0 1px 2px rgba(31, 41, 90, 0.06), 0 1px 3px rgba(31, 41, 90, 0.05);
+  --if-shadow-md: 0 4px 14px rgba(31, 41, 90, 0.08), 0 2px 4px rgba(31, 41, 90, 0.05);
+  --if-shadow-lg: 0 18px 44px rgba(31, 41, 90, 0.16), 0 4px 10px rgba(31, 41, 90, 0.06);
   --if-motion-fast: 150ms;
   --if-motion-base: 200ms;
   --if-motion-slow: 250ms;
@@ -96,6 +99,9 @@
     --if-color-error-bg: #3F1A17;
     --if-color-info: #6CB4FF;
     --if-color-info-bg: #132B44;
+    --if-color-gradient-from: #8C9BFF;
+    --if-color-gradient-to: #B79CFF;
+    --if-color-gradient-fg: #10132B;
     --if-color-overlay: rgba(0, 0, 0, 0.65);
     color-scheme: dark;
   }
@@ -125,6 +131,9 @@
   --if-color-error-bg: #3F1A17;
   --if-color-info: #6CB4FF;
   --if-color-info-bg: #132B44;
+  --if-color-gradient-from: #8C9BFF;
+  --if-color-gradient-to: #B79CFF;
+  --if-color-gradient-fg: #10132B;
   --if-color-overlay: rgba(0, 0, 0, 0.65);
   color-scheme: dark;
 }
@@ -166,6 +175,9 @@
   --color-error-bg: var(--if-color-error-bg);
   --color-info: var(--if-color-info);
   --color-info-bg: var(--if-color-info-bg);
+  --color-gradient-from: var(--if-color-gradient-from);
+  --color-gradient-to: var(--if-color-gradient-to);
+  --color-gradient-fg: var(--if-color-gradient-fg);
   --color-overlay: var(--if-color-overlay);
   --font-heading: var(--if-font-heading);
   --font-sans: var(--if-font-body);

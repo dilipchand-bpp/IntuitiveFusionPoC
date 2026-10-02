@@ -62,7 +62,7 @@ export default async function Dashboard() {
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Dashboard</h1>
         <p className="mt-1 text-text-muted">
           Live overview of the procurements you can see. Figures come from synthetic demo data.
         </p>
@@ -100,7 +100,7 @@ export default async function Dashboard() {
       </section>
 
       <section aria-labelledby="by-phase" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <div className="min-w-0 rounded-md border border-border bg-surface p-5">
+        <div className="min-w-0 rounded-lg border border-border bg-surface p-6 shadow-sm">
           <h2 id="by-phase" className="font-heading text-lg font-semibold">
             By phase
           </h2>
@@ -114,9 +114,9 @@ export default async function Dashboard() {
                     <span>{PHASE_LABEL[p.phase] ?? p.phase}</span>
                     <strong>{p.count}</strong>
                   </div>
-                  <div aria-hidden="true" className="mt-1 h-2 rounded-full bg-surface-alt">
+                  <div aria-hidden="true" className="mt-1.5 h-2.5 rounded-full bg-surface-alt">
                     <div
-                      className="h-2 rounded-full bg-accent"
+                      className="bg-brand-gradient h-2.5 rounded-full"
                       style={{ width: `${(p.count / max) * 100}%` }}
                     />
                   </div>

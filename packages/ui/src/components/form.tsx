@@ -13,7 +13,7 @@ import {
 import { cn } from './cn';
 
 const control =
-  'w-full min-h-[44px] rounded-sm border border-border-strong bg-surface px-3 py-2 text-base text-text ' +
+  'w-full min-h-[44px] rounded-md border border-border-strong bg-surface px-3 py-2 text-base text-text ' +
   'placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring ' +
   'aria-[invalid=true]:border-error disabled:cursor-not-allowed disabled:opacity-60';
 

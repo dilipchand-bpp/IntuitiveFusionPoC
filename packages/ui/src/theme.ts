@@ -31,6 +31,9 @@ export type ColorTokens = {
   errorBg: string;
   info: string;
   infoBg: string;
+  gradientFrom: string; // brand gradient start (hero, primary CTA, accents)
+  gradientTo: string; // brand gradient end
+  gradientFg: string; // text/icons placed on the gradient
   overlay: string; // modal scrim
 };
 
@@ -59,6 +62,9 @@ export const light: ColorTokens = {
   errorBg: '#FCE8E6',
   info: '#1A5FA8',
   infoBg: '#E5F0FB',
+  gradientFrom: '#4254C5',
+  gradientTo: '#7A45D6',
+  gradientFg: '#FFFFFF',
   overlay: 'rgba(20, 23, 30, 0.55)',
 };
 
@@ -87,6 +93,9 @@ export const dark: ColorTokens = {
   errorBg: '#3F1A17',
   info: '#6CB4FF',
   infoBg: '#132B44',
+  gradientFrom: '#8C9BFF',
+  gradientTo: '#B79CFF',
+  gradientFg: '#10132B',
   overlay: 'rgba(0, 0, 0, 0.65)',
 };
 
@@ -121,12 +130,12 @@ export const spacing = {
   24: '96px',
 } as const;
 
-export const radius = { sm: '6px', md: '10px', lg: '16px', full: '999px' } as const;
+export const radius = { sm: '8px', md: '12px', lg: '20px', full: '999px' } as const;
 
 export const shadow = {
-  sm: '0 1px 2px rgba(20, 23, 30, 0.08)',
-  md: '0 4px 12px rgba(20, 23, 30, 0.10)',
-  lg: '0 12px 32px rgba(20, 23, 30, 0.14)',
+  sm: '0 1px 2px rgba(31, 41, 90, 0.06), 0 1px 3px rgba(31, 41, 90, 0.05)',
+  md: '0 4px 14px rgba(31, 41, 90, 0.08), 0 2px 4px rgba(31, 41, 90, 0.05)',
+  lg: '0 18px 44px rgba(31, 41, 90, 0.16), 0 4px 10px rgba(31, 41, 90, 0.06)',
 } as const;
 
 export const breakpoints = { sm: '640px', md: '768px', lg: '1024px', xl: '1280px' } as const;
@@ -173,6 +182,10 @@ export const CONTRAST_PAIRS: ReadonlyArray<readonly [keyof ColorTokens, keyof Co
     ['ring', 'bg', 3, 'focus indicator on page'],
     ['ring', 'surface', 3, 'focus indicator on cards'],
     ['secondary', 'surface', 3, 'icons / large text only'],
+    ['gradientFg', 'gradientFrom', 4.5, 'text on the brand gradient (start)'],
+    ['gradientFg', 'gradientTo', 4.5, 'text on the brand gradient (end)'],
+    ['gradientFrom', 'bg', 4.5, 'gradient headline text on page (start)'],
+    ['gradientTo', 'bg', 4.5, 'gradient headline text on page (end)'],
   ];
 
 // ---------- emitters (pure functions, used by the build script and tests) ----------

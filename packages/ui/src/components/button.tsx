@@ -8,9 +8,11 @@ export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'dang
 export type ButtonSize = 'md' | 'lg' | 'icon';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-primary-fg hover:bg-primary-hover',
-  accent: 'bg-accent text-accent-fg hover:bg-accent-hover',
-  secondary: 'bg-surface text-text border border-border-strong hover:bg-surface-alt',
+  primary:
+    'bg-brand-gradient shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0',
+  accent:
+    'bg-brand-gradient shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0',
+  secondary: 'bg-surface text-text border border-border-strong shadow-sm hover:bg-surface-alt',
   ghost: 'bg-transparent text-text hover:bg-surface-alt',
   danger: 'bg-error text-surface hover:opacity-90',
 };
@@ -50,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       disabled={asChild ? undefined : disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-sm font-semibold transition-colors',
+        'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-200',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variants[variant],

@@ -157,16 +157,34 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
   });
 
-  test('notification bell shows the unread count, lists items and marks one read (count goes down by one and stays down)', async ({
+  test('Ctrl+K opens the jump-to palette; typing filters the pages and Enter opens the match', async ({
     page,
   }) => {
     await signIn(page, 'DELEGATE');
-    // Other tests also notify the delegate, so compare against the starting count rather than assuming it.
+    await page.keyboard.press('Control+k');
+    const box = page.getByRole('combobox', { name: 'Search pages' });
+    await expect(box).toBeFocused();
+    await box.fill('approv');
+    await expect(page.getByRole('option')).toHaveCount(1);
+    await box.press('Enter');
+    await expect(page).toHaveURL(/\/app\/approvals/);
+    await page.keyboard.press('Control+k');
+    await page.getByRole('combobox', { name: 'Search pages' }).fill('zzz');
+    await expect(page.getByText('No pages match.')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('combobox', { name: 'Search pages' })).toHaveCount(0);
+  });
+
+  test('notification bell shows the unread count, lists items and marks one read (count goes down by one and stays down)', async ({
+    page,
+  }) => {
+    await signIn(page, 'LEGAL');
+    // Other tests may add notifications for this user, so compare against the starting count rather than assuming it.
     const bell = page.getByRole('button', { name: /^Notifications, \d+ unread$/ });
     const start = Number(/(\d+) unread/.exec((await bell.getAttribute('aria-label')) ?? '')![1]);
     expect(start).toBeGreaterThanOrEqual(1);
     await bell.click();
-    await expect(page.getByText('Plan awaiting your approval').first()).toBeVisible();
+    await expect(page.getByText('Draft contract ready for review').first()).toBeVisible();
     await page.getByRole('button', { name: 'Mark read' }).first().click();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: `Notifications, ${start - 1} unread` })).toBeVisible();

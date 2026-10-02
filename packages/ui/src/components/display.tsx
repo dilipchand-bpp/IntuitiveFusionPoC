@@ -34,7 +34,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold',
         cls,
         className,
       )}
@@ -49,7 +49,7 @@ export function Badge({
 export function Card({ className, ...p }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-md border border-border bg-surface p-6 text-text shadow-sm', className)}
+      className={cn('rounded-lg border border-border bg-surface p-6 text-text shadow-sm', className)}
       {...p}
     />
   );
@@ -64,12 +64,18 @@ export function Table({
 }: TableHTMLAttributes<HTMLTableElement> & { caption: string }) {
   return (
     <div
-      className="w-full overflow-x-auto rounded-md border border-border"
+      className="w-full overflow-x-auto rounded-lg border border-border bg-surface shadow-sm"
       tabIndex={0}
       role="region"
       aria-label={caption}
     >
-      <table className={cn('w-full border-collapse text-left text-sm', className)} {...p}>
+      <table
+        className={cn(
+          'w-full border-collapse text-left text-sm [&_tbody_tr:hover]:bg-surface-alt/60',
+          className,
+        )}
+        {...p}
+      >
         <caption className="sr-only">{caption}</caption>
         {children}
       </table>
@@ -77,10 +83,17 @@ export function Table({
   );
 }
 export const Th = ({ className, ...p }: HTMLAttributes<HTMLTableCellElement>) => (
-  <th scope="col" className={cn('bg-surface-alt px-4 py-3 font-semibold text-text', className)} {...p} />
+  <th
+    scope="col"
+    className={cn(
+      'bg-surface-alt px-4 py-3 text-xs font-bold uppercase tracking-wide text-text-muted',
+      className,
+    )}
+    {...p}
+  />
 );
 export const Td = ({ className, ...p }: HTMLAttributes<HTMLTableCellElement>) => (
-  <td className={cn('border-t border-border px-4 py-3 text-text', className)} {...p} />
+  <td className={cn('border-t border-border px-4 py-3.5 text-text', className)} {...p} />
 );
 
 // ---------------- Stepper ----------------
@@ -147,7 +160,7 @@ export function Stamp({
 // ---------------- AI badge (R3: mock AI must never be mistaken for real) ----------------
 export function AiBadge({ kind = 'simulated' }: { kind?: 'simulated' | 'drafted' }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-accent bg-surface px-2.5 py-0.5 text-xs font-semibold text-accent">
+    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">
       {kind === 'simulated' ? (
         <Bot className="size-3.5" aria-hidden="true" />
       ) : (
@@ -177,9 +190,11 @@ export function ComingSoon({
   return (
     <section
       aria-labelledby="cs-title"
-      className="rounded-md border border-dashed border-border-strong bg-surface p-8 text-center"
+      className="rounded-lg border border-dashed border-border-strong bg-surface p-10 text-center"
     >
-      <Clock className="mx-auto size-8 text-secondary" aria-hidden="true" />
+      <span className="icon-tile mx-auto">
+        <Clock className="size-6" aria-hidden="true" />
+      </span>
       <h2 id="cs-title" className="mt-3 font-heading text-xl font-semibold text-text">
         {feature} – coming soon
       </h2>
@@ -197,8 +212,10 @@ export function ComingSoon({
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface p-8 text-center">
-      <Inbox className="size-8 text-secondary" aria-hidden="true" />
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-surface p-10 text-center">
+      <span className="icon-tile">
+        <Inbox className="size-6" aria-hidden="true" />
+      </span>
       <h3 className="font-heading text-lg font-semibold text-text">{title}</h3>
       {body && <p className="max-w-prose text-text-muted">{body}</p>}
       {action}

@@ -50,7 +50,7 @@ export default async function RequestsPage({
         </div>
         {canCreate && (
           <Button asChild variant="accent" size="lg">
-            <Link href="/app/requests/new" className="text-accent-fg no-underline">
+            <Link href="/app/requests/new" className="text-gradient-fg no-underline">
               <Plus className="size-5" aria-hidden="true" />
               New request
             </Link>
@@ -106,7 +106,7 @@ export default async function RequestsPage({
           action={
             canCreate && !q && !status ? (
               <Button asChild variant="accent">
-                <Link href="/app/requests/new" className="text-accent-fg no-underline">
+                <Link href="/app/requests/new" className="text-gradient-fg no-underline">
                   Start your first request
                 </Link>
               </Button>

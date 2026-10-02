@@ -48,7 +48,7 @@ export function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?:
     <nav aria-label="Main" className="flex flex-col gap-4">
       {sections.map((section) => (
         <div key={section} className="flex flex-col gap-1">
-          <p className="px-3 text-xs font-semibold uppercase tracking-wide text-text-muted">{section}</p>
+          <p className="px-3 text-xs font-bold uppercase tracking-widest text-text-muted">{section}</p>
           <ul className="flex flex-col gap-1">
             {items
               .filter((i) => i.section === section)
@@ -69,9 +69,8 @@ export function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?:
                       onClick={onNavigate}
                       aria-current={current ? 'page' : undefined}
                       className={cn(
-                        'flex min-h-[44px] items-center gap-3 rounded-sm px-3 text-sm font-medium text-text no-underline hover:bg-surface-alt',
-                        current &&
-                          'bg-surface-alt font-semibold shadow-[inset_3px_0_0_var(--if-color-accent)]',
+                        'flex min-h-[44px] items-center gap-3 rounded-md px-3 text-sm font-medium text-text no-underline transition-colors hover:bg-surface-alt',
+                        current && 'bg-accent/10 font-semibold text-accent hover:bg-accent/15',
                       )}
                     >
                       <Icon className="size-5 shrink-0" aria-hidden="true" />

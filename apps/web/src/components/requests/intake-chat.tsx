@@ -113,7 +113,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
               data-role={m.role}
               className={
                 m.role === 'USER'
-                  ? 'ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-lg rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-fg'
+                  ? 'ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-lg rounded-br-sm bg-brand-gradient px-3 py-2 text-sm shadow-sm'
                   : 'max-w-[90%] whitespace-pre-wrap break-words rounded-lg rounded-bl-sm bg-surface-alt px-3 py-2 text-sm text-text'
               }
             >
@@ -174,7 +174,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
             <DraftPanel view={view} />
             <div className="mt-5 flex flex-wrap gap-2">
               <Button asChild variant="accent">
-                <Link href={`/app/requests/${view.id}`} className="text-accent-fg no-underline">
+                <Link href={`/app/requests/${view.id}`} className="text-gradient-fg no-underline">
                   Review and submit
                 </Link>
               </Button>

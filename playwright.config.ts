@@ -18,7 +18,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
-  use: { baseURL: WEB_URL, trace: 'retain-on-failure', channel },
+  use: { baseURL: WEB_URL, trace: 'retain-on-failure', channel, reducedMotion: 'reduce' },
   webServer: [
     {
       command:

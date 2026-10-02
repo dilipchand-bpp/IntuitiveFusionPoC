@@ -1,39 +1,23 @@
-@import 'tailwindcss';
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/plus-jakarta-sans';
-/* Generated tokens + Tailwind @theme mapping: edit packages/ui/src/theme.ts, never this file. */
-@import '../../../../packages/ui/src/theme.css';
-@source '../../../../packages/ui/src';
+p='packages/ui/src/theme.ts'
+t=open(p,encoding='utf8',newline='').read()
+t=t.replace("  overlay: string; // modal scrim\n};","  gradientFrom: string; // brand gradient start (hero, primary CTA, accents)\n  gradientTo: string; // brand gradient end\n  gradientFg: string; // text/icons placed on the gradient\n  overlay: string; // modal scrim\n};")
+t=t.replace("  overlay: 'rgba(20, 23, 30, 0.55)',\n};","  gradientFrom: '#4254C5',\n  gradientTo: '#7A45D6',\n  gradientFg: '#FFFFFF',\n  overlay: 'rgba(20, 23, 30, 0.55)',\n};")
+t=t.replace("  overlay: 'rgba(0, 0, 0, 0.65)',\n};","  gradientFrom: '#8C9BFF',\n  gradientTo: '#B79CFF',\n  gradientFg: '#10132B',\n  overlay: 'rgba(0, 0, 0, 0.65)',\n};")
+t=t.replace("export const radius = { sm: '6px', md: '10px', lg: '16px', full: '999px' } as const;","export const radius = { sm: '8px', md: '12px', lg: '20px', full: '999px' } as const;")
+a=t.index("export const shadow = {")
+b=t.index("} as const;",a)+len("} as const;")
+t=t[:a]+"""export const shadow = {
+  sm: '0 1px 2px rgba(31, 41, 90, 0.06), 0 1px 3px rgba(31, 41, 90, 0.05)',
+  md: '0 4px 14px rgba(31, 41, 90, 0.08), 0 2px 4px rgba(31, 41, 90, 0.05)',
+  lg: '0 18px 44px rgba(31, 41, 90, 0.16), 0 4px 10px rgba(31, 41, 90, 0.06)',
+} as const;"""+t[b:]
+t=t.replace("    ['secondary', 'surface', 3, 'icons / large text only'],","    ['secondary', 'surface', 3, 'icons / large text only'],\n    ['gradientFg', 'gradientFrom', 4.5, 'text on the brand gradient (start)'],\n    ['gradientFg', 'gradientTo', 4.5, 'text on the brand gradient (end)'],\n    ['gradientFrom', 'bg', 4.5, 'gradient headline text on page (start)'],\n    ['gradientTo', 'bg', 4.5, 'gradient headline text on page (end)'],")
+open(p,'w',encoding='utf8',newline='').write(t)
 
-@layer base {
-  html {
-    background: var(--if-color-bg);
-  }
-  body {
-    background: var(--if-color-bg);
-    color: var(--if-color-text);
-    font-family: var(--if-font-body);
-    font-size: var(--if-text-base);
-    line-height: var(--if-leading-base);
-    -webkit-font-smoothing: antialiased;
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: var(--if-font-heading);
-    line-height: 1.2;
-  }
-  a {
-    color: var(--if-color-accent);
-    text-underline-offset: 3px;
-  }
-  :focus-visible {
-    outline: 2px solid var(--if-color-ring);
-    outline-offset: 2px;
-  }
-}
-
+# css utilities
+p='apps/web/src/app/globals.css'
+t=open(p,encoding='utf8',newline='').read()
+t+='''
 /* Reusable look-and-feel built only from theme tokens (colours, radii, shadows come from theme.ts). */
 @layer components {
   .bg-brand-gradient {
@@ -49,16 +33,8 @@
   .bg-hero-mesh {
     background-color: var(--if-color-bg);
     background-image:
-      radial-gradient(
-        60rem 28rem at 85% -10%,
-        color-mix(in srgb, var(--if-color-gradient-to) 22%, transparent),
-        transparent 70%
-      ),
-      radial-gradient(
-        48rem 26rem at 0% 0%,
-        color-mix(in srgb, var(--if-color-gradient-from) 20%, transparent),
-        transparent 70%
-      );
+      radial-gradient(60rem 28rem at 85% -10%, color-mix(in srgb, var(--if-color-gradient-to) 22%, transparent), transparent 70%),
+      radial-gradient(48rem 26rem at 0% 0%, color-mix(in srgb, var(--if-color-gradient-from) 20%, transparent), transparent 70%);
   }
   .bg-grid {
     background-image:
@@ -137,3 +113,5 @@
     }
   }
 }
+'''
+open(p,'w',encoding='utf8',newline='').write(t)

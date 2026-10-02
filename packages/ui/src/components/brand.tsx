@@ -23,7 +23,7 @@ export function Logo({
         width={size}
         height={size}
         alt={withName ? '' : 'Intuitive Fusion'}
-        className="rounded-sm"
+        className="rounded-md shadow-sm"
       />
       {withName && (
         <span

@@ -53,7 +53,7 @@ export default async function ApprovalsPage() {
                 </p>
               </div>
               <Button asChild variant="accent">
-                <Link href={`/app/plans/${r.requestId}`} className="text-accent-fg no-underline">
+                <Link href={`/app/plans/${r.requestId}`} className="text-gradient-fg no-underline">
                   Review and decide
                 </Link>
               </Button>

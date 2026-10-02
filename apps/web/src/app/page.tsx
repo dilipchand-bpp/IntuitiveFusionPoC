@@ -1,4 +1,15 @@
-import { Bot, FileCheck2, Gauge, Layers, Link2, ShieldCheck, Smartphone, UserCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  Bot,
+  CheckCircle2,
+  FileCheck2,
+  Gauge,
+  Layers,
+  Link2,
+  ShieldCheck,
+  Smartphone,
+  UserCheck,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Accordion, Button } from '@if/ui';
@@ -126,50 +137,71 @@ const faqs = [
 
 function Section({
   id,
+  eyebrow,
   title,
   intro,
   children,
 }: {
   id: string;
+  eyebrow?: string;
   title: string;
   intro?: string;
   children: ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-20 py-14">
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-20 py-20">
       <div className="mx-auto max-w-6xl px-4">
-        <h2 id={`${id}-h`} className="text-3xl font-bold">
-          {title}
-        </h2>
-        {intro && <p className="mt-2 max-w-prose text-text-muted">{intro}</p>}
-        <div className="mt-8">{children}</div>
+        <div className="max-w-2xl">
+          {eyebrow && (
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-accent">{eyebrow}</p>
+          )}
+          <h2 id={`${id}-h`} className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            {title}
+          </h2>
+          {intro && <p className="mt-3 text-lg text-text-muted">{intro}</p>}
+        </div>
+        <div className="mt-10">{children}</div>
       </div>
     </section>
   );
 }
+
+const stats = [
+  ['7', 'connected lifecycle stages'],
+  ['1', 'shared record, entered once'],
+  ['100%', 'of actions in the audit trail'],
+  ['Every gate', 'needs a human decision'],
+];
 
 export default function Home() {
   return (
     <>
       <SiteHeader />
       <main id="main">
-        <section aria-labelledby="hero-h" className="bg-surface">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 lg:grid-cols-2">
-            <div className="flex flex-col gap-6">
-              <p className="w-fit rounded-full border border-border bg-surface-alt px-3 py-1 text-sm font-semibold text-text-muted">
+        <section aria-labelledby="hero-h" className="bg-hero-mesh relative overflow-hidden">
+          <div aria-hidden="true" className="bg-grid absolute inset-0" />
+          <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 pb-24 pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:pt-24">
+            <div className="flex flex-col gap-7">
+              <p className="reveal flex w-fit items-center gap-2 rounded-full border border-border bg-surface/80 px-3.5 py-1.5 text-sm font-semibold text-text shadow-sm">
+                <span aria-hidden="true" className="pulse-dot size-2 rounded-full bg-success" />
                 The autonomous sourcing engine
               </p>
-              <h1 id="hero-h" className="text-4xl font-extrabold leading-tight sm:text-5xl">
-                From request to signed contract, in one conversation.
+              <h1
+                id="hero-h"
+                className="reveal text-5xl font-extrabold leading-[1.05] tracking-tight [--d:80ms] sm:text-6xl"
+              >
+                From request to signed contract,{' '}
+                <span className="text-brand-gradient">in one conversation.</span>
               </h1>
-              <p className="max-w-prose text-lg text-text-muted">
+              <p className="reveal max-w-prose text-lg text-text-muted [--d:160ms]">
                 Cut re-keying, close compliance gaps and keep value from leaking after signature. Intuitive
                 Fusion turns plain-language requests into governed, auditable procurement.
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="reveal flex flex-wrap gap-3 [--d:240ms]">
                 <Button asChild size="lg" variant="accent">
-                  <Link href="/login" className="text-accent-fg no-underline">
+                  <Link href="/login" className="text-gradient-fg no-underline">
                     Get started
+                    <ArrowRight className="size-5" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="secondary">
@@ -178,15 +210,37 @@ export default function Home() {
                   </a>
                 </Button>
               </div>
+              <ul className="reveal flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-text-muted [--d:320ms]">
+                {['Speak or type your request', 'AI drafts, people decide', 'Audit-ready by default'].map(
+                  (x) => (
+                    <li key={x} className="flex items-center gap-1.5">
+                      <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
+                      {x}
+                    </li>
+                  ),
+                )}
+              </ul>
             </div>
-            <div className="flex justify-center lg:justify-end">
+            <div className="reveal flex justify-center [--d:200ms] lg:justify-end">
               <ConversationMock />
             </div>
           </div>
         </section>
 
+        <section aria-label="At a glance" className="border-y border-border bg-surface">
+          <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-y-6 px-4 py-8 lg:grid-cols-4">
+            {stats.map(([n, l]) => (
+              <div key={l} className="flex flex-col items-center gap-1 text-center">
+                <dt className="font-heading text-3xl font-extrabold text-brand-gradient">{n}</dt>
+                <dd className="text-sm text-text-muted">{l}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
         <Section
           id="lifecycle"
+          eyebrow="Platform"
           title="One platform for the full lifecycle"
           intro="Seven connected stages share one record, so information entered once is reused everywhere."
         >
@@ -197,30 +251,52 @@ export default function Home() {
         </Section>
 
         <div className="bg-surface-alt">
-          <Section id="features" title="Key features and benefits">
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map((f) => (
+          <Section
+            id="features"
+            eyebrow="Features"
+            title="Key features and benefits"
+            intro="Everything a procurement team needs, with the controls an auditor expects."
+          >
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {features.map((f, i) => (
                 <li
                   key={f.title}
-                  className="flex flex-col gap-2 rounded-md border border-border bg-surface p-5 text-text shadow-sm"
+                  className={`card-lift reveal-scroll flex flex-col gap-3 rounded-lg p-6 shadow-sm ${
+                    i === 0 ? 'bg-brand-gradient shadow-md' : 'border border-border bg-surface text-text'
+                  } ${[0, 3, 6, 7].includes(i) ? 'sm:col-span-2' : ''}`}
                 >
-                  <span className="text-accent">{f.icon}</span>
-                  <h3 className="font-heading text-lg font-semibold">{f.title}</h3>
-                  <p className="text-sm text-text-muted">{f.text}</p>
+                  <span
+                    className={
+                      i === 0
+                        ? 'inline-flex size-11 items-center justify-center rounded-md bg-white/20'
+                        : 'icon-tile'
+                    }
+                  >
+                    {f.icon}
+                  </span>
+                  <h3 className="font-heading text-lg font-bold">{f.title}</h3>
+                  <p className={i === 0 ? 'text-sm opacity-95' : 'text-sm text-text-muted'}>{f.text}</p>
                 </li>
               ))}
             </ul>
           </Section>
         </div>
 
-        <Section id="how-it-works" title="How it works">
-          <ol className="grid gap-4 md:grid-cols-4">
+        <Section id="how-it-works" eyebrow="Process" title="How it works">
+          <ol className="relative grid gap-5 md:grid-cols-4">
+            <span
+              aria-hidden="true"
+              className="absolute left-[12%] right-[12%] top-[2.1rem] hidden h-0.5 bg-gradient-to-r from-accent/60 to-gradient-to/60 md:block"
+            />
             {steps.map((s) => (
-              <li key={s.n} className="flex flex-col gap-2 rounded-md border border-border bg-surface p-5">
-                <span className="inline-flex size-9 items-center justify-center rounded-full bg-accent font-bold text-accent-fg">
+              <li
+                key={s.n}
+                className="card-lift reveal-scroll relative flex flex-col gap-3 rounded-lg border border-border bg-surface p-6 shadow-sm"
+              >
+                <span className="inline-flex size-10 items-center justify-center rounded-full bg-brand-gradient font-extrabold shadow-md">
                   {s.n}
                 </span>
-                <h3 className="font-heading text-lg font-semibold">{s.title}</h3>
+                <h3 className="font-heading text-lg font-bold">{s.title}</h3>
                 <p className="text-sm text-text-muted">{s.text}</p>
               </li>
             ))}
@@ -230,14 +306,20 @@ export default function Home() {
         <div className="bg-surface-alt">
           <Section
             id="trust"
+            eyebrow="Trust"
             title="Security, trust and compliance"
             intro="Controls are designed in from the start. Alignment is by design; independent certification and IRAP assessment have not been performed on this proof of concept."
           >
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {trust.map(([t, d]) => (
-                <li key={t} className="rounded-md border border-border bg-surface p-5">
-                  <h3 className="flex items-center gap-2 font-heading text-lg font-semibold">
-                    <ShieldCheck className="size-5 text-success" aria-hidden="true" />
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-6">
+              {trust.map(([t, d], i) => (
+                <li
+                  key={t}
+                  className={`card-lift rounded-lg border border-border bg-surface p-6 shadow-sm ${i < 3 ? 'lg:col-span-2' : 'lg:col-span-3'} ${i === 4 ? 'sm:col-span-2' : ''}`}
+                >
+                  <h3 className="flex items-center gap-3 font-heading text-lg font-bold">
+                    <span className="icon-tile !size-10 shrink-0">
+                      <ShieldCheck className="size-5" aria-hidden="true" />
+                    </span>
                     {t}
                   </h3>
                   <p className="mt-1 text-sm text-text-muted">{d}</p>
@@ -251,20 +333,32 @@ export default function Home() {
           </Section>
         </div>
 
-        <Section id="faq" title="Frequently asked questions">
+        <Section id="faq" eyebrow="FAQ" title="Frequently asked questions">
           <div className="max-w-3xl">
             <Accordion items={faqs.map((f) => ({ q: f.q, a: <p>{f.a}</p> }))} />
           </div>
         </Section>
 
-        <section aria-labelledby="cta-h" className="bg-primary text-primary-fg">
-          <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
-            <h2 id="cta-h" className="text-2xl font-bold">
-              Ready to see the proof of concept?
-            </h2>
-            <Button asChild size="lg" variant="accent">
-              <Link href="/login" className="text-accent-fg no-underline">
+        <section aria-labelledby="cta-h" className="px-4 pb-20">
+          <div className="bg-brand-gradient relative mx-auto flex max-w-6xl flex-col items-start gap-6 overflow-hidden rounded-lg px-8 py-12 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-12">
+            <span
+              aria-hidden="true"
+              className="absolute -right-10 -top-16 size-56 rounded-full bg-white/10"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute -bottom-20 right-40 size-44 rounded-full bg-white/10"
+            />
+            <div className="relative">
+              <h2 id="cta-h" className="text-3xl font-extrabold tracking-tight">
+                Ready to see the proof of concept?
+              </h2>
+              <p className="mt-1 opacity-90">Sign in with a demo account and follow a request end to end.</p>
+            </div>
+            <Button asChild size="lg" variant="secondary" className="relative">
+              <Link href="/login" className="text-text no-underline">
                 Log in
+                <ArrowRight className="size-5" aria-hidden="true" />
               </Link>
             </Button>
           </div>

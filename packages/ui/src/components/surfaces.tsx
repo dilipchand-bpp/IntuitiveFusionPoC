@@ -180,12 +180,13 @@ export function KpiCard({
   icon?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-border bg-surface p-5 text-text shadow-sm">
-      <div className="flex items-center justify-between text-sm font-semibold text-text-muted">
+    <div className="card-lift relative flex flex-col gap-1 overflow-hidden rounded-lg border border-border bg-surface p-5 text-text shadow-sm">
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" />
+      <div className="flex items-center justify-between gap-2 text-sm font-semibold text-text-muted">
         <span>{label}</span>
-        {icon}
+        {icon && <span className="icon-tile !size-9 shrink-0">{icon}</span>}
       </div>
-      <p className="break-words font-heading text-2xl font-bold">{value}</p>
+      <p className="mt-1 break-words font-heading text-3xl font-extrabold tracking-tight">{value}</p>
       {hint && <p className="text-sm text-text-muted">{hint}</p>}
     </div>
   );
