@@ -23,8 +23,9 @@
     "audit:ci": "npm audit --audit-level=high",
     "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "prepare": "husky",
-    "db:reset": "npm run db:reset -w @if/api && npm run db:seed -w @if/api",
-    "db:seed": "npm run db:seed -w @if/api"
+    "db:reset": "node scripts/ensure-env.mjs && npm run db:reset -w @if/api && npm run db:seed -w @if/api",
+    "db:seed": "node scripts/ensure-env.mjs && npm run db:seed -w @if/api",
+    "predev": "node scripts/ensure-env.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,json,md,css,yml}": "prettier --write"
