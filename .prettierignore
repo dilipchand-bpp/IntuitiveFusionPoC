@@ -1,0 +1,13 @@
+node_modules
+.next
+dist
+coverage
+var
+docs
+spikes
+_work
+package-lock.json
+playwright-report
+test-results
+next-env.d.ts
+*.tsbuildinfo

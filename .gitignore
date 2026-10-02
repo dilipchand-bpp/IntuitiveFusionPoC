@@ -15,3 +15,7 @@ _work/coverage.json
 __pycache__/
 spikes/node_modules/
 spikes/package-lock.json
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
