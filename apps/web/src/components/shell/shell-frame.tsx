@@ -48,12 +48,12 @@ export function ShellFrame({
         </Button>
         <Link
           href={user.homePath}
-          className="flex items-center text-text no-underline"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text no-underline"
           aria-label="Intuitive Fusion home"
         >
           <Logo withName compact size={36} />
         </Link>
-        <span className="mx-1 hidden rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent sm:inline">
+        <span className="mx-1 hidden rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent xl:inline">
           Proof of concept · synthetic data
         </span>
         <div className="ml-auto flex items-center gap-1">

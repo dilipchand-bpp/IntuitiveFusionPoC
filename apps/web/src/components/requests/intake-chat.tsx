@@ -149,7 +149,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKey}
-            rows={2}
+            rows={3}
             maxLength={4000}
             placeholder="Describe what you need, for example: Run an RFx for facilities cleaning, three-year term, about $1.2M"
             className="min-h-[44px] min-w-0 basis-full resize-none sm:flex-1 sm:basis-0 rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder:text-text-muted"

@@ -47,16 +47,18 @@ export default async function PlansPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.requestId}>
-                <Td className="font-mono text-xs">{r.requestNumber}</Td>
-                <Td>
+                <Td label="Request" className="whitespace-nowrap font-mono text-xs">
+                  {r.requestNumber}
+                </Td>
+                <Td label="Title">
                   <Link href={`/app/plans/${r.requestId}`}>{r.title}</Link>
                 </Td>
-                <Td>
+                <Td label="Plan status">
                   <Badge tone={PLAN_STATUS_TONE[r.status] ?? 'neutral'}>
                     {PLAN_STATUS_LABEL[r.status] ?? r.status}
                   </Badge>
                 </Td>
-                <Td>
+                <Td label="Complexity">
                   {r.complexity ? (
                     <Badge tone={COMPLEXITY_TONE[r.complexity] ?? 'neutral'}>
                       {COMPLEXITY_LABEL[r.complexity]}
@@ -65,8 +67,12 @@ export default async function PlansPage() {
                     '–'
                   )}
                 </Td>
-                <Td className="text-right">{aud.format(r.estimatedValue)}</Td>
-                <Td className="whitespace-nowrap">{when.format(new Date(r.updatedAt))}</Td>
+                <Td label="Value" className="text-right">
+                  {aud.format(r.estimatedValue)}
+                </Td>
+                <Td label="Updated" className="whitespace-nowrap">
+                  {when.format(new Date(r.updatedAt))}
+                </Td>
               </tr>
             ))}
           </tbody>

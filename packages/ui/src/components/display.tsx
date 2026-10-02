@@ -72,6 +72,8 @@ export function Table({
       <table
         className={cn(
           'w-full border-collapse text-left text-sm [&_tbody_tr:hover]:bg-surface-alt/60',
+          // Phones: each row becomes a labelled card (no sideways scrolling). Cells need a `label`.
+          'max-md:block max-md:[&_tbody]:block max-md:[&_thead]:sr-only max-md:[&_tbody_tr]:block max-md:[&_tbody_tr]:border-t max-md:[&_tbody_tr]:border-border max-md:[&_tbody_tr]:px-1 max-md:[&_tbody_tr]:py-2 max-md:[&_tbody_tr:first-child]:border-t-0',
           className,
         )}
         {...p}
@@ -92,8 +94,17 @@ export const Th = ({ className, ...p }: HTMLAttributes<HTMLTableCellElement>) =>
     {...p}
   />
 );
-export const Td = ({ className, ...p }: HTMLAttributes<HTMLTableCellElement>) => (
-  <td className={cn('border-t border-border px-4 py-3.5 text-text', className)} {...p} />
+export const Td = ({ className, label, ...p }: HTMLAttributes<HTMLTableCellElement> & { label?: string }) => (
+  <td
+    data-label={label}
+    className={cn(
+      'border-t border-border px-4 py-3.5 text-text',
+      'max-md:flex max-md:items-start max-md:justify-between max-md:gap-4 max-md:border-t-0 max-md:px-3 max-md:py-1.5 max-md:text-right',
+      'max-md:before:shrink-0 max-md:before:text-left max-md:before:text-xs max-md:before:font-bold max-md:before:uppercase max-md:before:tracking-wide max-md:before:text-text-muted max-md:before:content-[attr(data-label)]',
+      className,
+    )}
+    {...p}
+  />
 );
 
 // ---------------- Stepper ----------------

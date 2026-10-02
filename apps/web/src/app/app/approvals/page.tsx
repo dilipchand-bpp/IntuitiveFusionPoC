@@ -41,7 +41,7 @@ export default async function ApprovalsPage() {
           {rows.map((r) => (
             <li
               key={r.requestId}
-              className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-surface p-4"
+              className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center"
               data-testid="approval-item"
             >
               <div className="min-w-0 flex-1">

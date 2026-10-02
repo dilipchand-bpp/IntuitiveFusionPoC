@@ -68,7 +68,10 @@ export default async function Dashboard() {
         </p>
       </header>
 
-      <section aria-label="Key figures" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section
+        aria-label="Key figures"
+        className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5 [&>:last-child:nth-child(odd)]:col-span-2 xl:[&>:last-child:nth-child(odd)]:col-span-1"
+      >
         <KpiCard
           label="Active procurements"
           value={k.activeProcurements}
@@ -144,13 +147,17 @@ export default async function Dashboard() {
               <tbody>
                 {k.recent.map((r) => (
                   <tr key={r.id}>
-                    <Td className="font-mono text-xs">{r.number}</Td>
-                    <Td>{r.title}</Td>
-                    <Td>{PHASE_LABEL[r.phase] ?? r.phase}</Td>
-                    <Td>
+                    <Td label="Number" className="whitespace-nowrap font-mono text-xs">
+                      {r.number}
+                    </Td>
+                    <Td label="Title">{r.title}</Td>
+                    <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
+                    <Td label="Status">
                       <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>{label(r.status)}</Badge>
                     </Td>
-                    <Td className="text-right">{aud.format(r.estimatedValue)}</Td>
+                    <Td label="Value" className="text-right">
+                      {aud.format(r.estimatedValue)}
+                    </Td>
                   </tr>
                 ))}
               </tbody>

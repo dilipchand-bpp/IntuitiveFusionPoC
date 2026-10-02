@@ -124,23 +124,25 @@ export default async function RequestsPage({
                 <Th>Status</Th>
                 <Th>Complexity</Th>
                 <Th className="text-right">Value</Th>
-                <Th>Updated</Th>
+                <Th className="md:max-lg:hidden">Updated</Th>
               </tr>
             </thead>
             <tbody>
               {data.items.map((r) => (
                 <tr key={r.id}>
-                  <Td className="font-mono text-xs">{r.number}</Td>
-                  <Td>
+                  <Td label="Number" className="whitespace-nowrap font-mono text-xs">
+                    {r.number}
+                  </Td>
+                  <Td label="Title">
                     <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
                   </Td>
-                  <Td>{PHASE_LABEL[r.phase] ?? r.phase}</Td>
-                  <Td>
+                  <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
+                  <Td label="Status">
                     <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>
                       {STATUS_LABEL[r.status] ?? r.status}
                     </Badge>
                   </Td>
-                  <Td>
+                  <Td label="Complexity">
                     {r.complexity ? (
                       <Badge tone={COMPLEXITY_TONE[r.complexity] ?? 'neutral'}>
                         {COMPLEXITY_LABEL[r.complexity]}
@@ -149,8 +151,12 @@ export default async function RequestsPage({
                       '–'
                     )}
                   </Td>
-                  <Td className="text-right">{aud.format(r.estimatedValue)}</Td>
-                  <Td className="whitespace-nowrap">{when.format(new Date(r.updatedAt))}</Td>
+                  <Td label="Value" className="text-right">
+                    {aud.format(r.estimatedValue)}
+                  </Td>
+                  <Td label="Updated" className="whitespace-nowrap md:max-lg:hidden">
+                    {when.format(new Date(r.updatedAt))}
+                  </Td>
                 </tr>
               ))}
             </tbody>
