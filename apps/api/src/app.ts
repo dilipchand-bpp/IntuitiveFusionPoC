@@ -14,6 +14,7 @@ import { MockErpBudgetService, type ErpBudgetService } from './adapters/erp.js';
 import type { Database } from './db/client.js';
 import { registerIdempotency } from './http/idempotency.js';
 import { registerIntakeRoutes } from './modules/intake/routes.js';
+import { registerPlanRoutes } from './modules/plan/routes.js';
 import { AppError } from './http/errors.js';
 import { registerShellRoutes } from './modules/shell.js';
 import { registerSpecStubs } from './spec-routes.js';
@@ -117,6 +118,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   const ai = deps.ai ?? new MockAiProvider();
   const erp = deps.erp ?? new MockErpBudgetService();
   for (const k of registerIntakeRoutes(app, API_PREFIX, { ...guardDeps, ai, erp })) implemented.add(k);
+  for (const k of registerPlanRoutes(app, API_PREFIX, { ...guardDeps, ai })) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

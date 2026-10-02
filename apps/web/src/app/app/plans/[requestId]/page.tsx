@@ -1,0 +1,46 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { EmptyState } from '@if/ui';
+import { PlanWorkspace } from '@/components/plan/plan-workspace';
+import type { PlanView } from '@/components/plan/types';
+import { apiGetResult, getSessionUser } from '@/lib/session';
+
+export const metadata = { title: 'Procurement plan – Intuitive Fusion' };
+
+export default async function PlanPage({ params }: { params: Promise<{ requestId: string }> }) {
+  const { requestId } = await params;
+  if (!/^[0-9a-f-]{36}$/i.test(requestId)) notFound();
+  const [user, res] = await Promise.all([
+    getSessionUser(),
+    apiGetResult<PlanView>(`/requests/${requestId}/plan`),
+  ]);
+  if (!user) notFound();
+  if (res.status === 404 || res.status === 403) notFound(); // not visible = not there
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm">
+        <Link href="/app/plans">← Procurement plans</Link>
+      </p>
+      {res.data ? (
+        <>
+          <h1 className="text-3xl font-bold">
+            <span className="font-mono text-lg text-text-muted">{res.data.requestNumber}</span>{' '}
+            {res.data.title}
+          </h1>
+          <PlanWorkspace plan={res.data} csrf={user.csrfToken} userId={user.id} />
+        </>
+      ) : res.code === 'REQUEST_NOT_SUBMITTED' ? (
+        <EmptyState
+          title="This request has not been submitted yet"
+          body="The plan is created once the request is submitted."
+          action={<Link href={`/app/requests/${requestId}`}>Back to the request</Link>}
+        />
+      ) : (
+        <EmptyState
+          title="The plan could not be loaded"
+          body="Please refresh the page; if the problem continues, contact support."
+        />
+      )}
+    </div>
+  );
+}

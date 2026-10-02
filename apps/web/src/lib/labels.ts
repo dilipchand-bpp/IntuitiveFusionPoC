@@ -69,3 +69,34 @@ export function displayValue(key: string, value: string | undefined): string {
   if (key === 'termMonths') return `${value} months`;
   return value;
 }
+
+export const PLAN_STATUS_LABEL: Record<string, string> = {
+  NOT_STARTED: 'Not started',
+  DRAFT: 'Draft',
+  AWAITING_SIGNOFF: 'Awaiting checks',
+  AWAITING_APPROVAL: 'Awaiting approval',
+  APPROVED_LOCKED: 'Approved and locked',
+  REOPENED: 'Reopened',
+  REJECTED: 'Returned',
+};
+export const PLAN_STATUS_TONE: Record<string, BadgeTone> = {
+  NOT_STARTED: 'neutral',
+  DRAFT: 'neutral',
+  AWAITING_SIGNOFF: 'warning',
+  AWAITING_APPROVAL: 'info',
+  APPROVED_LOCKED: 'success',
+  REOPENED: 'warning',
+  REJECTED: 'error',
+};
+export const COI_LABEL: Record<string, string> = {
+  PENDING: 'Awaiting decision',
+  IMMATERIAL: 'No conflict / immaterial',
+  MANAGEABLE: 'Manageable',
+  MATERIAL: 'Material',
+};
+export const COI_TONE: Record<string, BadgeTone> = {
+  PENDING: 'warning',
+  IMMATERIAL: 'success',
+  MANAGEABLE: 'info',
+  MATERIAL: 'error',
+};

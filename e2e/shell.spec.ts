@@ -157,17 +157,21 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
   });
 
-  test('notification bell shows the unread count, lists items and marks them read', async ({ page }) => {
+  test('notification bell shows the unread count, lists items and marks one read (count goes down by one and stays down)', async ({
+    page,
+  }) => {
     await signIn(page, 'DELEGATE');
-    const bell = page.getByRole('button', { name: /Notifications, 1 unread/ });
-    await expect(bell).toBeVisible();
+    // Other tests also notify the delegate, so compare against the starting count rather than assuming it.
+    const bell = page.getByRole('button', { name: /^Notifications, \d+ unread$/ });
+    const start = Number(/(\d+) unread/.exec((await bell.getAttribute('aria-label')) ?? '')![1]);
+    expect(start).toBeGreaterThanOrEqual(1);
     await bell.click();
-    await expect(page.getByText('Plan awaiting your approval')).toBeVisible();
-    await page.getByRole('button', { name: 'Mark read' }).click();
+    await expect(page.getByText('Plan awaiting your approval').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Mark read' }).first().click();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: /Notifications, 0 unread/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: `Notifications, ${start - 1} unread` })).toBeVisible();
     await page.reload();
-    await expect(page.getByRole('button', { name: /Notifications, 0 unread/ })).toBeVisible(); // persisted server-side
+    await expect(page.getByRole('button', { name: `Notifications, ${start - 1} unread` })).toBeVisible(); // persisted server-side
   });
 
   test('profile menu shows who is signed in and signs out', async ({ page }) => {

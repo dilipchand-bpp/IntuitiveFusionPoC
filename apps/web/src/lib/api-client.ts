@@ -15,7 +15,12 @@ export class ApiError extends Error {
 
 export async function api<T>(
   path: string,
-  opts: { method?: 'GET' | 'POST' | 'PATCH'; body?: unknown; csrf?: string; idempotencyKey?: string } = {},
+  opts: {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
+    body?: unknown;
+    csrf?: string;
+    idempotencyKey?: string;
+  } = {},
 ): Promise<T> {
   const method = opts.method ?? 'GET';
   const headers: Record<string, string> = {};

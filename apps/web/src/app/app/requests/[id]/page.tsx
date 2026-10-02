@@ -24,6 +24,11 @@ export default async function RequestDetail({ params }: { params: Promise<{ id: 
           <Link href="/app/requests">← Requests</Link>
         </p>
         <h1 className="mt-1 text-3xl font-bold">{view.title}</h1>
+        {view.status !== 'DRAFT' && (
+          <p className="mt-2">
+            <Link href={`/app/plans/${view.id}`}>Open the procurement plan →</Link>
+          </p>
+        )}
       </header>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="min-w-0 rounded-md border border-border bg-surface p-4">

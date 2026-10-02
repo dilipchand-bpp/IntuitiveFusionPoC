@@ -734,6 +734,60 @@
     }
    }
   },
+  "/plans": {
+   "get": {
+    "operationId": "listPlans",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Plans visible to the caller (requesters see their own)",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/PlanSummary"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
   "/requests/{id}/plan": {
    "get": {
     "operationId": "getPlan",
@@ -760,8 +814,7 @@
      "CHAIR",
      "LEGAL",
      "PROBITY",
-     "EXEC",
-     "ADMIN"
+     "EXEC"
     ],
     "responses": {
      "200": {
@@ -980,6 +1033,16 @@
      "422": {
       "$ref": "#/components/responses/E422"
      }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UndoRequest"
+       }
+      }
+     }
     }
    }
   },
@@ -1042,7 +1105,7 @@
     "tags": [
      "Plans"
     ],
-    "summary": "Delegate approves/rejects; delegation limit enforced; locks on approval",
+    "summary": "Delegate approves/rejects within their delegation (locks on approval); the independent risk officer signs off the risk gate",
     "parameters": [
      {
       "name": "id",
@@ -1055,7 +1118,9 @@
      }
     ],
     "x-roles": [
-     "DELEGATE"
+     "DELEGATE",
+     "EXEC",
+     "PROBITY"
     ],
     "responses": {
      "200": {
@@ -1250,6 +1315,7 @@
     ],
     "x-roles": [
      "DELEGATE",
+     "EXEC",
      "PROBITY"
     ],
     "responses": {
@@ -4519,6 +4585,24 @@
       "type": "string",
       "format": "uuid"
      },
+     "requestNumber": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "complexity": {
+      "type": "string",
+      "enum": [
+       "LOW",
+       "MEDIUM",
+       "HIGH",
+       "CRITICAL"
+      ]
+     },
      "status": {
       "type": "string",
       "enum": [
@@ -4530,10 +4614,13 @@
        "REJECTED"
       ]
      },
+     "locked": {
+      "type": "boolean"
+     },
      "fields": {
       "type": "array",
       "items": {
-       "$ref": "#/components/schemas/FieldValue"
+       "$ref": "#/components/schemas/PlanField"
       }
      },
      "approvals": {
@@ -4542,11 +4629,38 @@
        "$ref": "#/components/schemas/Approval"
       }
      },
+     "conflicts": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/CoiRecord"
+      }
+     },
+     "gates": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Gate"
+      }
+     },
      "summary": {
       "type": "string"
      },
+     "summaryPoints": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
      "version": {
       "type": "integer"
+     },
+     "permissions": {
+      "$ref": "#/components/schemas/PlanPermissions"
+     },
+     "undoAvailable": {
+      "type": "boolean"
+     },
+     "undoToken": {
+      "type": "string"
      }
     },
     "additionalProperties": false,
@@ -4556,6 +4670,135 @@
      "status",
      "fields",
      "version"
+    ]
+   },
+   "PlanField": {
+    "type": "object",
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "value": {
+      "type": "string"
+     },
+     "paragraphs": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "USER",
+       "AI",
+       "SYSTEM",
+       "MIGRATED"
+      ]
+     },
+     "aiDrafted": {
+      "type": "boolean"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "key",
+     "label",
+     "source"
+    ]
+   },
+   "PlanPermissions": {
+    "type": "object",
+    "properties": {
+     "canEdit": {
+      "type": "boolean"
+     },
+     "canSubmit": {
+      "type": "boolean"
+     },
+     "canApprove": {
+      "type": "boolean"
+     },
+     "canReopen": {
+      "type": "boolean"
+     },
+     "canDeclareConflict": {
+      "type": "boolean"
+     },
+     "canDecideConflict": {
+      "type": "boolean"
+     },
+     "canSignOffRisk": {
+      "type": "boolean"
+     },
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "canEdit",
+     "canSubmit",
+     "canApprove",
+     "canReopen"
+    ]
+   },
+   "PlanSummary": {
+    "type": "object",
+    "properties": {
+     "planId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestNumber": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "complexity": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "requestId",
+     "requestNumber",
+     "title",
+     "status"
+    ]
+   },
+   "UndoRequest": {
+    "type": "object",
+    "properties": {
+     "undoToken": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "undoToken"
     ]
    },
    "FieldUpdate": {
@@ -4680,6 +4923,12 @@
      "comment": {
       "type": "string",
       "maxLength": 2000
+     },
+     "gate": {
+      "type": "string",
+      "enum": [
+       "RISK_SIGNOFF"
+      ]
      }
     },
     "additionalProperties": false,
@@ -4731,6 +4980,12 @@
      "userId": {
       "type": "string",
       "format": "uuid"
+     },
+     "userName": {
+      "type": "string"
+     },
+     "rationale": {
+      "type": "string"
      },
      "scope": {
       "type": "string",

@@ -12,6 +12,9 @@ import {
   parseTermMonths,
 } from '../modules/intake/extract.js';
 import { FIELD_BY_KEY, missingMandatory, nextQuestions, type FieldMap } from '../modules/intake/fields.js';
+import { draftPlan, type PlanDraftInput } from '../modules/plan/generate.js';
+import { PLAN_FIELD_BY_KEY } from '../modules/plan/fields.js';
+import { applyIntent, describeIntent, parseInstruction } from '../modules/plan/instructions.js';
 
 export interface AiDraftInput {
   text: string;
@@ -35,7 +38,17 @@ export interface AiProvider {
   /** True for any non-production model; surfaced in the UI as "Simulated AI". */
   readonly simulated: boolean;
   draftRequest(input: AiDraftInput): Promise<AiDraftResult>;
+  /** Drafts every plan section from the request (FR-0075). Output is a proposal; the caller marks it AI-drafted. */
+  draftPlan(input: PlanDraftInput): Promise<Record<string, string>>;
+  /** Understands "change paragraph 3 of the background to ...". Never guesses: returns a hint when unsure. */
+  interpretPlanInstruction(
+    text: string,
+    current: Record<string, string | undefined>,
+  ): Promise<PlanInstructionResult>;
 }
+export type PlanInstructionResult =
+  | { ok: true; key: string; label: string; newValue: string; explanation: string }
+  | { ok: false; hint: string };
 
 const fmtMoney = (v: string) => `AUD ${Number(v).toLocaleString('en-AU')}`;
 const describe = (key: string, value: string) => {
@@ -46,6 +59,32 @@ const describe = (key: string, value: string) => {
 export class MockAiProvider implements AiProvider {
   readonly name = 'mock-rules-v1';
   readonly simulated = true;
+
+  async draftPlan(input: PlanDraftInput): Promise<Record<string, string>> {
+    return draftPlan(input);
+  }
+
+  async interpretPlanInstruction(
+    text: string,
+    current: Record<string, string | undefined>,
+  ): Promise<PlanInstructionResult> {
+    const parsed = parseInstruction(text);
+    if (!parsed.ok) return { ok: false, hint: parsed.hint };
+    const def = PLAN_FIELD_BY_KEY.get(parsed.intent.key)!;
+    try {
+      const newValue = applyIntent(parsed.intent, current[parsed.intent.key]);
+      return {
+        ok: true,
+        key: def.key,
+        label: def.label,
+        newValue,
+        explanation: describeIntent(parsed.intent, def.label),
+      };
+    } catch (e) {
+      if (e instanceof RangeError) return { ok: false, hint: e.message };
+      throw e;
+    }
+  }
 
   async draftRequest({ text, current, pending }: AiDraftInput): Promise<AiDraftResult> {
     const ex = extractFromText(text);

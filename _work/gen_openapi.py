@@ -39,16 +39,22 @@ schemas = {
  "Conversation": obj({"id": UUID, "purpose": S, "contextId": UUID, "messages": arr(ref("ChatMessage")), "simulated": B}, ["id", "messages", "simulated"]),
  "ChatMessage": obj({"id": UUID, "role": enum("USER", "ASSISTANT", "SYSTEM"), "text": S, "createdAt": DT, "proposedChanges": arr(ref("FieldValue")), "requestId": UUID, "request": ref("ProcurementRequest")}, ["id", "role", "text"]),
  "ChatSend": obj({"text": {"type": "string", "minLength": 1, "maxLength": 4000}, "channel": enum("TEXT", "VOICE")}, ["text"]),
- "Plan": obj({"id": UUID, "requestId": UUID, "status": enum("DRAFT", "AWAITING_SIGNOFF", "AWAITING_APPROVAL", "APPROVED_LOCKED", "REOPENED", "REJECTED"),
-   "fields": arr(ref("FieldValue")), "approvals": arr(ref("Approval")), "summary": S, "version": I}, ["id", "requestId", "status", "fields", "version"]),
+ "Plan": obj({"id": UUID, "requestId": UUID, "requestNumber": S, "title": S, "estimatedValue": N, "complexity": enum("LOW", "MEDIUM", "HIGH", "CRITICAL"),
+   "status": enum("DRAFT", "AWAITING_SIGNOFF", "AWAITING_APPROVAL", "APPROVED_LOCKED", "REOPENED", "REJECTED"), "locked": B,
+   "fields": arr(ref("PlanField")), "approvals": arr(ref("Approval")), "conflicts": arr(ref("CoiRecord")), "gates": arr(ref("Gate")),
+   "summary": S, "summaryPoints": arr(S), "version": I, "permissions": ref("PlanPermissions"), "undoAvailable": B, "undoToken": S}, ["id", "requestId", "status", "fields", "version"]),
+ "PlanField": obj({"key": S, "label": S, "value": S, "paragraphs": arr(S), "source": enum("USER", "AI", "SYSTEM", "MIGRATED"), "aiDrafted": B, "updatedAt": DT}, ["key", "label", "source"]),
+ "PlanPermissions": obj({"canEdit": B, "canSubmit": B, "canApprove": B, "canReopen": B, "canDeclareConflict": B, "canDecideConflict": B, "canSignOffRisk": B, "reason": S}, ["canEdit", "canSubmit", "canApprove", "canReopen"]),
+ "PlanSummary": obj({"planId": UUID, "requestId": UUID, "requestNumber": S, "title": S, "estimatedValue": N, "complexity": S, "status": S, "updatedAt": DT}, ["requestId", "requestNumber", "title", "status"]),
+ "UndoRequest": obj({"undoToken": S}, ["undoToken"]),
  "FieldUpdate": obj({"value": S, "paragraph": {"type": "integer", "minimum": 1}, "expectedVersion": I}, ["value", "expectedVersion"]),
  "Instruction": obj({"text": {"type": "string", "minLength": 1, "maxLength": 2000}, "channel": enum("TEXT", "VOICE")}, ["text"]),
  "InstructionResult": obj({"applied": arr(ref("FieldValue")), "undoToken": S, "explanation": S, "fallbackHint": S}, ["applied", "explanation"]),
  "Approval": obj({"id": UUID, "subject": S, "userId": UUID, "role": S, "decision": enum("APPROVED", "REJECTED", "SUPERSEDED"), "comment": S, "decidedAt": DT, "stamp": S}, ["id", "decision", "decidedAt"]),
- "Decision": obj({"decision": enum("APPROVE", "REJECT"), "comment": {"type": "string", "maxLength": 2000}}, ["decision"]),
+ "Decision": obj({"decision": enum("APPROVE", "REJECT"), "comment": {"type": "string", "maxLength": 2000}, "gate": enum("RISK_SIGNOFF")}, ["decision"]),
  "Reopen": obj({"reason": {"type": "string", "minLength": 10, "maxLength": 1000}}, ["reason"]),
  "CoiDeclaration": obj({"subjectOrg": S, "nature": {"type": "string", "minLength": 3, "maxLength": 2000}, "none": B}, ["none"]),
- "CoiRecord": obj({"id": UUID, "userId": UUID, "scope": enum("PLAN", "EVALUATION"), "scopeId": UUID, "none": B, "nature": S, "disposition": enum("PENDING", "IMMATERIAL", "MANAGEABLE", "MATERIAL"), "routedTo": UUID, "decidedAt": DT}, ["id", "userId", "scope", "disposition"]),
+ "CoiRecord": obj({"id": UUID, "userId": UUID, "userName": S, "rationale": S, "scope": enum("PLAN", "EVALUATION"), "scopeId": UUID, "none": B, "nature": S, "disposition": enum("PENDING", "IMMATERIAL", "MANAGEABLE", "MATERIAL"), "routedTo": UUID, "decidedAt": DT}, ["id", "userId", "scope", "disposition"]),
  "CoiDecision": obj({"disposition": enum("IMMATERIAL", "MANAGEABLE", "MATERIAL"), "rationale": S}, ["disposition"]),
  "Tender": obj({"id": UUID, "requestId": UUID, "type": enum("RFT", "RFP", "RFQ", "RFI", "EOI"), "access": enum("OPEN", "CLOSED"), "status": enum("DRAFT", "STAGED", "PUBLISHED", "CLOSED", "EVALUATING", "AWARDED"),
    "opensAt": DT, "closesAt": DT, "fields": arr(ref("FieldValue")), "publishPermission": ref("Approval"), "version": I}, ["id", "requestId", "type", "status"]),
@@ -113,15 +119,16 @@ ep("POST", "/assistant/conversations", "startConversation", Q, "Start mock-AI co
 ep("GET", "/assistant/conversations/{id}", "getConversation", Q, "Get conversation", ["REQUESTER", "PROCUREMENT"], None, "Conversation")
 ep("POST", "/assistant/conversations/{id}/messages", "sendMessage", Q, "Send user text; returns assistant reply with proposed field changes", ["REQUESTER", "PROCUREMENT"], "ChatSend", "ChatMessage", 201)
 P = "Plans"
-ep("GET", "/requests/{id}/plan", "getPlan", P, "Get (or lazily create from intake) the procurement plan", ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC", "ADMIN"], None, "Plan")
+ep("GET", "/plans", "listPlans", P, "Plans visible to the caller (requesters see their own)", ["REQUESTER", "PROCUREMENT", "DELEGATE", "LEGAL", "PROBITY", "EXEC"], None, "PlanSummary", arrayResp=True, query=["status"])
+ep("GET", "/requests/{id}/plan", "getPlan", P, "Get (or lazily create from intake) the procurement plan", ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC"], None, "Plan")
 ep("PUT", "/plans/{id}/fields/{key}", "updatePlanField", P, "Set a field (or one paragraph); optimistic concurrency via expectedVersion", ["PROCUREMENT", "REQUESTER"], "FieldUpdate", "Plan", note="409 on stale version; 423 if plan locked")
 ep("POST", "/plans/{id}/instructions", "instructPlan", P, "Plain-language amend ('change paragraph 3 to …')", ["PROCUREMENT", "REQUESTER"], "Instruction", "InstructionResult")
-ep("POST", "/plans/{id}/instructions/undo", "undoInstruction", P, "Undo last instruction by token", ["PROCUREMENT", "REQUESTER"], None, "Plan")
+ep("POST", "/plans/{id}/instructions/undo", "undoInstruction", P, "Undo last instruction by token", ["PROCUREMENT", "REQUESTER"], "UndoRequest", "Plan")
 ep("POST", "/plans/{id}/submit-for-approval", "submitPlan", P, "Move to approval; requires COI declarations and risk gates", ["PROCUREMENT"], None, "Plan")
-ep("POST", "/plans/{id}/decision", "decidePlan", P, "Delegate approves/rejects; delegation limit enforced; locks on approval", ["DELEGATE"], "Decision", "Plan", note="403 if value exceeds delegation; 409 if gates unmet")
+ep("POST", "/plans/{id}/decision", "decidePlan", P, "Delegate approves/rejects within their delegation (locks on approval); the independent risk officer signs off the risk gate", ["DELEGATE", "EXEC", "PROBITY"], "Decision", "Plan", note="403 if value exceeds delegation; 409 if gates unmet")
 ep("POST", "/plans/{id}/reopen", "reopenPlan", P, "Reopen locked plan with reason (Procurement only)", ["PROCUREMENT"], "Reopen", "Plan")
 ep("POST", "/plans/{id}/coi", "declarePlanCoi", P, "Declare conflict (or none)", ["PROCUREMENT", "EVALUATOR", "CHAIR", "LEGAL", "DELEGATE"], "CoiDeclaration", "CoiRecord", 201)
-ep("POST", "/coi/{id}/decision", "decideCoi", P, "Delegate/Risk decides disposition", ["DELEGATE", "PROBITY"], "CoiDecision", "CoiRecord")
+ep("POST", "/coi/{id}/decision", "decideCoi", P, "Delegate/Risk decides disposition", ["DELEGATE", "EXEC", "PROBITY"], "CoiDecision", "CoiRecord")
 D = "Tenders"
 ep("GET", "/tenders", "listTenders", D, "List tenders visible to caller", ["PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC", "ADMIN"], None, "Tender", arrayResp=True, query=["status"])
 ep("POST", "/tenders", "createTender", D, "Create tender and generate pack from request/plan", ["PROCUREMENT"], "TenderCreate", "Tender", 201)

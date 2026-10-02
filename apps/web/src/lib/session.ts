@@ -34,3 +34,20 @@ export async function apiGet<T>(path: string): Promise<T | null> {
 
 /** Server-side lookup of the signed-in user (null when anonymous). */
 export const getSessionUser = () => apiGet<SessionUser>('/auth/me');
+
+/** Like apiGet, but keeps the status and problem code so a page can explain *why* something is unavailable. */
+export async function apiGetResult<T>(
+  path: string,
+): Promise<{ status: number; data: T | null; code?: string }> {
+  const cookie = await cookieHeader();
+  if (!cookie) return { status: 401, data: null };
+  try {
+    const r = await fetch(`${API}/api/v1${path}`, { headers: { cookie }, cache: 'no-store' });
+    const body = (await r.json().catch(() => null)) as (T & { code?: string }) | null;
+    return r.ok
+      ? { status: r.status, data: body as T }
+      : { status: r.status, data: null, ...(body?.code ? { code: body.code } : {}) };
+  } catch {
+    return { status: 0, data: null };
+  }
+}

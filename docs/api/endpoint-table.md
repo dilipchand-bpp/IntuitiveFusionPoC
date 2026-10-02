@@ -13,15 +13,16 @@
 | POST | `/assistant/conversations` | startConversation | REQUESTER, PROCUREMENT | Start mock-AI conversation (simulated=true) |  |
 | GET | `/assistant/conversations/{id}` | getConversation | REQUESTER, PROCUREMENT | Get conversation |  |
 | POST | `/assistant/conversations/{id}/messages` | sendMessage | REQUESTER, PROCUREMENT | Send user text; returns assistant reply with proposed field changes |  |
-| GET | `/requests/{id}/plan` | getPlan | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | Get (or lazily create from intake) the procurement plan |  |
+| GET | `/plans` | listPlans | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC | Plans visible to the caller (requesters see their own) |  |
+| GET | `/requests/{id}/plan` | getPlan | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC | Get (or lazily create from intake) the procurement plan |  |
 | PUT | `/plans/{id}/fields/{key}` | updatePlanField | PROCUREMENT, REQUESTER | Set a field (or one paragraph); optimistic concurrency via expectedVersion | 409 on stale version; 423 if plan locked |
 | POST | `/plans/{id}/instructions` | instructPlan | PROCUREMENT, REQUESTER | Plain-language amend ('change paragraph 3 to …') |  |
 | POST | `/plans/{id}/instructions/undo` | undoInstruction | PROCUREMENT, REQUESTER | Undo last instruction by token |  |
 | POST | `/plans/{id}/submit-for-approval` | submitPlan | PROCUREMENT | Move to approval; requires COI declarations and risk gates |  |
-| POST | `/plans/{id}/decision` | decidePlan | DELEGATE | Delegate approves/rejects; delegation limit enforced; locks on approval | 403 if value exceeds delegation; 409 if gates unmet |
+| POST | `/plans/{id}/decision` | decidePlan | DELEGATE, EXEC, PROBITY | Delegate approves/rejects within their delegation (locks on approval); the independent risk officer signs off the risk gate | 403 if value exceeds delegation; 409 if gates unmet |
 | POST | `/plans/{id}/reopen` | reopenPlan | PROCUREMENT | Reopen locked plan with reason (Procurement only) |  |
 | POST | `/plans/{id}/coi` | declarePlanCoi | PROCUREMENT, EVALUATOR, CHAIR, LEGAL, DELEGATE | Declare conflict (or none) |  |
-| POST | `/coi/{id}/decision` | decideCoi | DELEGATE, PROBITY | Delegate/Risk decides disposition |  |
+| POST | `/coi/{id}/decision` | decideCoi | DELEGATE, EXEC, PROBITY | Delegate/Risk decides disposition |  |
 | GET | `/tenders` | listTenders | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | List tenders visible to caller |  |
 | POST | `/tenders` | createTender | PROCUREMENT | Create tender and generate pack from request/plan |  |
 | GET | `/tenders/{id}` | getTender | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | Get tender |  |
