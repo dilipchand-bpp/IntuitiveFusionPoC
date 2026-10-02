@@ -23,20 +23,25 @@
 | POST | `/plans/{id}/reopen` | reopenPlan | PROCUREMENT | Reopen locked plan with reason (Procurement only) |  |
 | POST | `/plans/{id}/coi` | declarePlanCoi | PROCUREMENT, EVALUATOR, CHAIR, LEGAL, DELEGATE | Declare conflict (or none) |  |
 | POST | `/coi/{id}/decision` | decideCoi | DELEGATE, EXEC, PROBITY | Delegate/Risk decides disposition |  |
-| GET | `/tenders` | listTenders | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | List tenders visible to caller |  |
+| GET | `/tenders` | listTenders | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | List tenders visible to caller (bid counts only; content stays sealed until close) |  |
 | POST | `/tenders` | createTender | PROCUREMENT | Create tender and generate pack from request/plan |  |
 | GET | `/tenders/{id}` | getTender | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | Get tender |  |
-| PUT | `/tenders/{id}/fields/{key}` | updateTenderField | PROCUREMENT, LEGAL | Edit pack field |  |
-| POST | `/tenders/{id}/publish-permission` | grantPublishPermission | DELEGATE | ECV-appropriate delegate grants permission to publish |  |
-| POST | `/tenders/{id}/publish` | publishTender | PROCUREMENT | Publish (needs permission, statutory window valid) | 409 without permission; 422 if statutory window not met |
-| POST | `/tenders/{id}/invitations` | inviteSuppliers | PROCUREMENT | Invite suppliers by email |  |
-| GET | `/tenders/{id}/questions` | listQuestions | PROCUREMENT, LEGAL, SUPPLIER | Questions (identity never returned) |  |
+| PUT | `/tenders/{id}/fields/{key}` | updateTenderField | PROCUREMENT, LEGAL | Edit a pack section while the tender is staged | 409 on stale version; 423 once published |
+| POST | `/tenders/{id}/publish-permission` | grantPublishPermission | DELEGATE | ECV-appropriate delegate grants permission to publish | 403 if value exceeds the delegate's publishing authority |
+| POST | `/tenders/{id}/publish` | publishTender | PROCUREMENT | Publish (needs permission, approved plan, statutory window valid) | 409 without permission or approved plan; 422 if statutory window not met |
+| POST | `/tenders/{id}/invitations` | inviteSuppliers | PROCUREMENT | Invite supplier contacts; returns each one-time registration link (mail is simulated) | 409 if already invited |
+| GET | `/tenders/{id}/questions` | listQuestions | PROCUREMENT, LEGAL, SUPPLIER | Questions (author never returned; suppliers see published ones only) |  |
+| POST | `/tenders/{id}/questions/{questionId}/answer` | answerQuestion | PROCUREMENT, LEGAL | Draft the answer to a question (published to everyone via an addendum) | 409 once published |
 | POST | `/tenders/{id}/addenda` | issueAddendum | PROCUREMENT | Publish answers/changes to all bidders |  |
-| POST | `/supplier/register` | registerSupplier | public | Self-register from invitation token |  |
-| GET | `/supplier/tenders` | listMyTenders | SUPPLIER | Tenders caller is invited to (max one active view) |  |
+| POST | `/supplier/register` | registerSupplier | public | Self-register from an invitation token (or, for open tenders, without one) | 400 invalid ABN checksum; 404 invalid invitation; 409 generic if already registered |
+| GET | `/supplier/invitations/{token}` | getInvitation | public | Look up an invitation link to pre-fill registration (one generic 404 for unknown, used or expired) |  |
+| GET | `/supplier/tenders` | listMyTenders | SUPPLIER | Tenders caller is invited to (plus open-access tenders) |  |
+| GET | `/supplier/tenders/{id}` | getMyTender | SUPPLIER | One tender: pack, published Q&A and addenda, own bid | 404 (and audited) if not invited |
 | POST | `/supplier/tenders/{id}/questions` | askQuestion | SUPPLIER | Ask anonymised question |  |
-| POST | `/supplier/tenders/{id}/submission/files` | uploadBidFile | SUPPLIER | Multipart upload (type/size allow-list, malware scan) | multipart/form-data; 415/413 on type/size; 423 after close |
-| POST | `/supplier/tenders/{id}/submission` | submitBid | SUPPLIER | Submit; issues receipt; rejected if after close | 423 + REJECTED_LATE after closesAt |
+| POST | `/supplier/tenders/{id}/submission/files` | uploadBidFile | SUPPLIER | Upload one file (JSON, base64): allow-list, 10 MB, content check, scan stub, sealed storage | 400 type/name/content; 413 size; 409 BID_CLOSED after close or already submitted |
+| DELETE | `/supplier/tenders/{id}/submission/files/{fileId}` | deleteBidFile | SUPPLIER | Remove a file from an unsubmitted bid | 409 once submitted (withdraw first) or closed |
+| POST | `/supplier/tenders/{id}/submission` | submitBid | SUPPLIER | Submit; issues a receipt; refused after the closing time | 409 BID_CLOSED after closesAt (late attempt discarded and notified); 409 SUBMISSION_INCOMPLETE without technical and commercial files |
+| POST | `/supplier/tenders/{id}/submission/withdraw` | withdrawBid | SUPPLIER | Withdraw a submitted bid before close so files can be changed | 409 after close |
 | GET | `/suppliers/{id}` | getSupplier | PROCUREMENT, LEGAL, FINANCE, ADMIN | Supplier profile with sanctions/insurance status |  |
 | POST | `/tenders/{id}/evaluation` | openEvaluation | PROCUREMENT | Create evaluation + one record per submitted bidder |  |
 | GET | `/evaluations/{id}` | getEvaluation | PROCUREMENT, EVALUATOR, CHAIR, DELEGATE, PROBITY, LEGAL | Get evaluation; suppliers anonymised until COI declared; stream-scoped payload |  |

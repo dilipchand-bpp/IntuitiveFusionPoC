@@ -49,6 +49,26 @@ This page lists the swap points that exist **today**; later milestones append to
 
 **Real adapter notes:** ignore `settings`; call the ERP with a timeout, and map errors to `UNAVAILABLE` rather than throwing. Do not issue extra database queries from inside an adapter that runs within a request transaction (single-connection PGlite deadlocks; a pooled Postgres would hold a second connection).
 
+## Bid file storage and virus scan (M8)
+
+| | |
+|---|---|
+| Storage | `SealedStore` in `modules/tender/files.ts`: AES-256-GCM, key derived (HKDF) from the server secret, objects under `STORAGE_DIR/<tenant>/<submission>/<uuid>`. Stands in for S3 + KMS (SSE-KMS, per-tenant key) |
+| Virus scan | `scanBytes()` stub: flags only the standard EICAR test string. A real adapter calls an AV service (for example an S3 object-scan Lambda) and keeps the same `CLEAN` / `INFECTED` result |
+| Upload checks (kept in production) | allow-list of extensions, 10 MB cap, content ("magic byte") check, double-extension and path-trick refusal, 20 files per bid |
+| Database seal | Row level security on `file_object` (migration 0003): the owning supplier, and after close only the evaluating roles, can read; administrators never |
+
+**Real adapter notes:** upload by pre-signed URL straight to the bucket rather than through the API, then scan before the file is marked `CLEAN`; keep the receipt checksum (`sha256`) so a bid can be proved unchanged.
+
+## Supplier registration, invitation e-mail and ABN (M8)
+
+| | |
+|---|---|
+| Invitation e-mail | Simulated. The one-time registration link is returned once to the buyer who created it (only its SHA-256 is stored) and an `invitation.queued` audit event is written at publish. A real `EmailService` sends the link instead |
+| ABN | Checked with the official 11-digit checksum only (`validAbn`). A real adapter would also look the number up in the ABN Lookup service |
+| Sanctions / insurance | Registered suppliers start with `sanctionsStatus = PENDING`; no screening provider is called yet |
+| Existing company | An ABN already in the directory cannot be joined by self-registration (it would expose that company's tenders). The buyer adds extra contacts after checking them (flow not built yet) |
+
 ## Still mocked, adapter arrives in a later milestone
 
 | Dependency | Interface | Milestone |

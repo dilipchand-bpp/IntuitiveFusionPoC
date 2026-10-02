@@ -1,4 +1,4 @@
-import { ModulePage } from '../../module-page';
+import { ModulePage } from '../../../module-page';
 
 type Params = { slug?: string[] };
 

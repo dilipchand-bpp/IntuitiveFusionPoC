@@ -32,7 +32,7 @@ async function signIn(page: Page, role: RoleName) {
   await page.getByLabel(/Password/).fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(new RegExp(ROLE_HOME[role].replace('/', '\\/') + '$'));
-  await expect(page.getByTestId('shell')).toBeVisible();
+  await expect(page.getByTestId(role === 'SUPPLIER' ? 'supplier-shell' : 'shell')).toBeVisible();
 }
 const noHorizontalScroll = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -123,13 +123,18 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     }) => {
       await signIn(page, role);
       const expected = navFor([role]);
-      const nav = page.getByRole('navigation', { name: 'Main' });
-      const links = await nav.getByRole('link').allInnerTexts();
-      expect(links.map((l) => l.trim()).sort()).toEqual(expected.map((n) => n.label).sort());
+      // The supplier portal has no side menu (a supplier sees one tender, not the buying team's modules), so only
+      // staff roles have a menu to compare; every supplier page must still open for real.
+      const frame = role === 'SUPPLIER' ? 'supplier-shell' : 'shell';
+      if (role !== 'SUPPLIER') {
+        const nav = page.getByRole('navigation', { name: 'Main' });
+        const links = await nav.getByRole('link').allInnerTexts();
+        expect(links.map((l) => l.trim()).sort()).toEqual(expected.map((n) => n.label).sort());
+      }
       for (const item of expected) {
         const res = await page.goto(item.href);
         expect(res?.status(), item.href).toBe(200);
-        await expect(page.getByTestId('shell'), item.href).toBeVisible();
+        await expect(page.getByTestId(frame), item.href).toBeVisible();
         await expect(page.locator('main h1').first(), `${item.href} has a heading`).toBeVisible();
         const text = (await page.locator('main').innerText()).trim();
         expect(text.length, `${item.href} is not blank`).toBeGreaterThan(40);
@@ -180,7 +185,9 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
   }) => {
     await signIn(page, 'LEGAL');
     // Other tests may add notifications for this user, so compare against the starting count rather than assuming it.
-    const bell = page.getByRole('button', { name: /^Notifications, \d+ unread$/ });
+    // The bell reads "0 unread" until its first fetch returns, so wait for a real count before taking the start value.
+    const bell = page.getByRole('button', { name: /^Notifications, [1-9]\d* unread$/ });
+    await expect(bell).toBeVisible();
     const start = Number(/(\d+) unread/.exec((await bell.getAttribute('aria-label')) ?? '')![1]);
     expect(start).toBeGreaterThanOrEqual(1);
     await bell.click();

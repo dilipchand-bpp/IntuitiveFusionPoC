@@ -40,7 +40,9 @@ test.describe('route guards (US-PLT-02, US-PLT-03)', () => {
     test(`${role} lands on ${home} after login`, async ({ page }) => {
       await signIn(page, key);
       await expect(page).toHaveURL(new RegExp(home.replace('/', '\\/') + '$'));
-      await expect(page.getByTestId('shell')).toHaveAttribute('data-role', role);
+      // Suppliers get their own header-only portal; everyone else gets the staff shell.
+      if (role === 'SUPPLIER') await expect(page.getByTestId('supplier-shell')).toBeVisible();
+      else await expect(page.getByTestId('shell')).toHaveAttribute('data-role', role);
     });
   }
 

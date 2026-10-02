@@ -284,6 +284,7 @@ export const invitation = pgTable('invitation', {
   tokenHash: text('token_hash').notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   usedAt: timestamp('used_at', { withTimezone: true }),
+  supplierId: uuid('supplier_id'),
 });
 
 export const question = pgTable('question', {
@@ -336,6 +337,7 @@ export const fileObject = pgTable('file_object', {
   sizeBytes: integer('size_bytes').notNull(),
   contentType: text('content_type').notNull(),
   storageKey: text('storage_key').notNull(),
+  sha256: text('sha256'),
   scan: text('scan', { enum: ['PENDING', 'CLEAN', 'INFECTED'] })
     .notNull()
     .default('PENDING'),

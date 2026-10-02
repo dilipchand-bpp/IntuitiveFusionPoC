@@ -68,10 +68,18 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
   { prefix: '/app', roles: STAFF },
 ];
 
-export const PUBLIC_PATHS = ['/', '/login', '/forbidden', '/forgot-password', '/ui-kit'];
+export const PUBLIC_PATHS = [
+  '/',
+  '/login',
+  '/forbidden',
+  '/forgot-password',
+  '/ui-kit',
+  '/supplier/register',
+];
 
 /** Returns the roles allowed for a path, or null when the path is public / not guarded. */
 export function rolesForPath(path: string): readonly RoleName[] | null {
+  if (PUBLIC_PATHS.includes(path)) return null; // e.g. supplier self-registration is reachable from an invitation link
   const hit = [...ROUTE_RULES]
     .sort((a, b) => b.prefix.length - a.prefix.length)
     .find((r) => path === r.prefix || path.startsWith(r.prefix + '/'));

@@ -21,3 +21,4 @@ test-results/
 next-env.d.ts
 ~$*
 _work/*.log
+_work/shots/

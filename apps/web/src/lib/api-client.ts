@@ -16,7 +16,7 @@ export class ApiError extends Error {
 export async function api<T>(
   path: string,
   opts: {
-    method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     csrf?: string;
     idempotencyKey?: string;

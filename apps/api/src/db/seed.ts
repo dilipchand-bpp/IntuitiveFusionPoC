@@ -8,6 +8,8 @@ import { hash as argon2 } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import { AuditService } from '../audit/audit-service.js';
+import { TENDER_FIELDS } from '../modules/tender/fields.js';
+import { buildTenderPack } from '../modules/tender/pack.js';
 import { withSystem, type Database, type RequestContext, type Tx } from './client.js';
 import * as s from './schema.js';
 import type { Role } from './schema.js';
@@ -21,6 +23,26 @@ export const uid = (name: string): string => {
 export const DEFAULT_SEED_PASSWORD = 'Demo-Only-Passw0rd!2026';
 
 export const TENANT_ID = uid('tenant:meridian');
+
+/** Plain-language requirements the demo tender packs are built from (the seeded requests have no plan of their own). */
+const DEMO_PLAN_TEXT: Record<string, Record<string, string>> = {
+  cleaning: {
+    objectives:
+      'Secure building cleaning that meets the requirements below at best value for money over the full term.',
+    requirements:
+      'Cleaning of all nominated sites to the agreed schedule and standard, including washrooms, kitchens and common areas.\n\nCompliance with work health and safety obligations, including induction, equipment and chemical safety.\n\nUse of environmentally responsible products and waste practices.',
+    deliverables:
+      'Delivery of building cleaning to agreed service levels, with monthly performance reporting.\n\nTransition-in plan and a named account manager.',
+  },
+  itmsp: {
+    objectives:
+      'Engage a managed IT service provider to run the service desk, end-user devices and infrastructure monitoring.',
+    requirements:
+      'A 24x7 monitored service with a 15-minute response target for critical incidents.\n\nSecurity controls aligned to the ACSC Essential Eight, with evidence on request.\n\nData held and supported in Australia.',
+    deliverables:
+      'Service desk and incident management with a monthly service report.\n\nQuarterly service review and a continuous-improvement plan.\n\nTransition-in from the current provider over 90 days.',
+  },
+};
 
 export const SEED_USERS: Array<{ key: string; name: string; role: Role; unit: string }> = [
   { key: 'requester', name: 'Riley Chen', role: 'REQUESTER', unit: 'Facilities' },
@@ -449,15 +471,60 @@ export async function seedDatabase(
       { status: 'PUBLISHED' },
       { id: userId('procurement'), role: 'PROCUREMENT' },
     );
-    for (const sp of SUPPLIERS) {
-      await tx.insert(s.invitation).values({
-        tenantId: TENANT_ID,
-        tenderId: t2,
-        email: `bids@${sp.key}.example`,
-        company: sp.company,
-        tokenHash: createHash('sha256').update(`seed-invite:${sp.key}`).digest('hex'),
-        expiresAt: day(30),
+    for (const [tenderId, requestKey, type] of [
+      [t1, 'cleaning', 'RFT'],
+      [t2, 'itmsp', 'RFP'],
+    ] as const) {
+      const [rq] = await tx
+        .select()
+        .from(s.request)
+        .where(eq(s.request.id, uid(`request:${requestKey}`)));
+      const pack = buildTenderPack({
+        type,
+        title: rq!.title,
+        organisation: 'Meridian Group (demo)',
+        plan: DEMO_PLAN_TEXT[requestKey] ?? {},
+        request: {},
+        contactEmail: 'procurement@meridian-demo.example',
+        statutoryMinDays: 25,
       });
+      for (const def of TENDER_FIELDS)
+        await tx.insert(s.fieldValue).values({
+          tenantId: TENANT_ID,
+          ownerType: 'TENDER',
+          ownerId: tenderId,
+          key: def.key,
+          label: def.label,
+          value: pack[def.key] ?? '',
+          source: 'SYSTEM',
+        });
+      const apId = uid(`approval:publish:${requestKey}`);
+      await tx.insert(s.approval).values({
+        id: apId,
+        tenantId: TENANT_ID,
+        subjectType: 'TENDER_PUBLISH',
+        subjectId: tenderId,
+        userId: userId('delegate'),
+        role: 'DELEGATE',
+        decision: 'APPROVED',
+        stamp: 'PERMISSION TO PUBLISH · Dana Okafor · DELEGATE · 2026-09-01 09:00 UTC',
+        decidedAt: day(-40),
+      });
+      await tx.update(s.tender).set({ publishPermissionId: apId }).where(eq(s.tender.id, tenderId));
+    }
+    for (const sp of SUPPLIERS) {
+      for (const tenderId of [t1, t2]) {
+        await tx.insert(s.invitation).values({
+          tenantId: TENANT_ID,
+          tenderId,
+          email: `bids@${sp.key}.example`,
+          company: sp.company,
+          tokenHash: createHash('sha256').update(`seed-invite:${tenderId}:${sp.key}`).digest('hex'),
+          expiresAt: day(30),
+          usedAt: day(-6),
+          supplierId: uid(`supplier:${sp.key}`),
+        });
+      }
       const subId = uid(`submission:${sp.key}`);
       await tx.insert(s.submission).values({
         id: subId,

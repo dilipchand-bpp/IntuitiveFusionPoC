@@ -56,15 +56,36 @@ schemas = {
  "CoiDeclaration": obj({"subjectOrg": S, "nature": {"type": "string", "minLength": 3, "maxLength": 2000}, "none": B}, ["none"]),
  "CoiRecord": obj({"id": UUID, "userId": UUID, "userName": S, "rationale": S, "scope": enum("PLAN", "EVALUATION"), "scopeId": UUID, "none": B, "nature": S, "disposition": enum("PENDING", "IMMATERIAL", "MANAGEABLE", "MATERIAL"), "routedTo": UUID, "decidedAt": DT}, ["id", "userId", "scope", "disposition"]),
  "CoiDecision": obj({"disposition": enum("IMMATERIAL", "MANAGEABLE", "MATERIAL"), "rationale": S}, ["disposition"]),
- "Tender": obj({"id": UUID, "requestId": UUID, "type": enum("RFT", "RFP", "RFQ", "RFI", "EOI"), "access": enum("OPEN", "CLOSED"), "status": enum("DRAFT", "STAGED", "PUBLISHED", "CLOSED", "EVALUATING", "AWARDED"),
-   "opensAt": DT, "closesAt": DT, "fields": arr(ref("FieldValue")), "publishPermission": ref("Approval"), "version": I}, ["id", "requestId", "type", "status"]),
- "TenderCreate": obj({"requestId": UUID, "type": enum("RFT", "RFP", "RFQ", "RFI", "EOI"), "access": enum("OPEN", "CLOSED"), "closesAt": DT}, ["requestId", "type"]),
- "Invitation": obj({"email": {"type": "string", "format": "email"}, "company": S}, ["email", "company"]),
- "Question": obj({"id": UUID, "tenderId": UUID, "text": S, "answer": S, "status": enum("OPEN", "ANSWERED", "PUBLISHED"), "askedAt": DT}, ["id", "text", "status"]),
+ "Tender": obj({"id": UUID, "requestId": UUID, "requestNumber": S, "title": S, "estimatedValue": N, "type": enum("RFT", "RFP", "RFQ", "RFI", "EOI"), "access": enum("OPEN", "CLOSED"),
+   "status": enum("DRAFT", "STAGED", "PUBLISHED", "CLOSED", "EVALUATING", "AWARDED"), "opensAt": DT, "closesAt": DT, "version": I, "planStatus": S,
+   "fields": arr(ref("TenderField")), "permission": ref("PublishPermission"), "invitations": arr(ref("InvitationState")), "questions": arr(ref("Question")),
+   "addenda": arr(ref("Addendum")), "submissions": ref("SubmissionSummary"), "permissions": ref("TenderPermissions")}, ["id", "requestId", "type", "status", "version", "fields"]),
+ "TenderSummary": obj({"id": UUID, "requestId": UUID, "requestNumber": S, "title": S, "estimatedValue": N, "type": S, "access": S, "status": S, "closesAt": DT, "permissionGranted": B, "invitations": I, "openQuestions": I, "bids": I, "updatedAt": DT}, ["id", "requestId", "title", "status"]),
+ "TenderField": obj({"key": S, "label": S, "value": S, "paragraphs": arr(S), "source": S, "aiDrafted": B, "updatedAt": DT}, ["key", "label", "value"]),
+ "TenderPermissions": obj({"canEdit": B, "canGrantPermission": B, "canPublish": B, "canInvite": B, "canAnswer": B, "canIssueAddendum": B}, ["canEdit", "canGrantPermission", "canPublish"]),
+ "PublishPermission": obj({"granted": B, "by": S, "at": DT}, ["granted"]),
+ "InvitationState": obj({"id": UUID, "email": S, "company": S, "state": enum("INVITED", "REGISTERED", "USED", "EXPIRED"), "expiresAt": DT}, ["id", "email", "company", "state"]),
+ "SubmissionSummary": obj({"count": I, "sealed": B, "items": arr(obj({"supplierId": UUID, "company": S, "receipt": S, "submittedAt": DT}))}, ["count", "sealed"]),
+ "TenderFieldUpdate": obj({"value": {"type": "string", "maxLength": 10000}, "expectedVersion": I}, ["value", "expectedVersion"]),
+ "PermissionRequest": obj({"comment": {"type": "string", "maxLength": 1000}}),
+ "PublishRequest": obj({"closesAt": DT}, ["closesAt"]),
+ "TenderCreate": obj({"requestId": UUID, "type": enum("RFT", "RFP", "RFQ", "RFI", "EOI"), "access": enum("OPEN", "CLOSED")}, ["requestId", "type"]),
+ "InviteRequest": obj({"invitees": {"type": "array", "minItems": 1, "maxItems": 50, "items": obj({"email": {"type": "string", "format": "email"}, "company": S}, ["email", "company"])}}, ["invitees"]),
+ "InviteResponse": obj({"invitations": arr(obj({"id": UUID, "email": S, "company": S, "expiresAt": DT, "registerPath": S}, ["id", "email", "company", "registerPath"]))}, ["invitations"]),
+ "InvitationInfo": obj({"email": S, "company": S, "organisation": S, "expiresAt": DT}, ["email", "company"]),
+ "Question": obj({"id": UUID, "text": S, "answer": S, "status": enum("OPEN", "ANSWERED", "PUBLISHED"), "askedAt": DT}, ["id", "text", "status"]),
+ "AnswerRequest": obj({"answer": {"type": "string", "minLength": 2, "maxLength": 4000}}, ["answer"]),
  "QuestionCreate": obj({"text": {"type": "string", "minLength": 5, "maxLength": 2000}}, ["text"]),
  "Addendum": obj({"id": UUID, "number": I, "summary": S, "questionIds": arr(UUID), "newClosesAt": DT, "issuedAt": DT}, ["id", "number", "summary"]),
  "AddendumCreate": obj({"summary": {"type": "string", "minLength": 5}, "questionIds": arr(UUID), "newClosesAt": DT}, ["summary"]),
- "SupplierRegistration": obj({"inviteToken": S, "contactName": S, "email": {"type": "string", "format": "email"}, "company": S, "abn": {"type": "string", "pattern": "^\\d{11}$"}, "password": {"type": "string", "minLength": 12}}, ["inviteToken", "contactName", "email", "company", "abn", "password"]),
+ "SupplierRegistration": obj({"token": S, "name": S, "email": {"type": "string", "format": "email"}, "company": S, "abn": S, "password": {"type": "string", "minLength": 12}}, ["name", "email", "company", "abn", "password"]),
+ "RegistrationResult": obj({"registered": B, "supplierId": UUID, "sanctionsStatus": enum("PENDING", "CLEAR", "MATCH")}, ["registered", "supplierId"]),
+ "SupplierTenderSummary": obj({"id": UUID, "title": S, "number": S, "type": S, "status": S, "closesAt": DT, "submissionStatus": enum("NOT_STARTED", "DRAFT", "SUBMITTED", "REJECTED_LATE"), "receipt": S}, ["id", "title", "status"]),
+ "SupplierTender": obj({"id": UUID, "title": S, "number": S, "type": S, "status": S, "opensAt": DT, "closesAt": DT, "serverTime": DT, "fields": arr(ref("TenderField")), "questions": arr(ref("Question")), "addenda": arr(ref("Addendum")),
+   "submission": obj({"status": S, "receipt": S, "submittedAt": DT, "files": arr(ref("BidFile"))}, ["status", "files"]), "canBid": B}, ["id", "title", "status", "fields", "submission", "canBid"]),
+ "BidFileUpload": obj({"name": S, "section": enum("TECHNICAL", "COMMERCIAL", "OTHER"), "dataBase64": S}, ["name", "dataBase64"]),
+ "BidFile": obj({"id": UUID, "name": S, "sizeBytes": I, "contentType": S, "section": S, "scan": S, "sha256": S, "uploadedAt": DT}, ["id", "name", "sizeBytes", "section"]),
+ "BidReceipt": obj({"receipt": S, "submittedAt": DT, "closesAt": DT, "files": arr(obj({"name": S, "sizeBytes": I, "section": S, "sha256": S}))}, ["receipt", "submittedAt", "files"]),
  "Supplier": obj({"id": UUID, "company": S, "abn": S, "sanctionsStatus": enum("PENDING", "CLEAR", "MATCH"), "insuranceStatus": enum("UNKNOWN", "CURRENT", "EXPIRING", "EXPIRED"), "lastCheckedAt": DT}, ["id", "company", "sanctionsStatus"]),
  "Submission": obj({"id": UUID, "tenderId": UUID, "supplierId": UUID, "status": enum("DRAFT", "SUBMITTED", "REJECTED_LATE"), "files": arr(ref("FileRef")), "receipt": S, "submittedAt": DT}, ["id", "tenderId", "status"]),
  "FileRef": obj({"id": UUID, "name": S, "sizeBytes": I, "contentType": S, "scan": enum("PENDING", "CLEAN", "INFECTED"), "section": enum("TECHNICAL", "COMMERCIAL", "OTHER")}, ["id", "name"]),
@@ -130,21 +151,26 @@ ep("POST", "/plans/{id}/reopen", "reopenPlan", P, "Reopen locked plan with reaso
 ep("POST", "/plans/{id}/coi", "declarePlanCoi", P, "Declare conflict (or none)", ["PROCUREMENT", "EVALUATOR", "CHAIR", "LEGAL", "DELEGATE"], "CoiDeclaration", "CoiRecord", 201)
 ep("POST", "/coi/{id}/decision", "decideCoi", P, "Delegate/Risk decides disposition", ["DELEGATE", "EXEC", "PROBITY"], "CoiDecision", "CoiRecord")
 D = "Tenders"
-ep("GET", "/tenders", "listTenders", D, "List tenders visible to caller", ["PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC", "ADMIN"], None, "Tender", arrayResp=True, query=["status"])
+ep("GET", "/tenders", "listTenders", D, "List tenders visible to caller (bid counts only; content stays sealed until close)", ["PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC", "ADMIN"], None, "TenderSummary", arrayResp=True)
 ep("POST", "/tenders", "createTender", D, "Create tender and generate pack from request/plan", ["PROCUREMENT"], "TenderCreate", "Tender", 201)
 ep("GET", "/tenders/{id}", "getTender", D, "Get tender", ["PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC", "ADMIN"], None, "Tender")
-ep("PUT", "/tenders/{id}/fields/{key}", "updateTenderField", D, "Edit pack field", ["PROCUREMENT", "LEGAL"], "FieldUpdate", "Tender")
-ep("POST", "/tenders/{id}/publish-permission", "grantPublishPermission", D, "ECV-appropriate delegate grants permission to publish", ["DELEGATE"], "Decision", "Tender")
-ep("POST", "/tenders/{id}/publish", "publishTender", D, "Publish (needs permission, statutory window valid)", ["PROCUREMENT"], None, "Tender", note="409 without permission; 422 if statutory window not met")
-ep("POST", "/tenders/{id}/invitations", "inviteSuppliers", D, "Invite suppliers by email", ["PROCUREMENT"], "Invitation", "Message", 202)
-ep("GET", "/tenders/{id}/questions", "listQuestions", D, "Questions (identity never returned)", ["PROCUREMENT", "LEGAL", "SUPPLIER"], None, "Question", arrayResp=True)
+ep("PUT", "/tenders/{id}/fields/{key}", "updateTenderField", D, "Edit a pack section while the tender is staged", ["PROCUREMENT", "LEGAL"], "TenderFieldUpdate", "Tender", note="409 on stale version; 423 once published")
+ep("POST", "/tenders/{id}/publish-permission", "grantPublishPermission", D, "ECV-appropriate delegate grants permission to publish", ["DELEGATE"], "PermissionRequest", "Tender", note="403 if value exceeds the delegate's publishing authority")
+ep("POST", "/tenders/{id}/publish", "publishTender", D, "Publish (needs permission, approved plan, statutory window valid)", ["PROCUREMENT"], "PublishRequest", "Tender", note="409 without permission or approved plan; 422 if statutory window not met")
+ep("POST", "/tenders/{id}/invitations", "inviteSuppliers", D, "Invite supplier contacts; returns each one-time registration link (mail is simulated)", ["PROCUREMENT"], "InviteRequest", "InviteResponse", 201, note="409 if already invited")
+ep("GET", "/tenders/{id}/questions", "listQuestions", D, "Questions (author never returned; suppliers see published ones only)", ["PROCUREMENT", "LEGAL", "SUPPLIER"], None, "Question", arrayResp=True)
+ep("POST", "/tenders/{id}/questions/{questionId}/answer", "answerQuestion", D, "Draft the answer to a question (published to everyone via an addendum)", ["PROCUREMENT", "LEGAL"], "AnswerRequest", "Question", note="409 once published")
 ep("POST", "/tenders/{id}/addenda", "issueAddendum", D, "Publish answers/changes to all bidders", ["PROCUREMENT"], "AddendumCreate", "Addendum", 201)
 SP = "SupplierPortal"
-ep("POST", "/supplier/register", "registerSupplier", SP, "Self-register from invitation token", None, "SupplierRegistration", "Supplier", 201)
-ep("GET", "/supplier/tenders", "listMyTenders", SP, "Tenders caller is invited to (max one active view)", ["SUPPLIER"], None, "Tender", arrayResp=True)
+ep("POST", "/supplier/register", "registerSupplier", SP, "Self-register from an invitation token (or, for open tenders, without one)", None, "SupplierRegistration", "RegistrationResult", 201, note="400 invalid ABN checksum; 404 invalid invitation; 409 generic if already registered")
+ep("GET", "/supplier/invitations/{token}", "getInvitation", SP, "Look up an invitation link to pre-fill registration (one generic 404 for unknown, used or expired)", None, None, "InvitationInfo")
+ep("GET", "/supplier/tenders", "listMyTenders", SP, "Tenders caller is invited to (plus open-access tenders)", ["SUPPLIER"], None, "SupplierTenderSummary", arrayResp=True)
+ep("GET", "/supplier/tenders/{id}", "getMyTender", SP, "One tender: pack, published Q&A and addenda, own bid", ["SUPPLIER"], None, "SupplierTender", note="404 (and audited) if not invited")
 ep("POST", "/supplier/tenders/{id}/questions", "askQuestion", SP, "Ask anonymised question", ["SUPPLIER"], "QuestionCreate", "Question", 201)
-ep("POST", "/supplier/tenders/{id}/submission/files", "uploadBidFile", SP, "Multipart upload (type/size allow-list, malware scan)", ["SUPPLIER"], None, "FileRef", 201, note="multipart/form-data; 415/413 on type/size; 423 after close")
-ep("POST", "/supplier/tenders/{id}/submission", "submitBid", SP, "Submit; issues receipt; rejected if after close", ["SUPPLIER"], None, "Submission", 201, note="423 + REJECTED_LATE after closesAt")
+ep("POST", "/supplier/tenders/{id}/submission/files", "uploadBidFile", SP, "Upload one file (JSON, base64): allow-list, 10 MB, content check, scan stub, sealed storage", ["SUPPLIER"], "BidFileUpload", "BidFile", 201, note="400 type/name/content; 413 size; 409 BID_CLOSED after close or already submitted")
+ep("DELETE", "/supplier/tenders/{id}/submission/files/{fileId}", "deleteBidFile", SP, "Remove a file from an unsubmitted bid", ["SUPPLIER"], None, None, 204, note="409 once submitted (withdraw first) or closed")
+ep("POST", "/supplier/tenders/{id}/submission", "submitBid", SP, "Submit; issues a receipt; refused after the closing time", ["SUPPLIER"], None, "BidReceipt", 201, note="409 BID_CLOSED after closesAt (late attempt discarded and notified); 409 SUBMISSION_INCOMPLETE without technical and commercial files")
+ep("POST", "/supplier/tenders/{id}/submission/withdraw", "withdrawBid", SP, "Withdraw a submitted bid before close so files can be changed", ["SUPPLIER"], None, "SupplierTender", note="409 after close")
 ep("GET", "/suppliers/{id}", "getSupplier", SP, "Supplier profile with sanctions/insurance status", ["PROCUREMENT", "LEGAL", "FINANCE", "ADMIN"], None, "Supplier")
 V = "Evaluation"
 ER = ["PROCUREMENT", "EVALUATOR", "CHAIR", "DELEGATE", "PROBITY", "LEGAL"]

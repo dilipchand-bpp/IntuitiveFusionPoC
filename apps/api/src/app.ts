@@ -17,6 +17,9 @@ import { registerIntakeRoutes } from './modules/intake/routes.js';
 import { registerPlanRoutes } from './modules/plan/routes.js';
 import { AppError } from './http/errors.js';
 import { registerShellRoutes } from './modules/shell.js';
+import { SealedStore } from './modules/tender/files.js';
+import { registerTenderRoutes } from './modules/tender/routes.js';
+import { registerSupplierRoutes } from './modules/tender/supplier-routes.js';
 import { registerSpecStubs } from './spec-routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -119,6 +122,20 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   const erp = deps.erp ?? new MockErpBudgetService();
   for (const k of registerIntakeRoutes(app, API_PREFIX, { ...guardDeps, ai, erp })) implemented.add(k);
   for (const k of registerPlanRoutes(app, API_PREFIX, { ...guardDeps, ai })) implemented.add(k);
+  const store = new SealedStore(config.STORAGE_DIR, config.SESSION_SECRET);
+  for (const k of registerTenderRoutes(app, API_PREFIX, {
+    ...guardDeps,
+    store,
+    contactEmail: 'hello@intuitivefusion.example',
+  }))
+    implemented.add(k);
+  for (const k of registerSupplierRoutes(app, API_PREFIX, {
+    ...guardDeps,
+    store,
+    config,
+    publicRateLimitMax: deps.loginRateLimitMax ?? 20,
+  }))
+    implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

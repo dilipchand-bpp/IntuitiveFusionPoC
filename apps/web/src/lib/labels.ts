@@ -100,3 +100,42 @@ export const COI_TONE: Record<string, BadgeTone> = {
   MANAGEABLE: 'info',
   MATERIAL: 'error',
 };
+
+export const TENDER_STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'Draft',
+  STAGED: 'Staged',
+  PUBLISHED: 'Open for bids',
+  CLOSED: 'Closed',
+  EVALUATING: 'Evaluating',
+  AWARDED: 'Awarded',
+};
+export const TENDER_STATUS_TONE: Record<string, BadgeTone> = {
+  DRAFT: 'neutral',
+  STAGED: 'warning',
+  PUBLISHED: 'success',
+  CLOSED: 'neutral',
+  EVALUATING: 'info',
+  AWARDED: 'success',
+};
+export const TENDER_TYPE_LABEL: Record<string, string> = {
+  RFT: 'Request for Tender',
+  RFP: 'Request for Proposal',
+  RFQ: 'Request for Quotation',
+  RFI: 'Request for Information',
+  EOI: 'Expression of Interest',
+};
+export const SUBMISSION_LABEL: Record<string, string> = {
+  NOT_STARTED: 'Not started',
+  DRAFT: 'Draft (not submitted)',
+  SUBMITTED: 'Submitted',
+  REJECTED_LATE: 'Not accepted (late)',
+};
+export const SUBMISSION_TONE: Record<string, BadgeTone> = {
+  NOT_STARTED: 'neutral',
+  DRAFT: 'warning',
+  SUBMITTED: 'success',
+  REJECTED_LATE: 'error',
+};
+const dateTime = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
+export const formatDateTime = (iso: string | null | undefined) =>
+  iso ? dateTime.format(new Date(iso)) : '–';

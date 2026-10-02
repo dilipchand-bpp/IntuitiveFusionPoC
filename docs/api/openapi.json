@@ -1366,17 +1366,8 @@
     "tags": [
      "Tenders"
     ],
-    "summary": "List tenders visible to caller",
-    "parameters": [
-     {
-      "name": "status",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "type": "string"
-      }
-     }
-    ],
+    "summary": "List tenders visible to caller (bid counts only; content stays sealed until close)",
+    "parameters": [],
     "x-roles": [
      "PROCUREMENT",
      "DELEGATE",
@@ -1395,7 +1386,7 @@
         "schema": {
          "type": "array",
          "items": {
-          "$ref": "#/components/schemas/Tender"
+          "$ref": "#/components/schemas/TenderSummary"
          }
         }
        }
@@ -1527,7 +1518,7 @@
     "tags": [
      "Tenders"
     ],
-    "summary": "Edit pack field",
+    "summary": "Edit a pack section while the tender is staged",
     "parameters": [
      {
       "name": "id",
@@ -1579,14 +1570,18 @@
      },
      "422": {
       "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
      }
     },
+    "description": "409 on stale version; 423 once published",
     "requestBody": {
      "required": true,
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/FieldUpdate"
+        "$ref": "#/components/schemas/TenderFieldUpdate"
        }
       }
      }
@@ -1644,12 +1639,13 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "403 if value exceeds the delegate's publishing authority",
     "requestBody": {
      "required": true,
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/Decision"
+        "$ref": "#/components/schemas/PermissionRequest"
        }
       }
      }
@@ -1662,7 +1658,7 @@
     "tags": [
      "Tenders"
     ],
-    "summary": "Publish (needs permission, statutory window valid)",
+    "summary": "Publish (needs permission, approved plan, statutory window valid)",
     "parameters": [
      {
       "name": "id",
@@ -1707,7 +1703,17 @@
       "$ref": "#/components/responses/E422"
      }
     },
-    "description": "409 without permission; 422 if statutory window not met"
+    "description": "409 without permission or approved plan; 422 if statutory window not met",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PublishRequest"
+       }
+      }
+     }
+    }
    }
   },
   "/tenders/{id}/invitations": {
@@ -1716,7 +1722,7 @@
     "tags": [
      "Tenders"
     ],
-    "summary": "Invite suppliers by email",
+    "summary": "Invite supplier contacts; returns each one-time registration link (mail is simulated)",
     "parameters": [
      {
       "name": "id",
@@ -1732,12 +1738,12 @@
      "PROCUREMENT"
     ],
     "responses": {
-     "202": {
+     "201": {
       "description": "Success",
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Message"
+         "$ref": "#/components/schemas/InviteResponse"
         }
        }
       }
@@ -1761,12 +1767,13 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "409 if already invited",
     "requestBody": {
      "required": true,
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/Invitation"
+        "$ref": "#/components/schemas/InviteRequest"
        }
       }
      }
@@ -1779,7 +1786,7 @@
     "tags": [
      "Tenders"
     ],
-    "summary": "Questions (identity never returned)",
+    "summary": "Questions (author never returned; suppliers see published ones only)",
     "parameters": [
      {
       "name": "id",
@@ -1821,6 +1828,80 @@
      },
      "404": {
       "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/questions/{questionId}/answer": {
+   "post": {
+    "operationId": "answerQuestion",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Draft the answer to a question (published to everyone via an addendum)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "questionId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Question"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 once published",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnswerRequest"
+       }
+      }
      }
     }
    }
@@ -1894,7 +1975,7 @@
     "tags": [
      "SupplierPortal"
     ],
-    "summary": "Self-register from invitation token",
+    "summary": "Self-register from an invitation token (or, for open tenders, without one)",
     "parameters": [],
     "x-roles": "public",
     "responses": {
@@ -1903,7 +1984,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Supplier"
+         "$ref": "#/components/schemas/RegistrationResult"
         }
        }
       }
@@ -1921,6 +2002,7 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "400 invalid ABN checksum; 404 invalid invitation; 409 generic if already registered",
     "security": [],
     "requestBody": {
      "required": true,
@@ -1934,13 +2016,53 @@
     }
    }
   },
+  "/supplier/invitations/{token}": {
+   "get": {
+    "operationId": "getInvitation",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Look up an invitation link to pre-fill registration (one generic 404 for unknown, used or expired)",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvitationInfo"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
   "/supplier/tenders": {
    "get": {
     "operationId": "listMyTenders",
     "tags": [
      "SupplierPortal"
     ],
-    "summary": "Tenders caller is invited to (max one active view)",
+    "summary": "Tenders caller is invited to (plus open-access tenders)",
     "parameters": [],
     "x-roles": [
      "SUPPLIER"
@@ -1953,7 +2075,7 @@
         "schema": {
          "type": "array",
          "items": {
-          "$ref": "#/components/schemas/Tender"
+          "$ref": "#/components/schemas/SupplierTenderSummary"
          }
         }
        }
@@ -1972,6 +2094,54 @@
       "$ref": "#/components/responses/E404"
      }
     }
+   }
+  },
+  "/supplier/tenders/{id}": {
+   "get": {
+    "operationId": "getMyTender",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "One tender: pack, published Q&A and addenda, own bid",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierTender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 (and audited) if not invited"
    }
   },
   "/supplier/tenders/{id}/questions": {
@@ -2043,7 +2213,7 @@
     "tags": [
      "SupplierPortal"
     ],
-    "summary": "Multipart upload (type/size allow-list, malware scan)",
+    "summary": "Upload one file (JSON, base64): allow-list, 10 MB, content check, scan stub, sealed storage",
     "parameters": [
      {
       "name": "id",
@@ -2064,7 +2234,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/FileRef"
+         "$ref": "#/components/schemas/BidFile"
         }
        }
       }
@@ -2086,12 +2256,69 @@
      },
      "422": {
       "$ref": "#/components/responses/E422"
-     },
-     "423": {
-      "$ref": "#/components/responses/E423"
      }
     },
-    "description": "multipart/form-data; 415/413 on type/size; 423 after close"
+    "description": "400 type/name/content; 413 size; 409 BID_CLOSED after close or already submitted",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BidFileUpload"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/submission/files/{fileId}": {
+   "delete": {
+    "operationId": "deleteBidFile",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Remove a file from an unsubmitted bid",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "fileId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "409 once submitted (withdraw first) or closed"
    }
   },
   "/supplier/tenders/{id}/submission": {
@@ -2100,7 +2327,7 @@
     "tags": [
      "SupplierPortal"
     ],
-    "summary": "Submit; issues receipt; rejected if after close",
+    "summary": "Submit; issues a receipt; refused after the closing time",
     "parameters": [
      {
       "name": "id",
@@ -2121,7 +2348,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Submission"
+         "$ref": "#/components/schemas/BidReceipt"
         }
        }
       }
@@ -2143,12 +2370,63 @@
      },
      "422": {
       "$ref": "#/components/responses/E422"
-     },
-     "423": {
-      "$ref": "#/components/responses/E423"
      }
     },
-    "description": "423 + REJECTED_LATE after closesAt"
+    "description": "409 BID_CLOSED after closesAt (late attempt discarded and notified); 409 SUBMISSION_INCOMPLETE without technical and commercial files"
+   }
+  },
+  "/supplier/tenders/{id}/submission/withdraw": {
+   "post": {
+    "operationId": "withdrawBid",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Withdraw a submitted bid before close so files can be changed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierTender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 after close"
    }
   },
   "/suppliers/{id}": {
@@ -5061,6 +5339,15 @@
       "type": "string",
       "format": "uuid"
      },
+     "requestNumber": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
      "type": {
       "type": "string",
       "enum": [
@@ -5097,17 +5384,44 @@
       "type": "string",
       "format": "date-time"
      },
+     "version": {
+      "type": "integer"
+     },
+     "planStatus": {
+      "type": "string"
+     },
      "fields": {
       "type": "array",
       "items": {
-       "$ref": "#/components/schemas/FieldValue"
+       "$ref": "#/components/schemas/TenderField"
       }
      },
-     "publishPermission": {
-      "$ref": "#/components/schemas/Approval"
+     "permission": {
+      "$ref": "#/components/schemas/PublishPermission"
      },
-     "version": {
-      "type": "integer"
+     "invitations": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/InvitationState"
+      }
+     },
+     "questions": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Question"
+      }
+     },
+     "addenda": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Addendum"
+      }
+     },
+     "submissions": {
+      "$ref": "#/components/schemas/SubmissionSummary"
+     },
+     "permissions": {
+      "$ref": "#/components/schemas/TenderPermissions"
      }
     },
     "additionalProperties": false,
@@ -5115,7 +5429,265 @@
      "id",
      "requestId",
      "type",
+     "status",
+     "version",
+     "fields"
+    ]
+   },
+   "TenderSummary": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestNumber": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "type": {
+      "type": "string"
+     },
+     "access": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "permissionGranted": {
+      "type": "boolean"
+     },
+     "invitations": {
+      "type": "integer"
+     },
+     "openQuestions": {
+      "type": "integer"
+     },
+     "bids": {
+      "type": "integer"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "requestId",
+     "title",
      "status"
+    ]
+   },
+   "TenderField": {
+    "type": "object",
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "value": {
+      "type": "string"
+     },
+     "paragraphs": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "source": {
+      "type": "string"
+     },
+     "aiDrafted": {
+      "type": "boolean"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "key",
+     "label",
+     "value"
+    ]
+   },
+   "TenderPermissions": {
+    "type": "object",
+    "properties": {
+     "canEdit": {
+      "type": "boolean"
+     },
+     "canGrantPermission": {
+      "type": "boolean"
+     },
+     "canPublish": {
+      "type": "boolean"
+     },
+     "canInvite": {
+      "type": "boolean"
+     },
+     "canAnswer": {
+      "type": "boolean"
+     },
+     "canIssueAddendum": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "canEdit",
+     "canGrantPermission",
+     "canPublish"
+    ]
+   },
+   "PublishPermission": {
+    "type": "object",
+    "properties": {
+     "granted": {
+      "type": "boolean"
+     },
+     "by": {
+      "type": "string"
+     },
+     "at": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "granted"
+    ]
+   },
+   "InvitationState": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "email": {
+      "type": "string"
+     },
+     "company": {
+      "type": "string"
+     },
+     "state": {
+      "type": "string",
+      "enum": [
+       "INVITED",
+       "REGISTERED",
+       "USED",
+       "EXPIRED"
+      ]
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "email",
+     "company",
+     "state"
+    ]
+   },
+   "SubmissionSummary": {
+    "type": "object",
+    "properties": {
+     "count": {
+      "type": "integer"
+     },
+     "sealed": {
+      "type": "boolean"
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "supplierId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "company": {
+         "type": "string"
+        },
+        "receipt": {
+         "type": "string"
+        },
+        "submittedAt": {
+         "type": "string",
+         "format": "date-time"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "count",
+     "sealed"
+    ]
+   },
+   "TenderFieldUpdate": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "string",
+      "maxLength": 10000
+     },
+     "expectedVersion": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "value",
+     "expectedVersion"
+    ]
+   },
+   "PermissionRequest": {
+    "type": "object",
+    "properties": {
+     "comment": {
+      "type": "string",
+      "maxLength": 1000
+     }
+    },
+    "additionalProperties": false
+   },
+   "PublishRequest": {
+    "type": "object",
+    "properties": {
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "closesAt"
     ]
    },
    "TenderCreate": {
@@ -5141,10 +5713,6 @@
        "OPEN",
        "CLOSED"
       ]
-     },
-     "closesAt": {
-      "type": "string",
-      "format": "date-time"
      }
     },
     "additionalProperties": false,
@@ -5153,15 +5721,93 @@
      "type"
     ]
    },
-   "Invitation": {
+   "InviteRequest": {
+    "type": "object",
+    "properties": {
+     "invitees": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+       "type": "object",
+       "properties": {
+        "email": {
+         "type": "string",
+         "format": "email"
+        },
+        "company": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "email",
+        "company"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "invitees"
+    ]
+   },
+   "InviteResponse": {
+    "type": "object",
+    "properties": {
+     "invitations": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "email": {
+         "type": "string"
+        },
+        "company": {
+         "type": "string"
+        },
+        "expiresAt": {
+         "type": "string",
+         "format": "date-time"
+        },
+        "registerPath": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "id",
+        "email",
+        "company",
+        "registerPath"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "invitations"
+    ]
+   },
+   "InvitationInfo": {
     "type": "object",
     "properties": {
      "email": {
-      "type": "string",
-      "format": "email"
+      "type": "string"
      },
      "company": {
       "type": "string"
+     },
+     "organisation": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
      }
     },
     "additionalProperties": false,
@@ -5174,10 +5820,6 @@
     "type": "object",
     "properties": {
      "id": {
-      "type": "string",
-      "format": "uuid"
-     },
-     "tenderId": {
       "type": "string",
       "format": "uuid"
      },
@@ -5205,6 +5847,20 @@
      "id",
      "text",
      "status"
+    ]
+   },
+   "AnswerRequest": {
+    "type": "object",
+    "properties": {
+     "answer": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 4000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "answer"
     ]
    },
    "QuestionCreate": {
@@ -5284,10 +5940,10 @@
    "SupplierRegistration": {
     "type": "object",
     "properties": {
-     "inviteToken": {
+     "token": {
       "type": "string"
      },
-     "contactName": {
+     "name": {
       "type": "string"
      },
      "email": {
@@ -5298,8 +5954,7 @@
       "type": "string"
      },
      "abn": {
-      "type": "string",
-      "pattern": "^\\d{11}$"
+      "type": "string"
      },
      "password": {
       "type": "string",
@@ -5308,12 +5963,273 @@
     },
     "additionalProperties": false,
     "required": [
-     "inviteToken",
-     "contactName",
+     "name",
      "email",
      "company",
      "abn",
      "password"
+    ]
+   },
+   "RegistrationResult": {
+    "type": "object",
+    "properties": {
+     "registered": {
+      "type": "boolean"
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "sanctionsStatus": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "CLEAR",
+       "MATCH"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "registered",
+     "supplierId"
+    ]
+   },
+   "SupplierTenderSummary": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "title": {
+      "type": "string"
+     },
+     "number": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "submissionStatus": {
+      "type": "string",
+      "enum": [
+       "NOT_STARTED",
+       "DRAFT",
+       "SUBMITTED",
+       "REJECTED_LATE"
+      ]
+     },
+     "receipt": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "title",
+     "status"
+    ]
+   },
+   "SupplierTender": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "title": {
+      "type": "string"
+     },
+     "number": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "opensAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "serverTime": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "fields": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/TenderField"
+      }
+     },
+     "questions": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Question"
+      }
+     },
+     "addenda": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Addendum"
+      }
+     },
+     "submission": {
+      "type": "object",
+      "properties": {
+       "status": {
+        "type": "string"
+       },
+       "receipt": {
+        "type": "string"
+       },
+       "submittedAt": {
+        "type": "string",
+        "format": "date-time"
+       },
+       "files": {
+        "type": "array",
+        "items": {
+         "$ref": "#/components/schemas/BidFile"
+        }
+       }
+      },
+      "additionalProperties": false,
+      "required": [
+       "status",
+       "files"
+      ]
+     },
+     "canBid": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "title",
+     "status",
+     "fields",
+     "submission",
+     "canBid"
+    ]
+   },
+   "BidFileUpload": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "section": {
+      "type": "string",
+      "enum": [
+       "TECHNICAL",
+       "COMMERCIAL",
+       "OTHER"
+      ]
+     },
+     "dataBase64": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "dataBase64"
+    ]
+   },
+   "BidFile": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "sizeBytes": {
+      "type": "integer"
+     },
+     "contentType": {
+      "type": "string"
+     },
+     "section": {
+      "type": "string"
+     },
+     "scan": {
+      "type": "string"
+     },
+     "sha256": {
+      "type": "string"
+     },
+     "uploadedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "sizeBytes",
+     "section"
+    ]
+   },
+   "BidReceipt": {
+    "type": "object",
+    "properties": {
+     "receipt": {
+      "type": "string"
+     },
+     "submittedAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "files": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "sizeBytes": {
+         "type": "integer"
+        },
+        "section": {
+         "type": "string"
+        },
+        "sha256": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "receipt",
+     "submittedAt",
+     "files"
     ]
    },
    "Supplier": {
