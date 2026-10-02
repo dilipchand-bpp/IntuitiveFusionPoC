@@ -13,6 +13,8 @@ import {
   PLAN_STATUS_TONE,
   aud,
 } from '@/lib/labels';
+import { appendSpoken, useDictation } from '../voice/use-dictation';
+import { VoiceButton, VoiceStatus } from '../voice/voice-button';
 import type { PlanConflict, PlanField, PlanView } from './types';
 
 const when = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
@@ -25,6 +27,7 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
   const [notice, setNotice] = useState<string | null>(null);
   const [instruction, setInstruction] = useState('');
   const [hint, setHint] = useState<string | null>(null);
+  const voice = useDictation((spoken) => setInstruction((cur) => appendSpoken(cur, spoken)));
   const [undoToken, setUndoToken] = useState<string | undefined>(plan.undoToken);
   const [editKey, setEditKey] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -339,7 +342,9 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
             >
               <Input value={instruction} onChange={(e) => setInstruction(e.target.value)} maxLength={2000} />
             </Field>
+            <VoiceStatus state={voice.state} interim={voice.interim} error={voice.error} />
             <div className="flex flex-wrap gap-2">
+              <VoiceButton state={voice.state} onStart={voice.start} onStop={voice.stop} />
               <Button type="submit" loading={busy === 'instruct'} disabled={!instruction.trim()}>
                 Apply
               </Button>

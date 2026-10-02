@@ -1,9 +1,11 @@
 'use client';
-import { Mic, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { AiBadge, Button } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
+import { appendSpoken, useDictation } from '../voice/use-dictation';
+import { VoiceButton, VoiceStatus } from '../voice/voice-button';
 import { DraftPanel } from './draft-panel';
 import type { ChatMsg, RequestView } from './types';
 
@@ -25,6 +27,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const voice = useDictation((spoken) => setText((cur) => appendSpoken(cur, spoken)));
   const logRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
 
@@ -151,20 +154,17 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
             placeholder="Describe what you need, for example: Run an RFx for facilities cleaning, three-year term, about $1.2M"
             className="min-h-[44px] min-w-0 basis-full resize-none sm:flex-1 sm:basis-0 rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder:text-text-muted"
           />
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            disabled
-            aria-label="Voice input (coming soon)"
-            title="Voice input is coming soon"
-          >
-            <Mic className="size-5" aria-hidden="true" />
-          </Button>
+          <VoiceButton state={voice.state} onStart={voice.start} onStop={voice.stop} />
           <Button type="submit" disabled={!convId || !text.trim()} loading={busy} aria-label="Send message">
             <Send className="size-4" aria-hidden="true" />
             Send
           </Button>
+          <VoiceStatus
+            className="basis-full"
+            state={voice.state}
+            interim={voice.interim}
+            error={voice.error}
+          />
         </form>
       </section>
 

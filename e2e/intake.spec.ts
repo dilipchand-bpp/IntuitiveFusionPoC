@@ -199,12 +199,9 @@ test.describe('US-INT-01 / 02 / 03 conversational intake', () => {
     await expect(page.getByTestId('draft-panel')).toContainText('Draft');
   });
 
-  test('voice input is visibly "coming soon" and disabled; Enter sends, Shift+Enter does not', async ({
-    page,
-  }) => {
+  test('Enter sends, Shift+Enter does not', async ({ page }) => {
     await signIn(page, 'requester');
     await page.goto('/app/requests/new');
-    await expect(page.getByRole('button', { name: 'Voice input (coming soon)' })).toBeDisabled();
     await expect(page.getByRole('form', { name: 'Message the assistant' })).toHaveAttribute(
       'data-ready',
       'true',
@@ -215,6 +212,58 @@ test.describe('US-INT-01 / 02 / 03 conversational intake', () => {
     await expect(page.locator('[data-role="USER"]')).toHaveCount(0);
     await box.press('Enter');
     await expect(page.locator('[data-role="USER"]')).toHaveCount(1);
+  });
+});
+
+test.describe('voice input', () => {
+  // A scripted stand-in for the browser's speech recogniser: starting it "hears" one phrase.
+  // Injected as plain script text: a function would be wrapped by the test compiler with helpers the page does not have.
+  const fakeRecogniser = `
+    function Fake() { this.onresult = null; this.onerror = null; this.onend = null; }
+    Fake.prototype.start = function () {
+      var self = this;
+      setTimeout(function () {
+        var mk = function (text, isFinal) { return { isFinal: isFinal, 0: { transcript: text } }; };
+        if (self.onresult) self.onresult({ resultIndex: 0, results: [mk('catering for', false)] });
+        if (self.onresult) self.onresult({ resultIndex: 0, results: [mk('catering for twelve months', true)] });
+        if (self.onend) self.onend();
+      }, 50);
+    };
+    Fake.prototype.stop = function () { if (this.onend) this.onend(); };
+    Fake.prototype.abort = function () {};
+    window.SpeechRecognition = Fake;
+    window.webkitSpeechRecognition = Fake;
+  `;
+
+  test('speech is typed into the box for review and is not sent automatically', async ({ page }) => {
+    await page.addInitScript({ content: fakeRecogniser });
+    await signIn(page, 'requester');
+    await page.goto('/app/requests/new');
+    await expect(page.getByRole('form', { name: 'Message the assistant' })).toHaveAttribute(
+      'data-ready',
+      'true',
+    );
+    const box = page.getByLabel('Describe what you need or answer the question');
+    await box.fill('Please run an RFx:');
+    await page.getByRole('button', { name: 'Start voice input' }).click();
+    await expect(box).toHaveValue('Please run an RFx: catering for twelve months');
+    await expect(page.locator('[data-role="USER"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Start voice input' })).toBeVisible();
+  });
+
+  test('where the browser has no speech recognition the button says so and typing still works', async ({
+    page,
+  }) => {
+    await page.addInitScript({
+      content: 'delete window.webkitSpeechRecognition; delete window.SpeechRecognition;',
+    });
+    await signIn(page, 'requester');
+    await page.goto('/app/requests/new');
+    await expect(
+      page.getByRole('button', { name: 'Voice input is not available in this browser' }),
+    ).toBeDisabled();
+    await page.getByLabel('Describe what you need or answer the question').fill('hello');
+    await expect(page.getByRole('button', { name: 'Send message' })).toBeEnabled();
   });
 });
 
