@@ -1,6 +1,8 @@
-import { SignedInPlaceholder } from '../../signed-in-placeholder';
+import { ModulePage } from '../../module-page';
 
-// TODO(M5+): real Administration pages. Catch-all so every path under /admin resolves (never a 404 for a permitted role).
-export default function Page() {
-  return <SignedInPlaceholder area="Administration" />;
+type Params = { slug?: string[] };
+
+export default async function Page({ params }: { params: Promise<Params> }) {
+  const { slug = [] } = await params;
+  return <ModulePage pathname={['/admin', ...slug].join('/')} />;
 }

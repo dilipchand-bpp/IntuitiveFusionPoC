@@ -1,6 +1,8 @@
-import { SignedInPlaceholder } from '../../signed-in-placeholder';
+import { ModulePage } from '../../module-page';
 
-// TODO(M5+): real Supplier portal pages. Catch-all so every path under /supplier resolves (never a 404 for a permitted role).
-export default function Page() {
-  return <SignedInPlaceholder area="Supplier portal" />;
+type Params = { slug?: string[] };
+
+export default async function Page({ params }: { params: Promise<Params> }) {
+  const { slug = [] } = await params;
+  return <ModulePage pathname={['/supplier', ...slug].join('/')} />;
 }

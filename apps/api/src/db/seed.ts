@@ -87,7 +87,10 @@ export async function seedDatabase(
   if (existing.length > 0) return { seeded: false, counts: await counts(database) };
 
   const audit = new AuditService(opts.clock);
-  const passwordHash = await argon2(opts.password ?? process.env.SEED_PASSWORD ?? DEFAULT_SEED_PASSWORD);
+  const password = opts.password || process.env.SEED_PASSWORD?.trim() || DEFAULT_SEED_PASSWORD; // empty env value = unset
+  if (password.length < 8)
+    throw new Error('SEED_PASSWORD must be at least 8 characters (login requires 8+).');
+  const passwordHash = await argon2(password);
   const now = opts.clock.now();
   const day = (n: number) => new Date(now.getTime() + n * 86_400_000);
   const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
@@ -647,7 +650,7 @@ export async function seedDatabase(
         tenantId: TENANT_ID,
         contractId: id,
         kind: 'EXPIRY',
-        triggerDate: dateOnly(new Date(c.end.getTime() - 30 * 86_400_000)),
+        triggerDate: dateOnly(new Date(c.end.getTime() - 60 * 86_400_000)),
         origin: 'SYSTEM',
       });
       await log(

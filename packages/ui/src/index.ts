@@ -5,5 +5,6 @@ export * from './components/overlay';
 export * from './components/display';
 export * from './components/nav';
 export * from './components/brand';
+export * from './components/surfaces';
 export * from './components/theme-script';
 export { light, dark, typography, spacing, radius, shadow, breakpoints, motion } from './theme';

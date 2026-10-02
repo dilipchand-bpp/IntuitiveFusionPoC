@@ -1,6 +1,9 @@
-import { SignedInPlaceholder } from '../../signed-in-placeholder';
+import { ModulePage } from '../../module-page';
 
-// TODO(M5+): real Staff area pages. Catch-all so every path under /app resolves (never a 404 for a permitted role).
-export default function Page() {
-  return <SignedInPlaceholder area="Staff area" />;
+type Params = { slug?: string[] };
+
+// TODO(M6-M12): each module replaces its entry with a real page; unknown paths stay 404.
+export default async function Page({ params }: { params: Promise<Params> }) {
+  const { slug = [] } = await params;
+  return <ModulePage pathname={['/app', ...slug].join('/')} />;
 }

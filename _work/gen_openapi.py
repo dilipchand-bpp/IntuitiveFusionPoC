@@ -74,7 +74,8 @@ schemas = {
  "Clause": obj({"id": S, "title": S, "text": S, "mandatory": B, "changedFromTemplate": B}, ["id", "title", "text"]),
  "Alert": obj({"id": UUID, "contractId": UUID, "kind": enum("EXPIRY", "NOTICE", "MILESTONE", "EXTENSION", "CUSTOM"), "triggerDate": {"type": "string", "format": "date"}, "recipientRule": S, "status": enum("SCHEDULED", "SENT", "CANCELLED"), "origin": enum("SYSTEM", "USER")}, ["id", "contractId", "kind", "triggerDate"]),
  "AlertCreate": obj({"instruction": {"type": "string", "minLength": 5, "maxLength": 500}}, ["instruction"]),
- "Kpis": obj({"activeProcurements": I, "valueInFlight": N, "avgCycleDays": N, "alertsDue": I, "pendingMyAction": I, "byPhase": arr(obj({"phase": S, "count": I}))}, ["activeProcurements", "valueInFlight", "avgCycleDays"]),
+ "Kpis": obj({"activeProcurements": I, "valueInFlight": N, "avgCycleDays": N, "alertsDue": I, "pendingMyAction": I, "byPhase": arr(obj({"phase": S, "count": I})), "recent": arr(ref("RecentProcurement"))}, ["activeProcurements", "valueInFlight", "avgCycleDays"]),
+ "RecentProcurement": obj({"id": UUID, "number": S, "title": S, "phase": S, "status": S, "estimatedValue": N, "updatedAt": DT}, ["id", "number", "title", "phase", "status"]),
  "ExpiringContract": obj({"contractId": UUID, "number": S, "supplier": S, "endDate": {"type": "string", "format": "date"}, "daysRemaining": I, "optionalExtensions": arr(obj({"months": I}))}, ["contractId", "number", "endDate", "daysRemaining"]),
  "AuditEvent": obj({"id": UUID, "seq": I, "at": DT, "actorId": UUID, "actorRole": S, "action": S, "entityType": S, "entityId": UUID, "before": {"type": "object", "additionalProperties": True}, "after": {"type": "object", "additionalProperties": True}, "correlationId": S, "result": enum("SUCCESS", "DENIED", "FAILED"), "hash": S}, ["id", "seq", "at", "action", "entityType", "result"]),
  "AuditPage": obj({"items": arr(ref("AuditEvent")), "page": ref("Page")}, ["items", "page"]),
@@ -158,7 +159,7 @@ ep("POST", "/contracts/{id}/sign", "signContract", C, "Mock e-signature by signi
 ep("GET", "/contracts/{id}/alerts", "listAlerts", C, "System + user alerts", ["CONTRACT_MGR", "PROCUREMENT", "LEGAL", "EXEC"], None, "Alert", arrayResp=True)
 ep("POST", "/contracts/{id}/alerts", "createAlert", C, "Create alert from plain-language instruction", ["CONTRACT_MGR"], "AlertCreate", "Alert", 201)
 G = "Reporting"
-ep("GET", "/dashboard/kpis", "getKpis", G, "Role-scoped KPIs", "*", None, "Kpis")
+ep("GET", "/dashboard/kpis", "getKpis", G, "Role-scoped KPIs (staff only; requesters see their own requests)", [r for r in ROLES if r != "SUPPLIER"], None, "Kpis")
 ep("GET", "/reports/expiring-contracts", "expiringContracts", G, "Contracts expiring within N days (default 90)", ["CONTRACT_MGR", "PROCUREMENT", "EXEC", "LEGAL"], None, "ExpiringContract", arrayResp=True, query=["days"])
 ep("GET", "/audit-events", "listAuditEvents", G, "Search audit trail", ["PROBITY", "ADMIN", "EXEC", "PROCUREMENT"], None, "AuditPage", query=["entityType", "entityId", "actorId", "from", "to", "limit", "offset"])
 ep("GET", "/audit-events/export", "exportAudit", G, "Export audit report (CSV); the export is itself audited", ["PROBITY", "ADMIN"], None, None, note="text/csv")

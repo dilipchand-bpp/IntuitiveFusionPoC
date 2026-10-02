@@ -25,6 +25,31 @@ describe('seed', () => {
     await db.close();
   });
 
+  it('an empty SEED_PASSWORD (e.g. copied from .env.example) falls back to the documented demo password', async () => {
+    const db = await freshDb();
+    const saved = process.env.SEED_PASSWORD;
+    process.env.SEED_PASSWORD = '';
+    try {
+      await seedDatabase(db, { clock: newClock() });
+    } finally {
+      if (saved === undefined) delete process.env.SEED_PASSWORD;
+      else process.env.SEED_PASSWORD = saved;
+    }
+    const [u] = await db.db
+      .select()
+      .from(s.appUser)
+      .where(eq(s.appUser.email, emailFor('requester')));
+    expect(await verify(u!.passwordHash, 'Demo-Only-Passw0rd!2026')).toBe(true);
+    expect(await verify(u!.passwordHash, '')).toBe(false);
+    await db.close();
+  });
+
+  it('a too-short SEED_PASSWORD is refused with a clear message', async () => {
+    const db = await freshDb();
+    await expect(seedDatabase(db, { clock: newClock(), password: 'short' })).rejects.toThrow(/at least 8/);
+    await db.close();
+  });
+
   it('creates the planned data set', async () => {
     const db = await sharedSeededDb();
     const c = (await seedDatabase(db, { clock: newClock() })).counts;

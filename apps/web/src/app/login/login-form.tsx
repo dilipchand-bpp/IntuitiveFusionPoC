@@ -1,6 +1,8 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 import { Button, Field, Input } from '@if/ui';
 
 interface LoginOk {
@@ -17,6 +19,7 @@ export function LoginForm() {
   const params = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
 
@@ -74,12 +77,30 @@ export function LoginForm() {
       </Field>
       <Field label="Password" error={errors.password} required>
         <Input
-          type="password"
+          type={show ? 'text' : 'password'}
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
       </Field>
+      <div className="-mt-2 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          aria-pressed={show}
+          className="inline-flex min-h-[44px] items-center gap-2 text-sm font-medium text-accent"
+        >
+          {show ? (
+            <EyeOff className="size-4" aria-hidden="true" />
+          ) : (
+            <Eye className="size-4" aria-hidden="true" />
+          )}
+          {show ? 'Hide password' : 'Show password'}
+        </button>
+        <Link href="/forgot-password" className="text-sm">
+          Forgot password?
+        </Link>
+      </div>
       <Button type="submit" loading={busy}>
         Sign in
       </Button>

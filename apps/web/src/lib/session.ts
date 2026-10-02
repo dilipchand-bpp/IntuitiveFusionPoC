@@ -12,18 +12,25 @@ export interface SessionUser {
 
 const API = process.env.API_URL ?? 'http://localhost:4000';
 
-/** Server-side lookup of the signed-in user (null when anonymous). Forwards the browser's cookies to the API. */
-export async function getSessionUser(): Promise<SessionUser | null> {
+async function cookieHeader(): Promise<string> {
   const jar = await cookies();
-  const cookie = jar
+  return jar
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
     .join('; ');
+}
+
+/** Server-side GET against the API, forwarding the browser's cookies. Returns null on any non-2xx or network error. */
+export async function apiGet<T>(path: string): Promise<T | null> {
+  const cookie = await cookieHeader();
   if (!cookie) return null;
   try {
-    const r = await fetch(`${API}/api/v1/auth/me`, { headers: { cookie }, cache: 'no-store' });
-    return r.ok ? ((await r.json()) as SessionUser) : null;
+    const r = await fetch(`${API}/api/v1${path}`, { headers: { cookie }, cache: 'no-store' });
+    return r.ok ? ((await r.json()) as T) : null;
   } catch {
     return null;
   }
 }
+
+/** Server-side lookup of the signed-in user (null when anonymous). */
+export const getSessionUser = () => apiGet<SessionUser>('/auth/me');

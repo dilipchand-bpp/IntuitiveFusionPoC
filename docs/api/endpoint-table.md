@@ -55,7 +55,7 @@
 | POST | `/contracts/{id}/sign` | signContract | DELEGATE | Mock e-signature by signing delegate (authority checked separately) | 403 SIGNING_AUTHORITY_INSUFFICIENT |
 | GET | `/contracts/{id}/alerts` | listAlerts | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | System + user alerts |  |
 | POST | `/contracts/{id}/alerts` | createAlert | CONTRACT_MGR | Create alert from plain-language instruction |  |
-| GET | `/dashboard/kpis` | getKpis | any signed-in | Role-scoped KPIs |  |
+| GET | `/dashboard/kpis` | getKpis | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Role-scoped KPIs (staff only; requesters see their own requests) |  |
 | GET | `/reports/expiring-contracts` | expiringContracts | CONTRACT_MGR, PROCUREMENT, EXEC, LEGAL | Contracts expiring within N days (default 90) |  |
 | GET | `/audit-events` | listAuditEvents | PROBITY, ADMIN, EXEC, PROCUREMENT | Search audit trail |  |
 | GET | `/audit-events/export` | exportAudit | PROBITY, ADMIN | Export audit report (CSV); the export is itself audited | text/csv |

@@ -11,6 +11,7 @@ import { registerAuthRoutes } from './auth/routes.js';
 import { SessionService } from './auth/session-service.js';
 import type { Database } from './db/client.js';
 import { AppError } from './http/errors.js';
+import { registerShellRoutes } from './modules/shell.js';
 import { registerSpecStubs } from './spec-routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -98,6 +99,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     loginRateLimitMax: deps.loginRateLimitMax ?? 10,
   });
   implemented.add('GET /health');
+  for (const k of registerShellRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

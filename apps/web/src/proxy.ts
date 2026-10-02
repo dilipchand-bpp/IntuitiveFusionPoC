@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { rolesForPath } from '@if/shared';
+import { allowedRolesForPath } from '@/lib/access';
 
 /**
  * Route guard (Next.js "proxy", formerly middleware). Runs before any guarded page renders:
  *   anonymous            -> redirect to /login?next=<path>
  *   signed in, wrong role -> 403 "forbidden" page, and the attempt is reported to the API so it is audited
- * The rules come from @if/shared (ROUTE_RULES) - the same table the API tests assert against.
+ * Rules: @if/shared ROUTE_RULES narrowed by the navigation table (lib/nav.ts), so menu and address bar agree.
  * This is a UX guard; the API independently enforces every permission (never trust the browser).
  */
 const API = process.env.API_URL ?? 'http://localhost:4000';
@@ -17,7 +17,7 @@ interface Me {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const allowed = rolesForPath(pathname);
+  const allowed = allowedRolesForPath(pathname);
   if (!allowed) return NextResponse.next();
 
   let me: Me | null = null;

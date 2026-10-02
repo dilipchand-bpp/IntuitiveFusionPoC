@@ -3171,9 +3171,21 @@
     "tags": [
      "Reporting"
     ],
-    "summary": "Role-scoped KPIs",
+    "summary": "Role-scoped KPIs (staff only; requesters see their own requests)",
     "parameters": [],
-    "x-roles": "any-authenticated",
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
     "responses": {
      "200": {
       "description": "Success",
@@ -5593,6 +5605,12 @@
        },
        "additionalProperties": false
       }
+     },
+     "recent": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/RecentProcurement"
+      }
      }
     },
     "additionalProperties": false,
@@ -5600,6 +5618,42 @@
      "activeProcurements",
      "valueInFlight",
      "avgCycleDays"
+    ]
+   },
+   "RecentProcurement": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "phase": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "number",
+     "title",
+     "phase",
+     "status"
     ]
    },
    "ExpiringContract": {

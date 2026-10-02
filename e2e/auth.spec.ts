@@ -25,7 +25,7 @@ test.describe('route guards (US-PLT-02, US-PLT-03)', () => {
     await page.getByLabel(/Password/).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/app\/requests$/);
-    await expect(page.getByTestId('whoami')).toContainText('REQUESTER');
+    await expect(page.getByTestId('shell')).toHaveAttribute('data-role', 'REQUESTER');
   });
 
   const homes: Array<[string, string, string]> = [
@@ -40,7 +40,7 @@ test.describe('route guards (US-PLT-02, US-PLT-03)', () => {
     test(`${role} lands on ${home} after login`, async ({ page }) => {
       await signIn(page, key);
       await expect(page).toHaveURL(new RegExp(home.replace('/', '\\/') + '$'));
-      await expect(page.getByTestId('whoami')).toContainText(role);
+      await expect(page.getByTestId('shell')).toHaveAttribute('data-role', role);
     });
   }
 
@@ -66,8 +66,9 @@ test.describe('route guards (US-PLT-02, US-PLT-03)', () => {
 
   test('logout ends the session; protected pages then redirect to login', async ({ page }) => {
     await signIn(page, 'finance');
-    await expect(page.getByTestId('whoami')).toContainText('FINANCE');
-    await page.getByRole('button', { name: 'Log out' }).click();
+    await expect(page.getByTestId('shell')).toHaveAttribute('data-role', 'FINANCE');
+    await page.getByRole('button', { name: /Account menu/ }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
     await expect(page).toHaveURL(/\/login/);
     await page.goto('/app/dashboard');
     await expect(page).toHaveURL(/\/login\?next=/);
@@ -75,7 +76,7 @@ test.describe('route guards (US-PLT-02, US-PLT-03)', () => {
 
   test('the session cookie is HttpOnly and not readable by page scripts', async ({ page, context }) => {
     await signIn(page, 'exec');
-    await expect(page.getByTestId('whoami')).toBeVisible();
+    await expect(page.getByTestId('shell')).toBeVisible();
     const cookies = await context.cookies();
     const s = cookies.find((c) => c.name === 'if_session')!;
     expect(s.httpOnly).toBe(true);
