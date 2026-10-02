@@ -1,17 +1,26 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 
+const src = (p: string) => fileURLToPath(new URL(p, import.meta.url));
+
 export default defineConfig({
+  plugins: [react()],
   resolve: {
-    alias: { '@if/shared': fileURLToPath(new URL('./packages/shared/src/index.ts', import.meta.url)) },
+    alias: {
+      '@if/shared': src('./packages/shared/src/index.ts'),
+      '@if/ui/theme': src('./packages/ui/src/theme.ts'),
+      '@if/ui': src('./packages/ui/src/index.ts'),
+    },
   },
   test: {
-    include: ['apps/**/src/**/*.test.ts', 'packages/**/src/**/*.test.ts'],
+    include: ['apps/**/src/**/*.test.{ts,tsx}', 'packages/**/src/**/*.test.{ts,tsx}'],
     environment: 'node',
+    setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'v8',
       include: ['apps/api/src/**', 'packages/**/src/**'],
-      exclude: ['**/*.test.ts', 'apps/api/src/main.ts'],
+      exclude: ['**/*.test.{ts,tsx}', 'apps/api/src/main.ts', '**/*.css'],
     },
   },
 });

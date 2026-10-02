@@ -43,7 +43,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: E2E smoke
-        run: npm run e2e
+        # Visual baselines are Windows-rendered; Linux baselines are generated in M17. Everything else runs.
+        run: npx playwright test --grep-invert @visual
         env:
           CI: 'true'
       - uses: actions/upload-artifact@v4

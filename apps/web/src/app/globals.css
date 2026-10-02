@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/plus-jakarta-sans';
+/* Generated tokens + Tailwind @theme mapping: edit packages/ui/src/theme.ts, never this file. */
+@import '../../../../packages/ui/src/theme.css';
+@source '../../../../packages/ui/src';
+
+@layer base {
+  html {
+    background: var(--if-color-bg);
+  }
+  body {
+    background: var(--if-color-bg);
+    color: var(--if-color-text);
+    font-family: var(--if-font-body);
+    font-size: var(--if-text-base);
+    line-height: var(--if-leading-base);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--if-font-heading);
+    line-height: 1.2;
+  }
+  a {
+    color: var(--if-color-accent);
+    text-underline-offset: 3px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--if-color-ring);
+    outline-offset: 2px;
+  }
+}

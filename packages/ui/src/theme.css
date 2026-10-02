@@ -1,0 +1,183 @@
+/* GENERATED from src/theme.ts by scripts/build-theme.ts - do not edit by hand. */
+:root {
+  --if-color-bg: #F6F7FA;
+  --if-color-surface: #FFFFFF;
+  --if-color-surface-alt: #EEF0F5;
+  --if-color-border: #CED2DF;
+  --if-color-border-strong: #717888;
+  --if-color-text: #1B1F27;
+  --if-color-text-muted: #5A6172;
+  --if-color-primary: #2A303C;
+  --if-color-primary-fg: #FFFFFF;
+  --if-color-primary-hover: #3D4351;
+  --if-color-secondary: #717888;
+  --if-color-silver: #CED2DF;
+  --if-color-accent: #4254C5;
+  --if-color-accent-fg: #FFFFFF;
+  --if-color-accent-hover: #3646A8;
+  --if-color-ring: #4254C5;
+  --if-color-success: #1B7A4B;
+  --if-color-success-bg: #E6F4EC;
+  --if-color-warning: #9A5200;
+  --if-color-warning-bg: #FDF0DC;
+  --if-color-error: #B42318;
+  --if-color-error-bg: #FCE8E6;
+  --if-color-info: #1A5FA8;
+  --if-color-info-bg: #E5F0FB;
+  --if-color-overlay: rgba(20, 23, 30, 0.55);
+  --if-font-heading: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --if-font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --if-font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+  --if-text-xs: 12px;
+  --if-leading-xs: 16px;
+  --if-text-sm: 14px;
+  --if-leading-sm: 20px;
+  --if-text-base: 16px;
+  --if-leading-base: 24px;
+  --if-text-lg: 18px;
+  --if-leading-lg: 28px;
+  --if-text-xl: 20px;
+  --if-leading-xl: 28px;
+  --if-text-2xl: 24px;
+  --if-leading-2xl: 32px;
+  --if-text-3xl: 30px;
+  --if-leading-3xl: 36px;
+  --if-text-4xl: 36px;
+  --if-leading-4xl: 44px;
+  --if-text-5xl: 48px;
+  --if-leading-5xl: 56px;
+  --if-space-0: 0px;
+  --if-space-1: 4px;
+  --if-space-2: 8px;
+  --if-space-3: 12px;
+  --if-space-4: 16px;
+  --if-space-6: 24px;
+  --if-space-8: 32px;
+  --if-space-12: 48px;
+  --if-space-16: 64px;
+  --if-space-24: 96px;
+  --if-radius-sm: 6px;
+  --if-radius-md: 10px;
+  --if-radius-lg: 16px;
+  --if-radius-full: 999px;
+  --if-shadow-sm: 0 1px 2px rgba(20, 23, 30, 0.08);
+  --if-shadow-md: 0 4px 12px rgba(20, 23, 30, 0.10);
+  --if-shadow-lg: 0 12px 32px rgba(20, 23, 30, 0.14);
+  --if-motion-fast: 150ms;
+  --if-motion-base: 200ms;
+  --if-motion-slow: 250ms;
+  --if-motion-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --if-touch-target: 44px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --if-color-bg: #14171E;
+    --if-color-surface: #1D212B;
+    --if-color-surface-alt: #262B37;
+    --if-color-border: #343A48;
+    --if-color-border-strong: #7C8394;
+    --if-color-text: #E8EAF0;
+    --if-color-text-muted: #A4ABB9;
+    --if-color-primary: #CED2DF;
+    --if-color-primary-fg: #14171E;
+    --if-color-primary-hover: #E1E4EC;
+    --if-color-secondary: #9AA1B1;
+    --if-color-silver: #434957;
+    --if-color-accent: #8C9BFF;
+    --if-color-accent-fg: #14171E;
+    --if-color-accent-hover: #A6B2FF;
+    --if-color-ring: #8C9BFF;
+    --if-color-success: #4CC38A;
+    --if-color-success-bg: #12301F;
+    --if-color-warning: #F5B04C;
+    --if-color-warning-bg: #3A2A10;
+    --if-color-error: #FF8A80;
+    --if-color-error-bg: #3F1A17;
+    --if-color-info: #6CB4FF;
+    --if-color-info-bg: #132B44;
+    --if-color-overlay: rgba(0, 0, 0, 0.65);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --if-color-bg: #14171E;
+  --if-color-surface: #1D212B;
+  --if-color-surface-alt: #262B37;
+  --if-color-border: #343A48;
+  --if-color-border-strong: #7C8394;
+  --if-color-text: #E8EAF0;
+  --if-color-text-muted: #A4ABB9;
+  --if-color-primary: #CED2DF;
+  --if-color-primary-fg: #14171E;
+  --if-color-primary-hover: #E1E4EC;
+  --if-color-secondary: #9AA1B1;
+  --if-color-silver: #434957;
+  --if-color-accent: #8C9BFF;
+  --if-color-accent-fg: #14171E;
+  --if-color-accent-hover: #A6B2FF;
+  --if-color-ring: #8C9BFF;
+  --if-color-success: #4CC38A;
+  --if-color-success-bg: #12301F;
+  --if-color-warning: #F5B04C;
+  --if-color-warning-bg: #3A2A10;
+  --if-color-error: #FF8A80;
+  --if-color-error-bg: #3F1A17;
+  --if-color-info: #6CB4FF;
+  --if-color-info-bg: #132B44;
+  --if-color-overlay: rgba(0, 0, 0, 0.65);
+  color-scheme: dark;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --if-motion-fast: 0ms;
+    --if-motion-base: 0ms;
+    --if-motion-slow: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@theme inline {
+  --color-bg: var(--if-color-bg);
+  --color-surface: var(--if-color-surface);
+  --color-surface-alt: var(--if-color-surface-alt);
+  --color-border: var(--if-color-border);
+  --color-border-strong: var(--if-color-border-strong);
+  --color-text: var(--if-color-text);
+  --color-text-muted: var(--if-color-text-muted);
+  --color-primary: var(--if-color-primary);
+  --color-primary-fg: var(--if-color-primary-fg);
+  --color-primary-hover: var(--if-color-primary-hover);
+  --color-secondary: var(--if-color-secondary);
+  --color-silver: var(--if-color-silver);
+  --color-accent: var(--if-color-accent);
+  --color-accent-fg: var(--if-color-accent-fg);
+  --color-accent-hover: var(--if-color-accent-hover);
+  --color-ring: var(--if-color-ring);
+  --color-success: var(--if-color-success);
+  --color-success-bg: var(--if-color-success-bg);
+  --color-warning: var(--if-color-warning);
+  --color-warning-bg: var(--if-color-warning-bg);
+  --color-error: var(--if-color-error);
+  --color-error-bg: var(--if-color-error-bg);
+  --color-info: var(--if-color-info);
+  --color-info-bg: var(--if-color-info-bg);
+  --color-overlay: var(--if-color-overlay);
+  --font-heading: var(--if-font-heading);
+  --font-sans: var(--if-font-body);
+  --font-mono: var(--if-font-mono);
+  --radius-sm: var(--if-radius-sm);
+  --radius-md: var(--if-radius-md);
+  --radius-lg: var(--if-radius-lg);
+  --shadow-sm: var(--if-shadow-sm);
+  --shadow-md: var(--if-shadow-md);
+  --shadow-lg: var(--if-shadow-lg);
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
