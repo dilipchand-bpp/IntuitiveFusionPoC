@@ -153,7 +153,13 @@ export function AiBadge({ kind = 'simulated' }: { kind?: 'simulated' | 'drafted'
       ) : (
         <Sparkles className="size-3.5" aria-hidden="true" />
       )}
-      {kind === 'simulated' ? 'Simulated AI' : 'AI-drafted – review required'}
+      {kind === 'simulated' ? (
+        'Simulated AI'
+      ) : (
+        <>
+          AI-drafted<span className="sr-only"> – review required</span>
+        </>
+      )}
     </span>
   );
 }

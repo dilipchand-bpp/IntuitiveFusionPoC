@@ -1,11 +1,13 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Button, Field, Input } from '@if/ui';
 
 export function ForgotForm() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false); // submit stays disabled until hydrated
+  useEffect(() => setReady(true), []);
   const [sent, setSent] = useState(false);
 
   async function onSubmit(e: FormEvent) {
@@ -49,7 +51,7 @@ export function ForgotForm() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </Field>
-      <Button type="submit" loading={busy}>
+      <Button type="submit" loading={busy} disabled={!ready}>
         Send reset link
       </Button>
     </form>

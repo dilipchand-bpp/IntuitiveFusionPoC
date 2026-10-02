@@ -266,7 +266,7 @@
     "tags": [
      "Requests"
     ],
-    "summary": "List requests visible to caller (scope by role/hierarchy)",
+    "summary": "List requests visible to caller (requesters see their own)",
     "parameters": [
      {
       "name": "phase",
@@ -309,7 +309,16 @@
       }
      }
     ],
-    "x-roles": "any-authenticated",
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
     "responses": {
      "200": {
       "description": "Success",
@@ -406,7 +415,16 @@
       }
      }
     ],
-    "x-roles": "any-authenticated",
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
     "responses": {
      "200": {
       "description": "Success",
@@ -558,7 +576,10 @@
     ],
     "summary": "Start mock-AI conversation (simulated=true)",
     "parameters": [],
-    "x-roles": "any-authenticated",
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
     "responses": {
      "201": {
       "description": "Success",
@@ -619,7 +640,10 @@
       }
      }
     ],
-    "x-roles": "any-authenticated",
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
     "responses": {
      "200": {
       "description": "Success",
@@ -664,7 +688,10 @@
       }
      }
     ],
-    "x-roles": "any-authenticated",
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
     "responses": {
      "201": {
       "description": "Success",
@@ -4241,6 +4268,27 @@
        "UNAVAILABLE"
       ]
      },
+     "complexityReasons": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "gates": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Gate"
+      }
+     },
+     "missingFields": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "version": {
+      "type": "integer"
+     },
      "fields": {
       "type": "array",
       "items": {
@@ -4262,6 +4310,33 @@
      "number",
      "title",
      "phase",
+     "status"
+    ]
+   },
+   "Gate": {
+    "type": "object",
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "reason": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "REQUIRED",
+       "SATISFIED"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "key",
+     "label",
      "status"
     ]
    },
@@ -4301,6 +4376,15 @@
      },
      "businessUnit": {
       "type": "string"
+     },
+     "fields": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "string"
+      }
+     },
+     "expectedVersion": {
+      "type": "integer"
      }
     },
     "additionalProperties": false
@@ -4387,6 +4471,13 @@
       "items": {
        "$ref": "#/components/schemas/FieldValue"
       }
+     },
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "request": {
+      "$ref": "#/components/schemas/ProcurementRequest"
      }
     },
     "additionalProperties": false,

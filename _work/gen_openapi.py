@@ -30,12 +30,14 @@ schemas = {
  "ProcurementRequest": obj({"id": UUID, "number": S, "title": S, "category": S, "unspsc": S, "estimatedValue": N, "currency": S, "termMonths": I,
    "businessUnit": S, "requesterId": UUID, "phase": enum(*PHASES), "status": enum("DRAFT", "SUBMITTED", "IN_PROGRESS", "BLOCKED", "COMPLETE"),
    "intakeMode": enum("SELF_SERVICE", "TEAM_LED"), "complexity": enum("LOW", "MEDIUM", "HIGH", "CRITICAL"), "budgetCheck": enum("NOT_RUN", "CLEARED", "EXCEEDED", "UNAVAILABLE"),
+   "complexityReasons": arr(S), "gates": arr(ref("Gate")), "missingFields": arr(S), "version": I,
    "fields": arr(ref("FieldValue")), "createdAt": DT, "updatedAt": DT}, ["id", "number", "title", "phase", "status"]),
+ "Gate": obj({"key": S, "label": S, "reason": S, "status": enum("REQUIRED", "SATISFIED")}, ["key", "label", "status"]),
  "RequestList": obj({"items": arr(ref("ProcurementRequest")), "page": ref("Page")}, ["items", "page"]),
- "RequestPatch": obj({"title": S, "category": S, "estimatedValue": N, "termMonths": I, "businessUnit": S}),
+ "RequestPatch": obj({"title": S, "category": S, "estimatedValue": N, "termMonths": I, "businessUnit": S, "fields": {"type": "object", "additionalProperties": S}, "expectedVersion": I}),
  "ConversationStart": obj({"purpose": enum("INTAKE", "PLAN", "TENDER", "EVALUATION", "CONTRACT", "GENERAL"), "contextId": UUID}, ["purpose"]),
  "Conversation": obj({"id": UUID, "purpose": S, "contextId": UUID, "messages": arr(ref("ChatMessage")), "simulated": B}, ["id", "messages", "simulated"]),
- "ChatMessage": obj({"id": UUID, "role": enum("USER", "ASSISTANT", "SYSTEM"), "text": S, "createdAt": DT, "proposedChanges": arr(ref("FieldValue"))}, ["id", "role", "text"]),
+ "ChatMessage": obj({"id": UUID, "role": enum("USER", "ASSISTANT", "SYSTEM"), "text": S, "createdAt": DT, "proposedChanges": arr(ref("FieldValue")), "requestId": UUID, "request": ref("ProcurementRequest")}, ["id", "role", "text"]),
  "ChatSend": obj({"text": {"type": "string", "minLength": 1, "maxLength": 4000}, "channel": enum("TEXT", "VOICE")}, ["text"]),
  "Plan": obj({"id": UUID, "requestId": UUID, "status": enum("DRAFT", "AWAITING_SIGNOFF", "AWAITING_APPROVAL", "APPROVED_LOCKED", "REOPENED", "REJECTED"),
    "fields": arr(ref("FieldValue")), "approvals": arr(ref("Approval")), "summary": S, "version": I}, ["id", "requestId", "status", "fields", "version"]),
@@ -101,15 +103,15 @@ ep("POST", "/auth/forgot-password", "forgotPassword", A, "Request reset; always 
 ep("GET", "/auth/me", "getMe", A, "Current user and role-based home path", "*", None, "User")
 ep("POST", "/auth/access-denied", "reportAccessDenied", A, "Web route guard reports a blocked page visit so it is audited", "*", "AccessDenied", None, 204)
 T = "Requests"; R = ["REQUESTER", "PROCUREMENT", "EXEC", "FINANCE", "ADMIN", "DELEGATE", "PROBITY"]
-ep("GET", "/requests", "listRequests", T, "List requests visible to caller (scope by role/hierarchy)", "*", None, "RequestList", query=["phase", "status", "q", "limit", "offset"])
+ep("GET", "/requests", "listRequests", T, "List requests visible to caller (requesters see their own)", ["REQUESTER", "PROCUREMENT", "DELEGATE", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "EXEC"], None, "RequestList", query=["phase", "status", "q", "limit", "offset"])
 ep("POST", "/requests", "createRequest", T, "Create blank request", ["REQUESTER", "PROCUREMENT"], "RequestPatch", "ProcurementRequest", 201)
-ep("GET", "/requests/{id}", "getRequest", T, "Get request", "*", None, "ProcurementRequest")
+ep("GET", "/requests/{id}", "getRequest", T, "Get request", ["REQUESTER", "PROCUREMENT", "DELEGATE", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "EXEC"], None, "ProcurementRequest")
 ep("PATCH", "/requests/{id}", "updateRequest", T, "Update request fields", ["REQUESTER", "PROCUREMENT"], "RequestPatch", "ProcurementRequest")
 ep("POST", "/requests/{id}/submit", "submitRequest", T, "Run budget check, complexity score and routing; submits", ["REQUESTER", "PROCUREMENT"], None, "ProcurementRequest", note="409 if mandatory fields missing; 422 if hard-cap budget exceeded")
 Q = "Assistant"
-ep("POST", "/assistant/conversations", "startConversation", Q, "Start mock-AI conversation (simulated=true)", "*", "ConversationStart", "Conversation", 201)
-ep("GET", "/assistant/conversations/{id}", "getConversation", Q, "Get conversation", "*", None, "Conversation")
-ep("POST", "/assistant/conversations/{id}/messages", "sendMessage", Q, "Send user text; returns assistant reply with proposed field changes", "*", "ChatSend", "ChatMessage", 201)
+ep("POST", "/assistant/conversations", "startConversation", Q, "Start mock-AI conversation (simulated=true)", ["REQUESTER", "PROCUREMENT"], "ConversationStart", "Conversation", 201)
+ep("GET", "/assistant/conversations/{id}", "getConversation", Q, "Get conversation", ["REQUESTER", "PROCUREMENT"], None, "Conversation")
+ep("POST", "/assistant/conversations/{id}/messages", "sendMessage", Q, "Send user text; returns assistant reply with proposed field changes", ["REQUESTER", "PROCUREMENT"], "ChatSend", "ChatMessage", 201)
 P = "Plans"
 ep("GET", "/requests/{id}/plan", "getPlan", P, "Get (or lazily create from intake) the procurement plan", ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "PROBITY", "EXEC", "ADMIN"], None, "Plan")
 ep("PUT", "/plans/{id}/fields/{key}", "updatePlanField", P, "Set a field (or one paragraph); optimistic concurrency via expectedVersion", ["PROCUREMENT", "REQUESTER"], "FieldUpdate", "Plan", note="409 on stale version; 423 if plan locked")

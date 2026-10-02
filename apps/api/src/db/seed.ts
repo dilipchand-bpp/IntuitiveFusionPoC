@@ -121,6 +121,18 @@ export async function seedDatabase(
         selfServiceThresholdAud: 50000,
         statutoryMinDays: 25,
         highValueAud: 1_000_000,
+        // Mock ERP: available budget per business unit; an over-budget request is blocked (HARD) or escalated (SOFT).
+        budgetCap: 'HARD',
+        budgets: {
+          Facilities: 2_000_000,
+          IT: 6_000_000,
+          Procurement: 500_000,
+          Finance: 300_000,
+          Legal: 400_000,
+          Risk: 250_000,
+          Executive: 1_000_000,
+          Operations: 3_000_000,
+        },
       },
     });
     await log('tenant.create', 'tenant', TENANT_ID, { name: 'Meridian Group (demo)', synthetic: true });

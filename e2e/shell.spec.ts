@@ -189,15 +189,30 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     );
   });
 
-  test('dashboard shows live KPIs and the procurement table from the seeded data', async ({ page }) => {
+  test('dashboard shows live KPIs and a procurement table (at least the seeded data, whatever other tests added)', async ({
+    page,
+  }) => {
     await signIn(page, 'EXEC');
     await page.goto('/app/dashboard');
     const kpis = page.getByRole('region', { name: 'Key figures' });
-    await expect(kpis).toContainText('Active procurements');
-    await expect(kpis).toContainText(/6,648,000/);
-    await expect(page.getByRole('table', { name: 'Recent procurements' })).toContainText(
-      'Managed IT services',
-    );
+    for (const label of [
+      'Active procurements',
+      'Value in flight',
+      'Avg. cycle time',
+      'Alerts due',
+      'Waiting for you',
+    ]) {
+      await expect(kpis).toContainText(label);
+    }
+    // The seed alone puts $6,648,000 in flight across 4 active procurements; other tests only add to it.
+    const hint = await kpis
+      .getByText(/^\$[\d,]{7,}$/)
+      .first()
+      .innerText();
+    expect(Number(hint.replace(/[^\d]/g, ''))).toBeGreaterThanOrEqual(6_648_000);
+    const table = page.getByRole('table', { name: 'Recent procurements' });
+    await expect(table.getByRole('columnheader')).toHaveCount(5);
+    expect(await table.getByRole('row').count()).toBeGreaterThan(1);
   });
 
   test('skip link moves focus to the main content', async ({ page }) => {
@@ -291,15 +306,18 @@ test.describe('visual regression @visual', () => {
       });
     }
   }
-  test('dashboard light desktop', async ({ page }) => {
+  test('signed-in shell chrome (header and sidebar), light desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await signIn(page, 'EXEC');
     await page.goto('/app/dashboard');
     await page.evaluate(() => document.fonts.ready);
-    await expect(page).toHaveScreenshot('dashboard-light-desktop.png', {
-      fullPage: true,
+    // Live figures change as other tests create requests, so only the stable page chrome is compared.
+    const shell = page.getByTestId('shell');
+    await expect(shell.locator('header').first()).toHaveScreenshot('shell-header-light.png', {
       maxDiffPixelRatio: 0.02,
-      mask: [page.getByRole('table')],
+    });
+    await expect(shell.locator('aside')).toHaveScreenshot('shell-sidebar-exec-light.png', {
+      maxDiffPixelRatio: 0.02,
     });
   });
 });

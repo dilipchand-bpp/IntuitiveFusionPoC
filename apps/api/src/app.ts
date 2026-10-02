@@ -9,7 +9,11 @@ import { installAuth, type GuardDeps } from './auth/guard.js';
 import { MockIdentityProvider, type IdentityProvider } from './auth/identity-provider.js';
 import { registerAuthRoutes } from './auth/routes.js';
 import { SessionService } from './auth/session-service.js';
+import { MockAiProvider, type AiProvider } from './adapters/ai-provider.js';
+import { MockErpBudgetService, type ErpBudgetService } from './adapters/erp.js';
 import type { Database } from './db/client.js';
+import { registerIdempotency } from './http/idempotency.js';
+import { registerIntakeRoutes } from './modules/intake/routes.js';
 import { AppError } from './http/errors.js';
 import { registerShellRoutes } from './modules/shell.js';
 import { registerSpecStubs } from './spec-routes.js';
@@ -22,6 +26,8 @@ export interface AppDeps {
   /** Override for tests; production uses the default (10 attempts per 15 minutes per IP). */
   loginRateLimitMax?: number;
   idp?: IdentityProvider;
+  ai?: AiProvider;
+  erp?: ErpBudgetService;
 }
 
 const problem = (reply: FastifyReply, status: number, body: Record<string, unknown>) =>
@@ -84,6 +90,14 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   );
 
   installAuth(app, guardDeps);
+  // Retry-safe mutations: only for signed-in callers presenting a valid CSRF token (NFR-AV03).
+  registerIdempotency(app, {
+    database: deps.database,
+    identify: (req) =>
+      req.auth && sessions.verifyCsrf(req.auth.sessionId, req.headers['x-csrf-token'] as string | undefined)
+        ? { tenantId: req.auth.user.tenantId, userId: req.auth.user.id }
+        : null,
+  });
 
   app.get('/health', async () => ({ status: 'ok', service: 'if-api', time: deps.clock.now().toISOString() }));
   app.get(`${API_PREFIX}/health`, async () => ({
@@ -100,6 +114,9 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   });
   implemented.add('GET /health');
   for (const k of registerShellRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  const ai = deps.ai ?? new MockAiProvider();
+  const erp = deps.erp ?? new MockErpBudgetService();
+  for (const k of registerIntakeRoutes(app, API_PREFIX, { ...guardDeps, ai, erp })) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod';
+import type { ZodTypeAny, z } from 'zod';
 
 /** Domain/HTTP error that maps 1:1 to an RFC 7807 problem (Technical Specification 4.1). */
 export class AppError extends Error {
@@ -18,7 +18,7 @@ export const forbidden = (why = 'You do not have permission to do that') =>
   new AppError(403, 'FORBIDDEN', why);
 
 /** Validates untrusted input at the edge; never echoes the offending values back. */
-export function parse<T>(schema: ZodType<T>, input: unknown): T {
+export function parse<S extends ZodTypeAny>(schema: S, input: unknown): z.output<S> {
   const r = schema.safeParse(input);
   if (r.success) return r.data;
   throw new AppError(

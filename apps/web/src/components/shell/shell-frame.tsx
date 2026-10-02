@@ -50,7 +50,7 @@ export function ShellFrame({
           className="flex items-center text-primary-fg no-underline"
           aria-label="Intuitive Fusion home"
         >
-          <Logo withName size={36} />
+          <Logo withName compact size={36} />
         </Link>
         <span className="mx-1 hidden rounded-full border border-primary-fg/40 px-2 py-0.5 text-xs font-semibold sm:inline">
           Proof of concept · synthetic data

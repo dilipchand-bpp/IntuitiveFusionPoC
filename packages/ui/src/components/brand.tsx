@@ -7,10 +7,13 @@ import { cn } from './cn';
 export function Logo({
   size = 40,
   withName = false,
+  compact = false,
   className,
 }: {
   size?: number;
   withName?: boolean;
+  /** Hide the wordmark below the `sm` breakpoint (tight headers). */
+  compact?: boolean;
   className?: string;
 }) {
   return (
@@ -22,7 +25,13 @@ export function Logo({
         alt={withName ? '' : 'Intuitive Fusion'}
         className="rounded-sm"
       />
-      {withName && <span className="font-heading text-lg font-bold">Intuitive Fusion</span>}
+      {withName && (
+        <span
+          className={cn('whitespace-nowrap font-heading text-lg font-bold', compact && 'hidden sm:inline')}
+        >
+          Intuitive Fusion
+        </span>
+      )}
     </span>
   );
 }

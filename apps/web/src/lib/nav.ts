@@ -61,7 +61,7 @@ export const NAV: readonly NavItem[] = [
     href: '/app/requests',
     label: 'Requests',
     icon: 'requests',
-    roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'EXEC', 'FINANCE'],
+    roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'PROBITY', 'FINANCE', 'EXEC'],
     section: 'Work',
     module: 'Request intake & AI assistant',
     requirements: ['FR-0005', 'FR-0006', 'FR-0035', 'FR-0060'],

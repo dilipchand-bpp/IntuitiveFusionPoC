@@ -1,0 +1,301 @@
+import { and, eq, like, desc, inArray, sql } from 'drizzle-orm';
+import type { Clock } from '@if/shared';
+import type { AuditService } from '../../audit/audit-service.js';
+import type { RequestContext, Tx } from '../../db/client.js';
+import { fieldValue, notification, request, roleAssignment, tenant } from '../../db/schema.js';
+import { AppError } from '../../http/errors.js';
+import { gatesFor, intakeModeFor, scoreComplexity, type Complexity } from './complexity.js';
+import { FIELDS, FIELD_BY_KEY, missingMandatory, type FieldMap } from './fields.js';
+
+type RequestRow = typeof request.$inferSelect;
+type FieldRow = typeof fieldValue.$inferSelect;
+type Source = 'USER' | 'AI' | 'SYSTEM';
+
+export interface FieldView {
+  key: string;
+  label: string;
+  value?: string;
+  source: Source | 'MIGRATED';
+  aiDrafted: boolean;
+  missing: boolean;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+export interface GateView {
+  key: string;
+  label: string;
+  reason: string;
+  status: 'REQUIRED' | 'SATISFIED';
+}
+export interface RequestView {
+  id: string;
+  number: string;
+  title: string;
+  category?: string;
+  estimatedValue: number;
+  currency: string;
+  termMonths?: number;
+  businessUnit?: string;
+  requesterId: string;
+  phase: RequestRow['phase'];
+  status: RequestRow['status'];
+  intakeMode: RequestRow['intakeMode'];
+  complexity?: Complexity;
+  complexityReasons: string[];
+  budgetCheck: RequestRow['budgetCheck'];
+  fields: FieldView[];
+  gates: GateView[];
+  missingFields: string[];
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const CORE_VALUE = (r: RequestRow): FieldMap => ({
+  title: r.title,
+  category: r.category ?? undefined,
+  estimatedValue: r.estimatedValue ?? undefined,
+  termMonths: r.termMonths?.toString(),
+  businessUnit: r.businessUnit ?? undefined,
+});
+
+/** Merged value map: the request's own columns, overlaid with stored field values. */
+export function valuesOf(r: RequestRow, rows: FieldRow[]): FieldMap {
+  const out: FieldMap = { ...CORE_VALUE(r) };
+  for (const f of rows) if (!f.key.startsWith('gate.') && f.value !== null) out[f.key] = f.value;
+  return out;
+}
+
+export function toView(r: RequestRow, rows: FieldRow[]): RequestView {
+  const values = valuesOf(r, rows);
+  const byKey = new Map(rows.map((f) => [f.key, f]));
+  const value = Number(values.estimatedValue ?? 0);
+  const score = scoreComplexity({
+    estimatedValue: value,
+    category: values.category,
+    supplyLocation: values.supplyLocation,
+    dataSensitivity: values.dataSensitivity,
+  });
+  const gates = gatesFor(score.level, values.category, value, r.budgetCheck).map<GateView>((g) => ({
+    ...g,
+    status: byKey.get(`gate.${g.key}`)?.value === 'SATISFIED' ? 'SATISFIED' : 'REQUIRED',
+  }));
+  const missing = missingMandatory(values);
+  const fields: FieldView[] = FIELDS.map((def) => {
+    const row = byKey.get(def.key);
+    const v = values[def.key];
+    return {
+      key: def.key,
+      label: def.label,
+      ...(v !== undefined && v !== '' ? { value: v } : {}),
+      source: (row?.source as FieldView['source']) ?? 'USER',
+      aiDrafted: row?.aiDrafted ?? false,
+      missing: def.mandatory && missing.includes(def.key),
+      ...(row
+        ? { updatedAt: row.updatedAt.toISOString(), ...(row.updatedBy ? { updatedBy: row.updatedBy } : {}) }
+        : {}),
+    };
+  });
+  return {
+    id: r.id,
+    number: r.number,
+    title: r.title,
+    ...(r.category ? { category: r.category } : {}),
+    estimatedValue: value,
+    currency: r.currency,
+    ...(r.termMonths !== null ? { termMonths: r.termMonths } : {}),
+    ...(r.businessUnit ? { businessUnit: r.businessUnit } : {}),
+    requesterId: r.requesterId,
+    phase: r.phase,
+    status: r.status,
+    intakeMode: r.intakeMode,
+    complexity: score.level,
+    complexityReasons: score.reasons,
+    budgetCheck: r.budgetCheck,
+    fields,
+    gates,
+    missingFields: missing,
+    version: r.version,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
+export async function loadRequest(
+  tx: Tx,
+  tenantId: string,
+  id: string,
+): Promise<{ row: RequestRow; fields: FieldRow[] } | null> {
+  const [row] = await tx
+    .select()
+    .from(request)
+    .where(and(eq(request.id, id), eq(request.tenantId, tenantId)));
+  if (!row) return null;
+  const fields = await tx
+    .select()
+    .from(fieldValue)
+    .where(and(eq(fieldValue.ownerType, 'REQUEST'), eq(fieldValue.ownerId, id)));
+  return { row, fields };
+}
+
+export class IntakeService {
+  constructor(
+    private readonly clock: Clock,
+    private readonly audit: AuditService,
+  ) {}
+
+  /** PR-YYYY-NNNN, sequential per tenant. The tenant row lock (taken by the audit service too) serialises numbering. */
+  private async nextNumber(tx: Tx, tenantId: string): Promise<string> {
+    await tx.execute(sql`select 1 from ${tenant} where ${tenant.id} = ${tenantId} for update`);
+    const year = this.clock.now().getUTCFullYear();
+    const [last] = await tx
+      .select({ number: request.number })
+      .from(request)
+      .where(and(eq(request.tenantId, tenantId), like(request.number, `PR-${year}-%`)))
+      .orderBy(desc(request.number))
+      .limit(1);
+    const n = last ? Number(last.number.split('-')[2]) + 1 : 1;
+    return `PR-${year}-${String(n).padStart(4, '0')}`;
+  }
+
+  async createDraft(tx: Tx, ctx: RequestContext): Promise<RequestRow> {
+    const number = await this.nextNumber(tx, ctx.tenantId);
+    const now = this.clock.now();
+    const [row] = await tx
+      .insert(request)
+      .values({
+        tenantId: ctx.tenantId,
+        number,
+        title: 'Untitled request',
+        requesterId: ctx.userId!,
+        phase: 'INTAKE',
+        status: 'DRAFT',
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    await this.audit.record(tx, ctx, {
+      action: 'request.create',
+      entityType: 'request',
+      entityId: row!.id,
+      after: { number, status: 'DRAFT' },
+    });
+    return row!;
+  }
+
+  /**
+   * Applies field changes (from a person or from the AI), mirrors the core ones into columns, recomputes complexity and
+   * intake mode, and writes one field-level audit event. AI changes are stored as "AI-drafted" (NFR-AV05).
+   */
+  async applyChanges(
+    tx: Tx,
+    ctx: RequestContext,
+    requestId: string,
+    changes: Array<{ key: string; value: string }>,
+    source: Source,
+    tenantConfig: { selfServiceThresholdAud?: number },
+    auditAction = 'request.update',
+  ): Promise<RequestView> {
+    const loaded = await loadRequest(tx, ctx.tenantId, requestId);
+    if (!loaded) throw new AppError(404, 'NOT_FOUND', 'Request not found');
+    const { row, fields } = loaded;
+    if (row.status !== 'DRAFT')
+      throw new AppError(409, 'REQUEST_NOT_EDITABLE', 'A submitted request can no longer be edited here');
+
+    const before = valuesOf(row, fields);
+    const now = this.clock.now();
+    const cols: Partial<typeof request.$inferInsert> = { updatedAt: now, version: row.version + 1 };
+    for (const c of changes) {
+      const def = FIELD_BY_KEY.get(c.key);
+      if (!def)
+        throw new AppError(400, 'VALIDATION_FAILED', 'Unknown field', [
+          { field: c.key, message: 'Not a request field' },
+        ]);
+      const value = c.value.trim();
+      if (value.length > 4000)
+        throw new AppError(400, 'VALIDATION_FAILED', 'Value too long', [
+          { field: c.key, message: 'Maximum 4000 characters' },
+        ]);
+      if (c.key === 'estimatedValue' && !(Number(value) >= 0))
+        throw new AppError(400, 'VALIDATION_FAILED', 'Invalid value', [
+          { field: c.key, message: 'Enter an amount of zero or more' },
+        ]);
+      if (
+        c.key === 'termMonths' &&
+        !(Number.isInteger(Number(value)) && Number(value) > 0 && Number(value) <= 360)
+      )
+        throw new AppError(400, 'VALIDATION_FAILED', 'Invalid term', [
+          { field: c.key, message: 'Enter a whole number of months, 1 to 360' },
+        ]);
+      const existing = fields.find((f) => f.key === c.key);
+      const set = {
+        value,
+        source,
+        aiDrafted: source === 'AI',
+        missing: false,
+        previousValue: existing?.value ?? before[c.key] ?? null,
+        updatedBy: source === 'AI' ? null : ctx.userId,
+        updatedAt: now,
+      };
+      await tx
+        .insert(fieldValue)
+        .values({
+          tenantId: ctx.tenantId,
+          ownerType: 'REQUEST',
+          ownerId: requestId,
+          key: c.key,
+          label: def.label,
+          ...set,
+        })
+        .onConflictDoUpdate({ target: [fieldValue.ownerType, fieldValue.ownerId, fieldValue.key], set });
+      if (def.column === 'title') cols.title = value;
+      if (def.column === 'category') cols.category = value;
+      if (def.column === 'estimatedValue') cols.estimatedValue = Number(value).toFixed(2);
+      if (def.column === 'termMonths') cols.termMonths = Number(value);
+      if (def.column === 'businessUnit') cols.businessUnit = value;
+    }
+    const merged = { ...before, ...Object.fromEntries(changes.map((c) => [c.key, c.value.trim()])) };
+    const value = Number(merged.estimatedValue ?? 0);
+    cols.complexity = scoreComplexity({
+      estimatedValue: value,
+      category: merged.category,
+      supplyLocation: merged.supplyLocation,
+      dataSensitivity: merged.dataSensitivity,
+    }).level;
+    cols.intakeMode = intakeModeFor(value, tenantConfig.selfServiceThresholdAud ?? 50_000);
+    await tx.update(request).set(cols).where(eq(request.id, requestId));
+
+    await this.audit.record(tx, ctx, {
+      action: auditAction,
+      entityType: 'request',
+      entityId: requestId,
+      before: Object.fromEntries(changes.map((c) => [c.key, before[c.key] ?? null])),
+      after: { ...Object.fromEntries(changes.map((c) => [c.key, c.value.trim()])), _source: source },
+    });
+    const reloaded = (await loadRequest(tx, ctx.tenantId, requestId))!;
+    return toView(reloaded.row, reloaded.fields);
+  }
+
+  /** Tell every procurement-team member a request is waiting for them. */
+  async notifyProcurement(
+    tx: Tx,
+    ctx: RequestContext,
+    requestNumber: string,
+    title: string,
+  ): Promise<number> {
+    const team = await tx
+      .select({ userId: roleAssignment.userId })
+      .from(roleAssignment)
+      .where(and(eq(roleAssignment.tenantId, ctx.tenantId), inArray(roleAssignment.role, ['PROCUREMENT'])));
+    for (const t of team) {
+      await tx.insert(notification).values({
+        tenantId: ctx.tenantId,
+        userId: t.userId,
+        title: `New request ${requestNumber}`,
+        body: title,
+        link: '/app/requests',
+      });
+    }
+    return team.length;
+  }
+}

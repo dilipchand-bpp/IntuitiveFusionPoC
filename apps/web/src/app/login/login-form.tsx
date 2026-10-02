@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button, Field, Input } from '@if/ui';
@@ -22,6 +22,8 @@ export function LoginForm() {
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false); // submit stays disabled until hydrated
+  useEffect(() => setReady(true), []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -101,7 +103,7 @@ export function LoginForm() {
           Forgot password?
         </Link>
       </div>
-      <Button type="submit" loading={busy}>
+      <Button type="submit" loading={busy} disabled={!ready}>
         Sign in
       </Button>
     </form>

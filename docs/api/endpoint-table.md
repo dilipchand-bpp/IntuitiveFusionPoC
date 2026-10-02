@@ -5,14 +5,14 @@
 | POST | `/auth/forgot-password` | forgotPassword | public | Request reset; always returns 202 (no account enumeration) |  |
 | GET | `/auth/me` | getMe | any signed-in | Current user and role-based home path |  |
 | POST | `/auth/access-denied` | reportAccessDenied | any signed-in | Web route guard reports a blocked page visit so it is audited |  |
-| GET | `/requests` | listRequests | any signed-in | List requests visible to caller (scope by role/hierarchy) |  |
+| GET | `/requests` | listRequests | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | List requests visible to caller (requesters see their own) |  |
 | POST | `/requests` | createRequest | REQUESTER, PROCUREMENT | Create blank request |  |
-| GET | `/requests/{id}` | getRequest | any signed-in | Get request |  |
+| GET | `/requests/{id}` | getRequest | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | Get request |  |
 | PATCH | `/requests/{id}` | updateRequest | REQUESTER, PROCUREMENT | Update request fields |  |
 | POST | `/requests/{id}/submit` | submitRequest | REQUESTER, PROCUREMENT | Run budget check, complexity score and routing; submits | 409 if mandatory fields missing; 422 if hard-cap budget exceeded |
-| POST | `/assistant/conversations` | startConversation | any signed-in | Start mock-AI conversation (simulated=true) |  |
-| GET | `/assistant/conversations/{id}` | getConversation | any signed-in | Get conversation |  |
-| POST | `/assistant/conversations/{id}/messages` | sendMessage | any signed-in | Send user text; returns assistant reply with proposed field changes |  |
+| POST | `/assistant/conversations` | startConversation | REQUESTER, PROCUREMENT | Start mock-AI conversation (simulated=true) |  |
+| GET | `/assistant/conversations/{id}` | getConversation | REQUESTER, PROCUREMENT | Get conversation |  |
+| POST | `/assistant/conversations/{id}/messages` | sendMessage | REQUESTER, PROCUREMENT | Send user text; returns assistant reply with proposed field changes |  |
 | GET | `/requests/{id}/plan` | getPlan | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | Get (or lazily create from intake) the procurement plan |  |
 | PUT | `/plans/{id}/fields/{key}` | updatePlanField | PROCUREMENT, REQUESTER | Set a field (or one paragraph); optimistic concurrency via expectedVersion | 409 on stale version; 423 if plan locked |
 | POST | `/plans/{id}/instructions` | instructPlan | PROCUREMENT, REQUESTER | Plain-language amend ('change paragraph 3 to …') |  |

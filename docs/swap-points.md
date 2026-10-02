@@ -29,13 +29,31 @@ This page lists the swap points that exist **today**; later milestones append to
 - Which roles may open which web page lives in `ROUTE_RULES` in `packages/shared/src/access.ts` (used by the web route guard and tested against the same role list).
 - Delegation limits are **data** (`delegation` table, edited by an Administrator), not code.
 
+## AI assistant (M6)
+
+| | |
+|---|---|
+| Interface | `AiProvider` in `apps/api/src/adapters/ai-provider.ts`: `draftRequest({text, current, pending}) -> {changes, reply, stillMissing}` |
+| Mock | `MockAiProvider` (`mock-rules-v1`): deterministic rules in `modules/intake/extract.ts`; always `simulated = true` and shown to users as "Simulated AI" |
+| Production candidate | Amazon Bedrock in-region via VPC endpoint (ADR-0005) |
+
+**Contract a real model adapter must keep:** it returns *proposals only*. The service stores every change as AI-drafted (`source=AI`, `aiDrafted=true`), writes an audit event, never overwrites narrative a person wrote, and never changes request state (submit/approve are human actions). Free-text from users and suppliers is **data, not instructions** (tested: pasted instructions change nothing). A real adapter needs input/output guardrails and size limits on top.
+
+## Finance / ERP budget check (M6)
+
+| | |
+|---|---|
+| Interface | `ErpBudgetService.check({tenantId, businessUnit, amount, settings?})` in `adapters/erp.ts` |
+| Mock | `MockErpBudgetService`: per-business-unit budgets and an `erpOutage` switch come from tenant config (`settings`, read by the caller inside its own transaction) |
+| Behaviour | `CLEARED`, `EXCEEDED` (hard cap blocks with 422; soft cap adds an escalation gate), `UNAVAILABLE` (adds a manual-confirmation gate; submission still works, NFR-AV04) |
+
+**Real adapter notes:** ignore `settings`; call the ERP with a timeout, and map errors to `UNAVAILABLE` rather than throwing. Do not issue extra database queries from inside an adapter that runs within a request transaction (single-connection PGlite deadlocks; a pooled Postgres would hold a second connection).
+
 ## Still mocked, adapter arrives in a later milestone
 
 | Dependency | Interface | Milestone |
 |---|---|---|
-| AI assistant | `AiProvider` | M6 |
 | E-mail / notifications | `EmailService` (outbox table) | M5-M7 |
 | Document storage | `DocumentStore` | M8 |
 | Sanctions / insurance | `SanctionsService`, `InsuranceVerificationService` | M8 |
-| ERP budget | `ErpBudgetService` | M6 |
 | E-signature | `ESignatureProvider` | M10 |
