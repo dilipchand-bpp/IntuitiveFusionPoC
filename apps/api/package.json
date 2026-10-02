@@ -7,14 +7,23 @@
     "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=../../.env src/db/cli.ts migrate",
+    "db:reset": "tsx --env-file-if-exists=../../.env src/db/cli.ts reset",
+    "db:seed": "tsx --env-file-if-exists=../../.env src/db/cli.ts seed",
+    "db:verify-audit": "tsx --env-file-if-exists=../../.env src/db/cli.ts verify-audit"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@fastify/helmet": "^13.0.0",
     "@if/shared": "*",
-    "fastify": "^5.0.0",
-    "@fastify/helmet": "^13.0.0"
+    "@node-rs/argon2": "^2.2.1",
+    "drizzle-orm": "^0.45.3",
+    "fastify": "^5.0.0"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.11",
     "tsx": "^4.19.0"
   }
 }

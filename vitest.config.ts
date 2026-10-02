@@ -16,6 +16,8 @@ export default defineConfig({
   test: {
     include: ['apps/**/src/**/*.test.{ts,tsx}', 'packages/**/src/**/*.test.{ts,tsx}'],
     environment: 'node',
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
     setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'v8',
