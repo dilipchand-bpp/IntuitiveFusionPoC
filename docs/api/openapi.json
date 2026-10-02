@@ -1,0 +1,6039 @@
+{
+ "openapi": "3.0.3",
+ "info": {
+  "title": "Intuitive Fusion Procurement Portal API (POC)",
+  "version": "0.1.0-draft",
+  "description": "REST API for the POC. Auth is mock (HttpOnly session cookie) behind an IdentityProvider interface. All mutations emit audit events. Errors follow RFC 7807 (application/problem+json) with stable `code` and `correlationId`."
+ },
+ "servers": [
+  {
+   "url": "http://localhost:4000/api/v1",
+   "description": "Local dev"
+  }
+ ],
+ "tags": [
+  {
+   "name": "Auth"
+  },
+  {
+   "name": "Requests"
+  },
+  {
+   "name": "Assistant"
+  },
+  {
+   "name": "Plans"
+  },
+  {
+   "name": "Tenders"
+  },
+  {
+   "name": "SupplierPortal"
+  },
+  {
+   "name": "Evaluation"
+  },
+  {
+   "name": "Contracts"
+  },
+  {
+   "name": "Reporting"
+  },
+  {
+   "name": "Notifications"
+  },
+  {
+   "name": "Admin"
+  },
+  {
+   "name": "Migration"
+  }
+ ],
+ "security": [
+  {
+   "sessionCookie": []
+  }
+ ],
+ "paths": {
+  "/auth/login": {
+   "post": {
+    "operationId": "login",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Mock login; returns session cookie (HttpOnly) and user",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Session"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/logout": {
+   "post": {
+    "operationId": "logout",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "End session",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/auth/forgot-password": {
+   "post": {
+    "operationId": "forgotPassword",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Request reset; always returns 202 (no account enumeration)",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "202": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Message"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ForgotPassword"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/me": {
+   "get": {
+    "operationId": "getMe",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Current user and role-based home path",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/User"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests": {
+   "get": {
+    "operationId": "listRequests",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "List requests visible to caller (scope by role/hierarchy)",
+    "parameters": [
+     {
+      "name": "phase",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createRequest",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Create blank request",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcurementRequest"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RequestPatch"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}": {
+   "get": {
+    "operationId": "getRequest",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Get request",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcurementRequest"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "patch": {
+    "operationId": "updateRequest",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Update request fields",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcurementRequest"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RequestPatch"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/submit": {
+   "post": {
+    "operationId": "submitRequest",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Run budget check, complexity score and routing; submits",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcurementRequest"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 if mandatory fields missing; 422 if hard-cap budget exceeded"
+   }
+  },
+  "/assistant/conversations": {
+   "post": {
+    "operationId": "startConversation",
+    "tags": [
+     "Assistant"
+    ],
+    "summary": "Start mock-AI conversation (simulated=true)",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Conversation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConversationStart"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/assistant/conversations/{id}": {
+   "get": {
+    "operationId": "getConversation",
+    "tags": [
+     "Assistant"
+    ],
+    "summary": "Get conversation",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Conversation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/assistant/conversations/{id}/messages": {
+   "post": {
+    "operationId": "sendMessage",
+    "tags": [
+     "Assistant"
+    ],
+    "summary": "Send user text; returns assistant reply with proposed field changes",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChatMessage"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChatSend"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/plan": {
+   "get": {
+    "operationId": "getPlan",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Get (or lazily create from intake) the procurement plan",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/plans/{id}/fields/{key}": {
+   "put": {
+    "operationId": "updatePlanField",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Set a field (or one paragraph); optimistic concurrency via expectedVersion",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "409 on stale version; 423 if plan locked",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FieldUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/instructions": {
+   "post": {
+    "operationId": "instructPlan",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Plain-language amend ('change paragraph 3 to …')",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InstructionResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Instruction"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/instructions/undo": {
+   "post": {
+    "operationId": "undoInstruction",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Undo last instruction by token",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/plans/{id}/submit-for-approval": {
+   "post": {
+    "operationId": "submitPlan",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Move to approval; requires COI declarations and risk gates",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/plans/{id}/decision": {
+   "post": {
+    "operationId": "decidePlan",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Delegate approves/rejects; delegation limit enforced; locks on approval",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 if value exceeds delegation; 409 if gates unmet",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/reopen": {
+   "post": {
+    "operationId": "reopenPlan",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Reopen locked plan with reason (Procurement only)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Reopen"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/coi": {
+   "post": {
+    "operationId": "declarePlanCoi",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Declare conflict (or none)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "DELEGATE"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CoiRecord"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CoiDeclaration"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/coi/{id}/decision": {
+   "post": {
+    "operationId": "decideCoi",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Delegate/Risk decides disposition",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CoiRecord"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CoiDecision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders": {
+   "get": {
+    "operationId": "listTenders",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "List tenders visible to caller",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Tender"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createTender",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Create tender and generate pack from request/plan",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TenderCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}": {
+   "get": {
+    "operationId": "getTender",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Get tender",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/fields/{key}": {
+   "put": {
+    "operationId": "updateTenderField",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Edit pack field",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FieldUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/publish-permission": {
+   "post": {
+    "operationId": "grantPublishPermission",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "ECV-appropriate delegate grants permission to publish",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/publish": {
+   "post": {
+    "operationId": "publishTender",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Publish (needs permission, statutory window valid)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tender"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 without permission; 422 if statutory window not met"
+   }
+  },
+  "/tenders/{id}/invitations": {
+   "post": {
+    "operationId": "inviteSuppliers",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Invite suppliers by email",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "202": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Message"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Invitation"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/questions": {
+   "get": {
+    "operationId": "listQuestions",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Questions (identity never returned)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Question"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/addenda": {
+   "post": {
+    "operationId": "issueAddendum",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Publish answers/changes to all bidders",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Addendum"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AddendumCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/register": {
+   "post": {
+    "operationId": "registerSupplier",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Self-register from invitation token",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Supplier"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierRegistration"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/tenders": {
+   "get": {
+    "operationId": "listMyTenders",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Tenders caller is invited to (max one active view)",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Tender"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/questions": {
+   "post": {
+    "operationId": "askQuestion",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Ask anonymised question",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Question"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/QuestionCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/submission/files": {
+   "post": {
+    "operationId": "uploadBidFile",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Multipart upload (type/size allow-list, malware scan)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FileRef"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "multipart/form-data; 415/413 on type/size; 423 after close"
+   }
+  },
+  "/supplier/tenders/{id}/submission": {
+   "post": {
+    "operationId": "submitBid",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Submit; issues receipt; rejected if after close",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Submission"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "423 + REJECTED_LATE after closesAt"
+   }
+  },
+  "/suppliers/{id}": {
+   "get": {
+    "operationId": "getSupplier",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Supplier profile with sanctions/insurance status",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Supplier"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/evaluation": {
+   "post": {
+    "operationId": "openEvaluation",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Create evaluation + one record per submitted bidder",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}": {
+   "get": {
+    "operationId": "getEvaluation",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Get evaluation; suppliers anonymised until COI declared; stream-scoped payload",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EVALUATOR",
+     "CHAIR",
+     "DELEGATE",
+     "PROBITY",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/coi": {
+   "post": {
+    "operationId": "declareEvalCoi",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Mandatory COI before access; conflict revokes access",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CoiRecord"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CoiDeclaration"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/scores/mine": {
+   "get": {
+    "operationId": "getMyScores",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Own scores only",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ScoreSet"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/scores": {
+   "put": {
+    "operationId": "saveScores",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Save own scores (hidden from others)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScoreSet"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScoreSet"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/consensus/open": {
+   "post": {
+    "operationId": "openConsensus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Chair opens consensus (all scoring submitted)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ConsensusItem"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/consensus/{supplierId}": {
+   "put": {
+    "operationId": "setConsensus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Record consensus score + rationale",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "supplierId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConsensusItem"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsensusUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/consensus/lock": {
+   "post": {
+    "operationId": "lockConsensus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Lock; fails if flagged items lack rationale",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 CONSENSUS_UNRESOLVED_FLAGS"
+   }
+  },
+  "/evaluations/{id}/report": {
+   "post": {
+    "operationId": "generateReport",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Generate evaluation report",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Report"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluation-reports/{id}/decision": {
+   "post": {
+    "operationId": "decideReport",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Value-tier delegate signs off",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Report"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts": {
+   "post": {
+    "operationId": "draftContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Draft from approved report: template + clauses + supplier data",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listContracts",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Contracts visible to caller",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Contract"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}": {
+   "get": {
+    "operationId": "getContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Get contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/clauses/{clauseId}": {
+   "put": {
+    "operationId": "updateClause",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Edit clause (blocked when locked)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "clauseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "423 when executed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Clause"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/release-for-signing": {
+   "post": {
+    "operationId": "releaseForSigning",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Run configured review chain, then signing",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/sign": {
+   "post": {
+    "operationId": "signContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Mock e-signature by signing delegate (authority checked separately)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 SIGNING_AUTHORITY_INSUFFICIENT",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/alerts": {
+   "get": {
+    "operationId": "listAlerts",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "System + user alerts",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Alert"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createAlert",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Create alert from plain-language instruction",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Alert"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AlertCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/dashboard/kpis": {
+   "get": {
+    "operationId": "getKpis",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Role-scoped KPIs",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Kpis"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/expiring-contracts": {
+   "get": {
+    "operationId": "expiringContracts",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Contracts expiring within N days (default 90)",
+    "parameters": [
+     {
+      "name": "days",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ExpiringContract"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/audit-events": {
+   "get": {
+    "operationId": "listAuditEvents",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Search audit trail",
+    "parameters": [
+     {
+      "name": "entityType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "entityId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "actorId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "ADMIN",
+     "EXEC",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AuditPage"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/audit-events/export": {
+   "get": {
+    "operationId": "exportAudit",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Export audit report (CSV); the export is itself audited",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "text/csv"
+   }
+  },
+  "/reports/spend": {
+   "get": {
+    "operationId": "spendReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Spend by category/supplier (seed data)",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComingSoon"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Stub in POC (returns ComingSoon)"
+   }
+  },
+  "/notifications": {
+   "get": {
+    "operationId": "listNotifications",
+    "tags": [
+     "Notifications"
+    ],
+    "summary": "My notifications",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Notification"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/notifications/{id}/read": {
+   "post": {
+    "operationId": "markRead",
+    "tags": [
+     "Notifications"
+    ],
+    "summary": "Mark read",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/admin/users": {
+   "get": {
+    "operationId": "adminListUsers",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "List users",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/AdminUser"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "adminCreateUser",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Create user",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminUser"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUserCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/delegations": {
+   "get": {
+    "operationId": "listDelegations",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Delegations of authority",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Delegation"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/delegations/{id}": {
+   "put": {
+    "operationId": "updateDelegation",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Change threshold; audited",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Delegation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DelegationUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/workflows": {
+   "get": {
+    "operationId": "listWorkflows",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Workflow library",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Workflow"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/templates": {
+   "get": {
+    "operationId": "listTemplates",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Template library (read-only in POC)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Template"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/migration/uploads": {
+   "post": {
+    "operationId": "uploadMigration",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Validate legacy contract CSV (profiling only in POC)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MigrationUpload"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "multipart/form-data"
+   }
+  },
+  "/features/{key}": {
+   "get": {
+    "operationId": "getFeatureStatus",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Feature availability for Coming-soon screens",
+    "parameters": [
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComingSoon"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "securitySchemes": {
+   "sessionCookie": {
+    "type": "apiKey",
+    "in": "cookie",
+    "name": "if_session"
+   }
+  },
+  "schemas": {
+   "Problem": {
+    "type": "object",
+    "properties": {
+     "type": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "status": {
+      "type": "integer"
+     },
+     "detail": {
+      "type": "string"
+     },
+     "code": {
+      "type": "string"
+     },
+     "correlationId": {
+      "type": "string"
+     },
+     "errors": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "field": {
+         "type": "string"
+        },
+        "message": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "field",
+        "message"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "type",
+     "title",
+     "status",
+     "code",
+     "correlationId"
+    ]
+   },
+   "Page": {
+    "type": "object",
+    "properties": {
+     "total": {
+      "type": "integer"
+     },
+     "limit": {
+      "type": "integer"
+     },
+     "offset": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": true,
+    "required": [
+     "total",
+     "limit",
+     "offset"
+    ]
+   },
+   "User": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string",
+      "format": "email"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "REQUESTER",
+       "PROCUREMENT",
+       "DELEGATE",
+       "EVALUATOR",
+       "CHAIR",
+       "LEGAL",
+       "CONTRACT_MGR",
+       "PROBITY",
+       "FINANCE",
+       "ADMIN",
+       "EXEC",
+       "SUPPLIER"
+      ]
+     },
+     "orgUnit": {
+      "type": "string"
+     },
+     "delegationLimit": {
+      "type": "number"
+     },
+     "homePath": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "email",
+     "role"
+    ]
+   },
+   "LoginRequest": {
+    "type": "object",
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email"
+     },
+     "password": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "email",
+     "password"
+    ]
+   },
+   "Session": {
+    "type": "object",
+    "properties": {
+     "user": {
+      "$ref": "#/components/schemas/User"
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "mfaRequired": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "user",
+     "expiresAt"
+    ]
+   },
+   "ForgotPassword": {
+    "type": "object",
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "email"
+    ]
+   },
+   "Message": {
+    "type": "object",
+    "properties": {
+     "message": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "message"
+    ]
+   },
+   "FieldValue": {
+    "type": "object",
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "value": {
+      "type": "string"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "USER",
+       "AI",
+       "SYSTEM",
+       "MIGRATED"
+      ]
+     },
+     "aiDrafted": {
+      "type": "boolean"
+     },
+     "missing": {
+      "type": "boolean"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "updatedBy": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "key",
+     "label",
+     "source"
+    ]
+   },
+   "ProcurementRequest": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "category": {
+      "type": "string"
+     },
+     "unspsc": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "currency": {
+      "type": "string"
+     },
+     "termMonths": {
+      "type": "integer"
+     },
+     "businessUnit": {
+      "type": "string"
+     },
+     "requesterId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "phase": {
+      "type": "string",
+      "enum": [
+       "INTAKE",
+       "PLAN",
+       "TENDER",
+       "EVALUATION",
+       "CONTRACT_AWARD",
+       "CONTRACT_MGMT",
+       "CLOSED"
+      ]
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMITTED",
+       "IN_PROGRESS",
+       "BLOCKED",
+       "COMPLETE"
+      ]
+     },
+     "intakeMode": {
+      "type": "string",
+      "enum": [
+       "SELF_SERVICE",
+       "TEAM_LED"
+      ]
+     },
+     "complexity": {
+      "type": "string",
+      "enum": [
+       "LOW",
+       "MEDIUM",
+       "HIGH",
+       "CRITICAL"
+      ]
+     },
+     "budgetCheck": {
+      "type": "string",
+      "enum": [
+       "NOT_RUN",
+       "CLEARED",
+       "EXCEEDED",
+       "UNAVAILABLE"
+      ]
+     },
+     "fields": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FieldValue"
+      }
+     },
+     "createdAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "number",
+     "title",
+     "phase",
+     "status"
+    ]
+   },
+   "RequestList": {
+    "type": "object",
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ProcurementRequest"
+      }
+     },
+     "page": {
+      "$ref": "#/components/schemas/Page"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "items",
+     "page"
+    ]
+   },
+   "RequestPatch": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "category": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "termMonths": {
+      "type": "integer"
+     },
+     "businessUnit": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ConversationStart": {
+    "type": "object",
+    "properties": {
+     "purpose": {
+      "type": "string",
+      "enum": [
+       "INTAKE",
+       "PLAN",
+       "TENDER",
+       "EVALUATION",
+       "CONTRACT",
+       "GENERAL"
+      ]
+     },
+     "contextId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "purpose"
+    ]
+   },
+   "Conversation": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "purpose": {
+      "type": "string"
+     },
+     "contextId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "messages": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ChatMessage"
+      }
+     },
+     "simulated": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "messages",
+     "simulated"
+    ]
+   },
+   "ChatMessage": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "USER",
+       "ASSISTANT",
+       "SYSTEM"
+      ]
+     },
+     "text": {
+      "type": "string"
+     },
+     "createdAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "proposedChanges": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FieldValue"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "role",
+     "text"
+    ]
+   },
+   "ChatSend": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+     },
+     "channel": {
+      "type": "string",
+      "enum": [
+       "TEXT",
+       "VOICE"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "Plan": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "AWAITING_SIGNOFF",
+       "AWAITING_APPROVAL",
+       "APPROVED_LOCKED",
+       "REOPENED",
+       "REJECTED"
+      ]
+     },
+     "fields": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FieldValue"
+      }
+     },
+     "approvals": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Approval"
+      }
+     },
+     "summary": {
+      "type": "string"
+     },
+     "version": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "requestId",
+     "status",
+     "fields",
+     "version"
+    ]
+   },
+   "FieldUpdate": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "string"
+     },
+     "paragraph": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "expectedVersion": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "value",
+     "expectedVersion"
+    ]
+   },
+   "Instruction": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+     },
+     "channel": {
+      "type": "string",
+      "enum": [
+       "TEXT",
+       "VOICE"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "InstructionResult": {
+    "type": "object",
+    "properties": {
+     "applied": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FieldValue"
+      }
+     },
+     "undoToken": {
+      "type": "string"
+     },
+     "explanation": {
+      "type": "string"
+     },
+     "fallbackHint": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "applied",
+     "explanation"
+    ]
+   },
+   "Approval": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "subject": {
+      "type": "string"
+     },
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "role": {
+      "type": "string"
+     },
+     "decision": {
+      "type": "string",
+      "enum": [
+       "APPROVED",
+       "REJECTED",
+       "SUPERSEDED"
+      ]
+     },
+     "comment": {
+      "type": "string"
+     },
+     "decidedAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "stamp": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "decision",
+     "decidedAt"
+    ]
+   },
+   "Decision": {
+    "type": "object",
+    "properties": {
+     "decision": {
+      "type": "string",
+      "enum": [
+       "APPROVE",
+       "REJECT"
+      ]
+     },
+     "comment": {
+      "type": "string",
+      "maxLength": 2000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "decision"
+    ]
+   },
+   "Reopen": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "CoiDeclaration": {
+    "type": "object",
+    "properties": {
+     "subjectOrg": {
+      "type": "string"
+     },
+     "nature": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 2000
+     },
+     "none": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "none"
+    ]
+   },
+   "CoiRecord": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "PLAN",
+       "EVALUATION"
+      ]
+     },
+     "scopeId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "none": {
+      "type": "boolean"
+     },
+     "nature": {
+      "type": "string"
+     },
+     "disposition": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "IMMATERIAL",
+       "MANAGEABLE",
+       "MATERIAL"
+      ]
+     },
+     "routedTo": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "decidedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "userId",
+     "scope",
+     "disposition"
+    ]
+   },
+   "CoiDecision": {
+    "type": "object",
+    "properties": {
+     "disposition": {
+      "type": "string",
+      "enum": [
+       "IMMATERIAL",
+       "MANAGEABLE",
+       "MATERIAL"
+      ]
+     },
+     "rationale": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "disposition"
+    ]
+   },
+   "Tender": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "RFT",
+       "RFP",
+       "RFQ",
+       "RFI",
+       "EOI"
+      ]
+     },
+     "access": {
+      "type": "string",
+      "enum": [
+       "OPEN",
+       "CLOSED"
+      ]
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "STAGED",
+       "PUBLISHED",
+       "CLOSED",
+       "EVALUATING",
+       "AWARDED"
+      ]
+     },
+     "opensAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "fields": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FieldValue"
+      }
+     },
+     "publishPermission": {
+      "$ref": "#/components/schemas/Approval"
+     },
+     "version": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "requestId",
+     "type",
+     "status"
+    ]
+   },
+   "TenderCreate": {
+    "type": "object",
+    "properties": {
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "RFT",
+       "RFP",
+       "RFQ",
+       "RFI",
+       "EOI"
+      ]
+     },
+     "access": {
+      "type": "string",
+      "enum": [
+       "OPEN",
+       "CLOSED"
+      ]
+     },
+     "closesAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "requestId",
+     "type"
+    ]
+   },
+   "Invitation": {
+    "type": "object",
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email"
+     },
+     "company": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "email",
+     "company"
+    ]
+   },
+   "Question": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "text": {
+      "type": "string"
+     },
+     "answer": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "OPEN",
+       "ANSWERED",
+       "PUBLISHED"
+      ]
+     },
+     "askedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "text",
+     "status"
+    ]
+   },
+   "QuestionCreate": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 2000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "Addendum": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "integer"
+     },
+     "summary": {
+      "type": "string"
+     },
+     "questionIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     "newClosesAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "number",
+     "summary"
+    ]
+   },
+   "AddendumCreate": {
+    "type": "object",
+    "properties": {
+     "summary": {
+      "type": "string",
+      "minLength": 5
+     },
+     "questionIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     "newClosesAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "summary"
+    ]
+   },
+   "SupplierRegistration": {
+    "type": "object",
+    "properties": {
+     "inviteToken": {
+      "type": "string"
+     },
+     "contactName": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string",
+      "format": "email"
+     },
+     "company": {
+      "type": "string"
+     },
+     "abn": {
+      "type": "string",
+      "pattern": "^\\d{11}$"
+     },
+     "password": {
+      "type": "string",
+      "minLength": 12
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "inviteToken",
+     "contactName",
+     "email",
+     "company",
+     "abn",
+     "password"
+    ]
+   },
+   "Supplier": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "company": {
+      "type": "string"
+     },
+     "abn": {
+      "type": "string"
+     },
+     "sanctionsStatus": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "CLEAR",
+       "MATCH"
+      ]
+     },
+     "insuranceStatus": {
+      "type": "string",
+      "enum": [
+       "UNKNOWN",
+       "CURRENT",
+       "EXPIRING",
+       "EXPIRED"
+      ]
+     },
+     "lastCheckedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "company",
+     "sanctionsStatus"
+    ]
+   },
+   "Submission": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMITTED",
+       "REJECTED_LATE"
+      ]
+     },
+     "files": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FileRef"
+      }
+     },
+     "receipt": {
+      "type": "string"
+     },
+     "submittedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "tenderId",
+     "status"
+    ]
+   },
+   "FileRef": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "sizeBytes": {
+      "type": "integer"
+     },
+     "contentType": {
+      "type": "string"
+     },
+     "scan": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "CLEAN",
+       "INFECTED"
+      ]
+     },
+     "section": {
+      "type": "string",
+      "enum": [
+       "TECHNICAL",
+       "COMMERCIAL",
+       "OTHER"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name"
+    ]
+   },
+   "Evaluation": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "COI_PENDING",
+       "SCORING",
+       "CONSENSUS",
+       "LOCKED",
+       "REPORTED",
+       "APPROVED"
+      ]
+     },
+     "criteria": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Criterion"
+      }
+     },
+     "suppliers": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/EvalSupplier"
+      }
+     },
+     "panel": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/PanelMember"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "tenderId",
+     "status"
+    ]
+   },
+   "Criterion": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "weight": {
+      "type": "number"
+     },
+     "stream": {
+      "type": "string",
+      "enum": [
+       "TECHNICAL",
+       "COMMERCIAL",
+       "OTHER"
+      ]
+     },
+     "passFail": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "weight"
+    ]
+   },
+   "PanelMember": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "stream": {
+      "type": "string"
+     },
+     "coiState": {
+      "type": "string",
+      "enum": [
+       "NOT_DECLARED",
+       "DECLARED_NONE",
+       "DECLARED_CONFLICT",
+       "REMOVED"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "userId",
+     "coiState"
+    ]
+   },
+   "EvalSupplier": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "displayName": {
+      "type": "string"
+     },
+     "anonymised": {
+      "type": "boolean"
+     },
+     "compliance": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "PASS",
+       "FAIL"
+      ]
+     },
+     "rank": {
+      "type": "integer"
+     },
+     "weightedScore": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "displayName"
+    ]
+   },
+   "ScoreSet": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "criterionId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "score": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 10
+        },
+        "comment": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "criterionId",
+        "score"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "scores"
+    ]
+   },
+   "ConsensusItem": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "criterionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "individual": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "evaluatorId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "score": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "variancePct": {
+      "type": "number"
+     },
+     "flagged": {
+      "type": "boolean"
+     },
+     "consensusScore": {
+      "type": "number"
+     },
+     "rationale": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "criterionId"
+    ]
+   },
+   "ConsensusUpdate": {
+    "type": "object",
+    "properties": {
+     "criterionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "consensusScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+     },
+     "rationale": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "criterionId",
+     "consensusScore"
+    ]
+   },
+   "Report": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "evaluationId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "AWAITING_APPROVAL",
+       "APPROVED"
+      ]
+     },
+     "fields": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/FieldValue"
+      }
+     },
+     "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "approvals": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Approval"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "evaluationId",
+     "status"
+    ]
+   },
+   "Contract": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "string"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "templateId": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "LEGAL_REVIEW",
+       "AWAITING_SIGNATURE",
+       "PARTIALLY_SIGNED",
+       "EXECUTED"
+      ]
+     },
+     "value": {
+      "type": "number"
+     },
+     "startDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "noticeDays": {
+      "type": "integer"
+     },
+     "clauses": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Clause"
+      }
+     },
+     "signatures": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Approval"
+      }
+     },
+     "parentId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "locked": {
+      "type": "boolean"
+     },
+     "version": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "number",
+     "status"
+    ]
+   },
+   "ContractCreate": {
+    "type": "object",
+    "properties": {
+     "evaluationId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "evaluationId",
+     "supplierId"
+    ]
+   },
+   "Clause": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "mandatory": {
+      "type": "boolean"
+     },
+     "changedFromTemplate": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "title",
+     "text"
+    ]
+   },
+   "Alert": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "EXPIRY",
+       "NOTICE",
+       "MILESTONE",
+       "EXTENSION",
+       "CUSTOM"
+      ]
+     },
+     "triggerDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "recipientRule": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "SCHEDULED",
+       "SENT",
+       "CANCELLED"
+      ]
+     },
+     "origin": {
+      "type": "string",
+      "enum": [
+       "SYSTEM",
+       "USER"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "contractId",
+     "kind",
+     "triggerDate"
+    ]
+   },
+   "AlertCreate": {
+    "type": "object",
+    "properties": {
+     "instruction": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 500
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "instruction"
+    ]
+   },
+   "Kpis": {
+    "type": "object",
+    "properties": {
+     "activeProcurements": {
+      "type": "integer"
+     },
+     "valueInFlight": {
+      "type": "number"
+     },
+     "avgCycleDays": {
+      "type": "number"
+     },
+     "alertsDue": {
+      "type": "integer"
+     },
+     "pendingMyAction": {
+      "type": "integer"
+     },
+     "byPhase": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "phase": {
+         "type": "string"
+        },
+        "count": {
+         "type": "integer"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "activeProcurements",
+     "valueInFlight",
+     "avgCycleDays"
+    ]
+   },
+   "ExpiringContract": {
+    "type": "object",
+    "properties": {
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "string"
+     },
+     "supplier": {
+      "type": "string"
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "daysRemaining": {
+      "type": "integer"
+     },
+     "optionalExtensions": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "months": {
+         "type": "integer"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "contractId",
+     "number",
+     "endDate",
+     "daysRemaining"
+    ]
+   },
+   "AuditEvent": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "seq": {
+      "type": "integer"
+     },
+     "at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "actorId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "actorRole": {
+      "type": "string"
+     },
+     "action": {
+      "type": "string"
+     },
+     "entityType": {
+      "type": "string"
+     },
+     "entityId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "before": {
+      "type": "object",
+      "additionalProperties": true
+     },
+     "after": {
+      "type": "object",
+      "additionalProperties": true
+     },
+     "correlationId": {
+      "type": "string"
+     },
+     "result": {
+      "type": "string",
+      "enum": [
+       "SUCCESS",
+       "DENIED",
+       "FAILED"
+      ]
+     },
+     "hash": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "seq",
+     "at",
+     "action",
+     "entityType",
+     "result"
+    ]
+   },
+   "AuditPage": {
+    "type": "object",
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/AuditEvent"
+      }
+     },
+     "page": {
+      "$ref": "#/components/schemas/Page"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "items",
+     "page"
+    ]
+   },
+   "Notification": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "title": {
+      "type": "string"
+     },
+     "body": {
+      "type": "string"
+     },
+     "link": {
+      "type": "string"
+     },
+     "read": {
+      "type": "boolean"
+     },
+     "createdAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "title",
+     "createdAt"
+    ]
+   },
+   "Delegation": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "role": {
+      "type": "string"
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "SOURCING_APPROVAL",
+       "CONTRACT_SIGNING",
+       "PUBLISH_PERMISSION"
+      ]
+     },
+     "maxValue": {
+      "type": "number"
+     },
+     "division": {
+      "type": "string"
+     },
+     "active": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "scope",
+     "maxValue"
+    ]
+   },
+   "DelegationUpdate": {
+    "type": "object",
+    "properties": {
+     "maxValue": {
+      "type": "number",
+      "minimum": 0
+     },
+     "active": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "maxValue"
+    ]
+   },
+   "AdminUser": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "REQUESTER",
+       "PROCUREMENT",
+       "DELEGATE",
+       "EVALUATOR",
+       "CHAIR",
+       "LEGAL",
+       "CONTRACT_MGR",
+       "PROBITY",
+       "FINANCE",
+       "ADMIN",
+       "EXEC",
+       "SUPPLIER"
+      ]
+     },
+     "orgUnit": {
+      "type": "string"
+     },
+     "active": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "email",
+     "role"
+    ]
+   },
+   "AdminUserCreate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string",
+      "format": "email"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "REQUESTER",
+       "PROCUREMENT",
+       "DELEGATE",
+       "EVALUATOR",
+       "CHAIR",
+       "LEGAL",
+       "CONTRACT_MGR",
+       "PROBITY",
+       "FINANCE",
+       "ADMIN",
+       "EXEC",
+       "SUPPLIER"
+      ]
+     },
+     "orgUnit": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "email",
+     "role"
+    ]
+   },
+   "Workflow": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "tier": {
+      "type": "string",
+      "enum": [
+       "SIMPLE",
+       "INTERMEDIATE",
+       "COMPLEX"
+      ]
+     },
+     "steps": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        },
+        "mandatory": {
+         "type": "boolean"
+        },
+        "approverRole": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "editable": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "steps"
+    ]
+   },
+   "Template": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "version": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "type",
+     "name"
+    ]
+   },
+   "ComingSoon": {
+    "type": "object",
+    "properties": {
+     "feature": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "COMING_SOON"
+      ]
+     },
+     "plannedPhase": {
+      "type": "string"
+     },
+     "requirementIds": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "feature",
+     "status"
+    ]
+   },
+   "MigrationUpload": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "rowsRead": {
+      "type": "integer"
+     },
+     "rowsAccepted": {
+      "type": "integer"
+     },
+     "errors": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "row": {
+         "type": "integer"
+        },
+        "message": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "VALIDATED",
+       "FAILED"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "rowsRead",
+     "rowsAccepted"
+    ]
+   }
+  },
+  "responses": {
+   "E400": {
+    "description": "Validation error",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E401": {
+    "description": "Not authenticated",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E403": {
+    "description": "Forbidden",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E404": {
+    "description": "Not found",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E409": {
+    "description": "Conflict / rule violated",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E422": {
+    "description": "Business rule failed",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E423": {
+    "description": "Locked",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   },
+   "E429": {
+    "description": "Rate limited",
+    "content": {
+     "application/problem+json": {
+      "schema": {
+       "$ref": "#/components/schemas/Problem"
+      }
+     }
+    }
+   }
+  }
+ }
+}

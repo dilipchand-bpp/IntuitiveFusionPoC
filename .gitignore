@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+.next/
+var/
+coverage/
+# client source material and derived copies - not for the repo
+*.pptx
+*.xlsx
+*.docx
+_work/register.json
+_work/coverage.json
+__pycache__/

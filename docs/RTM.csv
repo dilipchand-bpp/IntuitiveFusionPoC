@@ -1,0 +1,313 @@
+﻿Req ID,Type,Category,Priority,POC tier,User stories,Spec ref,Test case,Source,Register status
+FR-0005,Functional,Request Intake & AI,Must,W,US-INT-01,TS-INT,TC-F0005,BRS §3.1,Draft
+FR-0006,Functional,Request Intake & AI,Must,W,US-INT-01,TS-INT,TC-F0006,BRS §3.1,Draft
+FR-X01,Functional,Request Intake & AI,Could,D,US-INT-01; US-INT-02,TS-INT,TC-FX01,,Draft
+FR-0010,Functional,Request Intake & AI,Should,S,US-INT-01; US-INT-02,TS-INT,TC-F0010,BRS §3.1; DD — Agentic AI,Draft
+FR-0015,Functional,Request Intake & AI,Must,S,US-INT-01; US-INT-02,TS-INT,TC-F0015,BRS §3.1,Draft
+FR-0020,Functional,Request Intake & AI,Should,S,US-INT-01; US-INT-02,TS-INT,TC-F0020,BRS §3.1,Draft
+FR-0025,Functional,Request Intake & AI,Must,W,US-INT-01; US-INT-02,TS-INT,TC-F0025,BRS §3.1; DD — Configurable workflows,Proposed
+FR-X02,Functional,Request Intake & AI,Unprioritised,S,US-INT-01; US-INT-02,TS-INT,TC-FX02,,Draft
+FR-0030,Functional,Request Intake & AI,Must,S,US-INT-01; US-INT-02,TS-INT,TC-F0030,BRS §3.1; DD — Intelligent intake,Draft
+FR-0035,Functional,Request Intake & AI,Must,W,US-INT-02,TS-INT,TC-F0035,BRS §3.1; DD — Agentic AI,Draft
+FR-0040,Functional,Request Intake & AI,Must,S,US-INT-04,TS-INT,TC-F0040,BRS §3.1; DD — Agentic AI,Draft
+FR-0045,Functional,Request Intake & AI,Should,S,US-INT-01; US-INT-02,TS-INT,TC-F0045,BRS §3.1; DD — Intelligent intake,Draft
+FR-X03,Functional,Request Intake & AI,Should,S,US-INT-01; US-INT-02,TS-INT,TC-FX03,BRS §3.1; DD — Intelligent intake,Draft
+FR-X04,Functional,Request Intake & AI,Should,S,US-INT-01; US-INT-02,TS-INT,TC-FX04,BRS §3.1; DD — Intelligent intake,Draft
+FR-0050,Functional,Request Intake & AI,Must,S,US-INT-06,TS-INT,TC-F0050,BRS §3.1,Draft
+FR-0055,Functional,Request Intake & AI,Must,S,US-INT-06,TS-INT,TC-F0055,BRS §3.1,Draft
+FR-X05,Functional,Request Intake & AI,Unprioritised,S,US-INT-01; US-INT-02,TS-INT,TC-FX05,,Draft
+FR-0060,Functional,Request Intake & AI,Must,W,US-INT-03,TS-INT,TC-F0060,BRS §3.1,Draft
+FR-0065,Functional,Request Intake & AI,Must,S,US-PLT-04,TS-INT,TC-F0065,BRS §3.1; DD — Alerts,Draft
+FR-0066,Functional,Request Intake & AI,Must,S,US-PLT-04,TS-INT,TC-F0066,BRS §3.1; DD — Alerts,Draft
+FR-0070,Functional,Request Intake & AI,Must,W,US-NFR-01; US-INT-05,TS-INT,TC-F0070,BRS §3.1,Draft
+FR-0075,Functional,Procurement Plan,Must,W,US-PLN-01,TS-PLN,TC-F0075,BRS §3.2,Draft
+FR-0080,Functional,Procurement Plan,Must,W,US-PLN-03,TS-PLN,TC-F0080,BRS §3.2,Draft
+FR-0085,Functional,Procurement Plan,Should,S,US-PLN-01; US-PLN-02,TS-PLN,TC-F0085,BRS §3.2; DD — Procurement Planning,Draft
+FR-0090,Functional,Procurement Plan,Must,S,US-PLN-01; US-PLN-02,TS-PLN,TC-F0090,BRS §3.2,Draft
+FR-0095,Functional,Procurement Plan,Should,S,US-PLN-01; US-PLN-02,TS-PLN,TC-F0095,BRS §3.2,Draft
+FR-0100,Functional,Procurement Plan,Must,W,US-PLN-04; US-NFR-02,TS-PLN,TC-F0100,"BRS §3.2, §4.6",Draft
+FR-X06,Functional,Request Intake & AI,Unprioritised,S,US-INT-01; US-INT-02,TS-INT,TC-FX06,,Draft
+FR-0105,Functional,Procurement Plan,Must,W,US-PLN-05,TS-PLN,TC-F0105,"BRS §3.2, §4.6; DD — COI declaration",Draft
+FR-0110,Functional,RFx / Tender Collaboration,Must,W,US-TND-01,TS-TND,TC-F0110,BRS §3.3,Draft
+FR-0115,Functional,RFx / Tender Collaboration,Should,S,US-TND-01; US-TND-02,TS-TND,TC-F0115,BRS §3.3,Draft
+FR-0120,Functional,RFx / Tender Collaboration,Must,W,US-TND-01,TS-TND,TC-F0120,BRS §3.3,Draft
+FR-0125,Functional,RFx / Tender Collaboration,Should,S,US-CON-02,TS-TND,TC-F0125,BRS §3.3; DD — Contract drafting,Draft
+FR-0130,Functional,RFx / Tender Collaboration,Won't,D,US-TND-01; US-TND-02,TS-TND,TC-F0130,"BRS §3.3, §2.2",Deferred
+FR-0135,Functional,RFx / Tender Collaboration,Must,W,US-TND-03,TS-TND,TC-F0135,BRS §3.3; DD — Tender portal,Draft
+FR-0140,Functional,RFx / Tender Collaboration,Must,S,US-TND-01; US-TND-02,TS-TND,TC-F0140,BRS §3.3,Draft
+FR-0145,Functional,RFx / Tender Collaboration,Must,S,US-TND-04,TS-TND,TC-F0145,BRS §3.3,Draft
+FR-0150,Functional,RFx / Tender Collaboration,Must,W,US-TND-02,TS-TND,TC-F0150,BRS §3.3,Draft
+FR-0155,Functional,Tender Portal,Must,W,US-SUP-02,TS-SUP,TC-F0155,BRS §3.4,Draft
+FR-0160,Functional,Tender Portal,Must,W,US-SUP-02,TS-SUP,TC-F0160,BRS §3.4,Draft
+FR-0165,Functional,Tender Portal,Must,W,US-SUP-04,TS-SUP,TC-F0165,BRS §3.4,Draft
+FR-0170,Functional,Tender Portal,Must,W,US-SUP-03,TS-SUP,TC-F0170,"BRS §3.4, §4.1",Draft
+FR-0175,Functional,Tender Portal,Could,D,US-SUP-02; US-SUP-03,TS-SUP,TC-F0175,"BRS §3.4, §2.2",Deferred
+FR-0180,Functional,Tender Portal,Must,S,US-SUP-05,TS-SUP,TC-F0180,BRS §3.4,Draft
+FR-0185,Functional,Tender Portal,Could,D,US-SUP-05,TS-SUP,TC-F0185,"BRS §3.4, §2.2",Deferred
+FR-0190,Functional,Tender Portal,Must,S,US-NFR-02,TS-SUP,TC-F0190,"BRS §3.4, §4.6",Draft
+FR-0195,Functional,Tender Portal,Must,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0195,BRS §3.4; DD — Tender portal,Draft
+FR-0200,Functional,Tender Portal,Must,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0200,BRS §3.4,Draft
+FR-0205,Functional,Tender Portal,Should,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0205,DD — Tender portal,Draft
+FR-0210,Functional,Tender Portal,Must,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0210,DD — Tender portal,Draft
+FR-0215,Functional,Tender Portal,Should,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0215,DD — Tender portal,Draft
+FR-0220,Functional,Tender Portal,Should,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0220,BRS §3.6; DD — Tender portal,Draft
+FR-0225,Functional,Tender Portal,Must,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0225,DD — Tender portal,Draft
+FR-0230,Functional,Tender Portal,Must,S,US-SUP-02; US-SUP-03,TS-SUP,TC-F0230,DD — Tender portal,Draft
+FR-0235,Functional,Supplier Portal,Must,W,US-SUP-01,TS-SUP,TC-F0235,BRS §3.5; DD — Supplier functionality,Draft
+FR-0240,Functional,Supplier Portal,Must,S,US-SUP-01,TS-SUP,TC-F0240,BRS §3.5,Draft
+FR-0245,Functional,Supplier Portal,Must,S,US-SUP-01; US-SUP-05,TS-SUP,TC-F0245,BRS §3.5,Draft
+FR-0250,Functional,Supplier Portal,Must,S,US-SUP-05,TS-SUP,TC-F0250,BRS §3.5,Draft
+FR-0255,Functional,Evaluation,Must,W,US-EVL-02,TS-EVL,TC-F0255,BRS §3.6,Draft
+FR-0260,Functional,Evaluation,Must,W,US-EVL-03,TS-EVL,TC-F0260,BRS §3.6,Draft
+FR-0265,Functional,Evaluation,Must,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0265,BRS §3.6; DD — Evaluation,Draft
+FR-0270,Functional,Evaluation,Must,W,US-EVL-03,TS-EVL,TC-F0270,BRS §3.6,Draft
+FR-0275,Functional,Evaluation,Must,W,US-EVL-04,TS-EVL,TC-F0275,BRS §3.6,Draft
+FR-0280,Functional,Evaluation,Must,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0280,BRS §3.6; DD — Evaluation,Draft
+FR-0285,Functional,Evaluation,Must,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0285,BRS §3.6,Draft
+FR-0290,Functional,Evaluation,Must,S,US-EVL-08,TS-EVL,TC-F0290,BRS §3.6,Draft
+FR-0295,Functional,Evaluation,Should,S,US-EVL-08,TS-EVL,TC-F0295,BRS §3.6,Draft
+FR-0300,Functional,Evaluation,Must,W,US-EVL-01,TS-EVL,TC-F0300,BRS §3.6,Draft
+FR-0305,Functional,Evaluation,Must,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0305,BRS §3.6; DD — COI declaration,Draft
+FR-0310,Functional,Evaluation,Must,S,US-EVL-07,TS-EVL,TC-F0310,BRS §3.6; DD — Probity,Draft
+FR-0315,Functional,Evaluation,Must,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0315,DD — Evaluation,Draft
+FR-0320,Functional,Evaluation,Must,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0320,DD — Evaluation criteria,Draft
+FR-0325,Functional,Evaluation,Must,S,US-EVL-01,TS-EVL,TC-F0325,DD — COI declaration; BRS §4.6,Draft
+FR-0330,Functional,Evaluation,Must,S,US-EVL-01,TS-EVL,TC-F0330,DD — COI declaration,Draft
+FR-0335,Functional,Evaluation,Must,S,US-EVL-01,TS-EVL,TC-F0335,DD — COI declaration,Draft
+FR-0340,Functional,Evaluation,Should,S,US-EVL-01; US-EVL-02,TS-EVL,TC-F0340,DD — Probity,Draft
+FR-0345,Functional,Evaluation Report,Must,W,US-EVL-05,TS-EVL,TC-F0345,BRS §3.7,Draft
+FR-0350,Functional,Evaluation Report,Must,S,US-EVL-05,TS-EVL,TC-F0350,BRS §3.7,Draft
+FR-0355,Functional,Evaluation Report,Must,S,US-EVL-05; US-EVL-06,TS-EVL,TC-F0355,BRS §3.7,Draft
+FR-0360,Functional,Evaluation Report,Must,S,US-EVL-05; US-EVL-06,TS-EVL,TC-F0360,BRS §3.7,Draft
+FR-0365,Functional,Evaluation Report,Should,S,US-EVL-05; US-EVL-06,TS-EVL,TC-F0365,BRS §3.7,Draft
+FR-0370,Functional,Evaluation Report,Must,S,US-EVL-05; US-EVL-06,TS-EVL,TC-F0370,BRS §3.7,Draft
+FR-0375,Functional,Evaluation Report,Must,S,US-EVL-06,TS-EVL,TC-F0375,"BRS §3.7, §2.1; DD — Governance",Draft
+FR-0380,Functional,Contract Award & Legal,Must,W,US-CON-03,TS-CON,TC-F0380,BRS §3.8,Draft
+FR-0385,Functional,Contract Award & Legal,Must,S,US-CON-01; US-CON-02,TS-CON,TC-F0385,BRS §3.8; DD — Contract drafting,Draft
+FR-0390,Functional,Contract Award & Legal,Could,D,US-CON-01; US-CON-02,TS-CON,TC-F0390,"BRS §3.8, §4.7",Draft
+FR-0395,Functional,Contract Award & Legal,Must,W,US-CON-01,TS-CON,TC-F0395,BRS §3.8; DD — Contract drafting,Draft
+FR-0400,Functional,Contract Award & Legal,Must,S,US-CON-01; US-CON-02,TS-CON,TC-F0400,BRS §3.8,Draft
+FR-0405,Functional,Contract Award & Legal,Must,S,US-CON-01,TS-CON,TC-F0405,"BRS §3.8, §2.1; DD — Contract drafting",Draft
+FR-0410,Functional,Contract Award & Legal,Must,W,US-CON-03,TS-CON,TC-F0410,"BRS §3.8, §4.6",Draft
+FR-0415,Functional,Contract Award & Legal,Must,S,US-CON-01; US-CON-02,TS-CON,TC-F0415,BRS §3.8,Draft
+FR-0420,Functional,Contract Award & Legal,Must,W,US-CON-03,TS-CON,TC-F0420,BRS §3.8; DD — Signatures,Draft
+FR-0425,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0425,"BRS §3.8, §2.1; DD — Signatures",Draft
+FR-0430,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0430,"BRS §3.8, §2.1; DD — Signatures",Draft
+FR-0435,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0435,"BRS §3.8, §2.1; DD — Time based permission",Draft
+FR-0440,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0440,BRS §3.8,Draft
+FR-0445,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0445,BRS §3.8; DD — Signatures,Draft
+FR-0450,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0450,BRS §3.8; DD — Contract drafting,Draft
+FR-0455,Functional,Contract Award & Legal,Must,W,US-CON-04,TS-CON,TC-F0455,BRS §3.8; DD — Contract drafting,Draft
+FR-0460,Functional,Contract Award & Legal,Must,S,US-CON-05,TS-CON,TC-F0460,"BRS §3.8, §3.9",Draft
+FR-0465,Functional,Contract Award & Legal,Must,S,US-CON-01; US-CON-02,TS-CON,TC-F0465,DD — Contract drafting,Draft
+FR-0470,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0470,DD — Contract drafting,Draft
+FR-0475,Functional,Contract Award & Legal,Must,S,US-CON-02,TS-CON,TC-F0475,DD — Contract drafting,Draft
+FR-0480,Functional,Contract Award & Legal,Must,S,US-CON-01; US-CON-02,TS-CON,TC-F0480,DD — Contract drafting,Draft
+FR-0485,Functional,Contract Award & Legal,Should,S,US-CON-01; US-CON-02,TS-CON,TC-F0485,DD — Agentic AI,Draft
+FR-0490,Functional,Contract Management,Must,W,US-CMG-01,TS-CMG,TC-F0490,BRS §3.9,Draft
+FR-0495,Functional,Contract Management,Should,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0495,BRS §3.9,Draft
+FR-0500,Functional,Contract Management,Should,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0500,BRS §3.9; DD — Spend monitoring,Draft
+FR-0505,Functional,Contract Management,Must,W,US-CMG-02,TS-CMG,TC-F0505,BRS §3.9; DD — Alerts,Draft
+FR-0510,Functional,Contract Management,Must,S,US-CMG-02,TS-CMG,TC-F0510,BRS §3.9,Draft
+FR-0515,Functional,Contract Management,Must,S,US-CMG-03,TS-CMG,TC-F0515,BRS §3.9; DD — Alerts,Draft
+FR-0520,Functional,Contract Management,Should,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0520,BRS §3.9; DD — Contract management,Draft
+FR-0525,Functional,Contract Management,Should,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0525,BRS §3.9; DD — Contract management,Draft
+FR-0530,Functional,Contract Management,Must,S,US-CMG-03,TS-CMG,TC-F0530,"BRS §3.9, §2.1; DD — Data Migration",Draft
+FR-0535,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0535,BRS §3.9,Draft
+FR-0540,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0540,BRS §3.9; DD — Workflow design,Draft
+FR-0545,Functional,Contract Management,Should,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0545,BRS §3.9,Draft
+FR-0550,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0550,BRS §3.9,Draft
+FR-0555,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0555,BRS §3.9; DD — Contract drafting,Draft
+FR-0560,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0560,BRS §3.9; DD — Contract drafting,Draft
+FR-0565,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0565,BRS §3.9; DD — Contract management,Draft
+FR-0570,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0570,DD — Contract management,Draft
+FR-0575,Functional,Contract Management,Must,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0575,DD — Contract management; DD — Procurement Planning,Draft
+FR-0580,Functional,Contract Management,Must,S,US-CMG-05,TS-CMG,TC-F0580,DD — Contract management,Draft
+FR-0585,Functional,Contract Management,Should,S,US-CMG-01; US-CMG-02,TS-CMG,TC-F0585,DD — Delegate,Draft
+FR-0590,Functional,Reporting & Dashboards,Must,W,US-RPT-01,TS-RPT,TC-F0590,BRS §3.10; DD — Procurement Tracking,Draft
+FR-0595,Functional,Reporting & Dashboards,Must,S,US-RPT-04,TS-RPT,TC-F0595,BRS §3.10,Draft
+FR-0600,Functional,Reporting & Dashboards,Must,S,US-RPT-01; US-RPT-02,TS-RPT,TC-F0600,BRS §3.10; DD — User Access,Draft
+FR-0605,Functional,Reporting & Dashboards,Must,S,US-RPT-03,TS-RPT,TC-F0605,BRS §3.10,Draft
+FR-0610,Functional,Reporting & Dashboards,Should,S,US-RPT-01; US-RPT-02,TS-RPT,TC-F0610,BRS §3.10,Draft
+FR-0615,Functional,Reporting & Dashboards,Must,W,US-RPT-02,TS-RPT,TC-F0615,BRS §3.10,Draft
+FR-0620,Functional,Reporting & Dashboards,Must,S,US-RPT-04,TS-RPT,TC-F0620,BRS §3.10,Draft
+FR-0625,Functional,Reporting & Dashboards,Must,S,US-RPT-01; US-RPT-02,TS-RPT,TC-F0625,BRS §3.10; DD — Reporting,Draft
+FR-0630,Functional,Reporting & Dashboards,Must,W,US-RPT-02; US-NFR-01,TS-RPT,TC-F0630,BRS §3.10; DD — Auditability,Draft
+FR-0635,Functional,Reporting & Dashboards,Must,W,US-CMG-04,TS-RPT,TC-F0635,DD — Procurement Tracking,Draft
+FR-0640,Functional,Reporting & Dashboards,Must,W,US-CMG-04,TS-RPT,TC-F0640,DD — Reporting,Draft
+FR-0645,Functional,Reporting & Dashboards,Must,S,US-RPT-01; US-RPT-02,TS-RPT,TC-F0645,DD — Reporting,Draft
+FR-0650,Functional,Reporting & Dashboards,Must,W,US-RPT-01,TS-RPT,TC-F0650,DD — Delegate; DD — Procurement Tracking,Draft
+FR-0655,Functional,Data Migration,Must,S,US-MIG-01,TS-MIG,TC-F0655,BRS §3.11; DD — Data Migration,Draft
+FR-0660,Functional,Data Migration,Must,S,US-MIG-01,TS-MIG,TC-F0660,BRS §3.11; DD — Data Migration,Draft
+FR-0665,Functional,Data Migration,Must,S,US-MIG-01,TS-MIG,TC-F0665,"BRS §3.11, §6.2",Draft
+FR-0670,Functional,Data Migration,Must,S,US-MIG-01,TS-MIG,TC-F0670,BRS §3.11,Draft
+FR-0675,Functional,Data Migration,Must,S,US-MIG-01,TS-MIG,TC-F0675,DD — Data Migration,Draft
+FR-0680,Functional,Admin & Configuration,Must,W,US-ADM-01; US-ADM-02,TS-ADM,TC-F0680,"BRS §3.12, §2.1",Draft
+FR-0685,Functional,Admin & Configuration,Must,W,US-ADM-04,TS-ADM,TC-F0685,BRS §3.12,Draft
+FR-0690,Functional,Admin & Configuration,Must,S,US-ADM-01; US-ADM-02,TS-ADM,TC-F0690,BRS §3.12,Draft
+FR-0695,Functional,Admin & Configuration,Must,S,US-ADM-01; US-ADM-02,TS-ADM,TC-F0695,DD — Procurement Request,Draft
+FR-0700,Functional,Admin & Configuration,Must,S,US-ADM-02,TS-ADM,TC-F0700,DD — Integration,Draft
+FR-0705,Functional,Admin & Configuration,Must,S,US-ADM-02,TS-ADM,TC-F0705,DD — Workflow design,Draft
+FR-0710,Functional,Admin & Configuration,Must,S,US-ADM-02,TS-ADM,TC-F0710,DD — Workflow design,Draft
+FR-0715,Functional,Admin & Configuration,Must,W,US-ADM-01,TS-ADM,TC-F0715,DD — Governance; DD — User Access,Draft
+FR-0720,Functional,Admin & Configuration,Must,S,US-ADM-02,TS-ADM,TC-F0720,DD — Governance; BRS §4.6,Draft
+FR-0725,Functional,Admin & Configuration,Must,S,US-ADM-01,TS-ADM,TC-F0725,DD — User Access,Draft
+FR-0730,Functional,Admin & Configuration,Should,S,US-ADM-01; US-ADM-02,TS-ADM,TC-F0730,DD — Configurable workflows,Draft
+FR-0735,Functional,Collaboration & AI Authoring,Must,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0735,DD — Collaboration,Draft
+FR-0740,Functional,Collaboration & AI Authoring,Must,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0740,DD — Collaboration; DD — Auditability,Draft
+FR-0745,Functional,Collaboration & AI Authoring,Should,W,US-AIA-01; US-AIA-02,TS-AIA,TC-F0745,DD — Configurable workflows,Draft
+FR-0750,Functional,Collaboration & AI Authoring,Must,S,US-ADM-03; US-AIA-02,TS-AIA,TC-F0750,DD — Configurable workflows,Draft
+FR-0755,Functional,Collaboration & AI Authoring,Should,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0755,DD — Configurable workflows,Draft
+FR-0760,Functional,Collaboration & AI Authoring,Must,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0760,DD — Agentic AI,Draft
+FR-0765,Functional,Collaboration & AI Authoring,Should,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0765,DD — Agentic AI; BRS §4.4,Draft
+FR-0770,Functional,Collaboration & AI Authoring,Must,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0770,DD — Procurement Tracking,Draft
+FR-0775,Functional,Collaboration & AI Authoring,Should,S,US-AIA-01; US-AIA-02,TS-AIA,TC-F0775,DD — User Access,Draft
+FR-0780,Functional,Collaboration & AI Authoring,Must,W,US-AIA-01; US-AIA-02,TS-AIA,TC-F0780,DD — Auditability,Draft
+FR-0785,Functional,Collaboration & AI Authoring,Must,W,US-AIA-01; US-AIA-02,TS-AIA,TC-F0785,DD — Delegate,Draft
+FR-0790,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0790,BRS §2.2; DD — Supplier rate card,Deferred
+FR-0795,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0795,BRS §2.2; DD — Supplier,Deferred
+FR-0800,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0800,BRS §2.2; DD — Supplier; DD — Supplier ESG,Deferred
+FR-0805,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0805,BRS §2.2; DD — Lessons learnt,Deferred
+FR-0810,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0810,BRS §2.2; DD — Foreign Currency,Deferred
+FR-0815,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0815,BRS §2.2; DD — Integration with HR systems,Deferred
+FR-0820,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0820,BRS §2.2; DD — Specialised Guided Buy; DD — Autonomous Sourcing,Deferred
+FR-0825,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0825,DD — Phone App; BRS §4.5,Deferred
+FR-0830,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0830,DD — Legal functionalities,Deferred
+FR-0835,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0835,BRS §2.2; DD — Gamification,Deferred
+FR-0840,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0840,BRS §2.2; DD — Spend optimisation; DD — Benefits and costs analysis; DD — Price; DD — Category,Deferred
+FR-0845,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0845,DD — Future commitment analysis,Deferred
+FR-0850,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0850,DD — Real Time Dashboards; DD — Reporting visuals selection,Deferred
+FR-0855,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0855,DD — Future Scope; BRS §2.2,Deferred
+FR-0860,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0860,DD — Future Scope (BCP),Deferred
+FR-0865,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0865,BRS §2.2,Deferred
+FR-0870,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0870,"BRS §2.2, §4.2",Deferred
+FR-0875,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0875,BRS §2.2,Deferred
+FR-0880,Functional,Future Scope,Won't,D,US-FUT-01,TS-FUT,TC-F0880,"BRS §2.2, §4.4",Deferred
+NFR-P01,Non-functional,Performance & Response Time,Must,D,US-NFR-05,TS-PLT,TC-NFP01,BRS §4.2; DD — Live update of content,Draft
+NFR-P02,Non-functional,Performance & Response Time,Should,D,US-NFR-05,TS-PLT,TC-NFP02,"BRS §4.2, §2.2",Draft
+NFR-P03,Non-functional,Performance & Response Time,Must,W,US-PLN-06; US-NFR-05,TS-PLT,TC-NFP03,BRS §4.2,Draft
+NFR-P04,Non-functional,Performance & Response Time,Must,D,US-NFR-05,TS-PLT,TC-NFP04,"BRS §4.2, §3.1",Draft
+NFR-P05,Non-functional,Performance & Response Time,Must,D,US-NFR-05,TS-PLT,TC-NFP05,"BRS §3.10, §5.9",Draft
+NFR-P06,Non-functional,Performance & Response Time,Must,W,US-NFR-05,TS-PLT,TC-NFP06,Derived — no target stated in source documents,Draft
+NFR-SC01,Non-functional,Scalability,Must,D,US-NFR-05,TS-PLT,TC-NFSC01,BRS §5.2,Draft
+NFR-SC02,Non-functional,Scalability,Must,D,US-NFR-05,TS-PLT,TC-NFSC02,BRS §5.2,Draft
+NFR-SC03,Non-functional,Scalability,Must,D,US-NFR-05,TS-PLT,TC-NFSC03,BRS §5.9,Draft
+NFR-SC04,Non-functional,Scalability,Must,D,US-NFR-05,TS-PLT,TC-NFSC04,Derived — BRS §3.4,Draft
+NFR-AV01,Non-functional,Availability & Reliability,Must,D,US-NFR-06; US-NFR-09; US-AIA-02,TS-PLT,TC-NFAV01,"BRS §4.3, §2.3",Draft
+NFR-AV02,Non-functional,Availability & Reliability,Must,D,US-NFR-06; US-NFR-09; US-AIA-02,TS-PLT,TC-NFAV02,BRS §4.3,Draft
+NFR-AV03,Non-functional,Availability & Reliability,Must,D,US-NFR-06; US-NFR-09; US-AIA-02,TS-PLT,TC-NFAV03,"BRS §4.7, §6.2",Draft
+NFR-AV04,Non-functional,Availability & Reliability,Must,D,US-NFR-06; US-NFR-09; US-AIA-02,TS-PLT,TC-NFAV04,BRS §6.2,Draft
+NFR-AV05,Non-functional,Availability & Reliability,Must,W,US-NFR-06; US-NFR-09; US-AIA-02,TS-PLT,TC-NFAV05,BRS §6.2; DD — Agentic AI,Draft
+NFR-U01,Non-functional,Usability & Accessibility,Must,W,US-PLT-05; US-NFR-11,TS-PLT,TC-NFU01,BRS §4.5,Draft
+NFR-U02,Non-functional,Usability & Accessibility,Must,W,US-NFR-11; US-PLT-05,TS-PLT,TC-NFU02,DD — Phone usage,Draft
+NFR-U03,Non-functional,Usability & Accessibility,Must,W,US-TND-05; US-NFR-11; US-PLT-05,TS-PLT,TC-NFU03,BRS §4.5,Draft
+NFR-U04,Non-functional,Usability & Accessibility,Should,D,US-NFR-11; US-PLT-05,TS-PLT,TC-NFU04,BRS §4.5,Draft
+NFR-U05,Non-functional,Usability & Accessibility,Should,D,US-NFR-11; US-PLT-05,TS-PLT,TC-NFU05,DD — Security; DD — Phone usage,Draft
+NFR-U06,Non-functional,Usability & Accessibility,Should,W,US-NFR-11; US-PLT-05,TS-PLT,TC-NFU06,Derived — not stated in source documents,Draft
+NFR-U07,Non-functional,Usability & Accessibility,Must,W,US-NFR-11; US-PLT-05,TS-PLT,TC-NFU07,BRS §6.2; DD — Agentic AI,Draft
+NFR-U08,Non-functional,Usability & Accessibility,Should,D,US-NFR-11; US-PLT-05,TS-PLT,TC-NFU08,DD — Agentic AI,Draft
+NFR-M01,Non-functional,Maintainability & Supportability,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-NFM01,BRS §5.8,Draft
+NFR-M02,Non-functional,Maintainability & Supportability,Must,W,US-NFR-07; US-NFR-08,TS-PLT,TC-NFM02,BRS §5.8,Draft
+NFR-M03,Non-functional,Maintainability & Supportability,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-NFM03,BRS §5.8,Draft
+NFR-M04,Non-functional,Maintainability & Supportability,Should,D,US-NFR-07; US-NFR-08,TS-PLT,TC-NFM04,BRS §5.8,Draft
+NFR-M05,Non-functional,Maintainability & Supportability,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-NFM05,Derived — BRS §3.12; DD — Workflow design,Draft
+NFR-M06,Non-functional,Maintainability & Supportability,Should,D,US-NFR-07; US-NFR-08,TS-PLT,TC-NFM06,"Derived — BRS §4.1, §6.3",Draft
+NFR-C01,Non-functional,Compatibility & Portability,Must,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC01,"BRS §4.1, §5.4; DD — Agentic AI",Draft
+NFR-C02,Non-functional,Compatibility & Portability,Must,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC02,"BRS §4.7, §5.2",Draft
+NFR-C03,Non-functional,Compatibility & Portability,Must,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC03,"BRS §4.7, §3.8",Draft
+NFR-C04,Non-functional,Compatibility & Portability,Must,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC04,"BRS §3.8, §6.3",Draft
+NFR-C05,Non-functional,Compatibility & Portability,Must,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC05,"BRS §4.7, §6.3",Draft
+NFR-C06,Non-functional,Compatibility & Portability,Should,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC06,DD — Security; DD — Integration,Draft
+NFR-C07,Non-functional,Compatibility & Portability,Should,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC07,DD — Integration,Draft
+NFR-C08,Non-functional,Compatibility & Portability,Should,D,US-NFR-08; US-NFR-09,TS-PLT,TC-NFC08,Derived — not stated in source documents,Draft
+NFR-CA01,Non-functional,Capacity & Data Volume,Must,D,US-NFR-06; US-NFR-10,TS-PLT,TC-NFCA01,DD — Data Migration,Draft
+NFR-CA02,Non-functional,Capacity & Data Volume,Must,W,US-NFR-06; US-NFR-10,TS-PLT,TC-NFCA02,"BRS §5.3, §3.8",Draft
+NFR-CA03,Non-functional,Capacity & Data Volume,Must,D,US-NFR-06; US-NFR-10,TS-PLT,TC-NFCA03,Derived — BRS §4.6; DD — Auditability,Draft
+NFR-CA04,Non-functional,Capacity & Data Volume,Must,D,US-NFR-06; US-NFR-10,TS-PLT,TC-NFCA04,Derived — not stated in source documents,Draft
+NFR-DR01,Non-functional,Disaster Recovery & Business Continuity,Must,D,US-NFR-06,TS-PLT,TC-NFDR01,BRS §4.3; DD — Security,Draft
+NFR-DR02,Non-functional,Disaster Recovery & Business Continuity,Must,D,US-NFR-06,TS-PLT,TC-NFDR02,Derived — not stated in source documents,Draft
+NFR-DR03,Non-functional,Disaster Recovery & Business Continuity,Must,D,US-NFR-06,TS-PLT,TC-NFDR03,Derived — BRS §4.3,Draft
+NFR-L01,Non-functional,Legal,Must,D,US-NFR-10,TS-PLT,TC-NFL01,BRS §3.3,Draft
+NFR-L02,Non-functional,Legal,Must,D,US-NFR-10,TS-PLT,TC-NFL02,BRS §3.9,Draft
+NFR-L03,Non-functional,Legal,Must,D,US-NFR-10,TS-PLT,TC-NFL03,BRS §3.8,Draft
+NFR-L04,Non-functional,Legal,Must,D,US-NFR-10,TS-PLT,TC-NFL04,BRS §3.8; DD — Contract drafting; DD — Auditability,Draft
+NFR-R01,Non-functional,Regulatory & Environmental,Must,D,US-NFR-10; US-NFR-04,TS-PLT,TC-NFR01,"BRS §4.4, §1.1",Draft
+NFR-R02,Non-functional,Regulatory & Environmental,Must,D,US-NFR-10; US-NFR-04,TS-PLT,TC-NFR02,DD — Security,Draft
+NFR-R03,Non-functional,Regulatory & Environmental,Must,D,US-NFR-10; US-NFR-04,TS-PLT,TC-NFR03,"BRS §4.4, §2.2",Draft
+NFR-R04,Non-functional,Regulatory & Environmental,Should,D,US-NFR-10; US-NFR-04,TS-PLT,TC-NFR04,DD — Security (data privacy and security controls),Draft
+NFR-R05,Non-functional,Regulatory & Environmental,Should,D,US-NFR-10; US-NFR-04,TS-PLT,TC-NFR05,BRS §3.2,Draft
+NFR-R06,Non-functional,Regulatory & Environmental,Must,D,US-NFR-10; US-NFR-04,TS-PLT,TC-NFR06,"BRS §4.6, §3.6; DD — Governance",Draft
+SEC-A01,Security,Authentication & Identity,Must,S,US-NFR-03; US-PLT-02,TS-PLT,TC-SA01,ISO/IEC 27001:2022 A.8.5; ACSC Essential Eight (MFA),Draft
+SEC-A02,Security,Authentication & Identity,Must,S,US-NFR-03; US-PLT-02,TS-PLT,TC-SA02,"ISO/IEC 27001:2022 A.5.16, A.5.17",Draft
+SEC-A03,Security,Authentication & Identity,Must,S,US-NFR-03; US-PLT-02,TS-PLT,TC-SA03,"ISO/IEC 27001:2022 A.5.16, A.8.3",Draft
+SEC-A04,Security,Authentication & Identity,Must,S,US-NFR-03; US-PLT-02,TS-PLT,TC-SA04,ISO/IEC 27001:2022 A.8.5,Draft
+SEC-A05,Security,Authentication & Identity,Should,S,US-NFR-03; US-PLT-02,TS-PLT,TC-SA05,ISO/IEC 27001:2022 A.5.18,Draft
+SEC-A06,Security,Authentication & Identity,Must,S,US-NFR-03; US-PLT-02,TS-PLT,TC-SA06,ISO/IEC 27001:2022 A.5.18,Draft
+SEC-A07,Security,Authentication & Identity,Should,W,US-NFR-03; US-PLT-02,TS-PLT,TC-SA07,ISO/IEC 27001:2022 A.8.5,Draft
+SEC-AC01,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC01,"ISO/IEC 27001:2022 A.5.15, A.8.3",Draft
+SEC-AC02,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC02,ISO/IEC 27001:2022 A.5.15,Draft
+SEC-AC03,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC03,ISO/IEC 27001:2022 A.8.2,Draft
+SEC-AC04,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC04,ISO/IEC 27001:2022 A.5.15,Draft
+SEC-AC05,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC05,ISO/IEC 27001:2022 A.5.3 (segregation of duties),Draft
+SEC-AC06,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC06,ISO/IEC 27001:2022 A.5.3,Draft
+SEC-AC07,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC07,ISO/IEC 27001:2022 A.8.3,Draft
+SEC-AC08,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC08,ISO/IEC 27001:2022 A.8.3,Draft
+SEC-AC09,Security,Authorisation & Access Control,Must,D,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC09,ISO/IEC 27001:2022 A.5.15,Draft
+SEC-AC10,Security,Authorisation & Access Control,Should,D,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC10,"ISO/IEC 27001:2022 A.8.3, A.5.12",Draft
+SEC-AC11,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC11,ISO/IEC 27001:2022 A.8.2,Draft
+SEC-AC12,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC12,ISO/IEC 27001:2022 A.5.15,Draft
+SEC-AC13,Security,Authorisation & Access Control,Must,W,US-NFR-02; US-PLT-03,TS-PLT,TC-SAC13,"ISO/IEC 27001:2022 A.8.2, A.8.3",Draft
+SEC-D01,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD01,ISO/IEC 27001:2022 A.8.24,Draft
+SEC-D02,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD02,ISO/IEC 27001:2022 A.8.24,Draft
+SEC-D03,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD03,"ISO/IEC 27001:2022 A.8.24, A.8.3",Draft
+SEC-D04,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD04,ISO/IEC 27001:2022 A.8.24,Draft
+SEC-D05,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD05,ISO/IEC 27001:2022 A.8.12 (data leakage prevention),Draft
+SEC-D06,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD06,"ISO/IEC 27001:2022 A.8.12, A.5.14",Draft
+SEC-D07,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD07,"ISO/IEC 27001:2022 A.5.12, A.5.34",Draft
+SEC-D08,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD08,Privacy Act 1988 (Cth) — APPs; ISO/IEC 27001:2022 A.5.34,Draft
+SEC-D09,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD09,Privacy Act 1988 (Cth) APP 8; ISO/IEC 27001:2022 A.5.14,Draft
+SEC-D10,Security,Data Protection & Privacy,Must,D,US-NFR-04,TS-PLT,TC-SD10,"ISO/IEC 27001:2022 A.8.22, A.8.31",Draft
+SEC-D11,Security,Data Protection & Privacy,Should,D,US-NFR-04,TS-PLT,TC-SD11,ISO/IEC 27001:2022 A.5.23,Draft
+SEC-L01,Security,Audit Logging & Monitoring,Must,W,US-NFR-01,TS-PLT,TC-SL01,ISO/IEC 27001:2022 A.8.15,Draft
+SEC-L02,Security,Audit Logging & Monitoring,Must,D,US-NFR-01,TS-PLT,TC-SL02,ISO/IEC 27001:2022 A.8.15,Draft
+SEC-L03,Security,Audit Logging & Monitoring,Must,W,US-NFR-01,TS-PLT,TC-SL03,ISO/IEC 27001:2022 A.8.15,Draft
+SEC-L04,Security,Audit Logging & Monitoring,Must,W,US-NFR-01,TS-PLT,TC-SL04,ISO/IEC 27001:2022 A.8.15,Draft
+SEC-L05,Security,Audit Logging & Monitoring,Must,W,US-NFR-01,TS-PLT,TC-SL05,ISO/IEC 27001:2022 A.8.15,Draft
+SEC-L06,Security,Audit Logging & Monitoring,Must,D,US-NFR-01,TS-PLT,TC-SL06,"ISO/IEC 27001:2022 A.8.16, A.5.7",Draft
+SEC-L07,Security,Audit Logging & Monitoring,Must,D,US-NFR-01,TS-PLT,TC-SL07,ISO/IEC 27001:2022 A.8.15,Draft
+SEC-L08,Security,Audit Logging & Monitoring,Must,D,US-NFR-01,TS-PLT,TC-SL08,ISO/IEC 27001:2022 A.8.9,Draft
+SEC-AP01,Security,Application Security,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP01,ISO/IEC 27001:2022 A.8.26; OWASP Top 10,Draft
+SEC-AP02,Security,Application Security,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP02,ISO/IEC 27001:2022 A.8.20,Draft
+SEC-AP03,Security,Application Security,Must,W,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP03,"ISO/IEC 27001:2022 A.8.25, A.8.28, A.8.29",Draft
+SEC-AP04,Security,Application Security,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP04,ISO/IEC 27001:2022 A.8.7,Draft
+SEC-AP05,Security,Application Security,Must,D,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP05,"ISO/IEC 27001:2022 A.8.29, A.8.8",Draft
+SEC-AP06,Security,Application Security,Must,W,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP06,"ISO/IEC 27001:2022 A.8.31, A.8.33",Draft
+SEC-AP07,Security,Application Security,Must,W,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP07,"ISO/IEC 27001:2022 A.8.25, A.8.26, A.8.32",Draft
+SEC-AP08,Security,Application Security,Should,D,US-NFR-07; US-NFR-08,TS-PLT,TC-SAP08,ISO/IEC 27001:2022 A.8.26; OWASP Top 10 for LLM Applications,Draft
+SEC-N01,Security,Infrastructure & Network Security,Must,D,US-NFR-04,TS-PLT,TC-SN01,ACSC Information Security Manual / IRAP; ISO/IEC 27001:2022 A.5.23,Draft
+SEC-N02,Security,Infrastructure & Network Security,Must,D,US-NFR-04,TS-PLT,TC-SN02,"ISO/IEC 27001:2022 A.8.20, A.8.22",Draft
+SEC-N03,Security,Infrastructure & Network Security,Must,D,US-NFR-04,TS-PLT,TC-SN03,"ISO/IEC 27001:2022 A.5.17, A.8.24",Draft
+SEC-N04,Security,Infrastructure & Network Security,Must,D,US-NFR-04,TS-PLT,TC-SN04,"ISO/IEC 27001:2022 A.8.3, A.8.9",Draft
+SEC-N05,Security,Infrastructure & Network Security,Must,D,US-NFR-04,TS-PLT,TC-SN05,"ISO/IEC 27001:2022 A.8.13, A.5.14",Draft
+SEC-IR01,Security,Incident Response & Vulnerability Management,Must,D,US-NFR-06,TS-PLT,TC-SIR01,ISO/IEC 27001:2022 A.5.24 – A.5.28,Draft
+SEC-IR02,Security,Incident Response & Vulnerability Management,Must,D,US-NFR-06,TS-PLT,TC-SIR02,ISO/IEC 27001:2022 A.8.8,Draft
+SEC-IR03,Security,Incident Response & Vulnerability Management,Must,D,US-NFR-06,TS-PLT,TC-SIR03,"ISO/IEC 27001:2022 A.5.24, A.8.16",Draft
+SEC-IR04,Security,Incident Response & Vulnerability Management,Must,D,US-NFR-06,TS-PLT,TC-SIR04,"ISO/IEC 27001:2022 A.5.29, A.5.30",Draft
+SEC-IR05,Security,Incident Response & Vulnerability Management,Must,D,US-NFR-06,TS-PLT,TC-SIR05,Privacy Act 1988 (Cth) — Notifiable Data Breaches scheme; ISO/IEC 27001:2022 A.5.26,Draft
+SEC-TP01,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP01,"ISO/IEC 27001:2022 A.5.19, A.5.20",Draft
+SEC-TP02,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP02,ISO/IEC 27001:2022 A.5.22,Draft
+SEC-TP03,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP03,ISO/IEC 27001:2022 A.5.20,Draft
+SEC-TP04,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP04,"ISO/IEC 27001:2022 A.5.19, A.5.21, A.5.22",Draft
+SEC-TP05,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP05,ISO/IEC 27001:2022 A.5.20,Draft
+SEC-TP06,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP06,"ISO/IEC 27001:2022 A.5.19, A.5.23",Draft
+SEC-TP07,Security,Third-Party & Vendor Security,Must,D,US-NFR-09,TS-PLT,TC-STP07,"ISO/IEC 27001:2022 A.5.19, A.5.23",Draft
+SEC-TP08,Security,Third-Party & Vendor Security,Should,D,US-NFR-09,TS-PLT,TC-STP08,"ISO/IEC 27001:2022 A.5.19, A.5.14",Draft
+PRM-01,Brief (prompt),Portal / Branding,Must,W,US-PLT-01,TS-PLT,TC-P01,Prompt.docx,Draft
+PRM-02,Brief (prompt),Portal / Branding,Must,W,US-PLT-02; US-NFR-03,TS-PLT,TC-P02,Prompt.docx,Draft
+PRM-03,Brief (prompt),Portal / Branding,Must,W,US-RPT-01; US-PLT-04,TS-PLT,TC-P03,Prompt.docx,Draft
+PRM-04,Brief (prompt),Portal / Branding,Must,W,US-PLT-03; US-NFR-02,TS-PLT,TC-P04,Prompt.docx,Draft
+PRM-05,Brief (prompt),Portal / Branding,Must,W,US-PLT-05,TS-PLT,TC-P05,Prompt.docx,Draft
+PRM-06,Brief (prompt),Portal / Branding,Must,W,US-PLT-01; US-PLT-02,TS-PLT,TC-P06,Prompt.docx,Draft
+PRM-07,Brief (prompt),Portal / Branding,Must,W,US-PLT-05,TS-PLT,TC-P07,Prompt.docx,Draft
+PRM-08,Brief (prompt),Portal / Branding,Must,W,US-FUT-01,TS-PLT,TC-P08,Prompt.docx,Draft
+PRM-09,Brief (prompt),Portal / Branding,Must,W,US-NFR-01; US-NFR-02; US-NFR-07,TS-PLT,TC-P09,Prompt.docx,Draft
