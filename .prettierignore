@@ -12,3 +12,4 @@ test-results
 next-env.d.ts
 *.tsbuildinfo
 packages/ui/src/theme.css
+apps/api/openapi.json

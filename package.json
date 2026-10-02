@@ -11,7 +11,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w @if/api\" \"npm run dev -w @if/web\"",
+    "dev": "npm run build -w @if/shared && concurrently -n api,web -c blue,magenta \"npm run dev -w @if/api\" \"npm run dev -w @if/web\"",
     "build": "npm run build -w @if/shared && npm run build -w @if/api && npm run build -w @if/web",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -20,9 +20,10 @@ schemas = {
  "Problem": obj({"type": S, "title": S, "status": I, "detail": S, "code": S, "correlationId": S,
                  "errors": arr(obj({"field": S, "message": S}, ["field", "message"]))}, ["type", "title", "status", "code", "correlationId"]),
  "Page": obj({"total": I, "limit": I, "offset": I}, ["total", "limit", "offset"], True),
- "User": obj({"id": UUID, "name": S, "email": {"type": "string", "format": "email"}, "role": enum(*ROLES), "orgUnit": S, "delegationLimit": N, "homePath": S}, ["id", "name", "email", "role"]),
+ "User": obj({"id": UUID, "name": S, "email": {"type": "string", "format": "email"}, "role": enum(*ROLES), "roles": arr(enum(*ROLES)), "orgUnit": S, "delegationLimit": N, "homePath": S, "csrfToken": S}, ["id", "name", "email", "role"]),
  "LoginRequest": obj({"email": {"type": "string", "format": "email"}, "password": {"type": "string", "minLength": 8, "maxLength": 128}}, ["email", "password"]),
- "Session": obj({"user": ref("User"), "expiresAt": DT, "mfaRequired": B}, ["user", "expiresAt"]),
+ "Session": obj({"user": ref("User"), "expiresAt": DT, "mfaRequired": B, "csrfToken": S}, ["user", "expiresAt", "csrfToken"]),
+ "AccessDenied": obj({"path": {"type": "string", "maxLength": 200, "pattern": "^/"}}, ["path"]),
  "ForgotPassword": obj({"email": {"type": "string", "format": "email"}}, ["email"]),
  "Message": obj({"message": S}, ["message"]),
  "FieldValue": obj({"key": S, "label": S, "value": S, "source": enum("USER", "AI", "SYSTEM", "MIGRATED"), "aiDrafted": B, "missing": B, "updatedAt": DT, "updatedBy": UUID}, ["key", "label", "source"]),
@@ -97,6 +98,7 @@ A = "Auth"; ep("POST", "/auth/login", "login", A, "Mock login; returns session c
 ep("POST", "/auth/logout", "logout", A, "End session", "*", None, None, 204)
 ep("POST", "/auth/forgot-password", "forgotPassword", A, "Request reset; always returns 202 (no account enumeration)", None, "ForgotPassword", "Message", 202)
 ep("GET", "/auth/me", "getMe", A, "Current user and role-based home path", "*", None, "User")
+ep("POST", "/auth/access-denied", "reportAccessDenied", A, "Web route guard reports a blocked page visit so it is audited", "*", "AccessDenied", None, 204)
 T = "Requests"; R = ["REQUESTER", "PROCUREMENT", "EXEC", "FINANCE", "ADMIN", "DELEGATE", "PROBITY"]
 ep("GET", "/requests", "listRequests", T, "List requests visible to caller (scope by role/hierarchy)", "*", None, "RequestList", query=["phase", "status", "q", "limit", "offset"])
 ep("POST", "/requests", "createRequest", T, "Create blank request", ["REQUESTER", "PROCUREMENT"], "RequestPatch", "ProcurementRequest", 201)
@@ -218,3 +220,6 @@ for e in E:
     lines.append(f"| {e['m']} | `{e['p']}` | {e['op']} | {r} | {e['summ']} | {e['note']} |")
 open(os.path.join(OUT, "endpoint-table.md"), "w", encoding="utf8").write("\n".join(lines) + "\n")
 print(len(E), "operations;", len(schemas), "schemas")
+
+import shutil
+shutil.copyfile(os.path.join(OUT, "openapi.json"), os.path.join(ROOT, "apps", "api", "openapi.json"))  # runtime copy (drift-tested, ADR-0011)

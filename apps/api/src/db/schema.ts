@@ -548,3 +548,21 @@ export const auditEvent = pgTable(
     index('audit_tenant_seq_idx').on(t.tenantId, t.seq),
   ],
 );
+
+/** Server-side sessions: enables idle timeout, absolute timeout and immediate revocation (SEC-A07). */
+export const session = pgTable(
+  'session',
+  {
+    id: uuid('id').primaryKey(),
+    tenantId: tenantId(),
+    userId: uuid('user_id').notNull(),
+    pool: text('pool', { enum: ['STAFF', 'SUPPLIER'] }).notNull(), // separate identity pools (SEC-A03)
+    createdAt: created(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+  },
+  (t) => [index('session_user_idx').on(t.userId)],
+);

@@ -7,6 +7,9 @@ export const envSchema = z.object({
   WEB_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_URL: z.string().min(1).default('pglite://./var/db'),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
+  DEFAULT_TENANT_SLUG: z.string().min(1).default('meridian-demo'),
+  /** Login/forgot-password attempts per client per 15 minutes. Raised only by the automated e2e suite. */
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100000).default(10),
   STORAGE_DIR: z.string().min(1).default('./var/storage'),
   AI_PROVIDER: z.enum(['mock']).default('mock'),
   IDENTITY_PROVIDER: z.enum(['mock']).default('mock'),

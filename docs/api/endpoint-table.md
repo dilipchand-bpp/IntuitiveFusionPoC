@@ -4,6 +4,7 @@
 | POST | `/auth/logout` | logout | any signed-in | End session |  |
 | POST | `/auth/forgot-password` | forgotPassword | public | Request reset; always returns 202 (no account enumeration) |  |
 | GET | `/auth/me` | getMe | any signed-in | Current user and role-based home path |  |
+| POST | `/auth/access-denied` | reportAccessDenied | any signed-in | Web route guard reports a blocked page visit so it is audited |  |
 | GET | `/requests` | listRequests | any signed-in | List requests visible to caller (scope by role/hierarchy) |  |
 | POST | `/requests` | createRequest | REQUESTER, PROCUREMENT | Create blank request |  |
 | GET | `/requests/{id}` | getRequest | any signed-in | Get request |  |
