@@ -75,6 +75,10 @@ Sign in as `exec@...` for the portfolio dashboard: key figures, spend by categor
 
 `admin@...` opens **Admin overview**: **Users and roles** (add a person with roles; the one-time activation link is shown once; changing roles or switching someone off ends their sessions), **Delegations**, **Workflows** (the simple one is editable, an approval checkpoint cannot be removed) and **Templates** (read only). The administrator role cannot be combined with another, and administrators are refused every bid screen: try `/app/evaluations` as `admin@...`, then look at the refusal in the audit trail as `probity@...`.
 
+## Try the roadmap and "coming soon" screens
+
+Every signed-in staff member has **Roadmap** (`/app/roadmap`) in the menu: every requirement the traceability matrix marks as stubbed ("coming soon", grouped by the screen it belongs to) or deferred (not in the proof of concept, grouped by category), each with its requirement id. `docs/todo-inventory.md` is the same list as a document. Screens that are not built (`/app/collaboration`, `/admin/migration`, `/supplier/profile`) say so and list their requirement ids; any other made-up address is a real 404. Suppliers now have a small menu (My tenders, Company profile). To regenerate after the matrix changes: `PYTHONIOENCODING=utf-8 python _work/gen_roadmap.py && npx prettier --write packages/shared/src/roadmap-data.ts`.
+
 ## Checks
 
 ```bash

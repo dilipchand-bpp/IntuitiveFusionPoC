@@ -4,6 +4,7 @@ import { Badge, EmptyState, KpiCard, Table, Td, Th, type BadgeTone } from '@if/u
 import { SpendChart } from '@/components/reports/spend-chart';
 import type { ProcurementTable, SpendReport } from '@/components/reports/types';
 import { PHASE_LABEL, aud } from '@/lib/labels';
+import { navFor } from '@/lib/nav';
 import { apiGet, getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Dashboard – Intuitive Fusion' };
@@ -56,6 +57,8 @@ export default async function Dashboard({
   const q = (sp.q ?? '').slice(0, 100);
   const qs = new URLSearchParams({ ...(phase ? { phase } : {}), ...(q ? { q } : {}) }).toString();
   const user = await getSessionUser();
+  // a request title links to the request only for people whose menu offers Requests (an administrator's does not)
+  const canOpenRequests = navFor(user?.roles ?? []).some((n) => n.href === '/app/requests');
   const seesSpend = user?.roles.some((r) => ['EXEC', 'FINANCE', 'PROCUREMENT'].includes(r)) ?? false;
   const [k, table, spend] = await Promise.all([
     apiGet<Kpis>('/dashboard/kpis'),
@@ -226,8 +229,10 @@ export default async function Dashboard({
                       ) : (
                         r.title
                       )
-                    ) : (
+                    ) : canOpenRequests ? (
                       <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
+                    ) : (
+                      r.title
                     )}
                   </Td>
                   <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
