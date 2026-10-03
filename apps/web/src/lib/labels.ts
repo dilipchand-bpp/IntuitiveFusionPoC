@@ -139,3 +139,11 @@ export const SUBMISSION_TONE: Record<string, BadgeTone> = {
 const dateTime = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
 export const formatDateTime = (iso: string | null | undefined) =>
   iso ? dateTime.format(new Date(iso)) : '–';
+
+export const CONTRACT_STATUS: Record<string, [string, BadgeTone]> = {
+  DRAFT: ['Draft', 'neutral'],
+  LEGAL_REVIEW: ['Legal review', 'info'],
+  AWAITING_SIGNATURE: ['Awaiting signature', 'warning'],
+  PARTIALLY_SIGNED: ['Partly signed', 'warning'],
+  EXECUTED: ['Executed and locked', 'success'],
+};

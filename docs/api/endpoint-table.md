@@ -61,12 +61,15 @@
 | POST | `/evaluation-reports/{id}/decision` | decideReport | DELEGATE, EXEC | Delegate (within their authority) or executive approves or returns the report | 403 if the award value exceeds the approver's authority |
 | GET | `/evaluations/{id}/report/pdf` | exportReportPdf | PROCUREMENT, DELEGATE, EXEC, PROBITY, LEGAL, CHAIR | The evaluation report as a PDF carrying its generation time and version on every page | 404 until a report exists |
 | GET | `/evaluations/{id}/suppliers/{supplierId}/files/{fileId}` | downloadBidFile | EVALUATOR, CHAIR, PROCUREMENT, PROBITY, LEGAL | Download one bid file (panel members only after declaring no conflict, and only files of their stream) | 404 for any file the caller may not see |
-| POST | `/contracts` | draftContract | LEGAL, PROCUREMENT | Draft from approved report: template + clauses + supplier data |  |
+| POST | `/contracts` | draftContract | LEGAL, PROCUREMENT | Draft from approved report: template for the tender route + clause library + winning supplier data. Value defaults to the request estimate (bid prices are not captured) | 422 SUPPLIER_NOT_RECOMMENDED unless the supplier is ranked first; 409 CONTRACT_EXISTS |
 | GET | `/contracts` | listContracts | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Contracts visible to caller |  |
+| GET | `/contracts/awards` | listContractAwards | LEGAL, PROCUREMENT | Approved evaluations and whom the report recommends, with any contract already drafted |  |
+| PATCH | `/contracts/{id}` | updateContractTerms | LEGAL, PROCUREMENT | Change value, dates or notice period of a draft; unedited clauses follow | 423 when executed |
+| DELETE | `/contracts/{id}` | deleteContract | LEGAL, EXEC | Logical delete with a reason (the record is kept and audited) |  |
 | GET | `/contracts/{id}` | getContract | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Get contract |  |
-| PUT | `/contracts/{id}/clauses/{clauseId}` | updateClause | LEGAL | Edit clause (blocked when locked) | 423 when executed |
-| POST | `/contracts/{id}/release-for-signing` | releaseForSigning | LEGAL, PROCUREMENT | Run configured review chain, then signing |  |
-| POST | `/contracts/{id}/sign` | signContract | DELEGATE | Mock e-signature by signing delegate (authority checked separately) | 403 SIGNING_AUTHORITY_INSUFFICIENT |
+| PUT | `/contracts/{id}/clauses/{clauseId}` | updateClause | LEGAL | Edit clause; a change from the template is marked (blocked when locked) | 423 CONTRACT_LOCKED when executed; 422 MANDATORY_CLAUSE |
+| POST | `/contracts/{id}/release-for-signing` | releaseForSigning | LEGAL, PROCUREMENT | Release the reviewed draft for signing | 422 RELEASE_BLOCKED lists what is missing; procurement can release only after legal review |
+| POST | `/contracts/{id}/sign` | signContract | DELEGATE, EXEC | Mock e-signature with a stamp (name, role, time); signing authority is checked separately from sourcing approval. Above 1M the executive co-signs. REJECT returns the contract to legal | 403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed |
 | GET | `/contracts/{id}/alerts` | listAlerts | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | System + user alerts |  |
 | POST | `/contracts/{id}/alerts` | createAlert | CONTRACT_MGR | Create alert from plain-language instruction |  |
 | GET | `/dashboard/kpis` | getKpis | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Role-scoped KPIs (staff only; requesters see their own requests) |  |

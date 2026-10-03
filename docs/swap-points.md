@@ -77,3 +77,10 @@ This page lists the swap points that exist **today**; later milestones append to
 | Document storage | `DocumentStore` | M8 |
 | Sanctions / insurance | `SanctionsService`, `InsuranceVerificationService` | M8 |
 | E-signature | `ESignatureProvider` | M10 |
+
+## E-signature (M10)
+
+| | |
+| --- | --- |
+| Today | Mock: signing is an authenticated, authority-checked click that stores an approval stamp (name, role, UTC time) in `approval` (subject type CONTRACT). Not a certified or legally verifiable signature |
+| Swap | Replace the stamp creation in `modules/contract/routes.ts` (`POST /contracts/{id}/sign`) with a call to an e-signature provider (for example DocuSign or Adobe Acrobat Sign); keep the signing-authority check and the lock-on-execution step |

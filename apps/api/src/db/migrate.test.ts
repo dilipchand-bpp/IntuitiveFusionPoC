@@ -12,7 +12,7 @@ describe('migrations', () => {
     const db = await freshDb();
     expect(await migrateUp(db)).toEqual([]);
     const r = await db.pg.query<{ n: number }>(`select count(*)::int n from __migrations`);
-    expect(r.rows[0]!.n).toBe(5);
+    expect(r.rows[0]!.n).toBe(6);
     await db.close();
   });
 
@@ -46,6 +46,7 @@ describe('migrations', () => {
 
   it('down migration removes FKs, RLS, triggers and grants; up re-applies cleanly', async () => {
     const db = await freshDb();
+    expect(await migrateDownLast(db)).toBe('0005_contracts.sql');
     expect(await migrateDownLast(db)).toBe('0004_evaluation.sql');
     expect(await migrateDownLast(db)).toBe('0003_tender_portal.sql');
     expect(await migrateDownLast(db)).toBe('0002_session.sql');
@@ -67,6 +68,7 @@ describe('migrations', () => {
       '0002_session.sql',
       '0003_tender_portal.sql',
       '0004_evaluation.sql',
+      '0005_contracts.sql',
     ]);
     const fks2 = await db.pg.query<{ n: number }>(
       `select count(*)::int n from pg_constraint where contype='f' and connamespace='public'::regnamespace`,

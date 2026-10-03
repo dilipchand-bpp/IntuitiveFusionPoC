@@ -641,3 +641,96 @@ test.describe('downloads, conflict review, reopening consensus and the PDF repor
     expect((await page.goto(url))?.status()).toBe(404);
   });
 });
+
+// ---------------------------------------------------------------- M10: contract award and legal slice
+/** Takes a fresh closed tender through evaluation to an approved report (by API) and returns its request title. */
+async function approvedAward(title: string): Promise<string> {
+  const { tenderId } = await closedTender(title, 2);
+  const evalId = await openEvaluationApi(tenderId);
+  for (const u of ['evaluator-tech', 'evaluator-comm', 'chair']) await apiDeclareNone(u, evalId);
+  for (const u of ['evaluator-tech', 'evaluator-comm', 'chair']) await apiScoreAndSubmit(u, evalId);
+  await apiConsensusAndLock(evalId);
+  const proc = await apiAs('procurement');
+  const rep = await proc.api.post(`/api/v1/evaluations/${evalId}/report`, { headers: proc.headers });
+  expect(rep.ok(), await rep.text()).toBeTruthy();
+  const reportId = (await rep.json()).report.id as string;
+  await proc.api.dispose();
+  const del = await apiAs('delegate');
+  const ok = await del.api.post(`/api/v1/evaluation-reports/${reportId}/decision`, {
+    headers: del.headers,
+    data: { decision: 'APPROVE' },
+  });
+  expect(ok.ok(), await ok.text()).toBeTruthy();
+  await del.api.dispose();
+  return title;
+}
+
+test.describe('contract award: legal drafts and edits, the delegate signs, the contract locks', () => {
+  test('legal drafts from the approved report, edits a clause and releases; the delegate signs and the contract locks', async ({
+    page,
+  }) => {
+    const title = `Contract fixture ${rand()}`;
+    await approvedAward(title);
+
+    await signIn(page, 'legal');
+    await page.goto('/app/contracts');
+    const card = page.getByTestId('award-ready').filter({ hasText: title });
+    await expect(card).toBeVisible();
+    await card.getByRole('button', { name: /Draft the contract with/ }).click();
+    await expect(page.getByTestId('contract-workspace')).toBeVisible();
+    await expect(page.getByTestId('no-deviations')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Edit Liability and insurance' }).click();
+    await page
+      .getByLabel('Wording of Liability and insurance')
+      .fill('The Supplier holds insurance of at least ten million dollars for the whole term.');
+    await page.getByRole('button', { name: 'Save clause' }).click();
+    await expect(page.getByTestId('clause-LIABILITY').getByText('Changed from template')).toBeVisible();
+    await expect(page.getByTestId('deviations')).toContainText('ten million dollars');
+
+    await page.getByRole('button', { name: 'Release for signing' }).click();
+    await expect(page.getByText('Awaiting signature').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit Liability and insurance' })).toHaveCount(0);
+    const url = page.url();
+
+    // the executive can read the contract but is not a signatory at this value
+    await signIn(page, 'exec');
+    await page.goto(url);
+    await expect(page.getByTestId('contract-workspace')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign contract' })).toHaveCount(0);
+
+    await signIn(page, 'delegate');
+    await page.goto(url);
+    await page.getByRole('button', { name: 'Sign contract' }).click();
+    await expect(page.getByTestId('locked-banner')).toBeVisible();
+    await expect(page.getByTestId('stamp')).toContainText(
+      /SIGNED · Dana Okafor · DELEGATE · \d{4}-\d{2}-\d{2}/,
+    );
+    await expect(page.getByRole('button', { name: 'Sign contract' })).toHaveCount(0);
+
+    // locked: legal sees no edit buttons any more
+    await signIn(page, 'legal');
+    await page.goto(url);
+    await expect(page.getByTestId('locked-banner')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Edit / })).toHaveCount(0);
+  });
+
+  test('contracts pages are accessible and have no sideways scroll on a phone', async ({ page }) => {
+    await signIn(page, 'legal');
+    await page.goto('/app/contracts');
+    await expect(page.getByRole('table', { name: 'Contracts' })).toBeVisible();
+    const scan = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(scan.violations).toEqual([]);
+    await page.getByRole('link', { name: 'CT-2026-0001' }).click();
+    await expect(page.getByTestId('locked-banner')).toBeVisible();
+    const scan2 = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(scan2.violations).toEqual([]);
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
+  test('people without a contracts role cannot open the page', async ({ page }) => {
+    await signIn(page, 'evaluator-tech');
+    expect((await page.goto('/app/contracts'))?.status()).toBe(403);
+  });
+});

@@ -136,7 +136,7 @@ describe('authorisation matrix (every operation x every role)', () => {
   it('the headline probity rules hold at the contract level', () => {
     const roles = (id: string) => ops.find((o) => o.op.operationId === id)!.op['x-roles'];
     expect(roles('adminListUsers')).toEqual(['ADMIN']);
-    expect(roles('signContract')).toEqual(['DELEGATE']); // not PROCUREMENT, not ADMIN
+    expect(roles('signContract')).toEqual(['DELEGATE', 'EXEC']); // not PROCUREMENT, not ADMIN
     expect(roles('reopenPlan')).toEqual(['PROCUREMENT']); // requesters cannot reopen
     expect(roles('openConsensus')).toEqual(['CHAIR']);
     expect(roles('exportAudit')).toEqual(['PROBITY', 'ADMIN']);

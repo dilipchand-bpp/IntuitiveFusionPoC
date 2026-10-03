@@ -3524,7 +3524,7 @@
     "tags": [
      "Contracts"
     ],
-    "summary": "Draft from approved report: template + clauses + supplier data",
+    "summary": "Draft from approved report: template for the tender route + clause library + winning supplier data. Value defaults to the request estimate (bid prices are not captured)",
     "parameters": [],
     "x-roles": [
      "LEGAL",
@@ -3560,6 +3560,7 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "422 SUPPLIER_NOT_RECOMMENDED unless the supplier is ranked first; 409 CONTRACT_EXISTS",
     "requestBody": {
      "required": true,
      "content": {
@@ -3612,7 +3613,48 @@
         "schema": {
          "type": "array",
          "items": {
-          "$ref": "#/components/schemas/Contract"
+          "$ref": "#/components/schemas/ContractSummary"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/awards": {
+   "get": {
+    "operationId": "listContractAwards",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Approved evaluations and whom the report recommends, with any contract already drafted",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ContractAward"
          }
         }
        }
@@ -3634,6 +3676,121 @@
    }
   },
   "/contracts/{id}": {
+   "patch": {
+    "operationId": "updateContractTerms",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Change value, dates or notice period of a draft; unedited clauses follow",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "423 when executed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractTerms"
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "operationId": "deleteContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Logical delete with a reason (the record is kept and audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractDelete"
+       }
+      }
+     }
+    }
+   },
    "get": {
     "operationId": "getContract",
     "tags": [
@@ -3692,7 +3849,7 @@
     "tags": [
      "Contracts"
     ],
-    "summary": "Edit clause (blocked when locked)",
+    "summary": "Edit clause; a change from the template is marked (blocked when locked)",
     "parameters": [
      {
       "name": "id",
@@ -3721,7 +3878,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Contract"
+         "$ref": "#/components/schemas/Clause"
         }
        }
       }
@@ -3748,7 +3905,7 @@
       "$ref": "#/components/responses/E423"
      }
     },
-    "description": "423 when executed",
+    "description": "423 CONTRACT_LOCKED when executed; 422 MANDATORY_CLAUSE",
     "requestBody": {
      "required": true,
      "content": {
@@ -3767,7 +3924,7 @@
     "tags": [
      "Contracts"
     ],
-    "summary": "Run configured review chain, then signing",
+    "summary": "Release the reviewed draft for signing",
     "parameters": [
      {
       "name": "id",
@@ -3812,7 +3969,8 @@
      "422": {
       "$ref": "#/components/responses/E422"
      }
-    }
+    },
+    "description": "422 RELEASE_BLOCKED lists what is missing; procurement can release only after legal review"
    }
   },
   "/contracts/{id}/sign": {
@@ -3821,7 +3979,7 @@
     "tags": [
      "Contracts"
     ],
-    "summary": "Mock e-signature by signing delegate (authority checked separately)",
+    "summary": "Mock e-signature with a stamp (name, role, time); signing authority is checked separately from sourcing approval. Above 1M the executive co-signs. REJECT returns the contract to legal",
     "parameters": [
      {
       "name": "id",
@@ -3834,7 +3992,8 @@
      }
     ],
     "x-roles": [
-     "DELEGATE"
+     "DELEGATE",
+     "EXEC"
     ],
     "responses": {
      "200": {
@@ -3864,9 +4023,12 @@
      },
      "422": {
       "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
      }
     },
-    "description": "403 SIGNING_AUTHORITY_INSUFFICIENT",
+    "description": "403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed",
     "requestBody": {
      "required": true,
      "content": {
@@ -7691,6 +7853,244 @@
      "items"
     ]
    },
+   "ContractSummary": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "LEGAL_REVIEW",
+       "AWAITING_SIGNATURE",
+       "PARTIALLY_SIGNED",
+       "EXECUTED"
+      ]
+     },
+     "value": {
+      "type": "number"
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "supplierName": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "requestNumber": {
+      "type": "string"
+     },
+     "templateId": {
+      "type": "string"
+     },
+     "startDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "noticeDays": {
+      "type": "integer"
+     },
+     "locked": {
+      "type": "boolean"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "version": {
+      "type": "integer"
+     },
+     "signed": {
+      "type": "integer"
+     },
+     "signaturesRequired": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "number",
+     "status"
+    ]
+   },
+   "ContractDeviation": {
+    "type": "object",
+    "properties": {
+     "clauseId": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "mandatory": {
+      "type": "boolean"
+     },
+     "templateText": {
+      "type": "string"
+     },
+     "currentText": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "clauseId",
+     "templateText",
+     "currentText"
+    ]
+   },
+   "ContractSigner": {
+    "type": "object",
+    "properties": {
+     "role": {
+      "type": "string",
+      "enum": [
+       "DELEGATE",
+       "EXEC"
+      ]
+     },
+     "label": {
+      "type": "string"
+     },
+     "signedBy": {
+      "type": "string"
+     },
+     "stamp": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "role",
+     "label"
+    ]
+   },
+   "ContractPermissions": {
+    "type": "object",
+    "properties": {
+     "canEdit": {
+      "type": "boolean"
+     },
+     "canEditTerms": {
+      "type": "boolean"
+     },
+     "canRelease": {
+      "type": "boolean"
+     },
+     "canSign": {
+      "type": "boolean"
+     },
+     "signBlocked": {
+      "type": "string"
+     },
+     "canDelete": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ContractAward": {
+    "type": "object",
+    "properties": {
+     "evaluationId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestNumber": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "recommended": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "supplierId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "company": {
+         "type": "string"
+        },
+        "score": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "contractNumber": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "evaluationId",
+     "requestNumber",
+     "recommended"
+    ]
+   },
+   "ContractTerms": {
+    "type": "object",
+    "properties": {
+     "value": {
+      "type": "number"
+     },
+     "startDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "noticeDays": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ContractDelete": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
    "Contract": {
     "type": "object",
     "properties": {
@@ -7757,6 +8157,36 @@
      },
      "version": {
       "type": "integer"
+     },
+     "supplierName": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "requestNumber": {
+      "type": "string"
+     },
+     "signed": {
+      "type": "integer"
+     },
+     "signaturesRequired": {
+      "type": "integer"
+     },
+     "deviations": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ContractDeviation"
+      }
+     },
+     "chain": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ContractSigner"
+      }
+     },
+     "permissions": {
+      "$ref": "#/components/schemas/ContractPermissions"
      }
     },
     "additionalProperties": false,
@@ -7776,6 +8206,17 @@
      "supplierId": {
       "type": "string",
       "format": "uuid"
+     },
+     "value": {
+      "type": "number"
+     },
+     "startDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
      }
     },
     "additionalProperties": false,

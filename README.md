@@ -50,6 +50,10 @@ The seeded supplier `supplier@…` already has a closed, submitted tender and an
 
 The seeded tender "Facilities cleaning services" is already at the consensus stage: sign in as `chair@…` (or `probity@…` for a read-only view) and open **Evaluations**. One score is flagged (37.5% apart) and cannot be locked without a reason. To run a whole evaluation yourself, close a tender (the browser tests do this with a test-only API entry), then as `procurement@…` open **Evaluations**, choose a panel, and have `evaluator-tech@…`, `evaluator-comm@…` and `chair@…` declare conflicts and score. Technical evaluators never see pricing; nobody sees another evaluator's scores until the chair opens consensus. A declared conflict goes to a delegate to decide; the chair can reopen a locked consensus with a reason; the report downloads as a PDF. Seeded bid documents are real files (PDF and Excel): run `npm run db:reset` once to get them in an existing dev database.
 
+## Try the contract award
+
+Sign in as `legal@...` and open **Contracts**: two executed, locked contracts are seeded (open one: no edit buttons, signature stamp shown). When an evaluation report has been approved (the browser tests create one by API) the award appears under Awards ready for a contract; **Draft contract** assembles the template for the tender route (RFT = works, RFP/RFQ = services) with the winner, value, dates and service levels filled in. Legal edits clauses (a change is marked and listed under deviations), then releases for signing. `delegate@...` signs with a stamp and the contract is locked. Signing authority is a separate grant from sourcing approval: above 1,000,000 an executive must co-sign, and `exec@...` holds no signing delegation in the seed, so such a contract cannot be completed in the demo until one is delegated. The contract value defaults to the request estimate because bid prices are not captured.
+
 ## Checks
 
 ```bash

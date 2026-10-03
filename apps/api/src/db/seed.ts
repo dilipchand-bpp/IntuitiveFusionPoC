@@ -8,6 +8,7 @@ import { hash as argon2 } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import { AuditService } from '../audit/audit-service.js';
+import { SERVICES_TEMPLATE, WORKS_TEMPLATE } from '../modules/contract/clauses.js';
 import { demoPricingSchedule, demoTechnicalResponse } from './demo-documents.js';
 import { TENDER_FIELDS } from '../modules/tender/fields.js';
 import { sha256, type SealedStore } from '../modules/tender/files.js';
@@ -716,7 +717,7 @@ export async function seedDatabase(
         startDate: dateOnly(c.start),
         endDate: dateOnly(c.end),
         noticeDays: c.notice,
-        locked: true,
+        locked: false, // locked after the clauses are written (the database freezes clauses of a locked contract)
       });
       for (const [cid, title, mandatory] of [
         ['TERM', 'Term and extension', true],
@@ -733,6 +734,17 @@ export async function seedDatabase(
           mandatory,
         });
       }
+      await tx.update(s.contract).set({ locked: true }).where(eq(s.contract.id, id));
+      await tx.insert(s.approval).values({
+        tenantId: TENANT_ID,
+        subjectType: 'CONTRACT',
+        subjectId: id,
+        userId: userId('delegate'),
+        role: 'DELEGATE',
+        decision: 'APPROVED',
+        stamp: `SIGNED · Dana Okafor · DELEGATE · ${dateOnly(c.start)} 09:00 UTC`,
+        decidedAt: c.start,
+      });
       const noticeDate = new Date(c.end.getTime() - (c.notice + 60) * 86_400_000);
       await tx.insert(s.alert).values({
         tenantId: TENANT_ID,
@@ -800,13 +812,14 @@ export async function seedDatabase(
         editable: w.editable,
         steps: w.steps.map((k) => ({ key: k.toLowerCase(), label: k, mandatory: true })),
       });
-    for (const [id, type, name] of [
-      ['tpl-services-std', 'CONTRACT', 'Services agreement (standard)'],
-      ['tpl-rft', 'TENDER', 'Request for tender'],
-      ['tpl-rfp', 'TENDER', 'Request for proposal'],
-      ['tpl-plan', 'PLAN', 'Procurement plan'],
+    for (const [id, type, name, body] of [
+      ['tpl-services-std', 'CONTRACT', 'Services agreement (standard)', SERVICES_TEMPLATE],
+      ['tpl-works-std', 'CONTRACT', 'Works and supply agreement (standard)', WORKS_TEMPLATE],
+      ['tpl-rft', 'TENDER', 'Request for tender', {}],
+      ['tpl-rfp', 'TENDER', 'Request for proposal', {}],
+      ['tpl-plan', 'PLAN', 'Procurement plan', {}],
     ] as const)
-      await tx.insert(s.template).values({ id, tenantId: TENANT_ID, type, name, version: '1.0' });
+      await tx.insert(s.template).values({ id, tenantId: TENANT_ID, type, name, version: '1.0', body });
   });
 
   return { seeded: true, counts: await counts(database) };

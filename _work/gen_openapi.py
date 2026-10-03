@@ -114,9 +114,17 @@ schemas = {
  "ConsensusItem": obj({"supplierId": UUID, "criterionId": UUID, "variancePct": N, "flagged": B, "consensusScore": N, "rationale": S, "individual": arr(obj({"evaluator": S, "score": N, "comment": S}))}, ["supplierId", "criterionId", "flagged"]),
  "ConsensusUpdate": obj({"items": {"type": "array", "minItems": 1, "maxItems": 50, "items": obj({"criterionId": UUID, "consensusScore": {"type": "number", "minimum": 0, "maximum": 10}, "rationale": {"type": "string", "maxLength": 2000}}, ["criterionId", "consensusScore"])}}, ["items"]),
  "Report": obj({"id": UUID, "evaluationId": UUID, "status": enum("DRAFT", "AWAITING_APPROVAL", "APPROVED"), "fields": arr(ref("FieldValue")), "generatedAt": DT, "approvals": arr(ref("Approval"))}, ["id", "evaluationId", "status"]),
+ "ContractSummary": obj({"id": UUID, "number": S, "status": enum("DRAFT", "LEGAL_REVIEW", "AWAITING_SIGNATURE", "PARTIALLY_SIGNED", "EXECUTED"), "value": N, "supplierId": UUID, "supplierName": S, "title": S, "requestNumber": S, "templateId": S, "startDate": {"type": "string", "format": "date"}, "endDate": {"type": "string", "format": "date"}, "noticeDays": I, "locked": B, "tenderId": UUID, "version": I, "signed": I, "signaturesRequired": I}, ["id", "number", "status"]),
+ "ContractDeviation": obj({"clauseId": S, "title": S, "mandatory": B, "templateText": S, "currentText": S}, ["clauseId", "templateText", "currentText"]),
+ "ContractSigner": obj({"role": enum("DELEGATE", "EXEC"), "label": S, "signedBy": S, "stamp": S}, ["role", "label"]),
+ "ContractPermissions": obj({"canEdit": B, "canEditTerms": B, "canRelease": B, "canSign": B, "signBlocked": S, "canDelete": B}),
+ "ContractAward": obj({"evaluationId": UUID, "tenderId": UUID, "requestNumber": S, "title": S, "estimatedValue": N, "recommended": arr(obj({"supplierId": UUID, "company": S, "score": N})), "contractId": UUID, "contractNumber": S}, ["evaluationId", "requestNumber", "recommended"]),
+ "ContractTerms": obj({"value": N, "startDate": {"type": "string", "format": "date"}, "endDate": {"type": "string", "format": "date"}, "noticeDays": I}),
+ "ContractDelete": obj({"reason": {"type": "string", "minLength": 10, "maxLength": 1000}}, ["reason"]),
  "Contract": obj({"id": UUID, "number": S, "tenderId": UUID, "supplierId": UUID, "templateId": S, "status": enum("DRAFT", "LEGAL_REVIEW", "AWAITING_SIGNATURE", "PARTIALLY_SIGNED", "EXECUTED"), "value": N, "startDate": {"type": "string", "format": "date"}, "endDate": {"type": "string", "format": "date"},
-   "noticeDays": I, "clauses": arr(ref("Clause")), "signatures": arr(ref("Approval")), "parentId": UUID, "locked": B, "version": I}, ["id", "number", "status"]),
- "ContractCreate": obj({"evaluationId": UUID, "supplierId": UUID}, ["evaluationId", "supplierId"]),
+   "noticeDays": I, "clauses": arr(ref("Clause")), "signatures": arr(ref("Approval")), "parentId": UUID, "locked": B, "version": I,
+   "supplierName": S, "title": S, "requestNumber": S, "signed": I, "signaturesRequired": I, "deviations": arr(ref("ContractDeviation")), "chain": arr(ref("ContractSigner")), "permissions": ref("ContractPermissions")}, ["id", "number", "status"]),
+ "ContractCreate": obj({"evaluationId": UUID, "supplierId": UUID, "value": N, "startDate": {"type": "string", "format": "date"}, "endDate": {"type": "string", "format": "date"}}, ["evaluationId", "supplierId"]),
  "Clause": obj({"id": S, "title": S, "text": S, "mandatory": B, "changedFromTemplate": B}, ["id", "title", "text"]),
  "Alert": obj({"id": UUID, "contractId": UUID, "kind": enum("EXPIRY", "NOTICE", "MILESTONE", "EXTENSION", "CUSTOM"), "triggerDate": {"type": "string", "format": "date"}, "recipientRule": S, "status": enum("SCHEDULED", "SENT", "CANCELLED"), "origin": enum("SYSTEM", "USER")}, ["id", "contractId", "kind", "triggerDate"]),
  "AlertCreate": obj({"instruction": {"type": "string", "minLength": 5, "maxLength": 500}}, ["instruction"]),
@@ -210,12 +218,15 @@ ep("POST", "/evaluation-reports/{id}/decision", "decideReport", V, "Delegate (wi
 ep("GET", "/evaluations/{id}/report/pdf", "exportReportPdf", V, "The evaluation report as a PDF carrying its generation time and version on every page", ["PROCUREMENT", "DELEGATE", "EXEC", "PROBITY", "LEGAL", "CHAIR"], None, None, note="404 until a report exists")
 ep("GET", "/evaluations/{id}/suppliers/{supplierId}/files/{fileId}", "downloadBidFile", V, "Download one bid file (panel members only after declaring no conflict, and only files of their stream)", ["EVALUATOR", "CHAIR", "PROCUREMENT", "PROBITY", "LEGAL"], None, None, note="404 for any file the caller may not see")
 C = "Contracts"
-ep("POST", "/contracts", "draftContract", C, "Draft from approved report: template + clauses + supplier data", ["LEGAL", "PROCUREMENT"], "ContractCreate", "Contract", 201)
-ep("GET", "/contracts", "listContracts", C, "Contracts visible to caller", ["PROCUREMENT", "LEGAL", "CONTRACT_MGR", "DELEGATE", "EXEC", "FINANCE", "PROBITY"], None, "Contract", arrayResp=True, query=["status", "q"])
+ep("POST", "/contracts", "draftContract", C, "Draft from approved report: template for the tender route + clause library + winning supplier data. Value defaults to the request estimate (bid prices are not captured)", ["LEGAL", "PROCUREMENT"], "ContractCreate", "Contract", 201, note="422 SUPPLIER_NOT_RECOMMENDED unless the supplier is ranked first; 409 CONTRACT_EXISTS")
+ep("GET", "/contracts", "listContracts", C, "Contracts visible to caller", ["PROCUREMENT", "LEGAL", "CONTRACT_MGR", "DELEGATE", "EXEC", "FINANCE", "PROBITY"], None, "ContractSummary", arrayResp=True, query=["status", "q"])
+ep("GET", "/contracts/awards", "listContractAwards", C, "Approved evaluations and whom the report recommends, with any contract already drafted", ["LEGAL", "PROCUREMENT"], None, "ContractAward", arrayResp=True)
+ep("PATCH", "/contracts/{id}", "updateContractTerms", C, "Change value, dates or notice period of a draft; unedited clauses follow", ["LEGAL", "PROCUREMENT"], "ContractTerms", "Contract", note="423 when executed")
+ep("DELETE", "/contracts/{id}", "deleteContract", C, "Logical delete with a reason (the record is kept and audited)", ["LEGAL", "EXEC"], "ContractDelete", None, 204)
 ep("GET", "/contracts/{id}", "getContract", C, "Get contract", ["PROCUREMENT", "LEGAL", "CONTRACT_MGR", "DELEGATE", "EXEC", "FINANCE", "PROBITY"], None, "Contract")
-ep("PUT", "/contracts/{id}/clauses/{clauseId}", "updateClause", C, "Edit clause (blocked when locked)", ["LEGAL"], "Clause", "Contract", note="423 when executed")
-ep("POST", "/contracts/{id}/release-for-signing", "releaseForSigning", C, "Run configured review chain, then signing", ["LEGAL", "PROCUREMENT"], None, "Contract")
-ep("POST", "/contracts/{id}/sign", "signContract", C, "Mock e-signature by signing delegate (authority checked separately)", ["DELEGATE"], "Decision", "Contract", note="403 SIGNING_AUTHORITY_INSUFFICIENT")
+ep("PUT", "/contracts/{id}/clauses/{clauseId}", "updateClause", C, "Edit clause; a change from the template is marked (blocked when locked)", ["LEGAL"], "Clause", "Clause", note="423 CONTRACT_LOCKED when executed; 422 MANDATORY_CLAUSE")
+ep("POST", "/contracts/{id}/release-for-signing", "releaseForSigning", C, "Release the reviewed draft for signing", ["LEGAL", "PROCUREMENT"], None, "Contract", note="422 RELEASE_BLOCKED lists what is missing; procurement can release only after legal review")
+ep("POST", "/contracts/{id}/sign", "signContract", C, "Mock e-signature with a stamp (name, role, time); signing authority is checked separately from sourcing approval. Above 1M the executive co-signs. REJECT returns the contract to legal", ["DELEGATE", "EXEC"], "Decision", "Contract", note="403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed")
 ep("GET", "/contracts/{id}/alerts", "listAlerts", C, "System + user alerts", ["CONTRACT_MGR", "PROCUREMENT", "LEGAL", "EXEC"], None, "Alert", arrayResp=True)
 ep("POST", "/contracts/{id}/alerts", "createAlert", C, "Create alert from plain-language instruction", ["CONTRACT_MGR"], "AlertCreate", "Alert", 201)
 G = "Reporting"
