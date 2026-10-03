@@ -2479,13 +2479,93 @@
     }
    }
   },
+  "/evaluations": {
+   "get": {
+    "operationId": "listEvaluations",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Evaluations the caller can see, plus (procurement) closed tenders ready to evaluate",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EVALUATOR",
+     "CHAIR",
+     "DELEGATE",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EvalList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluators": {
+   "get": {
+    "operationId": "listEvaluators",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Users who can sit on a panel",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EvaluatorList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
   "/tenders/{id}/evaluation": {
    "post": {
     "operationId": "openEvaluation",
     "tags": [
      "Evaluation"
     ],
-    "summary": "Create evaluation + one record per submitted bidder",
+    "summary": "Open the evaluation of a closed tender: one record per submitted bid, scoring sheet from the published criteria, panel chosen by procurement",
     "parameters": [
      {
       "name": "id",
@@ -2529,6 +2609,80 @@
      "422": {
       "$ref": "#/components/responses/E422"
      }
+    },
+    "description": "409 unless the tender is closed, has bids and is scored for award; 400 if the panel lacks a stream",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OpenEvaluation"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/panel": {
+   "post": {
+    "operationId": "addPanelMember",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Add a replacement panel member (before consensus)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AddPanelMember"
+       }
+      }
+     }
     }
    }
   },
@@ -2538,7 +2692,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Get evaluation; suppliers anonymised until COI declared; stream-scoped payload",
+    "summary": "Get the evaluation as the caller may see it: suppliers anonymised and files withheld until a panel member declares no conflict; criteria and files limited to their stream; others' scores hidden until consensus",
     "parameters": [
      {
       "name": "id",
@@ -2556,7 +2710,8 @@
      "CHAIR",
      "DELEGATE",
      "PROBITY",
-     "LEGAL"
+     "LEGAL",
+     "EXEC"
     ],
     "responses": {
      "200": {
@@ -2581,7 +2736,8 @@
      "404": {
       "$ref": "#/components/responses/E404"
      }
-    }
+    },
+    "description": "404 for anyone not on the panel (and for removed members)"
    }
   },
   "/evaluations/{id}/coi": {
@@ -2590,7 +2746,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Mandatory COI before access; conflict revokes access",
+    "summary": "Mandatory conflict declaration before any access; a conflict removes the member at once and alerts chair and probity",
     "parameters": [
      {
       "name": "id",
@@ -2612,7 +2768,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/CoiRecord"
+         "$ref": "#/components/schemas/CoiOutcome"
         }
        }
       }
@@ -2654,7 +2810,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Own scores only",
+    "summary": "Own scores and progress only",
     "parameters": [
      {
       "name": "id",
@@ -2676,10 +2832,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "type": "array",
-         "items": {
-          "$ref": "#/components/schemas/ScoreSet"
-         }
+         "$ref": "#/components/schemas/ScoreSet"
         }
        }
       }
@@ -2696,7 +2849,8 @@
      "404": {
       "$ref": "#/components/responses/E404"
      }
-    }
+    },
+    "description": "403 COI_REQUIRED until declared"
    }
   },
   "/evaluations/{id}/scores": {
@@ -2705,7 +2859,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Save own scores (hidden from others)",
+    "summary": "Save own scores for one supplier (hidden from everyone else)",
     "parameters": [
      {
       "name": "id",
@@ -2751,25 +2905,26 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "404 for a criterion outside the caller's stream; 409 once marked complete",
     "requestBody": {
      "required": true,
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/ScoreSet"
+        "$ref": "#/components/schemas/ScoresUpdate"
        }
       }
      }
     }
    }
   },
-  "/evaluations/{id}/consensus/open": {
+  "/evaluations/{id}/scores/submit": {
    "post": {
-    "operationId": "openConsensus",
+    "operationId": "submitScores",
     "tags": [
      "Evaluation"
     ],
-    "summary": "Chair opens consensus (all scoring submitted)",
+    "summary": "Mark own scoring complete (every supplier on every allowed criterion)",
     "parameters": [
      {
       "name": "id",
@@ -2782,6 +2937,7 @@
      }
     ],
     "x-roles": [
+     "EVALUATOR",
      "CHAIR"
     ],
     "responses": {
@@ -2790,72 +2946,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "type": "array",
-         "items": {
-          "$ref": "#/components/schemas/ConsensusItem"
-         }
-        }
-       }
-      }
-     },
-     "400": {
-      "$ref": "#/components/responses/E400"
-     },
-     "401": {
-      "$ref": "#/components/responses/E401"
-     },
-     "403": {
-      "$ref": "#/components/responses/E403"
-     },
-     "404": {
-      "$ref": "#/components/responses/E404"
-     },
-     "409": {
-      "$ref": "#/components/responses/E409"
-     },
-     "422": {
-      "$ref": "#/components/responses/E422"
-     }
-    }
-   }
-  },
-  "/evaluations/{id}/consensus/{supplierId}": {
-   "put": {
-    "operationId": "setConsensus",
-    "tags": [
-     "Evaluation"
-    ],
-    "summary": "Record consensus score + rationale",
-    "parameters": [
-     {
-      "name": "id",
-      "in": "path",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "format": "uuid"
-      }
-     },
-     {
-      "name": "supplierId",
-      "in": "path",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "format": "uuid"
-      }
-     }
-    ],
-    "x-roles": [
-     "CHAIR"
-    ],
-    "responses": {
-     "200": {
-      "description": "Success",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/ConsensusItem"
+         "$ref": "#/components/schemas/Evaluation"
         }
        }
       }
@@ -2879,25 +2970,16 @@
       "$ref": "#/components/responses/E422"
      }
     },
-    "requestBody": {
-     "required": true,
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/ConsensusUpdate"
-       }
-      }
-     }
-    }
+    "description": "409 SCORING_INCOMPLETE"
    }
   },
-  "/evaluations/{id}/consensus/lock": {
+  "/evaluations/{id}/consensus/open": {
    "post": {
-    "operationId": "lockConsensus",
+    "operationId": "openConsensus",
     "tags": [
      "Evaluation"
     ],
-    "summary": "Lock; fails if flagged items lack rationale",
+    "summary": "Chair opens consensus once every member has finished; variance is computed and flagged",
     "parameters": [
      {
       "name": "id",
@@ -2942,7 +3024,133 @@
       "$ref": "#/components/responses/E422"
      }
     },
-    "description": "409 CONSENSUS_UNRESOLVED_FLAGS"
+    "description": "409 SCORING_PENDING"
+   }
+  },
+  "/evaluations/{id}/consensus/{supplierId}": {
+   "put": {
+    "operationId": "setConsensus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Record consensus scores and rationale for one supplier",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "supplierId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConsensusUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/consensus/lock": {
+   "post": {
+    "operationId": "lockConsensus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Lock consensus; refused while any flagged score lacks a rationale",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 FLAGS_UNRESOLVED / CONSENSUS_INCOMPLETE"
    }
   },
   "/evaluations/{id}/report": {
@@ -2951,7 +3159,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Generate evaluation report",
+    "summary": "Generate the evaluation report from the locked consensus",
     "parameters": [
      {
       "name": "id",
@@ -2972,7 +3180,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Report"
+         "$ref": "#/components/schemas/Evaluation"
         }
        }
       }
@@ -3004,7 +3212,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Value-tier delegate signs off",
+    "summary": "Delegate (within their authority) or executive approves or returns the report",
     "parameters": [
      {
       "name": "id",
@@ -3017,7 +3225,8 @@
      }
     ],
     "x-roles": [
-     "DELEGATE"
+     "DELEGATE",
+     "EXEC"
     ],
     "responses": {
      "200": {
@@ -3025,7 +3234,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Report"
+         "$ref": "#/components/schemas/Evaluation"
         }
        }
       }
@@ -3049,6 +3258,7 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "403 if the award value exceeds the approver's authority",
     "requestBody": {
      "required": true,
      "content": {
@@ -3059,6 +3269,69 @@
       }
      }
     }
+   }
+  },
+  "/evaluations/{id}/suppliers/{supplierId}/files/{fileId}": {
+   "get": {
+    "operationId": "downloadBidFile",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Download one bid file (panel members only after declaring no conflict, and only files of their stream)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "supplierId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "fileId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR",
+     "PROCUREMENT",
+     "PROBITY",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 for any file the caller may not see"
    }
   },
   "/contracts": {
@@ -6371,6 +6644,15 @@
       "type": "string",
       "format": "uuid"
      },
+     "requestNumber": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "tenderType": {
+      "type": "string"
+     },
      "status": {
       "type": "string",
       "enum": [
@@ -6382,10 +6664,22 @@
        "APPROVED"
       ]
      },
+     "varianceLimitPct": {
+      "type": "integer"
+     },
+     "version": {
+      "type": "integer"
+     },
      "criteria": {
       "type": "array",
       "items": {
        "$ref": "#/components/schemas/Criterion"
+      }
+     },
+     "panel": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/PanelMember"
       }
      },
      "suppliers": {
@@ -6394,32 +6688,261 @@
        "$ref": "#/components/schemas/EvalSupplier"
       }
      },
-     "panel": {
+     "me": {
+      "$ref": "#/components/schemas/EvalMe"
+     },
+     "consensus": {
       "type": "array",
       "items": {
-       "$ref": "#/components/schemas/PanelMember"
+       "$ref": "#/components/schemas/ConsensusItem"
       }
+     },
+     "ranking": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/RankedSupplier"
+      }
+     },
+     "report": {
+      "$ref": "#/components/schemas/EvalReport"
+     },
+     "permissions": {
+      "$ref": "#/components/schemas/EvalPermissions"
      }
     },
     "additionalProperties": false,
     "required": [
      "id",
      "tenderId",
-     "status"
+     "status",
+     "criteria",
+     "panel",
+     "suppliers",
+     "permissions"
     ]
    },
-   "Criterion": {
+   "EvalMe": {
+    "type": "object",
+    "properties": {
+     "stream": {
+      "type": "string"
+     },
+     "coiState": {
+      "type": "string"
+     },
+     "scoringComplete": {
+      "type": "boolean"
+     },
+     "required": {
+      "type": "integer"
+     },
+     "done": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false
+   },
+   "EvalPermissions": {
+    "type": "object",
+    "properties": {
+     "canDeclare": {
+      "type": "boolean"
+     },
+     "canScore": {
+      "type": "boolean"
+     },
+     "canOpenConsensus": {
+      "type": "boolean"
+     },
+     "canSetConsensus": {
+      "type": "boolean"
+     },
+     "canLock": {
+      "type": "boolean"
+     },
+     "canManagePanel": {
+      "type": "boolean"
+     },
+     "canGenerateReport": {
+      "type": "boolean"
+     },
+     "canDecideReport": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "EvalSummary": {
     "type": "object",
     "properties": {
      "id": {
       "type": "string",
       "format": "uuid"
      },
-     "name": {
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "requestNumber": {
       "type": "string"
      },
-     "weight": {
-      "type": "number"
+     "title": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "bids": {
+      "type": "integer"
+     },
+     "panelSize": {
+      "type": "integer"
+     },
+     "myCoiState": {
+      "type": "string"
+     },
+     "myScoringComplete": {
+      "type": "boolean"
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "tenderId",
+     "title",
+     "status"
+    ]
+   },
+   "EvalList": {
+    "type": "object",
+    "properties": {
+     "evaluations": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/EvalSummary"
+      }
+     },
+     "ready": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "tenderId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "requestNumber": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "type": {
+         "type": "string"
+        },
+        "bids": {
+         "type": "integer"
+        },
+        "evaluable": {
+         "type": "boolean"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "evaluations"
+    ]
+   },
+   "EvaluatorList": {
+    "type": "object",
+    "properties": {
+     "evaluators": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "chairs": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "evaluators",
+     "chairs"
+    ]
+   },
+   "OpenEvaluation": {
+    "type": "object",
+    "properties": {
+     "panel": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+       "type": "object",
+       "properties": {
+        "userId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "stream": {
+         "type": "string",
+         "enum": [
+          "TECHNICAL",
+          "COMMERCIAL"
+         ]
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "userId",
+        "stream"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "panel"
+    ]
+   },
+   "AddPanelMember": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
      },
      "stream": {
       "type": "string",
@@ -6428,48 +6951,15 @@
        "COMMERCIAL",
        "OTHER"
       ]
-     },
-     "passFail": {
-      "type": "boolean"
-     }
-    },
-    "additionalProperties": false,
-    "required": [
-     "id",
-     "name",
-     "weight"
-    ]
-   },
-   "PanelMember": {
-    "type": "object",
-    "properties": {
-     "userId": {
-      "type": "string",
-      "format": "uuid"
-     },
-     "name": {
-      "type": "string"
-     },
-     "stream": {
-      "type": "string"
-     },
-     "coiState": {
-      "type": "string",
-      "enum": [
-       "NOT_DECLARED",
-       "DECLARED_NONE",
-       "DECLARED_CONFLICT",
-       "REMOVED"
-      ]
      }
     },
     "additionalProperties": false,
     "required": [
      "userId",
-     "coiState"
+     "stream"
     ]
    },
-   "EvalSupplier": {
+   "RankedSupplier": {
     "type": "object",
     "properties": {
      "supplierId": {
@@ -6479,135 +6969,90 @@
      "displayName": {
       "type": "string"
      },
-     "anonymised": {
-      "type": "boolean"
-     },
-     "compliance": {
-      "type": "string",
-      "enum": [
-       "PENDING",
-       "PASS",
-       "FAIL"
-      ]
+     "weightedScore": {
+      "type": "number"
      },
      "rank": {
       "type": "integer"
      },
-     "weightedScore": {
-      "type": "number"
+     "compliance": {
+      "type": "string",
+      "enum": [
+       "PASS",
+       "FAIL"
+      ]
      }
     },
     "additionalProperties": false,
     "required": [
      "supplierId",
-     "displayName"
+     "displayName",
+     "weightedScore",
+     "compliance"
     ]
    },
-   "ScoreSet": {
+   "EvalReport": {
     "type": "object",
     "properties": {
-     "supplierId": {
+     "id": {
       "type": "string",
       "format": "uuid"
      },
-     "scores": {
+     "status": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "AWAITING_APPROVAL",
+       "APPROVED"
+      ]
+     },
+     "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "sections": {
       "type": "array",
       "items": {
        "type": "object",
        "properties": {
-        "criterionId": {
-         "type": "string",
-         "format": "uuid"
-        },
-        "score": {
-         "type": "number",
-         "minimum": 0,
-         "maximum": 10
-        },
-        "comment": {
+        "key": {
          "type": "string"
-        }
-       },
-       "additionalProperties": false,
-       "required": [
-        "criterionId",
-        "score"
-       ]
-      }
-     }
-    },
-    "additionalProperties": false,
-    "required": [
-     "supplierId",
-     "scores"
-    ]
-   },
-   "ConsensusItem": {
-    "type": "object",
-    "properties": {
-     "supplierId": {
-      "type": "string",
-      "format": "uuid"
-     },
-     "criterionId": {
-      "type": "string",
-      "format": "uuid"
-     },
-     "individual": {
-      "type": "array",
-      "items": {
-       "type": "object",
-       "properties": {
-        "evaluatorId": {
-         "type": "string",
-         "format": "uuid"
         },
-        "score": {
-         "type": "number"
+        "label": {
+         "type": "string"
+        },
+        "paragraphs": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
         }
        },
        "additionalProperties": false
       }
      },
-     "variancePct": {
-      "type": "number"
-     },
-     "flagged": {
-      "type": "boolean"
-     },
-     "consensusScore": {
-      "type": "number"
-     },
-     "rationale": {
-      "type": "string"
+     "decision": {
+      "type": "object",
+      "properties": {
+       "decision": {
+        "type": "string"
+       },
+       "stamp": {
+        "type": "string"
+       },
+       "comment": {
+        "type": "string"
+       }
+      },
+      "additionalProperties": false
      }
     },
     "additionalProperties": false,
     "required": [
-     "supplierId",
-     "criterionId"
-    ]
-   },
-   "ConsensusUpdate": {
-    "type": "object",
-    "properties": {
-     "criterionId": {
-      "type": "string",
-      "format": "uuid"
-     },
-     "consensusScore": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 10
-     },
-     "rationale": {
-      "type": "string"
-     }
-    },
-    "additionalProperties": false,
-    "required": [
-     "criterionId",
-     "consensusScore"
+     "id",
+     "status",
+     "generatedAt",
+     "sections"
     ]
    },
    "Report": {
@@ -6651,6 +7096,327 @@
      "id",
      "evaluationId",
      "status"
+    ]
+   },
+   "Criterion": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "weight": {
+      "type": "number"
+     },
+     "stream": {
+      "type": "string",
+      "enum": [
+       "TECHNICAL",
+       "COMMERCIAL",
+       "OTHER"
+      ]
+     },
+     "passFail": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "weight",
+     "stream"
+    ]
+   },
+   "PanelMember": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "stream": {
+      "type": "string"
+     },
+     "coiState": {
+      "type": "string",
+      "enum": [
+       "NOT_DECLARED",
+       "DECLARED_NONE",
+       "DECLARED_CONFLICT",
+       "REMOVED"
+      ]
+     },
+     "scoringComplete": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "userId",
+     "name",
+     "stream",
+     "coiState"
+    ]
+   },
+   "EvalSupplier": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "displayName": {
+      "type": "string"
+     },
+     "anonymised": {
+      "type": "boolean"
+     },
+     "files": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "name": {
+         "type": "string"
+        },
+        "section": {
+         "type": "string"
+        },
+        "sizeBytes": {
+         "type": "integer"
+        },
+        "contentType": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "displayName",
+     "anonymised"
+    ]
+   },
+   "ScoreSet": {
+    "type": "object",
+    "properties": {
+     "criteria": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Criterion"
+      }
+     },
+     "suppliers": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "supplierId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "displayName": {
+         "type": "string"
+        },
+        "scores": {
+         "type": "array",
+         "items": {
+          "type": "object",
+          "properties": {
+           "criterionId": {
+            "type": "string",
+            "format": "uuid"
+           },
+           "score": {
+            "type": "number"
+           },
+           "comment": {
+            "type": "string"
+           }
+          },
+          "additionalProperties": false
+         }
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "progress": {
+      "type": "object",
+      "properties": {
+       "required": {
+        "type": "integer"
+       },
+       "done": {
+        "type": "integer"
+       },
+       "complete": {
+        "type": "boolean"
+       }
+      },
+      "additionalProperties": false
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "criteria",
+     "suppliers",
+     "progress"
+    ]
+   },
+   "ScoresUpdate": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "scores": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+       "type": "object",
+       "properties": {
+        "criterionId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "score": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 10,
+         "multipleOf": 0.5
+        },
+        "comment": {
+         "type": "string",
+         "maxLength": 2000
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "criterionId",
+        "score"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "scores"
+    ]
+   },
+   "CoiOutcome": {
+    "type": "object",
+    "properties": {
+     "removed": {
+      "type": "boolean"
+     },
+     "message": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ConsensusItem": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "criterionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "variancePct": {
+      "type": "number"
+     },
+     "flagged": {
+      "type": "boolean"
+     },
+     "consensusScore": {
+      "type": "number"
+     },
+     "rationale": {
+      "type": "string"
+     },
+     "individual": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "evaluator": {
+         "type": "string"
+        },
+        "score": {
+         "type": "number"
+        },
+        "comment": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "criterionId",
+     "flagged"
+    ]
+   },
+   "ConsensusUpdate": {
+    "type": "object",
+    "properties": {
+     "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+       "type": "object",
+       "properties": {
+        "criterionId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "consensusScore": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 10
+        },
+        "rationale": {
+         "type": "string",
+         "maxLength": 2000
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "criterionId",
+        "consensusScore"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "items"
     ]
    },
    "Contract": {

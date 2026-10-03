@@ -89,13 +89,27 @@ schemas = {
  "Supplier": obj({"id": UUID, "company": S, "abn": S, "sanctionsStatus": enum("PENDING", "CLEAR", "MATCH"), "insuranceStatus": enum("UNKNOWN", "CURRENT", "EXPIRING", "EXPIRED"), "lastCheckedAt": DT}, ["id", "company", "sanctionsStatus"]),
  "Submission": obj({"id": UUID, "tenderId": UUID, "supplierId": UUID, "status": enum("DRAFT", "SUBMITTED", "REJECTED_LATE"), "files": arr(ref("FileRef")), "receipt": S, "submittedAt": DT}, ["id", "tenderId", "status"]),
  "FileRef": obj({"id": UUID, "name": S, "sizeBytes": I, "contentType": S, "scan": enum("PENDING", "CLEAN", "INFECTED"), "section": enum("TECHNICAL", "COMMERCIAL", "OTHER")}, ["id", "name"]),
- "Evaluation": obj({"id": UUID, "tenderId": UUID, "status": enum("COI_PENDING", "SCORING", "CONSENSUS", "LOCKED", "REPORTED", "APPROVED"), "criteria": arr(ref("Criterion")), "suppliers": arr(ref("EvalSupplier")), "panel": arr(ref("PanelMember"))}, ["id", "tenderId", "status"]),
- "Criterion": obj({"id": UUID, "name": S, "weight": N, "stream": enum("TECHNICAL", "COMMERCIAL", "OTHER"), "passFail": B}, ["id", "name", "weight"]),
- "PanelMember": obj({"userId": UUID, "name": S, "stream": S, "coiState": enum("NOT_DECLARED", "DECLARED_NONE", "DECLARED_CONFLICT", "REMOVED")}, ["userId", "coiState"]),
- "EvalSupplier": obj({"supplierId": UUID, "displayName": S, "anonymised": B, "compliance": enum("PENDING", "PASS", "FAIL"), "rank": I, "weightedScore": N}, ["supplierId", "displayName"]),
- "ScoreSet": obj({"supplierId": UUID, "scores": arr(obj({"criterionId": UUID, "score": {"type": "number", "minimum": 0, "maximum": 10}, "comment": S}, ["criterionId", "score"]))}, ["supplierId", "scores"]),
- "ConsensusItem": obj({"supplierId": UUID, "criterionId": UUID, "individual": arr(obj({"evaluatorId": UUID, "score": N})), "variancePct": N, "flagged": B, "consensusScore": N, "rationale": S}, ["supplierId", "criterionId"]),
- "ConsensusUpdate": obj({"criterionId": UUID, "consensusScore": {"type": "number", "minimum": 0, "maximum": 10}, "rationale": S}, ["criterionId", "consensusScore"]),
+ "Evaluation": obj({"id": UUID, "tenderId": UUID, "requestNumber": S, "title": S, "tenderType": S, "status": enum("COI_PENDING", "SCORING", "CONSENSUS", "LOCKED", "REPORTED", "APPROVED"),
+   "varianceLimitPct": I, "version": I, "criteria": arr(ref("Criterion")), "panel": arr(ref("PanelMember")), "suppliers": arr(ref("EvalSupplier")),
+   "me": ref("EvalMe"), "consensus": arr(ref("ConsensusItem")), "ranking": arr(ref("RankedSupplier")), "report": ref("EvalReport"), "permissions": ref("EvalPermissions")}, ["id", "tenderId", "status", "criteria", "panel", "suppliers", "permissions"]),
+ "EvalMe": obj({"stream": S, "coiState": S, "scoringComplete": B, "required": I, "done": I}),
+ "EvalPermissions": obj({"canDeclare": B, "canScore": B, "canOpenConsensus": B, "canSetConsensus": B, "canLock": B, "canManagePanel": B, "canGenerateReport": B, "canDecideReport": B}),
+ "EvalSummary": obj({"id": UUID, "tenderId": UUID, "requestNumber": S, "title": S, "status": S, "bids": I, "panelSize": I, "myCoiState": S, "myScoringComplete": B, "updatedAt": DT}, ["id", "tenderId", "title", "status"]),
+ "EvalList": obj({"evaluations": arr(ref("EvalSummary")), "ready": arr(obj({"tenderId": UUID, "requestNumber": S, "title": S, "type": S, "bids": I, "evaluable": B}))}, ["evaluations"]),
+ "EvaluatorList": obj({"evaluators": arr(obj({"id": UUID, "name": S})), "chairs": arr(obj({"id": UUID, "name": S}))}, ["evaluators", "chairs"]),
+ "OpenEvaluation": obj({"panel": {"type": "array", "minItems": 1, "maxItems": 12, "items": obj({"userId": UUID, "stream": enum("TECHNICAL", "COMMERCIAL")}, ["userId", "stream"])}}, ["panel"]),
+ "AddPanelMember": obj({"userId": UUID, "stream": enum("TECHNICAL", "COMMERCIAL", "OTHER")}, ["userId", "stream"]),
+ "RankedSupplier": obj({"supplierId": UUID, "displayName": S, "weightedScore": N, "rank": I, "compliance": enum("PASS", "FAIL")}, ["supplierId", "displayName", "weightedScore", "compliance"]),
+ "EvalReport": obj({"id": UUID, "status": enum("DRAFT", "AWAITING_APPROVAL", "APPROVED"), "generatedAt": DT, "sections": arr(obj({"key": S, "label": S, "paragraphs": arr(S)})), "decision": obj({"decision": S, "stamp": S, "comment": S})}, ["id", "status", "generatedAt", "sections"]),
+ "Report": obj({"id": UUID, "status": S}),
+ "Criterion": obj({"id": UUID, "name": S, "weight": N, "stream": enum("TECHNICAL", "COMMERCIAL", "OTHER"), "passFail": B}, ["id", "name", "weight", "stream"]),
+ "PanelMember": obj({"userId": UUID, "name": S, "stream": S, "coiState": enum("NOT_DECLARED", "DECLARED_NONE", "DECLARED_CONFLICT", "REMOVED"), "scoringComplete": B}, ["userId", "name", "stream", "coiState"]),
+ "EvalSupplier": obj({"supplierId": UUID, "displayName": S, "anonymised": B, "files": arr(obj({"id": UUID, "name": S, "section": S, "sizeBytes": I, "contentType": S}))}, ["supplierId", "displayName", "anonymised"]),
+ "ScoreSet": obj({"criteria": arr(ref("Criterion")), "suppliers": arr(obj({"supplierId": UUID, "displayName": S, "scores": arr(obj({"criterionId": UUID, "score": N, "comment": S}))})), "progress": obj({"required": I, "done": I, "complete": B})}, ["criteria", "suppliers", "progress"]),
+ "ScoresUpdate": obj({"supplierId": UUID, "scores": {"type": "array", "minItems": 1, "maxItems": 50, "items": obj({"criterionId": UUID, "score": {"type": "number", "minimum": 0, "maximum": 10, "multipleOf": 0.5}, "comment": {"type": "string", "maxLength": 2000}}, ["criterionId", "score"])}}, ["supplierId", "scores"]),
+ "CoiOutcome": obj({"removed": B, "message": S}),
+ "ConsensusItem": obj({"supplierId": UUID, "criterionId": UUID, "variancePct": N, "flagged": B, "consensusScore": N, "rationale": S, "individual": arr(obj({"evaluator": S, "score": N, "comment": S}))}, ["supplierId", "criterionId", "flagged"]),
+ "ConsensusUpdate": obj({"items": {"type": "array", "minItems": 1, "maxItems": 50, "items": obj({"criterionId": UUID, "consensusScore": {"type": "number", "minimum": 0, "maximum": 10}, "rationale": {"type": "string", "maxLength": 2000}}, ["criterionId", "consensusScore"])}}, ["items"]),
  "Report": obj({"id": UUID, "evaluationId": UUID, "status": enum("DRAFT", "AWAITING_APPROVAL", "APPROVED"), "fields": arr(ref("FieldValue")), "generatedAt": DT, "approvals": arr(ref("Approval"))}, ["id", "evaluationId", "status"]),
  "Contract": obj({"id": UUID, "number": S, "tenderId": UUID, "supplierId": UUID, "templateId": S, "status": enum("DRAFT", "LEGAL_REVIEW", "AWAITING_SIGNATURE", "PARTIALLY_SIGNED", "EXECUTED"), "value": N, "startDate": {"type": "string", "format": "date"}, "endDate": {"type": "string", "format": "date"},
    "noticeDays": I, "clauses": arr(ref("Clause")), "signatures": arr(ref("Approval")), "parentId": UUID, "locked": B, "version": I}, ["id", "number", "status"]),
@@ -173,17 +187,22 @@ ep("POST", "/supplier/tenders/{id}/submission", "submitBid", SP, "Submit; issues
 ep("POST", "/supplier/tenders/{id}/submission/withdraw", "withdrawBid", SP, "Withdraw a submitted bid before close so files can be changed", ["SUPPLIER"], None, "SupplierTender", note="409 after close")
 ep("GET", "/suppliers/{id}", "getSupplier", SP, "Supplier profile with sanctions/insurance status", ["PROCUREMENT", "LEGAL", "FINANCE", "ADMIN"], None, "Supplier")
 V = "Evaluation"
-ER = ["PROCUREMENT", "EVALUATOR", "CHAIR", "DELEGATE", "PROBITY", "LEGAL"]
-ep("POST", "/tenders/{id}/evaluation", "openEvaluation", V, "Create evaluation + one record per submitted bidder", ["PROCUREMENT"], None, "Evaluation", 201)
-ep("GET", "/evaluations/{id}", "getEvaluation", V, "Get evaluation; suppliers anonymised until COI declared; stream-scoped payload", ER, None, "Evaluation")
-ep("POST", "/evaluations/{id}/coi", "declareEvalCoi", V, "Mandatory COI before access; conflict revokes access", ["EVALUATOR", "CHAIR"], "CoiDeclaration", "CoiRecord", 201)
-ep("GET", "/evaluations/{id}/scores/mine", "getMyScores", V, "Own scores only", ["EVALUATOR", "CHAIR"], None, "ScoreSet", arrayResp=True)
-ep("PUT", "/evaluations/{id}/scores", "saveScores", V, "Save own scores (hidden from others)", ["EVALUATOR", "CHAIR"], "ScoreSet", "ScoreSet")
-ep("POST", "/evaluations/{id}/consensus/open", "openConsensus", V, "Chair opens consensus (all scoring submitted)", ["CHAIR"], None, "ConsensusItem", arrayResp=True)
-ep("PUT", "/evaluations/{id}/consensus/{supplierId}", "setConsensus", V, "Record consensus score + rationale", ["CHAIR"], "ConsensusUpdate", "ConsensusItem")
-ep("POST", "/evaluations/{id}/consensus/lock", "lockConsensus", V, "Lock; fails if flagged items lack rationale", ["CHAIR"], None, "Evaluation", note="409 CONSENSUS_UNRESOLVED_FLAGS")
-ep("POST", "/evaluations/{id}/report", "generateReport", V, "Generate evaluation report", ["PROCUREMENT"], None, "Report", 201)
-ep("POST", "/evaluation-reports/{id}/decision", "decideReport", V, "Value-tier delegate signs off", ["DELEGATE"], "Decision", "Report")
+ER = ["PROCUREMENT", "EVALUATOR", "CHAIR", "DELEGATE", "PROBITY", "LEGAL", "EXEC"]
+ep("GET", "/evaluations", "listEvaluations", V, "Evaluations the caller can see, plus (procurement) closed tenders ready to evaluate", ER, None, "EvalList")
+ep("GET", "/evaluators", "listEvaluators", V, "Users who can sit on a panel", ["PROCUREMENT"], None, "EvaluatorList")
+ep("POST", "/tenders/{id}/evaluation", "openEvaluation", V, "Open the evaluation of a closed tender: one record per submitted bid, scoring sheet from the published criteria, panel chosen by procurement", ["PROCUREMENT"], "OpenEvaluation", "Evaluation", 201, note="409 unless the tender is closed, has bids and is scored for award; 400 if the panel lacks a stream")
+ep("POST", "/evaluations/{id}/panel", "addPanelMember", V, "Add a replacement panel member (before consensus)", ["PROCUREMENT"], "AddPanelMember", "Evaluation", 201)
+ep("GET", "/evaluations/{id}", "getEvaluation", V, "Get the evaluation as the caller may see it: suppliers anonymised and files withheld until a panel member declares no conflict; criteria and files limited to their stream; others' scores hidden until consensus", ER, None, "Evaluation", note="404 for anyone not on the panel (and for removed members)")
+ep("POST", "/evaluations/{id}/coi", "declareEvalCoi", V, "Mandatory conflict declaration before any access; a conflict removes the member at once and alerts chair and probity", ["EVALUATOR", "CHAIR"], "CoiDeclaration", "CoiOutcome", 201)
+ep("GET", "/evaluations/{id}/scores/mine", "getMyScores", V, "Own scores and progress only", ["EVALUATOR", "CHAIR"], None, "ScoreSet", note="403 COI_REQUIRED until declared")
+ep("PUT", "/evaluations/{id}/scores", "saveScores", V, "Save own scores for one supplier (hidden from everyone else)", ["EVALUATOR", "CHAIR"], "ScoresUpdate", "ScoreSet", note="404 for a criterion outside the caller's stream; 409 once marked complete")
+ep("POST", "/evaluations/{id}/scores/submit", "submitScores", V, "Mark own scoring complete (every supplier on every allowed criterion)", ["EVALUATOR", "CHAIR"], None, "Evaluation", note="409 SCORING_INCOMPLETE")
+ep("POST", "/evaluations/{id}/consensus/open", "openConsensus", V, "Chair opens consensus once every member has finished; variance is computed and flagged", ["CHAIR"], None, "Evaluation", note="409 SCORING_PENDING")
+ep("PUT", "/evaluations/{id}/consensus/{supplierId}", "setConsensus", V, "Record consensus scores and rationale for one supplier", ["CHAIR"], "ConsensusUpdate", "Evaluation")
+ep("POST", "/evaluations/{id}/consensus/lock", "lockConsensus", V, "Lock consensus; refused while any flagged score lacks a rationale", ["CHAIR"], None, "Evaluation", note="409 FLAGS_UNRESOLVED / CONSENSUS_INCOMPLETE")
+ep("POST", "/evaluations/{id}/report", "generateReport", V, "Generate the evaluation report from the locked consensus", ["PROCUREMENT"], None, "Evaluation", 201)
+ep("POST", "/evaluation-reports/{id}/decision", "decideReport", V, "Delegate (within their authority) or executive approves or returns the report", ["DELEGATE", "EXEC"], "Decision", "Evaluation", note="403 if the award value exceeds the approver's authority")
+ep("GET", "/evaluations/{id}/suppliers/{supplierId}/files/{fileId}", "downloadBidFile", V, "Download one bid file (panel members only after declaring no conflict, and only files of their stream)", ["EVALUATOR", "CHAIR", "PROCUREMENT", "PROBITY", "LEGAL"], None, None, note="404 for any file the caller may not see")
 C = "Contracts"
 ep("POST", "/contracts", "draftContract", C, "Draft from approved report: template + clauses + supplier data", ["LEGAL", "PROCUREMENT"], "ContractCreate", "Contract", 201)
 ep("GET", "/contracts", "listContracts", C, "Contracts visible to caller", ["PROCUREMENT", "LEGAL", "CONTRACT_MGR", "DELEGATE", "EXEC", "FINANCE", "PROBITY"], None, "Contract", arrayResp=True, query=["status", "q"])

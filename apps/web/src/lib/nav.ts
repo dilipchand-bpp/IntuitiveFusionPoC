@@ -103,7 +103,7 @@ export const NAV: readonly NavItem[] = [
     href: '/app/evaluations',
     label: 'Evaluations',
     icon: 'evaluations',
-    roles: ['EVALUATOR', 'CHAIR', 'PROCUREMENT', 'DELEGATE', 'PROBITY', 'LEGAL'],
+    roles: ['EVALUATOR', 'CHAIR', 'PROCUREMENT', 'DELEGATE', 'PROBITY', 'LEGAL', 'EXEC'],
     section: 'Work',
     module: 'Evaluation',
     requirements: ['FR-0255', 'FR-0260', 'FR-0270', 'FR-0275', 'FR-0300', 'FR-0345'],

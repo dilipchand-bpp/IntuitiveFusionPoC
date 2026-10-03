@@ -25,7 +25,7 @@ describe('row level security on evaluator scores (ADR-0007)', () => {
   it('each evaluator reads only their own scores', async () => {
     const db = await seeded();
     const tech = await scoreRows(db, ctxFor('evaluator-tech', 'EVALUATOR'));
-    expect(tech.length).toBe(16);
+    expect(tech.length).toBe(12); // technical criteria and the shared one, never price
     expect(new Set(tech.map((r) => r.evaluatorId))).toEqual(new Set([uid('user:evaluator-tech')]));
     const comm = await scoreRows(db, ctxFor('evaluator-comm', 'EVALUATOR'));
     expect(new Set(comm.map((r) => r.evaluatorId))).toEqual(new Set([uid('user:evaluator-comm')]));
@@ -46,7 +46,7 @@ describe('row level security on evaluator scores (ADR-0007)', () => {
 
   it('chair sees all scores only once consensus is open (status CONSENSUS in the seed), not while SCORING', async () => {
     const db = await seeded();
-    expect((await scoreRows(db, ctxFor('chair', 'CHAIR'))).length).toBe(48);
+    expect((await scoreRows(db, ctxFor('chair', 'CHAIR'))).length).toBe(36);
     await withSystem(db, (tx) =>
       tx.update(s.evaluation).set({ status: 'SCORING' }).where(eq(s.evaluation.id, EV)),
     );

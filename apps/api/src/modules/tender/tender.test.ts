@@ -873,11 +873,15 @@ describe('bid files are sealed in the database until close (row level security)'
     await withSystem(database, (tx) =>
       tx.update(s.tender).set({ status: 'CLOSED' }).where(eq(s.tender.id, t.id)),
     );
-    for (const role of ['PROCUREMENT', 'EVALUATOR', 'CHAIR', 'PROBITY', 'LEGAL'] as const) {
+    for (const role of ['PROCUREMENT', 'PROBITY', 'LEGAL'] as const) {
       const rows = await filesAs(uid('user:procurement'), role);
       expect(mine(rows, subA), role).toBe(2); // submitted bid is readable once closed
       expect(mine(rows, subB), role).toBe(0); // never submitted: still not readable by anyone but its owner
     }
+    // evaluators and the chair are NOT in that group: they need a panel seat and a declaration of no conflict, and then
+    // only their stream's files (proved in the evaluation tests)
+    for (const role of ['EVALUATOR', 'CHAIR'] as const)
+      expect(mine(await filesAs(uid('user:procurement'), role), subA), role).toBe(0);
     expect(
       (await filesAs(uid('user:procurement'), 'ADMIN')).filter((f) => f.submissionId === subA),
     ).toHaveLength(0);

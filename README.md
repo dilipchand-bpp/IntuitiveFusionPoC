@@ -1,6 +1,6 @@
 # Intuitive Fusion – Procurement Portal (POC)
 
-Conversational source-to-contract procurement portal proof of concept. **Status: Phase 5, milestones M0–M8 complete** (foundation, design system, data/audit core, identity & access, app shell, request intake, procurement plan, tender pack and supplier portal). Later modules (evaluation, contracts, reporting, admin) are "Coming soon" placeholders. Voice dictation (speech to text) works in Chrome and Edge in the request chat and the plan instruction box.
+Conversational source-to-contract procurement portal proof of concept. **Status: Phase 5, milestones M0–M9 complete** (foundation, design system, data/audit core, identity & access, app shell, request intake, procurement plan, tender pack and supplier portal, evaluation). Later modules (contracts, reporting, admin) are "Coming soon" placeholders. Use the **Preview on phone or tablet** button in any header to check the layout on a smaller screen. Voice dictation (speech to text) works in Chrome and Edge in the request chat and the plan instruction box.
 
 - Documents: [docs/README.md](docs/README.md) · Plan: [docs/05-Implementation-Plan.md](docs/05-Implementation-Plan.md) · Evidence per milestone: `docs/M*-Evidence.md`
 - Stack: TypeScript, Next.js 16, Fastify 5, PostgreSQL (PGlite locally), AWS-targeted. AI, sign-in and integrations are mocked behind adapters ([docs/swap-points.md](docs/swap-points.md)).
@@ -45,6 +45,10 @@ All users share one **demo-only** password: `Demo-Only-Passw0rd!2026` (override 
 6. Back as `procurement@…`, answer the question and issue an addendum. The question's author is never shown. Bids stay sealed until the closing time.
 
 The seeded supplier `supplier@…` already has a closed, submitted tender and an open one to explore. Bid files are stored sealed under `apps/api/var/storage`.
+
+## Try the evaluation
+
+The seeded tender "Facilities cleaning services" is already at the consensus stage: sign in as `chair@…` (or `probity@…` for a read-only view) and open **Evaluations**. One score is flagged (37.5% apart) and cannot be locked without a reason. To run a whole evaluation yourself, close a tender (the browser tests do this with a test-only API entry), then as `procurement@…` open **Evaluations**, choose a panel, and have `evaluator-tech@…`, `evaluator-comm@…` and `chair@…` declare conflicts and score. Technical evaluators never see pricing; nobody sees another evaluator's scores until the chair opens consensus.
 
 ## Checks
 

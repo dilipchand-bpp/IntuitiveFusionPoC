@@ -14,6 +14,7 @@ import { MockErpBudgetService, type ErpBudgetService } from './adapters/erp.js';
 import type { Database } from './db/client.js';
 import { registerIdempotency } from './http/idempotency.js';
 import { registerIntakeRoutes } from './modules/intake/routes.js';
+import { registerEvaluationRoutes } from './modules/evaluation/routes.js';
 import { registerPlanRoutes } from './modules/plan/routes.js';
 import { AppError } from './http/errors.js';
 import { registerShellRoutes } from './modules/shell.js';
@@ -136,6 +137,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     publicRateLimitMax: deps.loginRateLimitMax ?? 20,
   }))
     implemented.add(k);
+  for (const k of registerEvaluationRoutes(app, API_PREFIX, { ...guardDeps, store })) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

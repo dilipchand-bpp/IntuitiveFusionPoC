@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        'npm run build -w @if/shared && npm run build -w @if/api && npm run db:reset && npm run start -w @if/api',
+        'npm run build -w @if/shared && npm run build -w @if/api && npm run db:reset && npm run start:e2e -w @if/api',
       url: `${API_URL}/health`,
       env: {
         NODE_ENV: 'test',

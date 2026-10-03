@@ -381,6 +381,8 @@ export const panelMember = pgTable(
     coiState: text('coi_state', { enum: ['NOT_DECLARED', 'DECLARED_NONE', 'DECLARED_CONFLICT', 'REMOVED'] })
       .notNull()
       .default('NOT_DECLARED'),
+    /** When the member marked their scoring complete (the chair needs all of them before opening consensus). */
+    scoredAt: timestamp('scored_at', { withTimezone: true }),
   },
   (t) => [uniqueIndex('panel_member_uq').on(t.evaluationId, t.userId)],
 );

@@ -601,6 +601,7 @@ export async function seedDatabase(
         userId: userId(k),
         stream,
         coiState: 'DECLARED_NONE',
+        scoredAt: day(-3),
       });
       await log(
         'coi.declare',
@@ -616,35 +617,40 @@ export async function seedDatabase(
       northstar: [6.5, 6.0, 9.0, 7.0],
       summit: [5.5, 5.0, 6.5, 4.0],
     };
+    // Stream rules (same as the application): technical members score technical and "other" criteria only (never price),
+    // commercial members score commercial and "other" only, the chair (stream OTHER) can score everything.
     const scorers = [
-      ['evaluator-tech', 0],
-      ['evaluator-comm', -0.3],
-      ['chair', 0.2],
+      ['evaluator-tech', 0, 'TECHNICAL'],
+      ['evaluator-comm', -0.3, 'COMMERCIAL'],
+      ['chair', 0.2, 'OTHER'],
     ] as const;
+    const may = (stream: string, criterionStream: string) =>
+      stream === 'OTHER' || criterionStream === 'OTHER' || stream === criterionStream;
+    // engineered disagreement: the technical evaluator and the chair differ by 37.5% on Brightwave's technical capability
+    const value = (key: string, ci: number, who: string, delta: number) =>
+      key === 'brightwave' && ci === 0 && who === 'chair'
+        ? 5.0
+        : Math.max(0, Math.min(10, base[key]![ci]! + delta));
     for (const sp of SUPPLIERS) {
-      for (const [ci] of crit.entries()) {
-        for (const [who, delta] of scorers) {
-          let v = Math.max(0, Math.min(10, base[sp.key]![ci]! + delta));
-          // engineered disagreement: technical vs commercial evaluator on Brightwave's technical capability (38% gap vs the chair)
-          if (sp.key === 'brightwave' && ci === 0 && who === 'evaluator-comm') v = 5.08;
+      for (const [ci, [, , cStream]] of crit.entries()) {
+        for (const [who, delta, stream] of scorers) {
+          if (!may(stream, cStream)) continue;
           await tx.insert(s.score).values({
             tenantId: TENANT_ID,
             evaluationId: ev,
             supplierId: uid(`supplier:${sp.key}`),
             criterionId: uid(`criterion:${ci}`),
             evaluatorId: userId(who),
-            score: v.toFixed(2),
+            score: value(sp.key, ci, who, delta).toFixed(2),
           });
         }
       }
     }
     for (const sp of SUPPLIERS)
-      for (const [ci] of crit.entries()) {
-        const vals = scorers.map(([who, delta]) =>
-          sp.key === 'brightwave' && ci === 0 && who === 'evaluator-comm'
-            ? 5.08
-            : Math.max(0, Math.min(10, base[sp.key]![ci]! + delta)),
-        );
+      for (const [ci, [, , cStream]] of crit.entries()) {
+        const vals = scorers
+          .filter(([, , stream]) => may(stream, cStream))
+          .map(([who, delta]) => value(sp.key, ci, who, delta));
         const variance = ((Math.max(...vals) - Math.min(...vals)) / Math.max(...vals)) * 100;
         await tx.insert(s.consensusItem).values({
           tenantId: TENANT_ID,

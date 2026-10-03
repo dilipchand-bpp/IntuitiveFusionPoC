@@ -60,7 +60,7 @@ describe('seed', () => {
       contract: 2,
       supplier: 4,
       notification: 6,
-      score: 48,
+      score: 36,
     });
     expect(SEED_USERS.map((u) => u.role)).toEqual(
       expect.arrayContaining([
@@ -116,7 +116,7 @@ describe('seed', () => {
     expect(c!.locked).toBe(true);
     const flagged = await db.db.select().from(s.consensusItem).where(eq(s.consensusItem.flagged, true));
     expect(flagged).toHaveLength(1);
-    expect(Number(flagged[0]!.variancePct)).toBeCloseTo(38, 0);
+    expect(Number(flagged[0]!.variancePct)).toBeCloseTo(37.5, 1);
     const subs = await db.db
       .select()
       .from(s.submission)

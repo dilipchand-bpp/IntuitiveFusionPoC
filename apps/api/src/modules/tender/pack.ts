@@ -32,27 +32,52 @@ export const publicText = (s: string | undefined): string =>
     .join('\n\n');
 const paras = (...xs: Array<string | undefined>) => xs.map(clean).filter(Boolean).join('\n\n');
 
-/** Weighted criteria by type. Price is not scored for information-gathering documents. */
-const CRITERIA: Record<TenderType, Array<[string, number]>> = {
+/**
+ * Weighted criteria by type, the single source for both the wording in the tender pack and the scoring sheet the panel
+ * uses, so suppliers are scored on exactly what they were told. Price is not scored for information-gathering documents.
+ */
+export type CriterionStream = 'TECHNICAL' | 'COMMERCIAL' | 'OTHER';
+export interface CriterionTemplate {
+  name: string;
+  weight: number;
+  stream: CriterionStream;
+  passFail: boolean;
+}
+const crit = (
+  name: string,
+  weight: number,
+  stream: CriterionStream,
+  passFail = false,
+): CriterionTemplate => ({
+  name,
+  weight,
+  stream,
+  passFail,
+});
+const CRITERIA: Record<TenderType, CriterionTemplate[]> = {
   RFT: [
-    ['Technical capability and approach', 40],
-    ['Delivery, transition and risk management', 20],
-    ['Price and commercial terms', 30],
-    ['Experience and references', 10],
+    crit('Technical capability and approach', 40, 'TECHNICAL'),
+    crit('Delivery, transition and risk management', 20, 'TECHNICAL'),
+    crit('Price and commercial terms', 30, 'COMMERCIAL'),
+    crit('Experience and references', 10, 'OTHER'),
   ],
   RFP: [
-    ['Quality of proposed solution', 40],
-    ['Delivery approach and team', 20],
-    ['Price and value for money', 30],
-    ['Experience and references', 10],
+    crit('Quality of proposed solution', 40, 'TECHNICAL'),
+    crit('Delivery approach and team', 20, 'TECHNICAL'),
+    crit('Price and value for money', 30, 'COMMERCIAL'),
+    crit('Experience and references', 10, 'OTHER'),
   ],
   RFQ: [
-    ['Compliance with the specification (pass or fail)', 0],
-    ['Price', 100],
+    crit('Compliance with the specification (pass or fail)', 0, 'TECHNICAL', true),
+    crit('Price', 100, 'COMMERCIAL'),
   ],
-  RFI: [['Relevance and completeness of the information provided (not scored for award)', 0]],
-  EOI: [['Capability and relevant experience (used to shortlist, not to award)', 0]],
+  RFI: [crit('Relevance and completeness of the information provided (not scored for award)', 0, 'OTHER')],
+  EOI: [crit('Capability and relevant experience (used to shortlist, not to award)', 0, 'OTHER')],
 };
+
+/** The scoring sheet for a procurement type, or null when the document is not evaluated for award (RFI, EOI). */
+export const evaluationCriteria = (type: TenderType): CriterionTemplate[] | null =>
+  type === 'RFT' || type === 'RFP' || type === 'RFQ' ? CRITERIA[type] : null;
 
 /**
  * Builds a tender pack from the approved plan and the request. Deterministic template, no AI: the same inputs always
@@ -67,7 +92,7 @@ export function buildTenderPack(i: PackInput): Record<string, string> {
 
   const criteria = CRITERIA[i.type];
   const criteriaText = criteria
-    .map(([name, w]) => (w > 0 ? `${name}: ${w}%` : name))
+    .map(({ name, weight: w }) => (w > 0 ? `${name}: ${w}%` : name))
     .concat(
       priced
         ? ['Responses are scored independently by each evaluator, then agreed by the panel.']
