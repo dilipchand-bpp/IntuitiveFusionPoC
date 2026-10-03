@@ -6,7 +6,11 @@ export interface ReportInput {
   type: string;
   generatedAt: Date;
   varianceLimitPct: number;
-  panel: Array<{ name: string; stream: string; outcome: 'NO_CONFLICT' | 'CONFLICT_REMOVED' }>;
+  panel: Array<{
+    name: string;
+    stream: string;
+    outcome: 'NO_CONFLICT' | 'CONFLICT_REMOVED' | 'CONFLICT_REVIEWED';
+  }>;
   criteria: Array<{ id: string; name: string; weight: number; stream: string; passFail: boolean }>;
   suppliers: Array<{
     name: string;
@@ -43,7 +47,8 @@ export function buildReport(i: ReportInput): Record<string, string> {
   );
   const crit = new Map(i.criteria.map((c) => [c.id, c]));
   const removed = i.panel.filter((p) => p.outcome === 'CONFLICT_REMOVED');
-  const active = i.panel.filter((p) => p.outcome === 'NO_CONFLICT');
+  const reviewed = i.panel.filter((p) => p.outcome === 'CONFLICT_REVIEWED');
+  const active = i.panel.filter((p) => p.outcome !== 'CONFLICT_REMOVED');
 
   const summary = [
     `${i.suppliers.length} submitted response(s) to ${i.number} ${i.title} were evaluated by a panel of ${active.length}.`,
@@ -54,7 +59,7 @@ export function buildReport(i: ReportInput): Record<string, string> {
   ].join('\n\n');
 
   const process = [
-    `Each of the ${active.length} panel member(s) declared before seeing any supplier identity or bid file that they had no conflict of interest.${removed.length ? ` ${removed.length} member(s) declared a conflict and were removed from the evaluation immediately.` : ''}`,
+    `Each of the ${active.length} panel member(s) declared before seeing any supplier identity or bid file that they had no conflict of interest.${removed.length ? ` ${removed.length} member(s) declared a conflict that a delegate found material, and were removed from the evaluation.` : ''}${reviewed.length ? ` ${reviewed.length} member(s) declared a conflict that a delegate reviewed and allowed to continue.` : ''}`,
     `Scoring was independent: each evaluator scored without sight of anyone else's scores. Technical evaluators did not have access to pricing, and commercial evaluators did not have access to technical responses. Criteria and weights: ${i.criteria.map((c) => (c.weight > 0 ? `${c.name} ${c.weight}%` : c.name)).join('; ')}.`,
     `Consensus was moderated by the chair. Differences above ${i.varianceLimitPct}% were flagged and needed a recorded rationale before the scores could be locked. ${flagged.length ? `${flagged.length} score(s) were flagged and resolved.` : 'No score was flagged.'}`,
     ...flagged.map(

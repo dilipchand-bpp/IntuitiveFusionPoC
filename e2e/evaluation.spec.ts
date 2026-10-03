@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, request as pwRequest, test, type APIRequestContext, type Page } from '@playwright/test';
 import { API_URL } from '../playwright.config';
@@ -21,7 +22,7 @@ async function signIn(page: Page, user: string) {
 }
 
 /** A checksum-valid ABN that is different on every call (the registration check is the real ABN algorithm). */
-let abnSeq = 700;
+let abnSeq = 1000 + Math.floor(Math.random() * 8_000_000); // random start: parallel workers must never reuse an ABN
 function newAbn(): string {
   const w = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
   for (;;) {
@@ -417,5 +418,226 @@ test.describe('the seeded evaluation, oversight and access', () => {
     await page.context().clearCookies();
     await page.goto(url);
     await expect(page).toHaveURL(/\/login/);
+  });
+});
+
+// ---------------------------------------------------------------- follow-up features, through the real screens
+/** Logs in once per person through the API, with its own cookie jar, so several people can act in one test. */
+async function apiAs(user: string) {
+  const api = await pwRequest.newContext({ baseURL: API_URL });
+  const headers = await login(api, email(user));
+  return { api, headers };
+}
+/** Opens an evaluation by API (Tomas = technical, Mei = commercial, chair added automatically) and returns its id. */
+async function openEvaluationApi(tenderId: string): Promise<string> {
+  const { api, headers } = await apiAs('procurement');
+  const people = await (await api.get('/api/v1/evaluators')).json();
+  const id = (n: string) => people.evaluators.find((p: { name: string }) => p.name === n).id as string;
+  const r = await api.post(`/api/v1/tenders/${tenderId}/evaluation`, {
+    headers,
+    data: {
+      panel: [
+        { userId: id('Tomas Silva'), stream: 'TECHNICAL' },
+        { userId: id('Mei Tanaka'), stream: 'COMMERCIAL' },
+      ],
+    },
+  });
+  expect(r.ok(), await r.text()).toBeTruthy();
+  const body = await r.json();
+  await api.dispose();
+  return body.id as string;
+}
+async function apiDeclareNone(user: string, evalId: string) {
+  const { api, headers } = await apiAs(user);
+  expect(
+    (await api.post(`/api/v1/evaluations/${evalId}/coi`, { headers, data: { none: true } })).ok(),
+  ).toBeTruthy();
+  await api.dispose();
+}
+async function apiScoreAndSubmit(user: string, evalId: string) {
+  const { api, headers } = await apiAs(user);
+  const mine = await (await api.get(`/api/v1/evaluations/${evalId}/scores/mine`)).json();
+  for (const s of mine.suppliers)
+    expect(
+      (
+        await api.put(`/api/v1/evaluations/${evalId}/scores`, {
+          headers,
+          data: {
+            supplierId: s.supplierId,
+            scores: mine.criteria.map((c: { id: string; passFail: boolean }) => ({
+              criterionId: c.id,
+              score: c.passFail ? 10 : 7,
+            })),
+          },
+        })
+      ).ok(),
+    ).toBeTruthy();
+  expect((await api.post(`/api/v1/evaluations/${evalId}/scores/submit`, { headers })).ok()).toBeTruthy();
+  await api.dispose();
+}
+async function apiConsensusAndLock(evalId: string) {
+  const { api, headers } = await apiAs('chair');
+  const open = await (await api.post(`/api/v1/evaluations/${evalId}/consensus/open`, { headers })).json();
+  for (const s of open.suppliers)
+    expect(
+      (
+        await api.put(`/api/v1/evaluations/${evalId}/consensus/${s.supplierId}`, {
+          headers,
+          data: {
+            items: open.criteria.map((c: { id: string }) => ({ criterionId: c.id, consensusScore: 7 })),
+          },
+        })
+      ).ok(),
+    ).toBeTruthy();
+  expect((await api.post(`/api/v1/evaluations/${evalId}/consensus/lock`, { headers })).ok()).toBeTruthy();
+  await api.dispose();
+}
+async function download(page: Page, click: () => Promise<unknown>) {
+  const [dl] = await Promise.all([page.waitForEvent('download'), click()]);
+  const path = await dl.path();
+  return { name: dl.suggestedFilename(), bytes: readFileSync(path) };
+}
+
+test.describe('downloads, conflict review, reopening consensus and the PDF report', () => {
+  test('bid documents download and are real files: a PDF and an Excel workbook', async ({ page }) => {
+    await signIn(page, 'chair');
+    await page.goto('/app/evaluations');
+    await page
+      .getByRole('table', { name: 'Evaluations' })
+      .getByRole('link', { name: 'Facilities cleaning services' })
+      .click();
+    await expect(workspace(page)).toBeVisible();
+    const pdf = await download(page, () =>
+      page
+        .getByRole('link', { name: /technical-response\.pdf/ })
+        .first()
+        .click(),
+    );
+    expect(pdf.name).toBe('technical-response.pdf');
+    expect(pdf.bytes.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(pdf.bytes.toString('latin1')).toContain('Technical response');
+    const xlsx = await download(page, () =>
+      page
+        .getByRole('link', { name: /pricing-schedule\.xlsx/ })
+        .first()
+        .click(),
+    );
+    expect(xlsx.name).toBe('pricing-schedule.xlsx');
+    expect(xlsx.bytes.subarray(0, 2).toString()).toBe('PK'); // an Excel workbook is a zip archive
+  });
+
+  test('a declared conflict suspends the evaluator; a delegate reinstates them; the chair can reopen a locked consensus; the report downloads as a PDF', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const { tenderId } = await closedTender(`Conflict and reopen ${rand()}`);
+    const evalId = await openEvaluationApi(tenderId);
+    const url = `/app/evaluations/${evalId}`;
+
+    // 1. Mei declares a conflict through the screen: she is told, and loses access at once
+    await signIn(page, 'evaluator-comm');
+    await page.goto(url);
+    await page.getByRole('radio', { name: /conflict to declare/ }).check();
+    await page
+      .getByLabel(/Describe the conflict/)
+      .fill('My brother-in-law is a director of one of the bidders.');
+    await page.getByRole('button', { name: 'Submit declaration' }).click();
+    await expect(page).toHaveURL(/\/app\/evaluations\?conflict=1/);
+    await expect(page.getByTestId('conflict-notice')).toContainText('A delegate will decide');
+    expect((await page.goto(url))?.status()).toBe(404);
+
+    // 2. the delegate sees it and reinstates her
+    await signIn(page, 'delegate');
+    await page.goto(url);
+    const review = page.getByTestId('conflict-review');
+    await expect(review).toContainText('Mei Tanaka');
+    await expect(review).toContainText('Awaiting decision');
+    await expect(review).toContainText('brother-in-law');
+    await review
+      .getByLabel('Reason for your decision (optional)')
+      .fill('Remote and declared; independent scoring protects the process.');
+    await page.getByRole('button', { name: 'Manageable: reinstate Mei Tanaka' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Decision recorded.' })).toBeVisible();
+    await expect(review).toContainText('Manageable: reinstated');
+    await expect(page.getByTestId('panel-card').locator('[data-coi="DECLARED_NONE"]')).toContainText(
+      'Mei Tanaka',
+    );
+    await expect(review.getByRole('button', { name: /reinstate|remove/i })).toHaveCount(0); // decided once
+
+    // 3. she is back: names and her own files are visible and, once the others declare, she can score
+    await apiDeclareNone('evaluator-tech', evalId);
+    await apiDeclareNone('chair', evalId);
+    await signIn(page, 'evaluator-comm');
+    await page.goto(url);
+    await expect(page.getByTestId('stage-guide')).toContainText('scoring independently');
+    await expect(page.getByTestId('scoring-sheet')).toBeVisible();
+    await expect(page.getByRole('link', { name: /pricing\.xlsx/ }).first()).toBeVisible();
+
+    // 4. scoring, consensus and lock (by API, already covered through the screens above)
+    for (const u of ['evaluator-tech', 'evaluator-comm', 'chair']) await apiScoreAndSubmit(u, evalId);
+    await apiConsensusAndLock(evalId);
+
+    // 5. procurement generates the report and downloads it as a PDF
+    await signIn(page, 'procurement');
+    await page.goto(url);
+    await page.getByRole('button', { name: 'Generate report' }).click();
+    await expect(page.getByTestId('report-panel')).toContainText('Awaiting approval');
+    const pdf = await download(page, () => page.getByRole('link', { name: 'Download PDF' }).click());
+    expect(pdf.name).toMatch(/^evaluation-report-PR-\d{4}-\d{4}-v\d+\.pdf$/);
+    expect(pdf.bytes.subarray(0, 5).toString()).toBe('%PDF-');
+    const text = pdf.bytes.toString('latin1');
+    expect(text).toContain('(Evaluation report) Tj');
+    expect(text).toContain('Eval Bidder Alpha');
+    expect(text).toMatch(/version \d+/);
+    expect(text).toContain('Awaiting approval');
+
+    // 6. the chair reopens the locked consensus with a reason; the old report no longer stands
+    await signIn(page, 'chair');
+    await page.goto(url);
+    await expect(page.getByTestId('reopen-card')).toBeVisible();
+    await page.getByTestId('reopen-card').getByRole('button', { name: 'Reopen consensus' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('button', { name: 'Reopen' })).toBeDisabled(); // a reason is required
+    await dialog.getByLabel(/Reason/).fill('A bidder supplied a clarification after the lock.');
+    await dialog.getByRole('button', { name: 'Reopen' }).click();
+    await expect(workspace(page)).toHaveAttribute('data-status', 'CONSENSUS');
+    await expect(page.getByTestId('report-panel')).toContainText('Needs regenerating');
+    await expect(page.getByRole('button', { name: 'Lock consensus' })).toBeVisible();
+    await page.getByRole('button', { name: 'Lock consensus' }).click(); // the agreed values were kept
+    await expect(workspace(page)).toHaveAttribute('data-status', 'LOCKED');
+
+    // 7. procurement regenerates, the delegate approves; after approval nobody can reopen
+    await signIn(page, 'procurement');
+    await page.goto(url);
+    await page.getByRole('button', { name: 'Regenerate report' }).click();
+    await expect(page.getByTestId('report-panel')).toContainText('Awaiting approval');
+    await signIn(page, 'delegate');
+    await page.goto(url);
+    await page.getByRole('button', { name: 'Approve report' }).click();
+    await expect(workspace(page)).toHaveAttribute('data-status', 'APPROVED');
+    const approved = await download(page, () => page.getByRole('link', { name: 'Download PDF' }).click());
+    expect(approved.bytes.toString('latin1')).toContain('REPORT APPROVED');
+    await signIn(page, 'chair');
+    await page.goto(url);
+    await expect(page.getByTestId('reopen-card')).toHaveCount(0);
+  });
+
+  test('a material conflict removes the evaluator for good', async ({ page }) => {
+    const { tenderId } = await closedTender(`Material conflict ${rand()}`);
+    const evalId = await openEvaluationApi(tenderId);
+    const url = `/app/evaluations/${evalId}`;
+    await signIn(page, 'evaluator-tech');
+    await page.goto(url);
+    await page.getByRole('radio', { name: /conflict to declare/ }).check();
+    await page.getByLabel(/Describe the conflict/).fill('I was employed by a bidder last year.');
+    await page.getByRole('button', { name: 'Submit declaration' }).click();
+    await expect(page).toHaveURL(/conflict=1/);
+    await signIn(page, 'delegate');
+    await page.goto(url);
+    await page.getByRole('button', { name: 'Material: remove Tomas Silva' }).click();
+    await expect(page.getByTestId('conflict-review')).toContainText('Material: removed');
+    await expect(page.getByTestId('panel-card').locator('[data-coi="REMOVED"]')).toContainText('Tomas Silva');
+    await signIn(page, 'evaluator-tech');
+    expect((await page.goto(url))?.status()).toBe(404);
   });
 });

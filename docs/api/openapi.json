@@ -2746,7 +2746,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Mandatory conflict declaration before any access; a conflict removes the member at once and alerts chair and probity",
+    "summary": "Mandatory conflict declaration before any access; a conflict suspends the member at once, alerts chair, probity and procurement, and goes to a delegate to decide",
     "parameters": [
      {
       "name": "id",
@@ -2912,6 +2912,80 @@
       "application/json": {
        "schema": {
         "$ref": "#/components/schemas/ScoresUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/conflicts/{userId}/decision": {
+   "post": {
+    "operationId": "decideEvalConflict",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Delegate (or executive) decides a declared conflict: immaterial or manageable reinstates the evaluator, material removes them",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "userId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 if nothing is waiting; 403 for your own conflict",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConflictDecision"
        }
       }
      }
@@ -3099,6 +3173,70 @@
     }
    }
   },
+  "/evaluations/{id}/consensus/reopen": {
+   "post": {
+    "operationId": "reopenConsensus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Chair reopens a locked consensus with a recorded reason; any report is invalidated and must be generated again",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 once the report is approved",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReopenConsensus"
+       }
+      }
+     }
+    }
+   }
+  },
   "/evaluations/{id}/consensus/lock": {
    "post": {
     "operationId": "lockConsensus",
@@ -3269,6 +3407,52 @@
       }
      }
     }
+   }
+  },
+  "/evaluations/{id}/report/pdf": {
+   "get": {
+    "operationId": "exportReportPdf",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The evaluation report as a PDF carrying its generation time and version on every page",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "LEGAL",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 until a report exists"
    }
   },
   "/evaluations/{id}/suppliers/{supplierId}/files/{fileId}": {
@@ -6688,6 +6872,12 @@
        "$ref": "#/components/schemas/EvalSupplier"
       }
      },
+     "conflicts": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/EvalConflict"
+      }
+     },
      "me": {
       "$ref": "#/components/schemas/EvalMe"
      },
@@ -6721,6 +6911,82 @@
      "permissions"
     ]
    },
+   "EvalConflict": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "nature": {
+      "type": "string"
+     },
+     "subjectOrg": {
+      "type": "string"
+     },
+     "disposition": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "IMMATERIAL",
+       "MANAGEABLE",
+       "MATERIAL"
+      ]
+     },
+     "declaredAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "decidedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "userId",
+     "name",
+     "disposition"
+    ]
+   },
+   "ConflictDecision": {
+    "type": "object",
+    "properties": {
+     "disposition": {
+      "type": "string",
+      "enum": [
+       "IMMATERIAL",
+       "MANAGEABLE",
+       "MATERIAL"
+      ]
+     },
+     "rationale": {
+      "type": "string",
+      "maxLength": 2000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "disposition"
+    ]
+   },
+   "ReopenConsensus": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
    "EvalMe": {
     "type": "object",
     "properties": {
@@ -6745,6 +7011,12 @@
    "EvalPermissions": {
     "type": "object",
     "properties": {
+     "canReopen": {
+      "type": "boolean"
+     },
+     "canDecideConflict": {
+      "type": "boolean"
+     },
      "canDeclare": {
       "type": "boolean"
      },
@@ -7324,7 +7596,7 @@
    "CoiOutcome": {
     "type": "object",
     "properties": {
-     "removed": {
+     "suspended": {
       "type": "boolean"
      },
      "message": {

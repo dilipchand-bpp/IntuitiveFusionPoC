@@ -159,6 +159,7 @@ type Ev = {
   };
   me: null | { stream: string; coiState: string; scoringComplete: boolean; required: number; done: number };
   permissions: Record<string, boolean>;
+  conflicts: Array<{ name: string; disposition: string; nature: string }>;
 };
 async function openEval(opts: Parameters<typeof closedTender>[0] = {}, panel = PANEL(U)) {
   const { tenderId, requestId } = await closedTender(opts);
@@ -201,9 +202,10 @@ const agree = () => 7;
 beforeAll(async () => {
   database = await freshDb();
   clock = newClock();
-  await seedDatabase(database, { clock, password: PASSWORD });
   const dir = await mkdtemp(join(tmpdir(), 'if-eval-'));
   store = new SealedStore(dir, 'e'.repeat(40));
+  // the store makes the seeded bid files real (sealed on disk) so they can be downloaded like any other
+  await seedDatabase(database, { clock, password: PASSWORD, store });
   app = await buildApp(loadConfig({ NODE_ENV: 'test', SESSION_SECRET: 'e'.repeat(40), STORAGE_DIR: dir }), {
     database,
     clock,
@@ -342,7 +344,7 @@ describe('US-EVL-01 conflict declaration gates access', () => {
     expect(cv.suppliers.every((x) => x.anonymised)).toBe(true);
   });
 
-  it('a declared conflict revokes access at once, alerts the chair and probity, is audited, and a replacement can be added to carry on', async () => {
+  it('a declared conflict suspends access at once, alerts the chair and probity and goes to a delegate; a material conflict removes the person and a replacement carries on', async () => {
     const { ev } = await openEval();
     const hash = await argon2Hash(PASSWORD);
     const replacement = await withSystem(database, async (tx) => {
@@ -364,7 +366,7 @@ describe('US-EVL-01 conflict declaration gates access', () => {
       subjectOrg: 'Evergreen',
     });
     expect(c.statusCode, c.body).toBe(201);
-    expect(c.json()).toMatchObject({ removed: true });
+    expect(c.json()).toMatchObject({ suspended: true });
     // no access to anything now, and it looks like the evaluation does not exist
     expect((await call('evaluator-comm', 'GET', `/evaluations/${ev.id}`)).statusCode).toBe(404);
     expect((await call('evaluator-comm', 'GET', `/evaluations/${ev.id}/scores/mine`)).statusCode).toBe(404);
@@ -410,7 +412,52 @@ describe('US-EVL-01 conflict declaration gates access', () => {
       ).json().code,
     ).toBe('ALREADY_MEMBER'); // a removed member cannot be re-added
     await call(replacement.email, 'POST', `/evaluations/${ev.id}/coi`, { none: true });
-    expect((await view('procurement', ev.id)).status).toBe('SCORING');
+    // everyone has declared, but a conflict is still waiting for a delegate, so scoring does not start yet
+    expect((await view('procurement', ev.id)).status).toBe('COI_PENDING');
+    const waiting = await view('delegate', ev.id);
+    expect(waiting.conflicts).toEqual([
+      expect.objectContaining({
+        name: 'Mei Tanaka',
+        disposition: 'PENDING',
+        nature: expect.stringContaining('Evergreen'),
+      }),
+    ]);
+    expect(waiting.permissions.canDecideConflict).toBe(true);
+    expect(JSON.stringify(await view('evaluator-tech', ev.id))).not.toContain('I own shares'); // other evaluators never see declared conflicts
+    expect((await view('evaluator-tech', ev.id)).conflicts).toEqual([]);
+    expect(JSON.stringify((await call('delegate', 'GET', '/notifications')).json())).toContain(
+      'Conflict of interest needs your decision',
+    );
+    const decided = await call('delegate', 'POST', `/evaluations/${ev.id}/conflicts/${U.comm}/decision`, {
+      disposition: 'MATERIAL',
+      rationale: 'Direct shareholding.',
+    });
+    expect(decided.statusCode, decided.body).toBe(200);
+    expect(decided.json().status).toBe('SCORING');
+    expect(decided.json().panel.find((m: { name: string }) => m.name === 'Mei Tanaka').coiState).toBe(
+      'REMOVED',
+    );
+    expect((await call('evaluator-comm', 'GET', `/evaluations/${ev.id}`)).statusCode).toBe(404); // removed for good
+    const row = (
+      await withSystem(database, (tx) =>
+        tx
+          .select()
+          .from(s.coiDeclaration)
+          .where(and(eq(s.coiDeclaration.scopeId, ev.id), eq(s.coiDeclaration.userId, U.comm))),
+      )
+    )[0]!;
+    expect(row).toMatchObject({ disposition: 'MATERIAL' });
+    expect(row.decidedAt).not.toBeNull();
+    const decisions = await withSystem(database, (tx) =>
+      tx
+        .select()
+        .from(s.auditEvent)
+        .where(and(eq(s.auditEvent.entityId, ev.id), eq(s.auditEvent.action, 'coi.decide'))),
+    );
+    expect(decisions).toHaveLength(1);
+    expect(JSON.stringify((await call('evaluator-comm', 'GET', '/notifications')).json())).toContain(
+      'you are removed from the panel',
+    );
   });
 });
 
@@ -906,5 +953,418 @@ describe('lists, probity oversight and the seeded evaluation', () => {
     const t = await view('evaluator-tech', seeded.id);
     expect(t.consensus).toEqual([]);
     expect(t.criteria.some((c) => c.name === 'Price')).toBe(false);
+  });
+});
+
+// =================================================================== helpers for the follow-up features
+async function createEvaluator(tag: string) {
+  const hash = await argon2Hash(PASSWORD);
+  return withSystem(database, async (tx) => {
+    const [u] = await tx
+      .insert(s.appUser)
+      .values({
+        tenantId: TENANT_ID,
+        email: `${tag}-${(titleSeq += 1)}@meridian-demo.example`,
+        name: `Extra ${tag}`,
+        passwordHash: hash,
+      })
+      .returning();
+    await tx.insert(s.roleAssignment).values({ tenantId: TENANT_ID, userId: u!.id, role: 'EVALUATOR' });
+    return u!;
+  });
+}
+const bumpFor = (company: string) =>
+  company.startsWith('Brightwave') ? 2 : company.startsWith('Evergreen') ? 0 : -2;
+/** An evaluation taken all the way to a locked consensus (Brightwave > Evergreen > Northstar). */
+async function lockedEval(value = 90_000) {
+  const { ev } = await openEval({ value });
+  await declareAll(ev.id);
+  await scoreAndSubmit('evaluator-tech', ev.id, (c) => 7 + bumpFor(c), 'Solid response');
+  await scoreAndSubmit('evaluator-comm', ev.id, (c) => 7 + bumpFor(c));
+  await scoreAndSubmit('chair', ev.id, (c) => 7 + bumpFor(c));
+  const open = (await call('chair', 'POST', `/evaluations/${ev.id}/consensus/open`)).json() as Ev;
+  for (const sup of open.suppliers)
+    expect(
+      (
+        await call('chair', 'PUT', `/evaluations/${ev.id}/consensus/${sup.supplierId}`, {
+          items: open.criteria.map((c) => ({
+            criterionId: c.id,
+            consensusScore: 7 + bumpFor(sup.displayName),
+          })),
+        })
+      ).statusCode,
+    ).toBe(200);
+  expect((await call('chair', 'POST', `/evaluations/${ev.id}/consensus/lock`)).statusCode).toBe(200);
+  return ev.id;
+}
+
+// =================================================================== delegate review of a declared conflict
+describe('a declared conflict is decided by a delegate', () => {
+  it('immaterial and manageable conflicts reinstate the evaluator (who then sees names and files); only a delegate or the executive can decide, and only once', async () => {
+    for (const disposition of ['IMMATERIAL', 'MANAGEABLE'] as const) {
+      const { ev } = await openEval();
+      const c = await call('evaluator-comm', 'POST', `/evaluations/${ev.id}/coi`, {
+        none: false,
+        nature: 'My cousin works at a bidder',
+        subjectOrg: 'Northstar',
+      });
+      expect(c.json().suspended).toBe(true);
+      expect((await call('evaluator-comm', 'GET', `/evaluations/${ev.id}`)).statusCode).toBe(404); // suspended while it is decided
+      for (const who of ['procurement', 'chair', 'probity', 'evaluator-tech'])
+        expect(
+          (await call(who, 'POST', `/evaluations/${ev.id}/conflicts/${U.comm}/decision`, { disposition }))
+            .statusCode,
+          who,
+        ).toBe(403);
+      const ok = await call('delegate', 'POST', `/evaluations/${ev.id}/conflicts/${U.comm}/decision`, {
+        disposition,
+        rationale: 'Remote and declared; managed by independent scoring.',
+      });
+      expect(ok.statusCode, ok.body).toBe(200);
+      expect(ok.json().panel.find((m: { name: string }) => m.name === 'Mei Tanaka').coiState).toBe(
+        'DECLARED_NONE',
+      );
+      expect(
+        (
+          await call('delegate', 'POST', `/evaluations/${ev.id}/conflicts/${U.comm}/decision`, {
+            disposition,
+          })
+        ).json().code,
+      ).toBe('INVALID_STATE'); // only once
+      const back = await view('evaluator-comm', ev.id);
+      expect(back.suppliers.every((x) => !x.anonymised)).toBe(true);
+      expect(back.suppliers[0]!.files.map((f) => f.section)).toEqual(['COMMERCIAL']); // still only their own stream
+      expect(JSON.stringify((await call('evaluator-comm', 'GET', '/notifications')).json())).toContain(
+        'you can continue',
+      );
+      // once the others declare, scoring opens with the reinstated evaluator counted
+      await call('evaluator-tech', 'POST', `/evaluations/${ev.id}/coi`, { none: true });
+      await call('chair', 'POST', `/evaluations/${ev.id}/coi`, { none: true });
+      expect((await view('procurement', ev.id)).status).toBe('SCORING');
+    }
+  });
+
+  it('the executive may decide too; a person with no pending conflict is refused; bad input and unknown evaluations are refused', async () => {
+    const { ev } = await openEval();
+    expect(
+      (
+        await call('exec', 'POST', `/evaluations/${ev.id}/conflicts/${U.tech}/decision`, {
+          disposition: 'IMMATERIAL',
+        })
+      ).json().code,
+    ).toBe('INVALID_STATE');
+    await call('evaluator-tech', 'POST', `/evaluations/${ev.id}/coi`, {
+      none: false,
+      nature: 'Former employer of a bidder',
+    });
+    const ok = await call('exec', 'POST', `/evaluations/${ev.id}/conflicts/${U.tech}/decision`, {
+      disposition: 'MATERIAL',
+    });
+    expect(ok.statusCode, ok.body).toBe(200);
+    expect(ok.json().panel.find((m: { name: string }) => m.name === 'Tomas Silva').coiState).toBe('REMOVED');
+    expect(
+      (
+        await call('delegate', 'POST', `/evaluations/${randomUUID()}/conflicts/${U.tech}/decision`, {
+          disposition: 'MATERIAL',
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await call('delegate', 'POST', `/evaluations/${ev.id}/conflicts/${U.tech}/decision`, {
+          disposition: 'nonsense',
+        })
+      ).statusCode,
+    ).toBe(400);
+  });
+
+  it('while a conflict is undecided the chair cannot open consensus; deciding unblocks it; the report records a reviewed conflict', async () => {
+    const { ev } = await openEval();
+    await declareAll(ev.id);
+    const late = await createEvaluator('late');
+    await call('procurement', 'POST', `/evaluations/${ev.id}/panel`, {
+      userId: late.id,
+      stream: 'TECHNICAL',
+    });
+    await call(late.email, 'POST', `/evaluations/${ev.id}/coi`, {
+      none: false,
+      nature: 'Shares in a bidder',
+    });
+    await scoreAndSubmit('evaluator-tech', ev.id, agree);
+    await scoreAndSubmit('evaluator-comm', ev.id, agree);
+    await scoreAndSubmit('chair', ev.id, agree);
+    const blocked = await call('chair', 'POST', `/evaluations/${ev.id}/consensus/open`);
+    expect(blocked.statusCode).toBe(409);
+    expect(blocked.json().code).toBe('CONFLICT_PENDING');
+    expect((await view('chair', ev.id)).permissions.canOpenConsensus).toBe(false);
+    expect(
+      (
+        await call('delegate', 'POST', `/evaluations/${ev.id}/conflicts/${late.id}/decision`, {
+          disposition: 'IMMATERIAL',
+          rationale: 'Declared and immaterial.',
+        })
+      ).statusCode,
+    ).toBe(200);
+    // the reinstated evaluator has not scored, so the chair still waits for them
+    expect((await call('chair', 'POST', `/evaluations/${ev.id}/consensus/open`)).json().code).toBe(
+      'SCORING_PENDING',
+    );
+    await scoreAndSubmit(late.email, ev.id, agree);
+    expect((await call('chair', 'POST', `/evaluations/${ev.id}/consensus/open`)).statusCode).toBe(200);
+    const open = (await view('chair', ev.id)) as Ev;
+    for (const sup of open.suppliers)
+      await call('chair', 'PUT', `/evaluations/${ev.id}/consensus/${sup.supplierId}`, {
+        items: open.criteria.map((c) => ({ criterionId: c.id, consensusScore: 7 })),
+      });
+    expect((await call('chair', 'POST', `/evaluations/${ev.id}/consensus/lock`)).statusCode).toBe(200);
+    const rep = (await call('procurement', 'POST', `/evaluations/${ev.id}/report`)).json() as Ev;
+    const process = rep.report!.sections.find((x) => x.key === 'process')!.paragraphs.join('\n');
+    expect(process).toContain(
+      '1 member(s) declared a conflict that a delegate reviewed and allowed to continue',
+    );
+  });
+});
+
+// =================================================================== reopening consensus
+describe('the chair can reopen a locked consensus', () => {
+  it('needs a reason, only the chair can do it, it keeps the agreed values and frozen scores, invalidates the report, and is audited and announced', async () => {
+    const id = await lockedEval();
+    const rep = (await call('procurement', 'POST', `/evaluations/${id}/report`)).json() as Ev;
+    expect(rep.report!.status).toBe('AWAITING_APPROVAL');
+    expect((await view('chair', id)).permissions.canReopen).toBe(true);
+    expect(
+      (await call('chair', 'POST', `/evaluations/${id}/consensus/reopen`, { reason: 'short' })).statusCode,
+    ).toBe(400);
+    for (const who of ['procurement', 'delegate', 'evaluator-tech', 'probity', 'exec'])
+      expect(
+        (
+          await call(who, 'POST', `/evaluations/${id}/consensus/reopen`, {
+            reason: 'Because I would like to.',
+          })
+        ).statusCode,
+        who,
+      ).toBe(403);
+    const r = await call('chair', 'POST', `/evaluations/${id}/consensus/reopen`, {
+      reason: 'Northstar clarified its transition plan after lock.',
+    });
+    expect(r.statusCode, r.body).toBe(200);
+    const ev = r.json() as Ev;
+    expect(ev.status).toBe('CONSENSUS');
+    expect(ev.report!.status).toBe('DRAFT'); // the old report no longer stands
+    expect(ev.permissions).toMatchObject({
+      canSetConsensus: true,
+      canLock: true,
+      canGenerateReport: false,
+      canDecideReport: false,
+    });
+    expect(ev.consensus.every((c) => c.consensusScore !== null)).toBe(true); // agreed values are kept
+    // individual scores are still frozen, even by direct database update
+    const upd = await withContext(
+      database,
+      { tenantId: TENANT_ID, userId: U.tech, role: 'EVALUATOR' },
+      (tx) =>
+        tx
+          .update(s.score)
+          .set({ score: '1.00' })
+          .where(eq(s.score.evaluationId, id))
+          .returning({ id: s.score.id }),
+    );
+    expect(upd).toHaveLength(0);
+    const events = await withSystem(database, (tx) =>
+      tx
+        .select()
+        .from(s.auditEvent)
+        .where(and(eq(s.auditEvent.entityId, id), eq(s.auditEvent.action, 'evaluation.consensus_reopen'))),
+    );
+    expect(events).toHaveLength(1);
+    expect(JSON.stringify(events[0])).toContain('Northstar clarified its transition plan after lock.');
+    for (const who of ['procurement', 'delegate', 'probity'])
+      expect(JSON.stringify((await call(who, 'GET', '/notifications')).json()), who).toContain(
+        'Consensus reopened by the chair',
+      );
+    // the report cannot be approved or regenerated until consensus is locked again
+    expect((await call('procurement', 'POST', `/evaluations/${id}/report`)).json().code).toBe(
+      'INVALID_STATE',
+    );
+    expect(
+      (
+        await call('delegate', 'POST', `/evaluation-reports/${rep.report!.id}/decision`, {
+          decision: 'APPROVE',
+        })
+      ).json().code,
+    ).toBe('INVALID_STATE');
+  });
+
+  it('after changing a value and locking again the report is regenerated with the new ranking; an approved evaluation cannot be reopened; nothing to reopen before the lock', async () => {
+    const id = await lockedEval();
+    await call('procurement', 'POST', `/evaluations/${id}/report`);
+    expect(
+      (
+        await call('chair', 'POST', `/evaluations/${id}/consensus/reopen`, {
+          reason: 'Re-check the commercial scores.',
+        })
+      ).statusCode,
+    ).toBe(200);
+    const ev = (await view('chair', id)) as Ev;
+    const northstar = ev.suppliers.find((x) => x.displayName.startsWith('Northstar'))!;
+    const put = await call('chair', 'PUT', `/evaluations/${id}/consensus/${northstar.supplierId}`, {
+      items: ev.criteria.map((c) => ({ criterionId: c.id, consensusScore: 10 })),
+    });
+    expect(put.statusCode, put.body).toBe(200);
+    expect((await call('chair', 'POST', `/evaluations/${id}/consensus/lock`)).statusCode).toBe(200);
+    const regen = (await call('procurement', 'POST', `/evaluations/${id}/report`)).json() as Ev;
+    expect(regen.report!.status).toBe('AWAITING_APPROVAL');
+    expect(regen.ranking[0]!.displayName).toMatch(/^Northstar/); // the new scores drive the new ranking
+    expect(regen.ranking[0]!.weightedScore).toBe(100);
+    const ok = await call('delegate', 'POST', `/evaluation-reports/${regen.report!.id}/decision`, {
+      decision: 'APPROVE',
+    });
+    expect(ok.statusCode, ok.body).toBe(200);
+    const no = await call('chair', 'POST', `/evaluations/${id}/consensus/reopen`, {
+      reason: 'We want to change it now.',
+    });
+    expect(no.statusCode).toBe(409);
+    expect(no.json().title).toMatch(/approved evaluation cannot be reopened/);
+    expect((await view('chair', id)).permissions.canReopen).toBe(false);
+    const early = await openEval();
+    await declareAll(early.ev.id);
+    expect(
+      (
+        await call('chair', 'POST', `/evaluations/${early.ev.id}/consensus/reopen`, {
+          reason: 'Nothing locked yet.',
+        })
+      ).statusCode,
+    ).toBe(409);
+  });
+});
+
+// =================================================================== PDF export of the report
+describe('the report can be exported as a PDF', () => {
+  const text = (res: { rawPayload: Buffer }) => res.rawPayload.toString('latin1');
+
+  it('is a real PDF carrying the content, timestamp and version, for the roles that may read the report; refused for others', async () => {
+    const id = await lockedEval();
+    expect((await call('procurement', 'GET', `/evaluations/${id}/report/pdf`)).json().code).toBe('NO_REPORT');
+    const gen = (await call('procurement', 'POST', `/evaluations/${id}/report`)).json() as Ev;
+    const res = await call('procurement', 'GET', `/evaluations/${id}/report/pdf`);
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.headers['content-type']).toBe('application/pdf');
+    expect(res.headers['content-disposition']).toMatch(
+      /attachment; filename="evaluation-report-PR-\d{4}-\d{4}-v\d+\.pdf"/,
+    );
+    const pdf = text(res);
+    expect(pdf.startsWith('%PDF-1.4')).toBe(true);
+    expect(pdf.trimEnd().endsWith('%%EOF')).toBe(true);
+    expect(pdf).toContain('(Evaluation report) Tj');
+    expect(pdf).toContain('Brightwave Cleaning Pty Ltd');
+    expect(pdf).toContain('Awaiting approval');
+    expect(pdf).toContain('2026-10-02 00:00 UTC'); // generation time
+    expect(pdf).toMatch(/version \d+/); // version in the footer of every page
+    expect(pdf).toContain('Page 1 of');
+    expect(pdf).toContain('Brightwave Cleaning Pty Ltd ranked first'); // the generated summary is in the file
+    void gen;
+    for (const who of ['delegate', 'exec', 'probity', 'legal', 'chair'])
+      expect((await call(who, 'GET', `/evaluations/${id}/report/pdf`)).statusCode, who).toBe(200);
+    for (const who of ['evaluator-tech', 'requester', 'admin', 'finance', 'supplier'])
+      expect((await call(who, 'GET', `/evaluations/${id}/report/pdf`)).statusCode, who).toBe(403);
+    const exports = await withSystem(database, (tx) =>
+      tx
+        .select()
+        .from(s.auditEvent)
+        .where(and(eq(s.auditEvent.entityId, id), eq(s.auditEvent.action, 'report.export'))),
+    );
+    expect(exports.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('shows the approval stamp once approved, and says "needs regenerating" after a reopen', async () => {
+    const id = await lockedEval();
+    const gen = (await call('procurement', 'POST', `/evaluations/${id}/report`)).json() as Ev;
+    await call('delegate', 'POST', `/evaluation-reports/${gen.report!.id}/decision`, {
+      decision: 'APPROVE',
+      comment: 'Agreed.',
+    });
+    const approved = text(await call('delegate', 'GET', `/evaluations/${id}/report/pdf`));
+    expect(approved).toContain('REPORT APPROVED');
+
+    const other = await lockedEval();
+    await call('procurement', 'POST', `/evaluations/${other}/report`);
+    await call('chair', 'POST', `/evaluations/${other}/consensus/reopen`, {
+      reason: 'Re-check the technical scores.',
+    });
+    expect(text(await call('procurement', 'GET', `/evaluations/${other}/report/pdf`))).toContain(
+      'Needs regenerating',
+    );
+  });
+
+  it('a long report flows onto several pages, each numbered', async () => {
+    const id = await lockedEval();
+    await call('procurement', 'POST', `/evaluations/${id}/report`);
+    const rid = (
+      await withSystem(database, (tx) =>
+        tx.select().from(s.evalReport).where(eq(s.evalReport.evaluationId, id)),
+      )
+    )[0]!.id;
+    await withSystem(database, (tx) =>
+      tx
+        .update(s.fieldValue)
+        .set({
+          value: Array.from(
+            { length: 60 },
+            (_, i) => `Paragraph ${i}: ${'The panel recorded its reasoning in full. '.repeat(8)}`,
+          ).join('\n\n'),
+        })
+        .where(and(eq(s.fieldValue.ownerId, rid), eq(s.fieldValue.key, 'commentary'))),
+    );
+    const pdf = text(await call('procurement', 'GET', `/evaluations/${id}/report/pdf`));
+    const pages = [...pdf.matchAll(/\/Type \/Page /g)].length;
+    expect(pages).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i <= pages; i++) expect(pdf).toContain(`Page ${i} of ${pages}`);
+  });
+});
+
+// =================================================================== bid files can be downloaded
+describe('bid file downloads', () => {
+  it('seeded bid files are real documents: a PDF and an Excel workbook, sealed on disk and downloadable by the right people', async () => {
+    const seeded = (
+      (await call('chair', 'GET', '/evaluations')).json().evaluations as Array<{ id: string; status: string }>
+    ).find((e) => e.status === 'CONSENSUS')!;
+    const v = await view('chair', seeded.id);
+    const sup = v.suppliers[0]!;
+    const pdf = sup.files.find((f) => f.section === 'TECHNICAL')!;
+    const xlsx = sup.files.find((f) => f.section === 'COMMERCIAL')!;
+    const url = (f: { id: string }) => `/evaluations/${seeded.id}/suppliers/${sup.supplierId}/files/${f.id}`;
+    const a = await call('chair', 'GET', url(pdf));
+    expect(a.statusCode, a.body).toBe(200);
+    expect(a.headers['content-type']).toBe('application/pdf');
+    expect(a.rawPayload.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(a.rawPayload.toString('latin1')).toContain(sup.displayName);
+    const b = await call('chair', 'GET', url(xlsx));
+    expect(b.statusCode).toBe(200);
+    expect(b.headers['content-type']).toContain('spreadsheetml');
+    expect(b.rawPayload.subarray(0, 2).toString()).toBe('PK');
+    // stream isolation still applies to the real files
+    expect((await call('evaluator-tech', 'GET', url(pdf))).statusCode).toBe(200);
+    expect((await call('evaluator-tech', 'GET', url(xlsx))).statusCode).toBe(404);
+    expect((await call('evaluator-comm', 'GET', url(pdf))).statusCode).toBe(404);
+    expect((await call('evaluator-comm', 'GET', url(xlsx))).statusCode).toBe(200);
+  });
+
+  it('a file whose stored copy is missing is a clear 404, never a server error', async () => {
+    const { ev } = await openEval();
+    const pv = await view('procurement', ev.id);
+    const file = pv.suppliers[0]!.files[0]!;
+    await withSystem(database, (tx) =>
+      tx
+        .update(s.fileObject)
+        .set({ storageKey: `${TENANT_ID}/missing/${randomUUID()}` })
+        .where(eq(s.fileObject.id, file.id)),
+    );
+    const res = await call(
+      'procurement',
+      'GET',
+      `/evaluations/${ev.id}/suppliers/${pv.suppliers[0]!.supplierId}/files/${file.id}`,
+    );
+    expect(res.statusCode).toBe(404);
+    expect(res.json().code).toBe('FILE_UNAVAILABLE');
   });
 });

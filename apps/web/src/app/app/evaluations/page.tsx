@@ -16,7 +16,12 @@ const STATUS: Record<string, [string, BadgeTone]> = {
   APPROVED: ['Approved', 'success'],
 };
 
-export default async function EvaluationsPage() {
+export default async function EvaluationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conflict?: string }>;
+}) {
+  const { conflict } = await searchParams;
   const [user, data] = await Promise.all([
     getSessionUser(),
     apiGet<{ evaluations: EvalSummary[]; ready: ReadyTender[] }>('/evaluations'),
@@ -36,6 +41,17 @@ export default async function EvaluationsPage() {
           and the chair brings the scores together, with differences recorded, before the report is written.
         </p>
       </header>
+
+      {conflict === '1' && (
+        <p
+          role="status"
+          className="rounded-md border border-warning bg-warning-bg p-3 text-sm font-medium text-warning"
+          data-testid="conflict-notice"
+        >
+          Your conflict of interest was recorded and your access to that evaluation is suspended. A delegate
+          will decide, and you will be notified of the outcome.
+        </p>
+      )}
 
       {(data?.ready ?? []).length > 0 && (
         <section aria-labelledby="ready-h" className="flex flex-col gap-3">

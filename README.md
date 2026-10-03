@@ -48,7 +48,7 @@ The seeded supplier `supplier@…` already has a closed, submitted tender and an
 
 ## Try the evaluation
 
-The seeded tender "Facilities cleaning services" is already at the consensus stage: sign in as `chair@…` (or `probity@…` for a read-only view) and open **Evaluations**. One score is flagged (37.5% apart) and cannot be locked without a reason. To run a whole evaluation yourself, close a tender (the browser tests do this with a test-only API entry), then as `procurement@…` open **Evaluations**, choose a panel, and have `evaluator-tech@…`, `evaluator-comm@…` and `chair@…` declare conflicts and score. Technical evaluators never see pricing; nobody sees another evaluator's scores until the chair opens consensus.
+The seeded tender "Facilities cleaning services" is already at the consensus stage: sign in as `chair@…` (or `probity@…` for a read-only view) and open **Evaluations**. One score is flagged (37.5% apart) and cannot be locked without a reason. To run a whole evaluation yourself, close a tender (the browser tests do this with a test-only API entry), then as `procurement@…` open **Evaluations**, choose a panel, and have `evaluator-tech@…`, `evaluator-comm@…` and `chair@…` declare conflicts and score. Technical evaluators never see pricing; nobody sees another evaluator's scores until the chair opens consensus. A declared conflict goes to a delegate to decide; the chair can reopen a locked consensus with a reason; the report downloads as a PDF. Seeded bid documents are real files (PDF and Excel): run `npm run db:reset` once to get them in an existing dev database.
 
 ## Checks
 

@@ -55,6 +55,15 @@ export interface EvalView {
     required: number;
     done: number;
   };
+  conflicts: Array<{
+    userId: string;
+    name: string;
+    nature: string;
+    subjectOrg: string | null;
+    disposition: 'PENDING' | 'IMMATERIAL' | 'MANAGEABLE' | 'MATERIAL';
+    declaredAt: string;
+    decidedAt?: string;
+  }>;
   consensus: ConsensusRow[];
   ranking: Array<{
     supplierId: string;
@@ -79,6 +88,8 @@ export interface EvalView {
     canManagePanel: boolean;
     canGenerateReport: boolean;
     canDecideReport: boolean;
+    canReopen: boolean;
+    canDecideConflict: boolean;
   };
 }
 export interface MyScores {

@@ -8,7 +8,9 @@ import { hash as argon2 } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import { AuditService } from '../audit/audit-service.js';
+import { demoPricingSchedule, demoTechnicalResponse } from './demo-documents.js';
 import { TENDER_FIELDS } from '../modules/tender/fields.js';
+import { sha256, type SealedStore } from '../modules/tender/files.js';
 import { buildTenderPack } from '../modules/tender/pack.js';
 import { withSystem, type Database, type RequestContext, type Tx } from './client.js';
 import * as s from './schema.js';
@@ -99,7 +101,8 @@ export interface SeedResult {
 
 export async function seedDatabase(
   database: Database,
-  opts: { clock: Clock; password?: string },
+  /** With a store the seeded bid files are really written (sealed) so they can be downloaded; without one only rows exist. */
+  opts: { clock: Clock; password?: string; store?: SealedStore },
 ): Promise<SeedResult> {
   const { db } = database;
   const existing = await db
@@ -539,16 +542,24 @@ export async function seedDatabase(
         ['TECHNICAL', 'technical-response.pdf'],
         ['COMMERCIAL', 'pricing-schedule.xlsx'],
       ] as const) {
+        const index = SUPPLIERS.findIndex((x) => x.key === sp.key);
+        const bytes =
+          section === 'TECHNICAL'
+            ? demoTechnicalResponse(sp.company, index, 'Facilities cleaning services')
+            : demoPricingSchedule(sp.company, index);
+        const storageKey = `${TENANT_ID}/${subId}/${uid(`file:${sp.key}:${section}`)}`;
+        if (opts.store) await opts.store.put(storageKey, bytes);
         await tx.insert(s.fileObject).values({
           tenantId: TENANT_ID,
           submissionId: subId,
           name,
-          sizeBytes: 250_000,
+          sizeBytes: bytes.length,
           contentType:
             section === 'TECHNICAL'
               ? 'application/pdf'
               : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          storageKey: `seed/${sp.key}/${name}`,
+          storageKey,
+          sha256: sha256(bytes),
           scan: 'CLEAN',
           section,
         });

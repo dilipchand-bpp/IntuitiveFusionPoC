@@ -6,6 +6,7 @@ import type { Tx } from '../../db/client.js';
 import {
   appUser,
   approval,
+  coiDeclaration,
   consensusItem,
   criterion,
   evalReport,
@@ -48,6 +49,10 @@ export interface Loaded {
 }
 
 const STATUS_ORDER = ['COI_PENDING', 'SCORING', 'CONSENSUS', 'LOCKED', 'REPORTED', 'APPROVED'] as const;
+/** A panel seat with no access: removed for a material conflict, or suspended while a delegate decides one. */
+export const isSuspended = (m: { coiState: string }) =>
+  m.coiState === 'REMOVED' || m.coiState === 'DECLARED_CONFLICT';
+
 export const atLeast = (s: EvalRow['status'], min: (typeof STATUS_ORDER)[number]) =>
   STATUS_ORDER.indexOf(s) >= STATUS_ORDER.indexOf(min);
 
@@ -108,7 +113,7 @@ export class EvaluationService {
       : l.criteria;
   }
   active(l: Loaded): MemberRow[] {
-    return l.panel.filter((m) => m.coiState !== 'REMOVED');
+    return l.panel.filter((m) => !isSuspended(m));
   }
 
   async notifyUsers(tx: Tx, tenantId: string, userIds: string[], title: string, body: string, link: string) {
@@ -140,6 +145,8 @@ export class EvaluationService {
     const blockers: string[] = [];
     const pending = live.filter((m) => m.coiState === 'NOT_DECLARED').length;
     if (pending) blockers.push(`${pending} panel member(s) have not declared yet`);
+    const awaiting = l.panel.filter((m) => m.coiState === 'DECLARED_CONFLICT').length;
+    if (awaiting) blockers.push(`${awaiting} declared conflict(s) await a delegate decision`);
     for (const s of ['TECHNICAL', 'COMMERCIAL'] as const)
       if (l.criteria.some((c) => c.stream === s) && !live.some((m) => m.stream === s))
         blockers.push(`No active ${s.toLowerCase()} evaluator: add a replacement`);
@@ -262,6 +269,20 @@ export class EvaluationService {
       : [];
 
     const roster = processRole || chair ? l.panel : l.panel.filter((m) => m.userId === a.user.id);
+    // Declared conflicts are shown to those who must act on them (and to chair/probity oversight), never to other evaluators.
+    const declarations =
+      processRole || chair
+        ? await tx
+            .select()
+            .from(coiDeclaration)
+            .where(
+              and(
+                eq(coiDeclaration.scope, 'EVALUATION'),
+                eq(coiDeclaration.scopeId, l.ev.id),
+                eq(coiDeclaration.none, false),
+              ),
+            )
+        : [];
     return {
       id: l.ev.id,
       tenderId: l.tender.id,
@@ -286,6 +307,15 @@ export class EvaluationService {
         scoringComplete: Boolean(m.scoredAt),
       })),
       suppliers,
+      conflicts: declarations.map((c) => ({
+        userId: c.userId,
+        name: names.get(c.userId) ?? '',
+        nature: c.nature ?? '',
+        subjectOrg: c.subjectOrg ?? null,
+        disposition: c.disposition,
+        declaredAt: c.createdAt.toISOString(),
+        ...(c.decidedAt ? { decidedAt: c.decidedAt.toISOString() } : {}),
+      })),
       me: me
         ? { stream: me.stream, coiState: me.coiState, scoringComplete: Boolean(me.scoredAt), required, done }
         : null,
@@ -328,12 +358,18 @@ export class EvaluationService {
       canDeclare: Boolean(me && me.coiState === 'NOT_DECLARED' && (s === 'COI_PENDING' || s === 'SCORING')),
       canScore: Boolean(declared && s === 'SCORING' && !me!.scoredAt),
       canOpenConsensus:
+        !l.panel.some((m) => m.coiState === 'DECLARED_CONFLICT') &&
         chair &&
         declared &&
         s === 'SCORING' &&
         live.every((m) => m.coiState !== 'DECLARED_NONE' || m.scoredAt) &&
         live.every((m) => m.coiState !== 'NOT_DECLARED'),
       canSetConsensus: chair && s === 'CONSENSUS',
+      canReopen:
+        chair && (s === 'LOCKED' || (s === 'REPORTED' && rep !== undefined && rep.status !== 'APPROVED')),
+      canDecideConflict:
+        (a.user.roles.includes('DELEGATE') || a.user.roles.includes('EXEC')) &&
+        l.panel.some((m) => m.coiState === 'DECLARED_CONFLICT'),
       canLock: chair && s === 'CONSENSUS' && items.length > 0,
       canManagePanel: proc && (s === 'COI_PENDING' || s === 'SCORING'),
       canGenerateReport: proc && (s === 'LOCKED' || (s === 'REPORTED' && rep?.status === 'DRAFT')),

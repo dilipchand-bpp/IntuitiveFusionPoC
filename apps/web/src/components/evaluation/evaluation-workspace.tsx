@@ -1,8 +1,19 @@
 'use client';
-import { CheckCircle2, CircleDashed, Download, EyeOff, Flag, Lock, UserX } from 'lucide-react';
+import {
+  CheckCircle2,
+  CircleDashed,
+  Download,
+  EyeOff,
+  FileDown,
+  Flag,
+  Info,
+  Lock,
+  RotateCcw,
+  UserX,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, Button, Field, Select, Stepper, Textarea, cn } from '@if/ui';
+import { Badge, Button, Dialog, Field, Select, Stepper, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { TENDER_TYPE_LABEL, formatDateTime } from '@/lib/labels';
 import type { EvalCriterion, EvalView, MyScores } from './types';
@@ -18,8 +29,8 @@ const STEP_OF: Record<EvalView['status'], number> = {
 };
 const COI_LABEL: Record<string, string> = {
   NOT_DECLARED: 'Not declared',
+  DECLARED_CONFLICT: 'Conflict: awaiting decision',
   DECLARED_NONE: 'No conflict',
-  DECLARED_CONFLICT: 'Conflict',
   REMOVED: 'Removed (conflict)',
 };
 const STREAM_LABEL = { TECHNICAL: 'Technical', COMMERCIAL: 'Commercial', OTHER: 'Chair' } as const;
@@ -103,8 +114,50 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
   }
   const post = <T,>(path: string, body: unknown = {}) => api<T>(path, { method: 'POST', csrf, body });
   const chair = me?.stream === 'OTHER';
-  const live = ev.panel.filter((m) => m.coiState !== 'REMOVED');
+  const live = ev.panel.filter((m) => m.coiState !== 'REMOVED' && m.coiState !== 'DECLARED_CONFLICT');
   const flagged = ev.consensus.filter((c) => c.flagged).length;
+
+  // People who score or agree consensus keep the documents beside their work; read-only roles get them in the main column.
+  const suppliersInRail =
+    p.canScore || p.canSetConsensus || ev.consensus.length > 0 || me?.coiState === 'NOT_DECLARED';
+  const suppliersCard = (wide: boolean) => (
+    <Card id="sup-h" title="Suppliers" testId="suppliers-card">
+      {ev.suppliers.some((s) => s.anonymised) && (
+        <p className="mt-2 flex items-start gap-2 text-sm text-text-muted" data-testid="anonymised-note">
+          <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          Names and documents stay hidden until you declare that you have no conflict of interest.
+        </p>
+      )}
+      <ul className={cn('mt-3 gap-3', wide ? 'grid sm:grid-cols-2' : 'flex flex-col')}>
+        {ev.suppliers.map((s) => (
+          <li key={s.supplierId} className="rounded-md border border-border p-3" data-testid="supplier-row">
+            <p className="font-semibold">{s.displayName}</p>
+            {s.files.length > 0 && (
+              <ul className="mt-2 flex flex-col gap-1 text-sm" aria-label={`Documents from ${s.displayName}`}>
+                {s.files.map((f) => (
+                  <li key={f.id}>
+                    <a
+                      href={`/api/v1/evaluations/${ev.id}/suppliers/${s.supplierId}/files/${f.id}`}
+                      className="flex min-h-[44px] items-start gap-2 py-1"
+                      download
+                    >
+                      <Download className="mt-1 size-4 shrink-0" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block break-all font-medium">{f.name}</span>
+                        <span className="block text-xs text-text-muted">
+                          {STREAM_LABEL[f.section]} · {kb(f.sizeBytes)}
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
 
   return (
     <div className="flex flex-col gap-6" data-testid="evaluation-workspace" data-status={ev.status}>
@@ -163,12 +216,12 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
               busy={busy === 'coi'}
               onDeclare={(body) =>
                 run('coi', async () => {
-                  const r = await post<{ removed?: boolean; message?: string }>(
+                  const r = await post<{ suspended?: boolean; message?: string }>(
                     `/evaluations/${ev.id}/coi`,
                     body,
                   );
-                  if (r.removed) {
-                    router.push('/app/evaluations');
+                  if (r.suspended) {
+                    router.push('/app/evaluations?conflict=1');
                     return;
                   }
                   setEv(r as unknown as EvalView);
@@ -213,53 +266,16 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
             {p.canManagePanel && <AddMember evalId={ev.id} csrf={csrf} onDone={refresh} />}
           </Card>
 
-          <Card id="sup-h" title="Suppliers" testId="suppliers-card">
-            {ev.suppliers.some((s) => s.anonymised) && (
-              <p
-                className="mt-2 flex items-start gap-2 text-sm text-text-muted"
-                data-testid="anonymised-note"
-              >
-                <EyeOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                Names and documents stay hidden until you declare that you have no conflict of interest.
-              </p>
-            )}
-            <ul className="mt-3 flex flex-col gap-3">
-              {ev.suppliers.map((s) => (
-                <li
-                  key={s.supplierId}
-                  className="rounded-md border border-border p-3"
-                  data-testid="supplier-row"
-                >
-                  <p className="font-semibold">{s.displayName}</p>
-                  {s.files.length > 0 && (
-                    <ul
-                      className="mt-2 flex flex-col gap-1 text-sm"
-                      aria-label={`Documents from ${s.displayName}`}
-                    >
-                      {s.files.map((f) => (
-                        <li key={f.id}>
-                          <a
-                            href={`/api/v1/evaluations/${ev.id}/suppliers/${s.supplierId}/files/${f.id}`}
-                            className="inline-flex min-h-[44px] items-center gap-2"
-                            download
-                          >
-                            <Download className="size-4" aria-hidden="true" />
-                            {f.name}
-                            <span className="text-text-muted">
-                              · {STREAM_LABEL[f.section]} · {kb(f.sizeBytes)}
-                            </span>
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </Card>
+          {ev.conflicts.length > 0 && (
+            <ConflictReview ev={ev} csrf={csrf} onDone={setEv} run={run} busy={busy} />
+          )}
+
+          {suppliersInRail && suppliersCard(false)}
         </aside>
 
         <div className="flex min-w-0 flex-col gap-4 lg:order-1">
+          <StageGuide ev={ev} />
+          {!suppliersInRail && suppliersCard(true)}
           {me?.coiState === 'NOT_DECLARED' && (
             <Card id="gate-h" title="Declare before you begin" tone="warning">
               <p className="mt-2 text-sm text-text-muted">
@@ -334,6 +350,8 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
               </ol>
             </Card>
           )}
+
+          {p.canReopen && <ReopenCard ev={ev} csrf={csrf} onDone={setEv} />}
 
           <ReportPanel ev={ev} csrf={csrf} busy={busy} run={run} post={post} setEv={setEv} />
         </div>
@@ -890,12 +908,22 @@ function ReportPanel({
             {rep.status === 'APPROVED'
               ? 'Approved'
               : rep.status === 'DRAFT'
-                ? 'Returned'
+                ? 'Needs regenerating'
                 : 'Awaiting approval'}
           </Badge>
         )
       }
     >
+      {rep && (
+        <div className="mt-3">
+          <Button asChild variant="secondary">
+            <a href={`/api/v1/evaluations/${ev.id}/report/pdf`} download className="text-text no-underline">
+              <FileDown className="size-4" aria-hidden="true" />
+              Download PDF
+            </a>
+          </Button>
+        </div>
+      )}
       {p.canGenerateReport && (
         <div className="mt-3">
           <Button
@@ -988,5 +1016,232 @@ function ReportPanel({
         </div>
       )}
     </Card>
+  );
+}
+
+/** Says where the evaluation is, what is happening and what comes next, so the page is never an unexplained empty space. */
+function StageGuide({ ev }: { ev: EvalView }) {
+  const live = ev.panel.filter((m) => m.coiState !== 'REMOVED' && m.coiState !== 'DECLARED_CONFLICT');
+  const declared = live.filter((m) => m.coiState === 'DECLARED_NONE').length;
+  const finished = live.filter((m) => m.scoringComplete).length;
+  const awaiting = ev.panel.filter((m) => m.coiState === 'DECLARED_CONFLICT').length;
+  const roster = ev.panel.length > 1; // only people who run the evaluation can see everyone
+  const flagged = ev.consensus.filter((c) => c.flagged).length;
+  const text: Record<EvalView['status'], { title: string; body: string }> = {
+    COI_PENDING: {
+      title: 'Waiting for conflict declarations',
+      body: `${roster ? `${declared} of ${live.length} panel members have declared. ` : ''}${awaiting ? `${awaiting} declared conflict(s) are waiting for a delegate to decide. ` : ''}Scoring opens when every member has declared and every conflict is decided.`,
+    },
+    SCORING: {
+      title: 'Evaluators are scoring independently',
+      body: `${roster ? `${finished} of ${live.length} have finished. ` : ''}Scores stay hidden from everyone, including the chair, until the chair opens consensus.`,
+    },
+    CONSENSUS: {
+      title: 'The chair is agreeing consensus scores',
+      body: `${flagged ? `${flagged} score(s) differ by more than ${ev.varianceLimitPct}% and need a recorded reason. ` : ''}The consensus is shown to procurement, delegates and the executive once it is locked.`,
+    },
+    LOCKED: { title: 'Consensus is locked', body: 'Procurement generates the evaluation report next.' },
+    REPORTED: {
+      title:
+        ev.report?.status === 'DRAFT'
+          ? 'The report needs regenerating'
+          : 'The report is waiting for approval',
+      body:
+        ev.report?.status === 'DRAFT'
+          ? 'Consensus was reopened, so the earlier report no longer stands. It is regenerated after the chair locks again.'
+          : 'A delegate, or the executive for larger awards, approves or returns it.',
+    },
+    APPROVED: { title: 'The report is approved', body: 'The award can proceed to contract.' },
+  };
+  const s = text[ev.status];
+  return (
+    <section
+      aria-labelledby="stage-h"
+      data-testid="stage-guide"
+      className="flex items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-sm"
+    >
+      <span className="icon-tile shrink-0">
+        <Info className="size-5" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <h2 id="stage-h" className="font-heading text-lg font-bold">
+          {s.title}
+        </h2>
+        <p className="mt-1 text-sm text-text-muted">{s.body}</p>
+      </div>
+    </section>
+  );
+}
+
+const DISPOSITION: Record<string, string> = {
+  PENDING: 'Awaiting decision',
+  IMMATERIAL: 'Immaterial: reinstated',
+  MANAGEABLE: 'Manageable: reinstated',
+  MATERIAL: 'Material: removed',
+};
+
+/** Declared conflicts: a delegate (or the executive) decides each one; everyone else on the process can see them. */
+function ConflictReview({
+  ev,
+  csrf,
+  onDone,
+  run,
+  busy,
+}: {
+  ev: EvalView;
+  csrf: string;
+  onDone: (e: EvalView) => void;
+  run: (n: string, f: () => Promise<void>, ok?: string) => Promise<void>;
+  busy: string | null;
+}) {
+  const [why, setWhy] = useState<Record<string, string>>({});
+  const decide = (userId: string, disposition: 'IMMATERIAL' | 'MANAGEABLE' | 'MATERIAL') =>
+    run(
+      `conflict-${userId}`,
+      async () =>
+        onDone(
+          await api<EvalView>(`/evaluations/${ev.id}/conflicts/${userId}/decision`, {
+            method: 'POST',
+            csrf,
+            body: { disposition, ...(why[userId] ? { rationale: why[userId] } : {}) },
+          }),
+        ),
+      'Decision recorded.',
+    );
+  return (
+    <Card
+      id="conf-h"
+      title="Declared conflicts"
+      tone={ev.permissions.canDecideConflict ? 'warning' : undefined}
+      testId="conflict-review"
+    >
+      <ul className="mt-3 flex flex-col gap-3">
+        {ev.conflicts.map((c) => (
+          <li
+            key={c.userId}
+            className="rounded-md border border-border p-3 text-sm"
+            data-conflict={c.disposition}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <strong>{c.name}</strong>
+              <Badge
+                tone={
+                  c.disposition === 'PENDING' ? 'warning' : c.disposition === 'MATERIAL' ? 'error' : 'success'
+                }
+              >
+                {DISPOSITION[c.disposition]}
+              </Badge>
+            </div>
+            <p className="mt-1">{c.nature}</p>
+            {c.subjectOrg && <p className="text-text-muted">Concerning: {c.subjectOrg}</p>}
+            {ev.permissions.canDecideConflict && c.disposition === 'PENDING' && (
+              <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+                <Field label="Reason for your decision (optional)">
+                  <Textarea
+                    rows={2}
+                    maxLength={2000}
+                    value={why[c.userId] ?? ''}
+                    onChange={(e) => setWhy((cur) => ({ ...cur, [c.userId]: e.target.value }))}
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    loading={busy === `conflict-${c.userId}`}
+                    onClick={() => void decide(c.userId, 'IMMATERIAL')}
+                    aria-label={`Immaterial: reinstate ${c.name}`}
+                  >
+                    Immaterial: reinstate
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    loading={busy === `conflict-${c.userId}`}
+                    onClick={() => void decide(c.userId, 'MANAGEABLE')}
+                    aria-label={`Manageable: reinstate ${c.name}`}
+                  >
+                    Manageable: reinstate
+                  </Button>
+                  <Button
+                    loading={busy === `conflict-${c.userId}`}
+                    onClick={() => void decide(c.userId, 'MATERIAL')}
+                    aria-label={`Material: remove ${c.name}`}
+                  >
+                    Material: remove
+                  </Button>
+                </div>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/** The chair can reopen a locked consensus, with a recorded reason. Any report written from the old scores is invalidated. */
+function ReopenCard({ ev, csrf, onDone }: { ev: EvalView; csrf: string; onDone: (e: EvalView) => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function go() {
+    setBusy(true);
+    setError(null);
+    try {
+      onDone(
+        await api<EvalView>(`/evaluations/${ev.id}/consensus/reopen`, {
+          method: 'POST',
+          csrf,
+          body: { reason },
+        }),
+      );
+      setOpen(false);
+      setReason('');
+    } catch (e) {
+      setError(problem(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <Card id="reopen-h" title="Reopen consensus" testId="reopen-card">
+        <p className="mt-2 text-sm text-text-muted">
+          If something needs to change after the lock, reopen it with a reason. Agreed values are kept,
+          individual scores stay frozen, and the report has to be generated again after you lock.
+        </p>
+        <div className="mt-3">
+          <Button variant="secondary" onClick={() => setOpen(true)}>
+            <RotateCcw className="size-4" aria-hidden="true" />
+            Reopen consensus
+          </Button>
+        </div>
+      </Card>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Reopen consensus?"
+        description="The reason is recorded in the audit trail and sent to procurement, the delegates and probity."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button loading={busy} disabled={reason.trim().length < 10} onClick={() => void go()}>
+              Reopen
+            </Button>
+          </>
+        }
+      >
+        <Field label="Reason (at least 10 characters)" required>
+          <Textarea rows={3} maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} />
+        </Field>
+        {error && (
+          <p role="alert" className="mt-2 text-sm font-medium text-error">
+            {error}
+          </p>
+        )}
+      </Dialog>
+    </>
   );
 }

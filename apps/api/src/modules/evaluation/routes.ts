@@ -35,7 +35,8 @@ import type { SealedStore } from '../tender/files.js';
 import { evaluationCriteria } from '../tender/pack.js';
 import { TenderService } from '../tender/service.js';
 import { REPORT_SECTIONS, buildReport } from './report.js';
-import { atLeast, EvaluationService, type Loaded } from './service.js';
+import { atLeast, EvaluationService, isSuspended, type Loaded } from './service.js';
+import { evaluationReportPdf } from './report-pdf.js';
 import {
   canScoreCriterion,
   canSeeFileSection,
@@ -104,6 +105,13 @@ const consensusBody = z
       .max(50),
   })
   .strict();
+const reopenBody = z.object({ reason: z.string().trim().min(10).max(1000) }).strict();
+const conflictDecisionBody = z
+  .object({
+    disposition: z.enum(['IMMATERIAL', 'MANAGEABLE', 'MATERIAL']),
+    rationale: z.string().trim().max(2000).optional(),
+  })
+  .strict();
 const decisionBody = z
   .object({ decision: z.enum(['APPROVE', 'REJECT']), comment: z.string().trim().max(2000).optional() })
   .strict();
@@ -122,14 +130,14 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
     if (!l) throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
     const processRole = a.user.roles.some((r) => PROCESS.includes(r));
     const me = svc.memberOf(l, a.user.id);
-    if (!processRole && (!me || me.coiState === 'REMOVED'))
+    if (!processRole && (!me || isSuspended(me)))
       throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
     return l;
   }
   /** The caller's own panel seat, which must exist and have declared no conflict. */
   function declaredMember(l: Loaded, a: AuthContext) {
     const me = svc.memberOf(l, a.user.id);
-    if (!me || me.coiState === 'REMOVED') throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
+    if (!me || isSuspended(me)) throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
     if (me.coiState !== 'DECLARED_NONE')
       throw new AppError(403, 'COI_REQUIRED', 'Declare that you have no conflict of interest first');
     return me;
@@ -156,7 +164,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         for (const { ev, r } of rows) {
           const panel = await tx.select().from(panelMember).where(eq(panelMember.evaluationId, ev.id));
           const mine = panel.find((m) => m.userId === a.user.id);
-          if (!processRole && (!mine || mine.coiState === 'REMOVED')) continue;
+          if (!processRole && (!mine || isSuspended(mine))) continue;
           const [bids] = await tx
             .select({ n: count() })
             .from(submission)
@@ -168,7 +176,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
             title: r.title,
             status: ev.status,
             bids: bids?.n ?? 0,
-            panelSize: panel.filter((m) => m.coiState !== 'REMOVED').length,
+            panelSize: panel.filter((m) => !isSuspended(m)).length,
             ...(mine ? { myCoiState: mine.coiState, myScoringComplete: Boolean(mine.scoredAt) } : {}),
             updatedAt: ev.updatedAt.toISOString(),
           });
@@ -429,11 +437,27 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         if (l.ev.status !== 'COI_PENDING' && l.ev.status !== 'SCORING')
           throw new AppError(409, 'INVALID_STATE', 'Declarations are closed for this evaluation');
         const now = d.clock.now();
-        const next = body.none ? 'DECLARED_NONE' : 'REMOVED'; // a conflict removes access immediately
+        const next = body.none ? 'DECLARED_NONE' : 'DECLARED_CONFLICT'; // a conflict suspends access immediately, pending a delegate's decision
         await tx
           .update(panelMember)
           .set({ coiState: next })
           .where(and(eq(panelMember.evaluationId, id), eq(panelMember.userId, a.user.id)));
+        // A real conflict goes to a delegate (or the executive when there is none) for a decision.
+        const approvers = body.none
+          ? []
+          : await tx
+              .select({ userId: roleAssignment.userId, role: roleAssignment.role })
+              .from(roleAssignment)
+              .where(
+                and(
+                  eq(roleAssignment.tenantId, a.user.tenantId),
+                  inArray(roleAssignment.role, ['DELEGATE', 'EXEC']),
+                ),
+              );
+        const routedTo =
+          approvers.find((x) => x.role === 'DELEGATE')?.userId ??
+          approvers.find((x) => x.role === 'EXEC')?.userId ??
+          null;
         await tx.insert(coiDeclaration).values({
           tenantId: a.user.tenantId,
           userId: a.user.id,
@@ -442,8 +466,9 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           none: body.none,
           nature: body.nature ?? null,
           subjectOrg: body.subjectOrg ?? null,
-          disposition: body.none ? 'IMMATERIAL' : 'MATERIAL',
-          decidedAt: now,
+          disposition: body.none ? 'IMMATERIAL' : 'PENDING',
+          routedTo: body.none ? null : routedTo,
+          decidedAt: body.none ? now : null,
           createdAt: now,
         });
         await d.audit.record(tx, a.ctx, {
@@ -463,10 +488,19 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
             tx,
             a.user.tenantId,
             ['PROBITY', 'CHAIR', 'PROCUREMENT'],
-            'Evaluator removed: conflict of interest',
-            `${l.req.number}: ${a.user.name} declared a conflict and no longer has access`,
+            'Evaluator suspended: conflict of interest',
+            `${l.req.number}: ${a.user.name} declared a conflict and has no access until a delegate decides`,
             `/app/evaluations/${id}`,
           );
+          if (routedTo)
+            await svc.notifyUsers(
+              tx,
+              a.user.tenantId,
+              [routedTo],
+              'Conflict of interest needs your decision',
+              `${l.req.number}: ${a.user.name} declared a conflict on an evaluation`,
+              `/app/evaluations/${id}`,
+            );
         }
         const fresh2 = (await svc.load(tx, a.user.tenantId, id))!;
         const blockers = await svc.advance(tx, a, fresh2);
@@ -481,8 +515,9 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           );
         if (!body.none)
           return {
-            removed: true,
-            message: 'Your conflict was recorded. You no longer have access to this evaluation.',
+            suspended: true,
+            message:
+              'Your conflict was recorded and your access is suspended. A delegate will decide, and you will be told the outcome.',
           };
         return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
       });
@@ -702,6 +737,12 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       const l = await visible(tx, a, id);
       chairOnly(l, a);
       if (l.ev.status !== 'SCORING') throw new AppError(409, 'INVALID_STATE', 'Consensus opens from scoring');
+      if (l.panel.some((m) => m.coiState === 'DECLARED_CONFLICT'))
+        throw new AppError(
+          409,
+          'CONFLICT_PENDING',
+          'A declared conflict is still waiting for a delegate decision',
+        );
       const waiting = svc.active(l).filter((m) => m.coiState === 'DECLARED_NONE' && !m.scoredAt);
       const undeclared = svc.active(l).filter((m) => m.coiState === 'NOT_DECLARED');
       if (waiting.length || undeclared.length)
@@ -867,14 +908,24 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       if (l.ev.status !== 'LOCKED' && !regenerate)
         throw new AppError(409, 'INVALID_STATE', 'A report can be generated once consensus is locked');
       const items = await tx.select().from(consensusItem).where(eq(consensusItem.evaluationId, id));
-      return { l, items, existing };
+      const decl = await tx
+        .select()
+        .from(coiDeclaration)
+        .where(
+          and(
+            eq(coiDeclaration.scope, 'EVALUATION'),
+            eq(coiDeclaration.scopeId, id),
+            eq(coiDeclaration.none, false),
+          ),
+        );
+      return { l, items, existing, conflictUsers: new Set(decl.map((x) => x.userId)) };
     });
     // 2. the evaluators' comments are readable only by the chair and probity (row level security), so the report reads
     //    them as the system, and quotes them without saying who wrote them
     const comments = await withSystem(d.database, (tx) =>
       tx.select().from(score).where(eq(score.evaluationId, id)),
     );
-    const { l, items } = gathered;
+    const { l, items, conflictUsers } = gathered;
     const ranking = await svc.ranking({ ...l, ev: { ...l.ev, status: 'LOCKED' } }, items);
     const now = d.clock.now();
     const text = buildReport({
@@ -886,7 +937,12 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       panel: l.panel.map((m) => ({
         name: m.name,
         stream: m.stream,
-        outcome: m.coiState === 'REMOVED' ? 'CONFLICT_REMOVED' : 'NO_CONFLICT',
+        outcome:
+          m.coiState === 'REMOVED'
+            ? ('CONFLICT_REMOVED' as const)
+            : conflictUsers.has(m.userId)
+              ? ('CONFLICT_REVIEWED' as const)
+              : ('NO_CONFLICT' as const),
       })),
       criteria: l.criteria.map((c) => ({
         id: c.id,
@@ -1127,12 +1183,188 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         });
         return f;
       });
-      const bytes = await d.store.get(found.storageKey);
+      const bytes = await d.store.get(found.storageKey).catch(() => null);
+      if (!bytes) throw new AppError(404, 'FILE_UNAVAILABLE', 'This file is not available');
       const safe = found.name.replace(/[^\w. -]/g, '_');
       return reply
         .header('content-type', found.contentType)
         .header('content-disposition', `attachment; filename="${safe}"`)
         .send(bytes);
+    },
+  );
+
+  // ---------------------------------------------------------------- delegate decision on a declared conflict
+  reg('POST', '/evaluations/{id}/conflicts/{userId}/decision');
+  app.post(
+    `${p}/evaluations/:id/conflicts/:userId/decision`,
+    { preHandler: guard(d, ['DELEGATE', 'EXEC']) },
+    async (req) => {
+      const a = req.auth!;
+      const { id, userId } = parse(z.object({ id: uuid, userId: uuid }), req.params);
+      const body = parse(conflictDecisionBody, req.body);
+      return withContext(d.database, a.ctx, async (tx) => {
+        const l = await visible(tx, a, id);
+        const member = l.panel.find((m) => m.userId === userId);
+        if (!member || member.coiState !== 'DECLARED_CONFLICT')
+          throw new AppError(
+            409,
+            'INVALID_STATE',
+            'There is no conflict waiting for a decision for this person',
+          );
+        if (userId === a.user.id)
+          throw new AppError(403, 'ROLE_SOD_VIOLATION', 'You cannot decide your own conflict of interest');
+        const [decl] = await tx
+          .select()
+          .from(coiDeclaration)
+          .where(
+            and(
+              eq(coiDeclaration.scope, 'EVALUATION'),
+              eq(coiDeclaration.scopeId, id),
+              eq(coiDeclaration.userId, userId),
+              eq(coiDeclaration.none, false),
+            ),
+          );
+        if (!decl || decl.disposition !== 'PENDING')
+          throw new AppError(409, 'INVALID_STATE', 'This declaration has already been decided');
+        const now = d.clock.now();
+        const stays = body.disposition !== 'MATERIAL';
+        await tx
+          .update(coiDeclaration)
+          .set({ disposition: body.disposition, decidedAt: now })
+          .where(eq(coiDeclaration.id, decl.id));
+        await tx
+          .update(panelMember)
+          .set({ coiState: stays ? 'DECLARED_NONE' : 'REMOVED' })
+          .where(and(eq(panelMember.evaluationId, id), eq(panelMember.userId, userId)));
+        await d.audit.record(tx, a.ctx, {
+          action: 'coi.decide',
+          entityType: 'evaluation',
+          entityId: id,
+          before: { userId, state: 'DECLARED_CONFLICT' },
+          after: {
+            userId,
+            disposition: body.disposition,
+            outcome: stays ? 'REINSTATED' : 'REMOVED',
+            rationale: body.rationale ?? null,
+          },
+        });
+        await svc.notifyUsers(
+          tx,
+          a.user.tenantId,
+          [userId],
+          stays
+            ? 'Your conflict was reviewed: you can continue'
+            : 'Your conflict was reviewed: you are removed from the panel',
+          `${l.req.number} ${l.req.title}${body.rationale ? `: ${body.rationale}` : ''}`,
+          `/app/evaluations/${id}`,
+        );
+        await svc.notifyRoles(
+          tx,
+          a.user.tenantId,
+          ['PROCUREMENT', 'CHAIR', 'PROBITY'],
+          stays ? 'Conflict reviewed: evaluator reinstated' : 'Conflict reviewed: evaluator removed',
+          `${l.req.number}: ${member.name}`,
+          `/app/evaluations/${id}`,
+        );
+        const after = (await svc.load(tx, a.user.tenantId, id))!;
+        const blockers = await svc.advance(tx, a, after);
+        if (!stays && blockers.some((b) => b.startsWith('No active')))
+          await svc.notifyRoles(
+            tx,
+            a.user.tenantId,
+            ['PROCUREMENT'],
+            'Add a replacement evaluator',
+            blockers.join('. '),
+            `/app/evaluations/${id}`,
+          );
+        return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
+      });
+    },
+  );
+
+  // ---------------------------------------------------------------- reopen consensus after the lock
+  reg('POST', '/evaluations/{id}/consensus/reopen');
+  app.post(`${p}/evaluations/:id/consensus/reopen`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+    const a = req.auth!;
+    const id = eid(req);
+    const body = parse(reopenBody, req.body);
+    return withContext(d.database, a.ctx, async (tx) => {
+      const l = await visible(tx, a, id);
+      chairOnly(l, a);
+      const [rep] = await tx.select().from(evalReport).where(eq(evalReport.evaluationId, id));
+      if (l.ev.status !== 'LOCKED' && !(l.ev.status === 'REPORTED' && rep && rep.status !== 'APPROVED'))
+        throw new AppError(
+          409,
+          'INVALID_STATE',
+          l.ev.status === 'APPROVED'
+            ? 'An approved evaluation cannot be reopened: the approver must return the report first'
+            : 'Consensus can be reopened once it has been locked',
+        );
+      const now = d.clock.now();
+      const before = l.ev.status;
+      await tx
+        .update(evaluation)
+        .set({ status: 'CONSENSUS', updatedAt: now, version: l.ev.version + 1 })
+        .where(eq(evaluation.id, id));
+      // The report was written from the old scores, so it no longer stands and has to be generated again after re-locking.
+      if (rep) await tx.update(evalReport).set({ status: 'DRAFT' }).where(eq(evalReport.id, rep.id));
+      await d.audit.record(tx, a.ctx, {
+        action: 'evaluation.consensus_reopen',
+        entityType: 'evaluation',
+        entityId: id,
+        before: { status: before, reportStatus: rep?.status ?? null },
+        after: { status: 'CONSENSUS', reason: body.reason, reportInvalidated: Boolean(rep) },
+      });
+      await svc.notifyRoles(
+        tx,
+        a.user.tenantId,
+        ['PROCUREMENT', 'DELEGATE', 'EXEC', 'PROBITY'],
+        'Consensus reopened by the chair',
+        `${l.req.number} ${l.req.title}: ${body.reason}`,
+        `/app/evaluations/${id}`,
+      );
+      return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
+    });
+  });
+
+  // ---------------------------------------------------------------- report as a PDF (US-TND-05)
+  reg('GET', '/evaluations/{id}/report/pdf');
+  app.get(
+    `${p}/evaluations/:id/report/pdf`,
+    { preHandler: guard(d, ['PROCUREMENT', 'DELEGATE', 'EXEC', 'PROBITY', 'LEGAL', 'CHAIR']) },
+    async (req, reply) => {
+      const a = req.auth!;
+      const id = eid(req);
+      const out = await withContext(d.database, a.ctx, async (tx) => {
+        const l = await visible(tx, a, id);
+        const v = await svc.view(tx, a, l);
+        if (!v.report) throw new AppError(404, 'NO_REPORT', 'There is no report to export yet');
+        await d.audit.record(tx, a.ctx, {
+          action: 'report.export',
+          entityType: 'evaluation',
+          entityId: id,
+          after: { format: 'PDF', reportStatus: v.report.status, version: l.ev.version },
+        });
+        return { v, number: l.req.number, version: l.ev.version, type: l.tender.type };
+      });
+      const pdf = evaluationReportPdf({
+        requestNumber: out.number,
+        title: out.v.title,
+        tenderType: out.type,
+        evaluationVersion: out.version,
+        reportStatus: out.v.report!.status,
+        generatedAt: new Date(out.v.report!.generatedAt),
+        sections: out.v.report!.sections,
+        ranking: out.v.ranking,
+        decision: out.v.report!.decision ? { stamp: out.v.report!.decision.stamp } : undefined,
+      });
+      return reply
+        .header('content-type', 'application/pdf')
+        .header(
+          'content-disposition',
+          `attachment; filename="evaluation-report-${out.number}-v${out.version}.pdf"`,
+        )
+        .send(pdf);
     },
   );
 
