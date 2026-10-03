@@ -1,0 +1,24 @@
+# Secret scan configuration. The default rules stay on; only the places that hold synthetic demo and test values are
+# allowed (no real secret lives in this repository: real values come from the environment and .env is ignored).
+title = "Intuitive Fusion POC"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic demo and test fixtures"
+paths = [
+  '''e2e/.*''',
+  '''perf/.*''',
+  '''playwright\.config\.ts''',
+  '''.*\.test\.ts''',
+  '''apps/api/src/modules/contract/test-env\.ts''',
+  '''apps/api/src/test-helpers\.ts''',
+  '''apps/api/src/db/seed\.ts''',
+  '''apps/api/src/db/demo-documents\.ts''',
+  '''docs/.*''',
+  '''README\.md''',
+  '''\.env\.example''',
+  '''apps/api/openapi\.json''',
+  '''spikes/.*''',
+]
