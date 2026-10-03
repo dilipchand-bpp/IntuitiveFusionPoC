@@ -10,18 +10,11 @@ import { ROLE_NAMES, type Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext } from '../../db/client.js';
-import {
-  appUser,
-  contract,
-  delegation,
-  notification,
-  orgUnit,
-  roleAssignment,
-  tenant,
-} from '../../db/schema.js';
+import { appUser, contract, delegation, notification, roleAssignment, tenant } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { iso, leadsFrom } from '../contract/dates.js';
 import { rescheduleAlerts } from '../contract/record.js';
+import { registerAdminDirectory } from './directory.js';
 
 export interface AdminDeps extends GuardDeps {
   clock: Clock;
@@ -63,32 +56,6 @@ const leadsBody = z
 export function registerAdminRoutes(app: FastifyInstance, p: string, d: AdminDeps): Set<string> {
   const done = new Set<string>();
   const reg = (m: string, path: string) => done.add(`${m} ${path}`);
-
-  // ------------------------------------------------------------ users (read only, to choose delegates)
-  reg('GET', '/admin/users');
-  app.get(`${p}/admin/users`, { preHandler: guard(d, ['ADMIN']) }, async (req) => {
-    const a = req.auth!;
-    return withContext(d.database, a.ctx, async (tx) => {
-      const users = await tx
-        .select({ u: appUser, unit: orgUnit.name })
-        .from(appUser)
-        .leftJoin(orgUnit, eq(orgUnit.id, appUser.orgUnitId))
-        .where(and(eq(appUser.tenantId, a.user.tenantId), isNull(appUser.supplierId)))
-        .orderBy(asc(appUser.name));
-      const roles = await tx
-        .select()
-        .from(roleAssignment)
-        .where(eq(roleAssignment.tenantId, a.user.tenantId));
-      return users.map(({ u, unit }) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        orgUnit: unit,
-        active: u.active,
-        roles: roles.filter((r) => r.userId === u.id).map((r) => r.role),
-      }));
-    });
-  });
 
   // ------------------------------------------------------------ delegations (US-ADM-01)
   async function rows(tx: Parameters<Parameters<typeof withContext>[2]>[0], tenantId: string) {
@@ -276,6 +243,8 @@ export function registerAdminRoutes(app: FastifyInstance, p: string, d: AdminDep
       return body;
     });
   });
+
+  registerAdminDirectory(app, p, d, reg);
 
   return done;
 }

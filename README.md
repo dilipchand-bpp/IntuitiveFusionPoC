@@ -71,6 +71,10 @@ Sign in as `exec@...` for the portfolio dashboard: key figures, spend by categor
 - **Evaluation:** the chair can set the variance limit per evaluation before consensus opens; `probity@...` records a sign-off once consensus is locked. The evaluation report downloads as PDF or Word, and so does a tender pack.
 - Existing dev databases need `npm run db:reset` for the new tables and seed data.
 
+## Try administration
+
+`admin@...` opens **Admin overview**: **Users and roles** (add a person with roles; the one-time activation link is shown once; changing roles or switching someone off ends their sessions), **Delegations**, **Workflows** (the simple one is editable, an approval checkpoint cannot be removed) and **Templates** (read only). The administrator role cannot be combined with another, and administrators are refused every bid screen: try `/app/evaluations` as `admin@...`, then look at the refusal in the audit trail as `probity@...`.
+
 ## Checks
 
 ```bash

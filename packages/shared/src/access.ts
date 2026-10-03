@@ -84,6 +84,7 @@ export const PUBLIC_PATHS = [
   '/ui-kit',
   '/supplier/register',
   '/supplier/activate',
+  '/activate',
   '/preview',
 ];
 

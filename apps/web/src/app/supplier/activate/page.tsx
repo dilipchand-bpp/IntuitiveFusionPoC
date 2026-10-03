@@ -41,8 +41,9 @@ export default async function ActivatePage({ searchParams }: { searchParams: Pro
             <h1 className="text-3xl font-extrabold tracking-tight">Activate your account</h1>
             {info && (
               <p className="mt-1 text-text-muted">
-                {info.organisation} has added you as a contact for {info.company}. Choose a password to
-                finish.
+                {info.company
+                  ? `${info.organisation} has added you as a contact for ${info.company}. Choose a password to finish.`
+                  : `${info.organisation} has created an account for you. Choose a password to finish.`}
               </p>
             )}
           </div>

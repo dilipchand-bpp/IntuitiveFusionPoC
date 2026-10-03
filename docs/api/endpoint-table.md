@@ -98,12 +98,16 @@
 | GET | `/notifications` | listNotifications | any signed-in | My notifications |  |
 | POST | `/notifications/{id}/read` | markRead | any signed-in | Mark read |  |
 | GET | `/admin/users` | adminListUsers | ADMIN | List staff users with their roles (read only; suppliers are not listed) |  |
-| POST | `/admin/users` | adminCreateUser | ADMIN | Create user |  |
+| POST | `/admin/users` | adminCreateUser | ADMIN | Create a staff user with roles; the person sets their own password through a one-time link (shown once). ADMIN cannot be combined with another role | 409 EMAIL_IN_USE; 422 ROLE_COMBINATION |
+| PUT | `/admin/users/{id}` | adminUpdateUser | ADMIN | Change name, roles, organisation unit or active state; a role change or switch-off ends their sessions; not for yourself | 403 for yourself; 422 ROLE_COMBINATION |
+| POST | `/admin/users/{id}/activation-link` | adminActivationLink | ADMIN | Issue a new one-time activation link (earlier ones stop working) |  |
+| GET | `/admin/org-units` | adminListOrgUnits | ADMIN | Organisation units |  |
 | GET | `/admin/delegations` | listDelegations | ADMIN, EXEC | Delegations of authority |  |
 | POST | `/admin/delegations` | createDelegation | ADMIN | Grant a limit to a person (or role); audited; applies to the next approval or signature | 409 DELEGATION_EXISTS; 403 for oneself |
 | PUT | `/admin/delegations/{id}` | updateDelegation | ADMIN | Change a threshold or switch it off; audited; effective immediately; the person is notified |  |
 | GET | `/admin/alert-settings` | getAlertSettings | ADMIN | Contract alert lead times in days |  |
 | PUT | `/admin/alert-settings` | setAlertSettings | ADMIN | Change the lead times; scheduled alerts of executed contracts move at once; audited |  |
+| PUT | `/admin/workflows/{id}` | updateWorkflow | ADMIN | Edit the simple workflow (steps, order, optional); a mandatory approval checkpoint must stay. Other workflows answer 409 NOT_EDITABLE (coming soon) | 422 CHECKPOINT_REQUIRED, DUPLICATE_STEP |
 | GET | `/admin/workflows` | listWorkflows | ADMIN, PROCUREMENT | Workflow library |  |
 | GET | `/admin/templates` | listTemplates | ADMIN, PROCUREMENT, LEGAL | Template library (read-only in POC) |  |
 | POST | `/migration/uploads` | uploadMigration | ADMIN, CONTRACT_MGR | Validate legacy contract CSV (profiling only in POC) | multipart/form-data |

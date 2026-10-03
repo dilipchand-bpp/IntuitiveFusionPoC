@@ -148,7 +148,12 @@ schemas = {
  "Notification": obj({"id": UUID, "title": S, "body": S, "link": S, "read": B, "createdAt": DT}, ["id", "title", "createdAt"]),
  "Delegation": obj({"id": UUID, "userId": UUID, "userName": S, "role": S, "scope": enum("SOURCING_APPROVAL", "CONTRACT_SIGNING", "PUBLISH_PERMISSION"), "maxValue": N, "division": S, "active": B}, ["id", "scope", "maxValue"]),
  "DelegationUpdate": obj({"maxValue": {"type": "number", "minimum": 0}, "active": B}, ["maxValue"]),
- "AdminUser": obj({"id": UUID, "name": S, "email": S, "roles": arr(enum(*ROLES)), "orgUnit": S, "active": B}, ["id", "name", "email", "roles"]),
+ "AdminUser": obj({"id": UUID, "name": S, "email": S, "roles": arr(enum(*ROLES)), "orgUnit": S, "orgUnitId": UUID, "active": B, "awaitingActivation": B}, ["id", "name", "email", "roles"]),
+ "AdminUserUpdate": obj({"name": S, "roles": arr(enum(*ROLES)), "active": B, "orgUnitId": UUID}),
+ "AdminUserCreated": obj({"user": ref("AdminUser"), "activationPath": S, "expiresAt": DT}, ["user", "activationPath"]),
+ "ActivationLink": obj({"activationPath": S, "expiresAt": DT}, ["activationPath"]),
+ "OrgUnit": obj({"id": UUID, "name": S}, ["id", "name"]),
+ "WorkflowUpdate": obj({"name": S, "steps": arr(obj({"label": {"type": "string", "minLength": 1, "maxLength": 60}, "mandatory": B}, ["label", "mandatory"]))}, ["steps"]),
  "DelegationCreate": obj({"scope": enum("SOURCING_APPROVAL", "CONTRACT_SIGNING", "PUBLISH_PERMISSION"), "userId": UUID, "role": enum(*ROLES), "maxValue": {"type": "number", "minimum": 0}, "division": S}, ["scope", "maxValue"]),
  "AlertSettings": obj({"expiry": {"type": "integer", "minimum": 1, "maximum": 365}, "notice": {"type": "integer", "minimum": 1, "maximum": 365}, "extension": {"type": "integer", "minimum": 1, "maximum": 365}, "milestone": {"type": "integer", "minimum": 1, "maximum": 365}}, ["expiry", "notice", "extension", "milestone"]),
  "VarianceLimit": obj({"limitPct": {"type": "integer", "minimum": 5, "maximum": 60}}, ["limitPct"]),
@@ -160,9 +165,9 @@ schemas = {
  "ActivationInfo": obj({"name": S, "email": S, "company": S, "organisation": S, "expiresAt": DT}),
  "ActivationRequest": obj({"token": S, "password": {"type": "string", "minLength": 12}}, ["token", "password"]),
  "WorkloadReport": obj({"today": {"type": "string", "format": "date"}, "owners": arr(obj({"ownerId": UUID, "ownerName": S, "procurements": I, "value": N, "byPhase": {"type": "object", "additionalProperties": {"type": "integer"}}})), "timeline": arr(obj({"requestId": UUID, "number": S, "title": S, "owner": S, "phase": S, "bars": arr(ref("TermBar"))})), "note": S}, ["owners", "timeline"]),
- "AdminUserCreate": obj({"name": S, "email": {"type": "string", "format": "email"}, "role": enum(*ROLES), "orgUnit": S}, ["name", "email", "role"]),
+ "AdminUserCreate": obj({"name": S, "email": {"type": "string", "format": "email"}, "roles": arr(enum(*ROLES)), "orgUnitId": UUID}, ["name", "email", "roles"]),
  "Workflow": obj({"id": S, "name": S, "tier": enum("SIMPLE", "INTERMEDIATE", "COMPLEX"), "steps": arr(obj({"key": S, "label": S, "mandatory": B, "approverRole": S})), "editable": B}, ["id", "name", "steps"]),
- "Template": obj({"id": S, "type": S, "name": S, "version": S, "status": S}, ["id", "type", "name"]),
+ "Template": obj({"id": S, "type": S, "name": S, "version": S, "status": S, "appliesTo": arr(S), "clauses": arr(obj({"id": S, "title": S, "mandatory": B}))}, ["id", "type", "name"]),
  "ComingSoon": obj({"feature": S, "status": enum("COMING_SOON"), "plannedPhase": S, "requirementIds": arr(S)}, ["feature", "status"]),
  "MigrationUpload": obj({"id": UUID, "rowsRead": I, "rowsAccepted": I, "errors": arr(obj({"row": I, "message": S})), "status": enum("VALIDATED", "FAILED")}, ["id", "rowsRead", "rowsAccepted"]),
 }
@@ -281,12 +286,16 @@ ep("GET", "/notifications", "listNotifications", N, "My notifications", "*", Non
 ep("POST", "/notifications/{id}/read", "markRead", N, "Mark read", "*", None, None, 204)
 AD = "Admin"
 ep("GET", "/admin/users", "adminListUsers", AD, "List staff users with their roles (read only; suppliers are not listed)", ["ADMIN"], None, "AdminUser", arrayResp=True)
-ep("POST", "/admin/users", "adminCreateUser", AD, "Create user", ["ADMIN"], "AdminUserCreate", "AdminUser", 201)
+ep("POST", "/admin/users", "adminCreateUser", AD, "Create a staff user with roles; the person sets their own password through a one-time link (shown once). ADMIN cannot be combined with another role", ["ADMIN"], "AdminUserCreate", "AdminUserCreated", 201, note="409 EMAIL_IN_USE; 422 ROLE_COMBINATION")
+ep("PUT", "/admin/users/{id}", "adminUpdateUser", AD, "Change name, roles, organisation unit or active state; a role change or switch-off ends their sessions; not for yourself", ["ADMIN"], "AdminUserUpdate", "AdminUser", note="403 for yourself; 422 ROLE_COMBINATION")
+ep("POST", "/admin/users/{id}/activation-link", "adminActivationLink", AD, "Issue a new one-time activation link (earlier ones stop working)", ["ADMIN"], None, "ActivationLink", 201)
+ep("GET", "/admin/org-units", "adminListOrgUnits", AD, "Organisation units", ["ADMIN"], None, "OrgUnit", arrayResp=True)
 ep("GET", "/admin/delegations", "listDelegations", AD, "Delegations of authority", ["ADMIN", "EXEC"], None, "Delegation", arrayResp=True)
 ep("POST", "/admin/delegations", "createDelegation", AD, "Grant a limit to a person (or role); audited; applies to the next approval or signature", ["ADMIN"], "DelegationCreate", "Delegation", 201, note="409 DELEGATION_EXISTS; 403 for oneself")
 ep("PUT", "/admin/delegations/{id}", "updateDelegation", AD, "Change a threshold or switch it off; audited; effective immediately; the person is notified", ["ADMIN"], "DelegationUpdate", "Delegation")
 ep("GET", "/admin/alert-settings", "getAlertSettings", AD, "Contract alert lead times in days", ["ADMIN"], None, "AlertSettings")
 ep("PUT", "/admin/alert-settings", "setAlertSettings", AD, "Change the lead times; scheduled alerts of executed contracts move at once; audited", ["ADMIN"], "AlertSettings", "AlertSettings")
+ep("PUT", "/admin/workflows/{id}", "updateWorkflow", AD, "Edit the simple workflow (steps, order, optional); a mandatory approval checkpoint must stay. Other workflows answer 409 NOT_EDITABLE (coming soon)", ["ADMIN"], "WorkflowUpdate", "Workflow", note="422 CHECKPOINT_REQUIRED, DUPLICATE_STEP")
 ep("GET", "/admin/workflows", "listWorkflows", AD, "Workflow library", ["ADMIN", "PROCUREMENT"], None, "Workflow", arrayResp=True)
 ep("GET", "/admin/templates", "listTemplates", AD, "Template library (read-only in POC)", ["ADMIN", "PROCUREMENT", "LEGAL"], None, "Template", arrayResp=True)
 M = "Migration"

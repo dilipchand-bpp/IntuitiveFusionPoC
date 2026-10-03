@@ -5665,13 +5665,77 @@
     "tags": [
      "Admin"
     ],
-    "summary": "Create user",
+    "summary": "Create a staff user with roles; the person sets their own password through a one-time link (shown once). ADMIN cannot be combined with another role",
     "parameters": [],
     "x-roles": [
      "ADMIN"
     ],
     "responses": {
      "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminUserCreated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 EMAIL_IN_USE; 422 ROLE_COMBINATION",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUserCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/users/{id}": {
+   "put": {
+    "operationId": "adminUpdateUser",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Change name, roles, organisation unit or active state; a role change or switch-off ends their sessions; not for yourself",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
       "description": "Success",
       "content": {
        "application/json": {
@@ -5700,14 +5764,108 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "403 for yourself; 422 ROLE_COMBINATION",
     "requestBody": {
      "required": true,
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/AdminUserCreate"
+        "$ref": "#/components/schemas/AdminUserUpdate"
        }
       }
+     }
+    }
+   }
+  },
+  "/admin/users/{id}/activation-link": {
+   "post": {
+    "operationId": "adminActivationLink",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Issue a new one-time activation link (earlier ones stop working)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ActivationLink"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/admin/org-units": {
+   "get": {
+    "operationId": "adminListOrgUnits",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Organisation units",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/OrgUnit"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
      }
     }
    }
@@ -5950,6 +6108,70 @@
       "application/json": {
        "schema": {
         "$ref": "#/components/schemas/AlertSettings"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/workflows/{id}": {
+   "put": {
+    "operationId": "updateWorkflow",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Edit the simple workflow (steps, order, optional); a mandatory approval checkpoint must stay. Other workflows answer 409 NOT_EDITABLE (coming soon)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Workflow"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 CHECKPOINT_REQUIRED, DUPLICATE_STEP",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowUpdate"
        }
       }
      }
@@ -10513,7 +10735,14 @@
      "orgUnit": {
       "type": "string"
      },
+     "orgUnitId": {
+      "type": "string",
+      "format": "uuid"
+     },
      "active": {
+      "type": "boolean"
+     },
+     "awaitingActivation": {
       "type": "boolean"
      }
     },
@@ -10523,6 +10752,128 @@
      "name",
      "email",
      "roles"
+    ]
+   },
+   "AdminUserUpdate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "roles": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "enum": [
+        "REQUESTER",
+        "PROCUREMENT",
+        "DELEGATE",
+        "EVALUATOR",
+        "CHAIR",
+        "LEGAL",
+        "CONTRACT_MGR",
+        "PROBITY",
+        "FINANCE",
+        "ADMIN",
+        "EXEC",
+        "SUPPLIER"
+       ]
+      }
+     },
+     "active": {
+      "type": "boolean"
+     },
+     "orgUnitId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false
+   },
+   "AdminUserCreated": {
+    "type": "object",
+    "properties": {
+     "user": {
+      "$ref": "#/components/schemas/AdminUser"
+     },
+     "activationPath": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "user",
+     "activationPath"
+    ]
+   },
+   "ActivationLink": {
+    "type": "object",
+    "properties": {
+     "activationPath": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "activationPath"
+    ]
+   },
+   "OrgUnit": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name"
+    ]
+   },
+   "WorkflowUpdate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "steps": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "label": {
+         "type": "string",
+         "minLength": 1,
+         "maxLength": 60
+        },
+        "mandatory": {
+         "type": "boolean"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "label",
+        "mandatory"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "steps"
     ]
    },
    "DelegationCreate": {
@@ -10899,32 +11250,36 @@
       "type": "string",
       "format": "email"
      },
-     "role": {
-      "type": "string",
-      "enum": [
-       "REQUESTER",
-       "PROCUREMENT",
-       "DELEGATE",
-       "EVALUATOR",
-       "CHAIR",
-       "LEGAL",
-       "CONTRACT_MGR",
-       "PROBITY",
-       "FINANCE",
-       "ADMIN",
-       "EXEC",
-       "SUPPLIER"
-      ]
+     "roles": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "enum": [
+        "REQUESTER",
+        "PROCUREMENT",
+        "DELEGATE",
+        "EVALUATOR",
+        "CHAIR",
+        "LEGAL",
+        "CONTRACT_MGR",
+        "PROBITY",
+        "FINANCE",
+        "ADMIN",
+        "EXEC",
+        "SUPPLIER"
+       ]
+      }
      },
-     "orgUnit": {
-      "type": "string"
+     "orgUnitId": {
+      "type": "string",
+      "format": "uuid"
      }
     },
     "additionalProperties": false,
     "required": [
      "name",
      "email",
-     "role"
+     "roles"
     ]
    },
    "Workflow": {
@@ -10993,6 +11348,30 @@
      },
      "status": {
       "type": "string"
+     },
+     "appliesTo": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "clauses": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "mandatory": {
+         "type": "boolean"
+        }
+       },
+       "additionalProperties": false
+      }
      }
     },
     "additionalProperties": false,
