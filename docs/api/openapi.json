@@ -4047,7 +4047,7 @@
     "tags": [
      "Contracts"
     ],
-    "summary": "System + user alerts",
+    "summary": "Alerts of the contract with their delivery log (due alerts fire first)",
     "parameters": [
      {
       "name": "id",
@@ -4155,6 +4155,58 @@
     }
    }
   },
+  "/alerts": {
+   "get": {
+    "operationId": "listAllAlerts",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "All contract alerts, soonest first (due alerts fire first)",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Alert"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
   "/dashboard/kpis": {
    "get": {
     "operationId": "getKpis",
@@ -4208,7 +4260,7 @@
     "tags": [
      "Reporting"
     ],
-    "summary": "Contracts expiring within N days (default 90)",
+    "summary": "Executed contracts ending within N days (default 90), soonest first, with the term and optional extensions for the Gantt chart",
     "parameters": [
      {
       "name": "days",
@@ -8179,6 +8231,9 @@
        "$ref": "#/components/schemas/ContractDeviation"
       }
      },
+     "record": {
+      "$ref": "#/components/schemas/ContractRecord"
+     },
      "chain": {
       "type": "array",
       "items": {
@@ -8293,6 +8348,23 @@
        "SYSTEM",
        "USER"
       ]
+     },
+     "sentAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "contractNumber": {
+      "type": "string"
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "deliveries": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/AlertDelivery"
+      }
      }
     },
     "additionalProperties": false,
@@ -8302,6 +8374,118 @@
      "kind",
      "triggerDate"
     ]
+   },
+   "AlertDelivery": {
+    "type": "object",
+    "properties": {
+     "channel": {
+      "type": "string",
+      "enum": [
+       "IN_APP",
+       "EMAIL"
+      ]
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "DELIVERED",
+       "SIMULATED"
+      ]
+     },
+     "deliveredAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "channel",
+     "status",
+     "deliveredAt"
+    ]
+   },
+   "TermBar": {
+    "type": "object",
+    "properties": {
+     "label": {
+      "type": "string"
+     },
+     "start": {
+      "type": "string",
+      "format": "date"
+     },
+     "end": {
+      "type": "string",
+      "format": "date"
+     },
+     "optional": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "label",
+     "start",
+     "end",
+     "optional"
+    ]
+   },
+   "ContractRecord": {
+    "type": "object",
+    "properties": {
+     "owner": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "format": "uuid"
+       },
+       "name": {
+        "type": "string"
+       }
+      },
+      "additionalProperties": false
+     },
+     "milestones": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "title": {
+         "type": "string"
+        },
+        "dueDate": {
+         "type": "string",
+         "format": "date"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "extensions": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/TermBar"
+      }
+     },
+     "bars": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/TermBar"
+      }
+     },
+     "alerts": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Alert"
+      }
+     }
+    },
+    "additionalProperties": false
    },
    "AlertCreate": {
     "type": "object",
@@ -8410,10 +8594,27 @@
      "number": {
       "type": "string"
      },
+     "title": {
+      "type": "string"
+     },
      "supplier": {
       "type": "string"
      },
+     "value": {
+      "type": "number"
+     },
+     "owner": {
+      "type": "string"
+     },
+     "startDate": {
+      "type": "string",
+      "format": "date"
+     },
      "endDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "noticeDeadline": {
       "type": "string",
       "format": "date"
      },
@@ -8427,9 +8628,19 @@
        "properties": {
         "months": {
          "type": "integer"
+        },
+        "endDate": {
+         "type": "string",
+         "format": "date"
         }
        },
        "additionalProperties": false
+      }
+     },
+     "bars": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/TermBar"
       }
      }
     },

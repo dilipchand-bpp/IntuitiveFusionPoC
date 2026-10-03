@@ -147,3 +147,11 @@ export const CONTRACT_STATUS: Record<string, [string, BadgeTone]> = {
   PARTIALLY_SIGNED: ['Partly signed', 'warning'],
   EXECUTED: ['Executed and locked', 'success'],
 };
+
+export const ALERT_KIND: Record<string, string> = {
+  NOTICE: 'Notice deadline approaching',
+  EXPIRY: 'Contract expiry',
+  EXTENSION: 'Extension decision',
+  MILESTONE: 'Milestone',
+  CUSTOM: 'Custom reminder',
+};

@@ -14,11 +14,14 @@ import { checkSod } from '../../authz/sod.js';
 import { withContext, type Tx } from '../../db/client.js';
 import {
   alert,
+  alertDelivery,
   appUser,
   approval,
   clause,
   consensusItem,
   contract,
+  contractExtension,
+  contractMilestone,
   evaluation,
   fieldValue,
   notification,
@@ -30,6 +33,8 @@ import {
   tenant,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { addDays, addMonths, daysBetween, iso, termBars } from './dates.js';
+import { AlertService, createContractRecord } from './record.js';
 import { EvaluationService } from '../evaluation/service.js';
 import {
   assembleClauses,
@@ -44,6 +49,7 @@ import {
 export interface ContractDeps extends GuardDeps {
   clock: Clock;
   audit: AuditService;
+  schedulerMinutes?: number | undefined;
 }
 
 const uuid = z.string().uuid();
@@ -88,18 +94,19 @@ const signBody = z
   .strict();
 const deleteBody = z.object({ reason: z.string().trim().min(10).max(1000) }).strict();
 
-const addMonths = (iso: string, m: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + m);
-  return d.toISOString().slice(0, 10);
-};
-const addDays = (iso: string, n: number) =>
-  new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
-
 export function registerContractRoutes(app: FastifyInstance, p: string, d: ContractDeps): Set<string> {
   const done = new Set<string>();
   const reg = (m: string, path: string) => done.add(`${m} ${path}`);
   const evals = new EvaluationService(d.clock, d.audit);
+  const alerts = new AlertService(d.clock, d.audit);
+  if (d.schedulerMinutes) {
+    const h = setInterval(
+      () => void alerts.runDue(d.database).catch(() => undefined),
+      d.schedulerMinutes * 60_000,
+    );
+    h.unref();
+    app.addHook('onClose', async () => clearInterval(h));
+  }
   const cid = (req: FastifyRequest) => parse(z.object({ id: uuid }), req.params).id;
 
   async function notifyRoles(
@@ -184,7 +191,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         : null;
     const body = tpl?.body as Partial<TemplateBody> | undefined;
     const lib = body?.clauses ? assembleClauses(body as TemplateBody, facts) : [];
-    return { facts, lib };
+    return { facts, lib, tpl };
   }
 
   /** Signatures still in force, with names. Superseded ones (after a return to legal) are not counted. */
@@ -249,6 +256,70 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     };
   }
 
+  /** The management record: owner, milestones, extensions with their end dates, and the alerts with their delivery log. */
+  async function recordOf(tx: Tx, c: typeof contract.$inferSelect) {
+    const [owner] = c.ownerId
+      ? await tx.select({ id: appUser.id, name: appUser.name }).from(appUser).where(eq(appUser.id, c.ownerId))
+      : [];
+    const milestones = await tx
+      .select()
+      .from(contractMilestone)
+      .where(eq(contractMilestone.contractId, c.id))
+      .orderBy(asc(contractMilestone.dueDate));
+    const ext = await tx
+      .select()
+      .from(contractExtension)
+      .where(eq(contractExtension.contractId, c.id))
+      .orderBy(asc(contractExtension.position));
+    const months = ext.map((e) => e.months);
+    const list = await tx
+      .select()
+      .from(alert)
+      .where(eq(alert.contractId, c.id))
+      .orderBy(asc(alert.triggerDate));
+    const deliveries = list.length
+      ? await tx
+          .select()
+          .from(alertDelivery)
+          .where(
+            inArray(
+              alertDelivery.alertId,
+              list.map((x) => x.id),
+            ),
+          )
+      : [];
+    const bars = c.startDate && c.endDate ? termBars(c.startDate, c.endDate, months) : [];
+    return {
+      owner: owner ?? null,
+      milestones: milestones.map((m) => ({ id: m.id, title: m.title, dueDate: m.dueDate })),
+      extensions: bars.filter((b) => b.optional),
+      bars,
+      alerts: list.map((x) =>
+        alertView(
+          x,
+          deliveries.filter((y) => y.alertId === x.id),
+        ),
+      ),
+    };
+  }
+  function alertView(x: typeof alert.$inferSelect, dl: Array<typeof alertDelivery.$inferSelect>) {
+    return {
+      id: x.id,
+      contractId: x.contractId,
+      kind: x.kind,
+      triggerDate: x.triggerDate,
+      recipientRule: x.recipientRule,
+      status: x.status,
+      origin: x.origin,
+      sentAt: x.sentAt?.toISOString() ?? null,
+      deliveries: dl.map((y) => ({
+        channel: y.channel,
+        status: y.status,
+        deliveredAt: y.deliveredAt.toISOString(),
+      })),
+    };
+  }
+
   async function view(tx: Tx, a: AuthContext, c: typeof contract.$inferSelect) {
     const base = await summary(tx, a.user.tenantId, c);
     const clauses = await tx.select().from(clause).where(eq(clause.contractId, c.id)).orderBy(asc(clause.id));
@@ -289,8 +360,10 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
               : `This contract (${aud.format(Number(c.value))}) is above your signing authority of ${aud.format(del.limit)}`;
       }
     }
+    const record = await recordOf(tx, c);
     return {
       ...base,
+      record,
       clauses: ordered.map((k) => ({
         id: k.clauseId,
         title: k.title,
@@ -331,6 +404,100 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     return c;
   }
   const locked = () => new AppError(423, 'CONTRACT_LOCKED', 'This contract is executed and locked');
+
+  // ------------------------------------------------------------ alerts and expiry (M11)
+  const MANAGERS: RoleName[] = ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'];
+
+  reg('GET', '/contracts/{id}/alerts');
+  app.get(`${p}/contracts/:id/alerts`, { preHandler: guard(d, MANAGERS) }, async (req) => {
+    const a = req.auth!;
+    const id = cid(req);
+    await alerts.runDue(d.database);
+    return withContext(d.database, a.ctx, async (tx) => {
+      const c = await load(tx, a, id);
+      return (await recordOf(tx, c)).alerts;
+    });
+  });
+
+  reg('GET', '/alerts');
+  app.get(`${p}/alerts`, { preHandler: guard(d, MANAGERS) }, async (req) => {
+    const a = req.auth!;
+    const q = parse(z.object({ status: z.enum(['SCHEDULED', 'SENT', 'CANCELLED']).optional() }), req.query);
+    await alerts.runDue(d.database);
+    return withContext(d.database, a.ctx, async (tx) => {
+      const rows = await tx
+        .select({ a: alert, number: contract.number, endDate: contract.endDate })
+        .from(alert)
+        .innerJoin(contract, eq(contract.id, alert.contractId))
+        .where(and(eq(alert.tenantId, a.user.tenantId), isNull(contract.deletedAt)))
+        .orderBy(asc(alert.triggerDate));
+      const dl = rows.length
+        ? await tx
+            .select()
+            .from(alertDelivery)
+            .where(
+              inArray(
+                alertDelivery.alertId,
+                rows.map((r) => r.a.id),
+              ),
+            )
+        : [];
+      return rows
+        .filter((r) => !q.status || r.a.status === q.status)
+        .map((r) => ({
+          ...alertView(
+            r.a,
+            dl.filter((y) => y.alertId === r.a.id),
+          ),
+          contractNumber: r.number,
+          endDate: r.endDate,
+        }));
+    });
+  });
+
+  reg('GET', '/reports/expiring-contracts');
+  app.get(`${p}/reports/expiring-contracts`, { preHandler: guard(d, MANAGERS) }, async (req) => {
+    const a = req.auth!;
+    const q = parse(z.object({ days: z.coerce.number().int().min(1).max(3650).default(90) }), req.query);
+    const today = iso(d.clock.now());
+    const horizon = addDays(today, q.days);
+    return withContext(d.database, a.ctx, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(contract)
+        .where(
+          and(
+            eq(contract.tenantId, a.user.tenantId),
+            eq(contract.status, 'EXECUTED'),
+            isNull(contract.deletedAt),
+          ),
+        );
+      const out = [];
+      for (const c of rows) {
+        if (!c.endDate || c.endDate < today || c.endDate > horizon) continue;
+        const s = await summary(tx, a.user.tenantId, c);
+        const rec = await recordOf(tx, c);
+        out.push({
+          contractId: c.id,
+          number: c.number,
+          title: s.title,
+          supplier: s.supplierName,
+          value: s.value,
+          owner: rec.owner?.name ?? null,
+          startDate: c.startDate,
+          endDate: c.endDate,
+          noticeDeadline: addDays(c.endDate, -c.noticeDays),
+          daysRemaining: daysBetween(today, c.endDate),
+          optionalExtensions: rec.extensions.map((e) => ({
+            months: Number(/\((\d+) months\)/.exec(e.label)?.[1] ?? 0),
+            endDate: e.end,
+          })),
+          bars: rec.bars,
+        });
+      }
+      return out.sort((x, y) => x.daysRemaining - y.daysRemaining);
+    });
+  });
 
   // ------------------------------------------------------------ awards waiting for a contract
   reg('GET', '/contracts/awards');
@@ -445,7 +612,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
 
       const today = d.clock.now().toISOString().slice(0, 10);
       const start = body.startDate ?? addDays(today, 14);
-      const end = body.endDate ?? addDays(addMonths(start, l.req.termMonths ?? 12), 0);
+      const end = body.endDate ?? addMonths(start, l.req.termMonths ?? 12);
       if (end <= start)
         throw new AppError(400, 'VALIDATION_FAILED', 'The end date must be after the start date', [
           { field: 'endDate', message: 'Must be after the start date' },
@@ -807,23 +974,12 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           .update(contract)
           .set({ status: 'EXECUTED', locked: true, updatedAt: now, version: c.version + 1 })
           .where(eq(contract.id, id));
-        const end = c.endDate!;
-        await tx.insert(alert).values([
-          {
-            tenantId: a.user.tenantId,
-            contractId: id,
-            kind: 'NOTICE',
-            triggerDate: addDays(end, -(c.noticeDays + 60)),
-            origin: 'SYSTEM',
-          },
-          {
-            tenantId: a.user.tenantId,
-            contractId: id,
-            kind: 'EXPIRY',
-            triggerDate: addDays(end, -60),
-            origin: 'SYSTEM',
-          },
-        ]);
+        // US-CMG-01/02: the management record (owner, milestones, optional extensions) and the system alerts
+        const { tpl } = await templateClauses(tx, a.user.tenantId, c);
+        const record = await createContractRecord(tx, c, {
+          extensions: (tpl?.body as Partial<TemplateBody> | undefined)?.extensions ?? [],
+          today: now.toISOString().slice(0, 10),
+        });
         await d.audit.record(tx, a.ctx, {
           action: 'contract.sign',
           entityType: 'contract',
@@ -834,7 +990,13 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           action: 'contract.execute',
           entityType: 'contract',
           entityId: id,
-          after: { number: c.number, locked: true },
+          after: {
+            number: c.number,
+            locked: true,
+            ownerId: record.ownerId,
+            milestones: record.milestones.length,
+            alerts: record.alerts.length,
+          },
         });
         await notifyRoles(
           tx,

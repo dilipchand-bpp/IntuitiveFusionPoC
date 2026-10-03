@@ -31,6 +31,8 @@ export interface AppDeps {
   clock: Clock;
   /** Override for tests; production uses the default (10 attempts per 15 minutes per IP). */
   loginRateLimitMax?: number;
+  /** Minutes between background alert runs (production only; alerts also fire when the alert pages are read). */
+  alertSchedulerMinutes?: number;
   idp?: IdentityProvider;
   ai?: AiProvider;
   erp?: ErpBudgetService;
@@ -139,7 +141,11 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   }))
     implemented.add(k);
   for (const k of registerEvaluationRoutes(app, API_PREFIX, { ...guardDeps, store })) implemented.add(k);
-  for (const k of registerContractRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerContractRoutes(app, API_PREFIX, {
+    ...guardDeps,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+  }))
+    implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

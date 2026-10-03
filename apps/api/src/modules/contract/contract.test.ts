@@ -440,7 +440,7 @@ describe('US-CON-03 release and sign under separate signing authority', () => {
     const alerts = await withSystem(database, (tx) =>
       tx.select().from(s.alert).where(eq(s.alert.contractId, d.c.id)),
     );
-    expect(alerts.map((x) => x.kind).sort()).toEqual(['EXPIRY', 'NOTICE']);
+    expect(alerts.map((x) => x.kind)).toEqual(expect.arrayContaining(['EXPIRY', 'NOTICE']));
     expect(
       (await call('delegate', 'POST', `/contracts/${d.c.id}/sign`, { decision: 'APPROVE' })).statusCode,
     ).toBe(423);

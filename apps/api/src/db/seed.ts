@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import { AuditService } from '../audit/audit-service.js';
 import { SERVICES_TEMPLATE, WORKS_TEMPLATE } from '../modules/contract/clauses.js';
+import { createContractRecord } from '../modules/contract/record.js';
 import { demoPricingSchedule, demoTechnicalResponse } from './demo-documents.js';
 import { TENDER_FIELDS } from '../modules/tender/fields.js';
 import { sha256, type SealedStore } from '../modules/tender/files.js';
@@ -745,21 +746,12 @@ export async function seedDatabase(
         stamp: `SIGNED · Dana Okafor · DELEGATE · ${dateOnly(c.start)} 09:00 UTC`,
         decidedAt: c.start,
       });
-      const noticeDate = new Date(c.end.getTime() - (c.notice + 60) * 86_400_000);
-      await tx.insert(s.alert).values({
-        tenantId: TENANT_ID,
-        contractId: id,
-        kind: 'NOTICE',
-        triggerDate: dateOnly(noticeDate),
-        status: noticeDate < now ? 'SENT' : 'SCHEDULED',
-        origin: 'SYSTEM',
-      });
-      await tx.insert(s.alert).values({
-        tenantId: TENANT_ID,
-        contractId: id,
-        kind: 'EXPIRY',
-        triggerDate: dateOnly(new Date(c.end.getTime() - 60 * 86_400_000)),
-        origin: 'SYSTEM',
+      const [row] = await tx.select().from(s.contract).where(eq(s.contract.id, id));
+      await createContractRecord(tx, row!, {
+        extensions: SERVICES_TEMPLATE.extensions ?? [],
+        today: dateOnly(now),
+        pastAsSent: true,
+        ownerId: userId('contract-mgr'),
       });
       await log(
         'contract.sign',

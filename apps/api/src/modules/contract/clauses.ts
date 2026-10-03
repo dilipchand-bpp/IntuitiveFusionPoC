@@ -12,6 +12,8 @@ export interface LibraryClause {
 
 export interface TemplateBody {
   appliesTo: string[];
+  /** Optional extensions in months, offered to the customer at the end of the initial term. */
+  extensions?: number[];
   clauses: LibraryClause[];
 }
 
@@ -127,6 +129,7 @@ export function nextNumber(year: number, existing: string[]): string {
 /** The standard clause libraries seeded as templates. */
 export const SERVICES_TEMPLATE: TemplateBody = {
   appliesTo: ['RFP', 'RFQ'],
+  extensions: [12],
   clauses: [
     {
       id: 'PARTIES',
@@ -181,6 +184,7 @@ export const SERVICES_TEMPLATE: TemplateBody = {
 
 export const WORKS_TEMPLATE: TemplateBody = {
   appliesTo: ['RFT'],
+  extensions: [6],
   clauses: [
     {
       id: 'PARTIES',

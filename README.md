@@ -54,6 +54,10 @@ The seeded tender "Facilities cleaning services" is already at the consensus sta
 
 Sign in as `legal@...` and open **Contracts**: two executed, locked contracts are seeded (open one: no edit buttons, signature stamp shown). When an evaluation report has been approved (the browser tests create one by API) the award appears under Awards ready for a contract; **Draft contract** assembles the template for the tender route (RFT = works, RFP/RFQ = services) with the winner, value, dates and service levels filled in. Legal edits clauses (a change is marked and listed under deviations), then releases for signing. `delegate@...` signs with a stamp and the contract is locked. Signing authority is a separate grant from sourcing approval: above 1,000,000 an executive must co-sign, and `exec@...` holds no signing delegation in the seed, so such a contract cannot be completed in the demo until one is delegated. The contract value defaults to the request estimate because bid prices are not captured.
 
+## Try contract management
+
+Sign in as `contract-mgr@...` and open **Contracts**: **Expiring contracts** lists what ends in the next 90 days (CT-2026-0001 ends in 74 days) with a term chart including the optional extension; **Alerts** lists every alert. Open a contract to see its owner, milestones and alerts. When a contract is signed and locked its record and alerts are created automatically; alerts fire on their date (the browser tests cannot change the date, the API tests travel in time). Email is simulated. Existing dev databases need `npm run db:reset`.
+
 ## Checks
 
 ```bash

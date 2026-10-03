@@ -84,3 +84,10 @@ This page lists the swap points that exist **today**; later milestones append to
 | --- | --- |
 | Today | Mock: signing is an authenticated, authority-checked click that stores an approval stamp (name, role, UTC time) in `approval` (subject type CONTRACT). Not a certified or legally verifiable signature |
 | Swap | Replace the stamp creation in `modules/contract/routes.ts` (`POST /contracts/{id}/sign`) with a call to an e-signature provider (for example DocuSign or Adobe Acrobat Sign); keep the signing-authority check and the lock-on-execution step |
+
+## Email delivery of alerts (M11)
+
+| | |
+| --- | --- |
+| Today | Alert emails are recorded in `alert_delivery` with status SIMULATED; nothing leaves the server. The in-app notification is real |
+| Swap | Replace the EMAIL branch in `AlertService.runDue` (`modules/contract/record.ts`) with a mail provider (for example Amazon SES) and record DELIVERED or FAILED; keep the compare-and-set that makes each alert fire once |

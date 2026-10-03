@@ -14,6 +14,7 @@ try {
     database,
     clock: systemClock,
     loginRateLimitMax: config.LOGIN_RATE_LIMIT_MAX,
+    alertSchedulerMinutes: 15,
   });
   await app.listen({ port: config.API_PORT, host: '0.0.0.0' });
 } catch (e) {

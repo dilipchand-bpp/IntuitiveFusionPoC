@@ -10,6 +10,8 @@ export const metadata = { title: 'Contracts – Intuitive Fusion' };
 export default async function ContractsPage() {
   const user = await getSessionUser();
   const drafter = user?.roles.some((r) => r === 'LEGAL' || r === 'PROCUREMENT') ?? false;
+  const manager =
+    user?.roles.some((r) => ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'].includes(r)) ?? false;
   const [contracts, awards] = await Promise.all([
     apiGet<ContractSummary[]>('/contracts'),
     drafter ? apiGet<ContractAward[]>('/contracts/awards') : Promise.resolve(null),
@@ -23,6 +25,22 @@ export default async function ContractsPage() {
           A contract is drafted from the approved evaluation report, reviewed by legal, then signed by people
           who hold signing authority. Once signed it is locked.
         </p>
+        {manager && (
+          <nav aria-label="Contract management" className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/app/contracts/expiring"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              Expiring contracts
+            </Link>
+            <Link
+              href="/app/contracts/alerts"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              Alerts
+            </Link>
+          </nav>
+        )}
       </header>
 
       {waiting.length > 0 && (

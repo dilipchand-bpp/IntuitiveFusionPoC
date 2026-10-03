@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Badge, Button, Card, Dialog, Field, Input, Stepper, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
+import { ManagementCard } from './management-card';
 import type { ContractView } from './types';
 
 const STEPS = ['Draft', 'Legal review', 'Signing', 'Executed'];
@@ -196,6 +197,8 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
               ))}
             </ol>
           </Card>
+
+          {c.status === 'EXECUTED' && <ManagementCard record={c.record} />}
 
           <Card aria-labelledby="dev-h" role="region">
             <h2 id="dev-h" className="font-heading text-xl font-bold">

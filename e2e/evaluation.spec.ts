@@ -734,3 +734,56 @@ test.describe('contract award: legal drafts and edits, the delegate signs, the c
     expect((await page.goto('/app/contracts'))?.status()).toBe(403);
   });
 });
+
+// ---------------------------------------------------------------- M11: contract management
+test.describe('contract management: record, alerts, expiring contracts and the Gantt chart', () => {
+  test('the expiring list shows only what ends in the window, with the term chart; a longer window adds more', async ({
+    page,
+  }) => {
+    await signIn(page, 'contract-mgr');
+    await page.goto('/app/contracts');
+    await page.getByRole('link', { name: 'Expiring contracts' }).click();
+    const table = page.getByRole('table', { name: 'Contracts expiring' });
+    await expect(table.getByRole('row', { name: /CT-2026-0001/ })).toContainText('Sofia Rossi');
+    await expect(table.getByRole('row', { name: /CT-2026-0002/ })).toHaveCount(0);
+    await expect(page.getByTestId('gantt')).toContainText('Option 1 (12 months)');
+    await page.getByRole('link', { name: '730 days' }).click();
+    await expect(table.getByRole('row', { name: /CT-2026-0002/ })).toBeVisible();
+    const scan = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(scan.violations).toEqual([]);
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
+  test('an executed contract shows its record: owner, milestones, extension and the alerts with their state', async ({
+    page,
+  }) => {
+    await signIn(page, 'contract-mgr');
+    await page.goto('/app/contracts');
+    await page.getByRole('link', { name: 'CT-2026-0001' }).click();
+    const card = page.getByTestId('management-card');
+    await expect(card.getByTestId('owner')).toHaveText('Sofia Rossi');
+    await expect(card).toContainText('Mid-term review');
+    await expect(card).toContainText('Option 1 (12 months)');
+    const alerts = card.getByTestId('alerts');
+    await expect(alerts).toContainText('Notice deadline approaching');
+    await expect(alerts.getByText('Sent').first()).toBeVisible(); // the notice date has passed
+    await expect(alerts.getByText('Scheduled').first()).toBeVisible(); // the expiry warning is still ahead
+    const scan = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(scan.violations).toEqual([]);
+  });
+
+  test('the alert list shows every alert; people outside contract management cannot open it', async ({
+    page,
+  }) => {
+    await signIn(page, 'procurement');
+    await page.goto('/app/contracts/alerts');
+    const table = page.getByRole('table', { name: 'Alerts' });
+    await expect(table.getByRole('row', { name: /CT-2026-0001.*Contract expiry/ })).toBeVisible();
+    for (const who of ['finance', 'delegate', 'evaluator-tech']) {
+      await signIn(page, who);
+      expect((await page.goto('/app/contracts/alerts'))?.status(), who).toBe(403);
+      expect((await page.goto('/app/contracts/expiring'))?.status(), who).toBe(403);
+    }
+  });
+});

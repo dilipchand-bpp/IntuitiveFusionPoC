@@ -447,6 +447,7 @@ export const contract = pgTable('contract', {
   endDate: date('end_date'),
   noticeDays: integer('notice_days').notNull().default(90),
   locked: boolean('locked').notNull().default(false),
+  ownerId: uuid('owner_id'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }), // logical delete only (NFR-CA02)
   createdAt: created(),
   updatedAt: updated(),
@@ -478,6 +479,32 @@ export const alert = pgTable('alert', {
     .notNull()
     .default('SYSTEM'),
   sentAt: timestamp('sent_at', { withTimezone: true }),
+});
+
+export const contractMilestone = pgTable('contract_milestone', {
+  id: id(),
+  tenantId: tenantId(),
+  contractId: uuid('contract_id').notNull(),
+  title: text('title').notNull(),
+  dueDate: date('due_date').notNull(),
+});
+
+export const contractExtension = pgTable('contract_extension', {
+  id: id(),
+  tenantId: tenantId(),
+  contractId: uuid('contract_id').notNull(),
+  months: integer('months').notNull(),
+  position: integer('position').notNull().default(1),
+});
+
+export const alertDelivery = pgTable('alert_delivery', {
+  id: id(),
+  tenantId: tenantId(),
+  alertId: uuid('alert_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  channel: text('channel', { enum: ['IN_APP', 'EMAIL'] }).notNull(),
+  status: text('status', { enum: ['DELIVERED', 'SIMULATED'] }).notNull(),
+  deliveredAt: timestamp('delivered_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const notification = pgTable('notification', {

@@ -49,6 +49,7 @@ export interface ContractView extends ContractSummary {
     stamp: string | null;
   }>;
   chain: Array<{ role: string; label: string; signedBy: string | null; stamp: string | null }>;
+  record: ContractRecord;
   permissions: {
     canEdit: boolean;
     canEditTerms: boolean;
@@ -57,4 +58,44 @@ export interface ContractView extends ContractSummary {
     signBlocked: string | null;
     canDelete: boolean;
   };
+}
+
+export interface TermBar {
+  label: string;
+  start: string;
+  end: string;
+  optional: boolean;
+}
+
+export interface AlertRow {
+  id: string;
+  contractId: string;
+  kind: 'EXPIRY' | 'NOTICE' | 'MILESTONE' | 'EXTENSION' | 'CUSTOM';
+  triggerDate: string;
+  status: 'SCHEDULED' | 'SENT' | 'CANCELLED';
+  sentAt: string | null;
+  contractNumber?: string;
+  deliveries: Array<{ channel: 'IN_APP' | 'EMAIL'; status: 'DELIVERED' | 'SIMULATED'; deliveredAt: string }>;
+}
+
+export interface ContractRecord {
+  owner: { id: string; name: string } | null;
+  milestones: Array<{ id: string; title: string; dueDate: string }>;
+  extensions: TermBar[];
+  bars: TermBar[];
+  alerts: AlertRow[];
+}
+
+export interface ExpiringContract {
+  contractId: string;
+  number: string;
+  title: string | null;
+  supplier: string;
+  value: number;
+  owner: string | null;
+  startDate: string;
+  endDate: string;
+  noticeDeadline: string;
+  daysRemaining: number;
+  bars: TermBar[];
 }
