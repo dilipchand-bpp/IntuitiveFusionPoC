@@ -1458,6 +1458,96 @@
     }
    }
   },
+  "/tenders/{id}/pack/pdf": {
+   "get": {
+    "operationId": "exportTenderPackPdf",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "The tender pack as a PDF with status, version and timestamp (US-TND-05)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "application/pdf"
+   }
+  },
+  "/tenders/{id}/pack/docx": {
+   "get": {
+    "operationId": "exportTenderPackDocx",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "The tender pack as a Word document",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Word .docx"
+   }
+  },
   "/tenders/{id}": {
    "get": {
     "operationId": "getTender",
@@ -2429,13 +2519,56 @@
     "description": "409 after close"
    }
   },
+  "/suppliers": {
+   "get": {
+    "operationId": "listSuppliers",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Supplier directory with sanctions and insurance status",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Supplier"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
   "/suppliers/{id}": {
    "get": {
     "operationId": "getSupplier",
     "tags": [
      "SupplierPortal"
     ],
-    "summary": "Supplier profile with sanctions/insurance status",
+    "summary": "Supplier profile: status, contacts, tenders bid on, contracts held",
     "parameters": [
      {
       "name": "id",
@@ -2459,7 +2592,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Supplier"
+         "$ref": "#/components/schemas/SupplierProfile"
         }
        }
       }
@@ -2475,6 +2608,156 @@
      },
      "404": {
       "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/contacts": {
+   "post": {
+    "operationId": "addSupplierContact",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "A buyer adds a contact to an existing supplier; returns a one-time activation link (no email is sent in the proof of concept)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierContactAdded"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 EMAIL_IN_USE",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierContactCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/activate/{token}": {
+   "get": {
+    "operationId": "getActivation",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Look up an activation link (one generic 404 for unknown, used or expired)",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ActivationInfo"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/supplier/activate": {
+   "post": {
+    "operationId": "activateContact",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Set a password with a one-time activation link",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Message"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ActivationRequest"
+       }
+      }
      }
     }
    }
@@ -3173,6 +3456,180 @@
     }
    }
   },
+  "/evaluations/{id}/variance-limit": {
+   "put": {
+    "operationId": "setVarianceLimit",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Chair sets the variance limit (5 to 60 percent) before consensus opens",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 once consensus has opened",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VarianceLimit"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity-signoff": {
+   "post": {
+    "operationId": "probitySignoff",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Probity advisor records that the process was followed (after the lock); a record, not a gate on the award",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 before the lock or if already signed off",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProbitySignoff"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/report/docx": {
+   "get": {
+    "operationId": "exportReportDocx",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The evaluation report as a Word document (same content as the PDF)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "LEGAL",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 until a report exists"
+   }
+  },
   "/evaluations/{id}/consensus/reopen": {
    "post": {
     "operationId": "reopenConsensus",
@@ -3843,6 +4300,411 @@
     }
    }
   },
+  "/contracts/{id}/milestones": {
+   "put": {
+    "operationId": "setContractMilestones",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Replace the milestones of an executed contract (within its term); scheduled reminders follow",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 MILESTONE_OUTSIDE_TERM",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractMilestones"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/extensions": {
+   "put": {
+    "operationId": "setContractExtensions",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Replace the optional extensions (months) of an executed contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractExtensions"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/owner": {
+   "put": {
+    "operationId": "setContractOwner",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Change the contract owner to a contract manager",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 NOT_A_CONTRACT_MANAGER",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractOwner"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/variations": {
+   "post": {
+    "operationId": "createVariation",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Create a variation of an executed contract: a child contract with cumulative value tracking, drafted, reviewed and signed like any contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 VARIATION_OPEN; 422 EMPTY_VARIATION; signing authority is judged on the cumulative value",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VariationCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/deviations/{clauseId}/risk": {
+   "put": {
+    "operationId": "setDeviationRisk",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Legal amends the proposed risk rating of a deviation",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "clauseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeviationRisk"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/deviations/{clauseId}/decision": {
+   "post": {
+    "operationId": "decideDeviation",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "A delegate approves or rejects a deviation; a mandatory or high-risk change must be approved before release",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "clauseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    }
+   }
+  },
   "/contracts/{id}/clauses/{clauseId}": {
    "put": {
     "operationId": "updateClause",
@@ -4098,7 +4960,7 @@
     "tags": [
      "Contracts"
     ],
-    "summary": "Create alert from plain-language instruction",
+    "summary": "Create a custom alert from a plain-language instruction such as: alert me 1 year before expiry and include whoever is my manager then. The recipients are resolved when it fires",
     "parameters": [
      {
       "name": "id",
@@ -4111,7 +4973,10 @@
      }
     ],
     "x-roles": [
-     "CONTRACT_MGR"
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC"
     ],
     "responses": {
      "201": {
@@ -4119,7 +4984,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Alert"
+         "$ref": "#/components/schemas/AlertCreated"
         }
        }
       }
@@ -4143,6 +5008,7 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "422 ALERT_NOT_UNDERSTOOD explains what to type",
     "requestBody": {
      "required": true,
      "content": {
@@ -4524,13 +5390,51 @@
     "description": "text/csv; 422 above 20,000 rows"
    }
   },
+  "/reports/workload": {
+   "get": {
+    "operationId": "workloadReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Procurements and value per owner, and a timeline of each active procurement",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkloadReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
   "/reports/spend": {
    "get": {
     "operationId": "spendReport",
     "tags": [
      "Reporting"
     ],
-    "summary": "Spend by category: pipeline (active requests) and committed (executed contracts)",
+    "summary": "Spend by category (with drill-down) and by supplier; pipeline (active requests), committed (executed contracts and variations) and off-contract spend",
     "parameters": [],
     "x-roles": [
      "EXEC",
@@ -4723,7 +5627,7 @@
     "tags": [
      "Admin"
     ],
-    "summary": "List users",
+    "summary": "List staff users with their roles (read only; suppliers are not listed)",
     "parameters": [],
     "x-roles": [
      "ADMIN"
@@ -4847,6 +5751,58 @@
       "$ref": "#/components/responses/E404"
      }
     }
+   },
+   "post": {
+    "operationId": "createDelegation",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Grant a limit to a person (or role); audited; applies to the next approval or signature",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Delegation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 DELEGATION_EXISTS; 403 for oneself",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DelegationCreate"
+       }
+      }
+     }
+    }
    }
   },
   "/admin/delegations/{id}": {
@@ -4855,7 +5811,7 @@
     "tags": [
      "Admin"
     ],
-    "summary": "Change threshold; audited",
+    "summary": "Change a threshold or switch it off; audited; effective immediately; the person is notified",
     "parameters": [
      {
       "name": "id",
@@ -4906,6 +5862,94 @@
       "application/json": {
        "schema": {
         "$ref": "#/components/schemas/DelegationUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/alert-settings": {
+   "get": {
+    "operationId": "getAlertSettings",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Contract alert lead times in days",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertSettings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setAlertSettings",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Change the lead times; scheduled alerts of executed contracts move at once; audited",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertSettings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AlertSettings"
        }
       }
      }
@@ -8151,6 +9195,29 @@
      "mandatory": {
       "type": "boolean"
      },
+     "risk": {
+      "type": "string",
+      "enum": [
+       "LOW",
+       "MEDIUM",
+       "HIGH"
+      ]
+     },
+     "decision": {
+      "type": "string",
+      "nullable": true,
+      "enum": [
+       "APPROVED",
+       "REJECTED",
+       null
+      ]
+     },
+     "decidedBy": {
+      "type": "string"
+     },
+     "stamp": {
+      "type": "string"
+     },
      "templateText": {
       "type": "string"
      },
@@ -8163,6 +9230,141 @@
      "clauseId",
      "templateText",
      "currentText"
+    ]
+   },
+   "ContractMilestones": {
+    "type": "object",
+    "properties": {
+     "milestones": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "title": {
+         "type": "string"
+        },
+        "dueDate": {
+         "type": "string",
+         "format": "date"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "title",
+        "dueDate"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "milestones"
+    ]
+   },
+   "ContractExtensions": {
+    "type": "object",
+    "properties": {
+     "extensions": {
+      "type": "array",
+      "items": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 60
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "extensions"
+    ]
+   },
+   "ContractOwner": {
+    "type": "object",
+    "properties": {
+     "ownerId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "ownerId"
+    ]
+   },
+   "VariationCreate": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000
+     },
+     "value": {
+      "type": "number",
+      "minimum": 0
+     },
+     "endDate": {
+      "type": "string",
+      "format": "date"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason",
+     "value"
+    ]
+   },
+   "DeviationRisk": {
+    "type": "object",
+    "properties": {
+     "risk": {
+      "type": "string",
+      "enum": [
+       "LOW",
+       "MEDIUM",
+       "HIGH"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "risk"
+    ]
+   },
+   "AlertCreated": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "triggerDate": {
+      "type": "string",
+      "format": "date"
+     },
+     "recipientRule": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "origin": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     },
+     "summary": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "triggerDate"
     ]
    },
    "ContractSigner": {
@@ -8194,6 +9396,18 @@
    "ContractPermissions": {
     "type": "object",
     "properties": {
+     "canDecideDeviations": {
+      "type": "boolean"
+     },
+     "canAmendRisk": {
+      "type": "boolean"
+     },
+     "canVary": {
+      "type": "boolean"
+     },
+     "canEditRecord": {
+      "type": "boolean"
+     },
      "canEdit": {
       "type": "boolean"
      },
@@ -8402,6 +9616,64 @@
      },
      "permissions": {
       "$ref": "#/components/schemas/ContractPermissions"
+     },
+     "parent": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "format": "uuid"
+       },
+       "number": {
+        "type": "string"
+       }
+      },
+      "additionalProperties": false
+     },
+     "variations": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "number": {
+         "type": "string"
+        },
+        "status": {
+         "type": "string"
+        },
+        "value": {
+         "type": "number"
+        },
+        "endDate": {
+         "type": "string",
+         "format": "date"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "cumulative": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "number"
+       },
+       "endDate": {
+        "type": "string",
+        "format": "date"
+       }
+      },
+      "additionalProperties": false
+     },
+     "deviationBlockers": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
      }
     },
     "additionalProperties": false,
@@ -8850,6 +10122,10 @@
      "estimatedValue": {
       "type": "number"
      },
+     "evaluationId": {
+      "type": "string",
+      "format": "uuid"
+     },
      "steps": {
       "type": "object",
       "properties": {
@@ -8926,6 +10202,87 @@
         },
         "committed": {
          "type": "number"
+        },
+        "items": {
+         "type": "array",
+         "items": {
+          "type": "object",
+          "properties": {
+           "kind": {
+            "type": "string",
+            "enum": [
+             "REQUEST",
+             "CONTRACT"
+            ]
+           },
+           "number": {
+            "type": "string"
+           },
+           "title": {
+            "type": "string"
+           },
+           "supplier": {
+            "type": "string"
+           },
+           "value": {
+            "type": "number"
+           }
+          },
+          "additionalProperties": false
+         }
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "bySupplier": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "supplierId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "company": {
+         "type": "string"
+        },
+        "committed": {
+         "type": "number"
+        },
+        "contracts": {
+         "type": "integer"
+        },
+        "share": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "offContract": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "requestId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "number": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "category": {
+         "type": "string"
+        },
+        "value": {
+         "type": "number"
+        },
+        "phase": {
+         "type": "string"
         }
        },
        "additionalProperties": false
@@ -8937,6 +10294,9 @@
      "totalCommitted": {
       "type": "number"
      },
+     "totalOffContract": {
+      "type": "number"
+     },
      "note": {
       "type": "string"
      }
@@ -8944,6 +10304,8 @@
     "additionalProperties": false,
     "required": [
      "byCategory",
+     "bySupplier",
+     "offContract",
      "totalPipeline",
      "totalCommitted"
     ]
@@ -9064,6 +10426,13 @@
       "type": "string",
       "format": "uuid"
      },
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "userName": {
+      "type": "string"
+     },
      "role": {
       "type": "string"
      },
@@ -9121,6 +10490,56 @@
      "email": {
       "type": "string"
      },
+     "roles": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "enum": [
+        "REQUESTER",
+        "PROCUREMENT",
+        "DELEGATE",
+        "EVALUATOR",
+        "CHAIR",
+        "LEGAL",
+        "CONTRACT_MGR",
+        "PROBITY",
+        "FINANCE",
+        "ADMIN",
+        "EXEC",
+        "SUPPLIER"
+       ]
+      }
+     },
+     "orgUnit": {
+      "type": "string"
+     },
+     "active": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "email",
+     "roles"
+    ]
+   },
+   "DelegationCreate": {
+    "type": "object",
+    "properties": {
+     "scope": {
+      "type": "string",
+      "enum": [
+       "SOURCING_APPROVAL",
+       "CONTRACT_SIGNING",
+       "PUBLISH_PERMISSION"
+      ]
+     },
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
      "role": {
       "type": "string",
       "enum": [
@@ -9138,10 +10557,93 @@
        "SUPPLIER"
       ]
      },
-     "orgUnit": {
+     "maxValue": {
+      "type": "number",
+      "minimum": 0
+     },
+     "division": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "scope",
+     "maxValue"
+    ]
+   },
+   "AlertSettings": {
+    "type": "object",
+    "properties": {
+     "expiry": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+     },
+     "notice": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+     },
+     "extension": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+     },
+     "milestone": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "expiry",
+     "notice",
+     "extension",
+     "milestone"
+    ]
+   },
+   "VarianceLimit": {
+    "type": "object",
+    "properties": {
+     "limitPct": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 60
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "limitPct"
+    ]
+   },
+   "ProbitySignoff": {
+    "type": "object",
+    "properties": {
+     "comment": {
+      "type": "string",
+      "maxLength": 1000
+     }
+    },
+    "additionalProperties": false
+   },
+   "SupplierContact": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "email": {
       "type": "string"
      },
      "active": {
+      "type": "boolean"
+     },
+     "awaitingActivation": {
       "type": "boolean"
      }
     },
@@ -9149,8 +10651,242 @@
     "required": [
      "id",
      "name",
-     "email",
-     "role"
+     "email"
+    ]
+   },
+   "SupplierProfile": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "company": {
+      "type": "string"
+     },
+     "abn": {
+      "type": "string"
+     },
+     "sanctionsStatus": {
+      "type": "string"
+     },
+     "insuranceStatus": {
+      "type": "string"
+     },
+     "lastCheckedAt": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "contacts": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/SupplierContact"
+      }
+     },
+     "tenders": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "tenderId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "number": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "submission": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "contracts": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "number": {
+         "type": "string"
+        },
+        "status": {
+         "type": "string"
+        },
+        "value": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "canAddContact": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "company"
+    ]
+   },
+   "SupplierContactCreate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string",
+      "format": "email"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "email"
+    ]
+   },
+   "SupplierContactAdded": {
+    "type": "object",
+    "properties": {
+     "contact": {
+      "$ref": "#/components/schemas/SupplierContact"
+     },
+     "activationPath": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "contact",
+     "activationPath"
+    ]
+   },
+   "ActivationInfo": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     },
+     "company": {
+      "type": "string"
+     },
+     "organisation": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ActivationRequest": {
+    "type": "object",
+    "properties": {
+     "token": {
+      "type": "string"
+     },
+     "password": {
+      "type": "string",
+      "minLength": 12
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "token",
+     "password"
+    ]
+   },
+   "WorkloadReport": {
+    "type": "object",
+    "properties": {
+     "today": {
+      "type": "string",
+      "format": "date"
+     },
+     "owners": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "ownerId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "ownerName": {
+         "type": "string"
+        },
+        "procurements": {
+         "type": "integer"
+        },
+        "value": {
+         "type": "number"
+        },
+        "byPhase": {
+         "type": "object",
+         "additionalProperties": {
+          "type": "integer"
+         }
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "timeline": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "requestId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "number": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "owner": {
+         "type": "string"
+        },
+        "phase": {
+         "type": "string"
+        },
+        "bars": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/TermBar"
+         }
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "owners",
+     "timeline"
     ]
    },
    "AdminUserCreate": {

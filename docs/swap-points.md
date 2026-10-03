@@ -91,3 +91,10 @@ This page lists the swap points that exist **today**; later milestones append to
 | --- | --- |
 | Today | Alert emails are recorded in `alert_delivery` with status SIMULATED; nothing leaves the server. The in-app notification is real |
 | Swap | Replace the EMAIL branch in `AlertService.runDue` (`modules/contract/record.ts`) with a mail provider (for example Amazon SES) and record DELIVERED or FAILED; keep the compare-and-set that makes each alert fire once |
+
+## Manager lookup for custom alerts (M12b)
+
+| | |
+| --- | --- |
+| Today | "Include my manager" resolves to the nearest delegate or executive in the person's organisation unit, else any delegate: the proof of concept has no reporting lines |
+| Swap | Replace `resolveManager` in `modules/contract/record.ts` with a lookup against the identity provider or HR system, keeping the rule that it is resolved when the alert fires |

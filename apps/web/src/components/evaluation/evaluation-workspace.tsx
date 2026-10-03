@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, Button, Dialog, Field, Select, Stepper, Textarea, cn } from '@if/ui';
+import { Badge, Button, Dialog, Field, Input, Select, Stepper, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { TENDER_TYPE_LABEL, formatDateTime } from '@/lib/labels';
 import type { EvalCriterion, EvalView, MyScores } from './types';
@@ -95,6 +95,8 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [limit, setLimit] = useState(String(initial.varianceLimitPct ?? 30));
+  const [signoffNote, setSignoffNote] = useState('');
   const p = ev.permissions;
   const me = ev.me;
 
@@ -183,6 +185,93 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
         >
           {notice}
         </p>
+      )}
+
+      {(p.canSetVarianceLimit || p.canProbitySignOff || ev.probitySignoff) && (
+        <Card id="process-h" title="Process controls" testId="process-card">
+          {p.canSetVarianceLimit && (
+            <form
+              className="mt-3 flex flex-wrap items-end gap-3"
+              aria-label="Variance limit"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(
+                  'limit',
+                  async () =>
+                    setEv(
+                      await api<EvalView>(`/evaluations/${ev.id}/variance-limit`, {
+                        method: 'PUT',
+                        csrf,
+                        body: { limitPct: Number(limit) },
+                      }),
+                    ),
+                  'Variance limit saved.',
+                );
+              }}
+            >
+              <Field
+                label="Variance limit (%)"
+                hint="Scores further apart than this are flagged and need a reason before consensus can be locked. Set it before consensus opens."
+              >
+                <Input
+                  type="number"
+                  min={5}
+                  max={60}
+                  step={1}
+                  value={limit}
+                  onChange={(e) => setLimit(e.target.value)}
+                  className="w-28"
+                />
+              </Field>
+              <Button type="submit" variant="secondary" loading={busy === 'limit'}>
+                Save limit
+              </Button>
+            </form>
+          )}
+          {ev.probitySignoff && (
+            <p className="mt-3 font-mono text-xs text-success" data-testid="probity-stamp">
+              {ev.probitySignoff.stamp}
+              {ev.probitySignoff.comment ? ` - ${ev.probitySignoff.comment}` : ''}
+            </p>
+          )}
+          {p.canProbitySignOff && (
+            <form
+              className="mt-3 flex flex-col gap-3"
+              aria-label="Probity sign-off"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(
+                  'signoff',
+                  async () =>
+                    setEv(
+                      await post<EvalView>(
+                        `/evaluations/${ev.id}/probity-signoff`,
+                        signoffNote ? { comment: signoffNote } : {},
+                      ),
+                    ),
+                  'Probity sign-off recorded.',
+                );
+              }}
+            >
+              <Field
+                label="Probity sign-off"
+                hint="Record that the process was followed: conflicts declared, scores independent, differences explained."
+              >
+                <Textarea
+                  rows={2}
+                  value={signoffNote}
+                  onChange={(e) => setSignoffNote(e.target.value)}
+                  placeholder="Optional note"
+                />
+              </Field>
+              <div>
+                <Button type="submit" loading={busy === 'signoff'}>
+                  Sign off the process
+                </Button>
+              </div>
+            </form>
+          )}
+        </Card>
       )}
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -915,11 +1004,17 @@ function ReportPanel({
       }
     >
       {rep && (
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild variant="secondary">
             <a href={`/api/v1/evaluations/${ev.id}/report/pdf`} download className="text-text no-underline">
               <FileDown className="size-4" aria-hidden="true" />
               Download PDF
+            </a>
+          </Button>
+          <Button asChild variant="secondary">
+            <a href={`/api/v1/evaluations/${ev.id}/report/docx`} download className="text-text no-underline">
+              <FileDown className="size-4" aria-hidden="true" />
+              Download Word
             </a>
           </Button>
         </div>

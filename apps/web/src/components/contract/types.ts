@@ -37,9 +37,17 @@ export interface ContractView extends ContractSummary {
     clauseId: string;
     title: string;
     mandatory: boolean;
+    risk: 'LOW' | 'MEDIUM' | 'HIGH';
+    decision: 'APPROVED' | 'REJECTED' | null;
+    decidedBy: string | null;
+    stamp: string | null;
     templateText: string;
     currentText: string;
   }>;
+  deviationBlockers: string[];
+  parent: { id: string; number: string } | null;
+  variations: Array<{ id: string; number: string; status: string; value: number; endDate: string | null }>;
+  cumulative: { value: number; endDate: string | null };
   signatures: Array<{
     id: string;
     userName: string;
@@ -57,6 +65,10 @@ export interface ContractView extends ContractSummary {
     canSign: boolean;
     signBlocked: string | null;
     canDelete: boolean;
+    canDecideDeviations: boolean;
+    canAmendRisk: boolean;
+    canVary: boolean;
+    canEditRecord: boolean;
   };
 }
 
@@ -74,6 +86,8 @@ export interface AlertRow {
   triggerDate: string;
   status: 'SCHEDULED' | 'SENT' | 'CANCELLED';
   sentAt: string | null;
+  note?: string | null;
+  origin?: 'SYSTEM' | 'USER';
   contractNumber?: string;
   deliveries: Array<{ channel: 'IN_APP' | 'EMAIL'; status: 'DELIVERED' | 'SIMULATED'; deliveredAt: string }>;
 }
@@ -84,6 +98,7 @@ export interface ContractRecord {
   extensions: TermBar[];
   bars: TermBar[];
   alerts: AlertRow[];
+  ownerCandidates?: Array<{ id: string; name: string }>;
 }
 
 export interface ExpiringContract {

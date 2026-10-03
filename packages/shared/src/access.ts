@@ -71,6 +71,8 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
     prefix: '/app/contracts',
     roles: ['LEGAL', 'CONTRACT_MGR', 'PROCUREMENT', 'DELEGATE', 'EXEC', 'FINANCE', 'PROBITY'],
   },
+  { prefix: '/app/suppliers', roles: ['PROCUREMENT', 'LEGAL', 'FINANCE', 'ADMIN'] },
+  { prefix: '/app/reports', roles: ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR'] },
   { prefix: '/app', roles: STAFF },
 ];
 
@@ -81,6 +83,7 @@ export const PUBLIC_PATHS = [
   '/forgot-password',
   '/ui-kit',
   '/supplier/register',
+  '/supplier/activate',
   '/preview',
 ];
 

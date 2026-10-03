@@ -283,6 +283,7 @@ export class EvaluationService {
               ),
             )
         : [];
+    const probitySignoff = await this.probityOf(tx, l);
     return {
       id: l.ev.id,
       tenderId: l.tender.id,
@@ -338,8 +339,37 @@ export class EvaluationService {
               : {}),
           }
         : null,
-      permissions: this.permissions(l, a, me, chair, proc, items, rep),
+      probitySignoff,
+      permissions: {
+        ...this.permissions(l, a, me, chair, proc, items, rep),
+        canSetVarianceLimit: chair && (l.ev.status === 'COI_PENDING' || l.ev.status === 'SCORING'),
+        canProbitySignOff:
+          a.user.roles.includes('PROBITY') && atLeast(l.ev.status, 'LOCKED') && probitySignoff === null,
+      },
     };
+  }
+
+  /** The probity advisor's sign-off that the process was followed (recorded, not a gate on the award). */
+  async probityOf(tx: Tx, l: Loaded) {
+    const [row] = await tx
+      .select({ a: approval, name: appUser.name })
+      .from(approval)
+      .innerJoin(appUser, eq(appUser.id, approval.userId))
+      .where(
+        and(
+          eq(approval.subjectType, 'EVAL_PROBITY'),
+          eq(approval.subjectId, l.ev.id),
+          eq(approval.decision, 'APPROVED'),
+        ),
+      );
+    return row
+      ? {
+          by: row.name,
+          stamp: row.a.stamp ?? '',
+          at: row.a.decidedAt.toISOString(),
+          comment: row.a.comment ?? null,
+        }
+      : null;
   }
 
   private permissions(

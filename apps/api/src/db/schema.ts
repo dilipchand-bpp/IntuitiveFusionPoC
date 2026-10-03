@@ -463,6 +463,7 @@ export const clause = pgTable('clause', {
   text: text('text').notNull(),
   mandatory: boolean('mandatory').notNull().default(false),
   changedFromTemplate: boolean('changed_from_template').notNull().default(false),
+  risk: text('risk', { enum: ['LOW', 'MEDIUM', 'HIGH'] }),
 });
 
 export const alert = pgTable('alert', {
@@ -479,6 +480,8 @@ export const alert = pgTable('alert', {
     .notNull()
     .default('SYSTEM'),
   sentAt: timestamp('sent_at', { withTimezone: true }),
+  note: text('note'),
+  createdBy: uuid('created_by'),
 });
 
 export const contractMilestone = pgTable('contract_milestone', {
@@ -505,6 +508,17 @@ export const alertDelivery = pgTable('alert_delivery', {
   channel: text('channel', { enum: ['IN_APP', 'EMAIL'] }).notNull(),
   status: text('status', { enum: ['DELIVERED', 'SIMULATED'] }).notNull(),
   deliveredAt: timestamp('delivered_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const supplierActivation = pgTable('supplier_activation', {
+  id: id(),
+  tenantId: tenantId(),
+  userId: uuid('user_id').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdBy: uuid('created_by').notNull(),
+  createdAt: created(),
 });
 
 export const notification = pgTable('notification', {

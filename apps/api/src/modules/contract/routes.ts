@@ -3,7 +3,7 @@
  * authority, US-CON-04 lock on execution. The deviation register (US-CON-02) is derived read-only from the clauses
  * changed from the template; variations (US-CON-05) stay a stub.
  */
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Clock, RoleName } from '@if/shared';
@@ -34,7 +34,9 @@ import {
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { addDays, addMonths, daysBetween, iso, termBars } from './dates.js';
-import { AlertService, createContractRecord } from './record.js';
+import { deviationBlockers, proposeRisk, type Risk } from './deviation.js';
+import { registerContractExtras } from './extras.js';
+import { AlertService, createContractRecord, effectiveEnd, rescheduleAlerts } from './record.js';
 import { EvaluationService } from '../evaluation/service.js';
 import {
   assembleClauses,
@@ -220,14 +222,38 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     }));
   }
 
-  async function summary(tx: Tx, tenantId: string, c: typeof contract.$inferSelect) {
+  type ContractRow = typeof contract.$inferSelect;
+
+  /** Executed variations of a contract, oldest first. */
+  async function variationsOf(tx: Tx, c: ContractRow) {
+    return tx
+      .select()
+      .from(contract)
+      .where(and(eq(contract.parentId, c.id), isNull(contract.deletedAt)))
+      .orderBy(asc(contract.number));
+  }
+  /** Value that counts for signing authority: a variation is judged on the cumulative value of the contract it varies. */
+  async function authorityValue(tx: Tx, c: ContractRow): Promise<number> {
+    if (!c.parentId) return Number(c.value);
+    const [parent] = await tx.select().from(contract).where(eq(contract.id, c.parentId));
+    if (!parent) return Number(c.value);
+    const done = (await variationsOf(tx, parent)).filter((v) => v.status === 'EXECUTED' && v.id !== c.id);
+    return Number(parent.value) + done.reduce((s, v) => s + Number(v.value), 0) + Number(c.value);
+  }
+
+  async function summary(tx: Tx, tenantId: string, c: ContractRow) {
     const [s] = await tx
       .select({ company: supplier.company })
       .from(supplier)
       .where(eq(supplier.id, c.supplierId));
     let req: { number: string; title: string } | undefined;
-    if (c.tenderId) {
-      const [td] = await tx.select().from(tender).where(eq(tender.id, c.tenderId));
+    const tenderId =
+      c.tenderId ??
+      (c.parentId
+        ? (await tx.select({ t: contract.tenderId }).from(contract).where(eq(contract.id, c.parentId)))[0]?.t
+        : null);
+    if (tenderId) {
+      const [td] = await tx.select().from(tender).where(eq(tender.id, tenderId));
       if (td)
         [req] = await tx
           .select({ number: request.number, title: request.title })
@@ -252,7 +278,8 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       tenderId: c.tenderId,
       version: c.version,
       signed: sigs.length,
-      signaturesRequired: requiredSigners(Number(c.value)).length,
+      parentId: c.parentId,
+      signaturesRequired: requiredSigners(await authorityValue(tx, c)).length,
     };
   }
 
@@ -312,6 +339,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       status: x.status,
       origin: x.origin,
       sentAt: x.sentAt?.toISOString() ?? null,
+      note: x.note,
       deliveries: dl.map((y) => ({
         channel: y.channel,
         status: y.status,
@@ -330,7 +358,8 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     );
     const signatures = await signaturesOf(tx, a.user.tenantId, c.id);
     const live = signatures.filter((s) => s.decision === 'APPROVED');
-    const chain = requiredSigners(Number(c.value)).map((s) => {
+    const authority = await authorityValue(tx, c);
+    const chain = requiredSigners(authority).map((s) => {
       const sig = live.find((x) => x.role === s.role);
       return { role: s.role, label: s.label, signedBy: sig?.userName ?? null, stamp: sig?.stamp ?? null };
     });
@@ -350,20 +379,74 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           tx,
           { tenantId: a.user.tenantId, userId: a.user.id, roles },
           'CONTRACT_SIGNING',
-          Number(c.value),
+          authority,
         );
         canSign = del.allowed;
         if (!del.allowed)
           signBlocked =
             del.limit === null
               ? 'You do not hold contract signing authority. Sourcing approval does not confer it.'
-              : `This contract (${aud.format(Number(c.value))}) is above your signing authority of ${aud.format(del.limit)}`;
+              : `This contract (${aud.format(authority)}) is above your signing authority of ${aud.format(del.limit)}`;
       }
     }
-    const record = await recordOf(tx, c);
+    const canEditRecord =
+      c.status === 'EXECUTED' &&
+      !c.parentId &&
+      ['CONTRACT_MGR', 'LEGAL', 'PROCUREMENT'].some((r) => roles.includes(r as RoleName));
+    const record = {
+      ...(await recordOf(tx, c)),
+      ownerCandidates: canEditRecord
+        ? await tx
+            .select({ id: appUser.id, name: appUser.name })
+            .from(roleAssignment)
+            .innerJoin(appUser, eq(appUser.id, roleAssignment.userId))
+            .where(and(eq(roleAssignment.tenantId, a.user.tenantId), eq(roleAssignment.role, 'CONTRACT_MGR')))
+            .orderBy(asc(appUser.name))
+        : [],
+    };
+    const decisions = await deviationDecisions(
+      tx,
+      a.user.tenantId,
+      ordered.map((k) => k.id),
+    );
+    const devRows = ordered
+      .filter((k) => k.changedFromTemplate)
+      .map((k) => ({
+        id: k.id,
+        clauseId: k.clauseId,
+        title: k.title,
+        mandatory: k.mandatory,
+        risk: (k.risk ?? 'MEDIUM') as Risk,
+        decision: decisions.get(k.id) ?? null,
+        templateText: libBy.get(k.clauseId)?.x.text ?? '',
+        currentText: k.text,
+      }));
+    const blockers = deviationBlockers(
+      devRows.map((x) => ({ ...x, decision: x.decision?.decision ?? null })),
+    );
+    const kids = c.parentId ? [] : await variationsOf(tx, c);
+    const [parent] = c.parentId ? await tx.select().from(contract).where(eq(contract.id, c.parentId)) : [];
+    const execKids = kids.filter((v) => v.status === 'EXECUTED');
     return {
       ...base,
       record,
+      parent: parent ? { id: parent.id, number: parent.number } : null,
+      variations: kids.map((v) => ({
+        id: v.id,
+        number: v.number,
+        status: v.status,
+        value: Number(v.value),
+        endDate: v.endDate,
+      })),
+      cumulative: {
+        value: Number(c.value) + execKids.reduce((s, v) => s + Number(v.value), 0),
+        endDate:
+          [c.endDate, ...execKids.map((v) => v.endDate)]
+            .filter((x): x is string => !!x)
+            .sort()
+            .at(-1) ?? null,
+      },
+      deviationBlockers: blockers,
       clauses: ordered.map((k) => ({
         id: k.clauseId,
         title: k.title,
@@ -371,15 +454,12 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         mandatory: k.mandatory,
         changedFromTemplate: k.changedFromTemplate,
       })),
-      deviations: ordered
-        .filter((k) => k.changedFromTemplate)
-        .map((k) => ({
-          clauseId: k.clauseId,
-          title: k.title,
-          mandatory: k.mandatory,
-          templateText: libBy.get(k.clauseId)?.x.text ?? '',
-          currentText: k.text,
-        })),
+      deviations: devRows.map(({ id: _id, ...x }) => ({
+        ...x,
+        decision: x.decision?.decision ?? null,
+        decidedBy: x.decision?.by ?? null,
+        stamp: x.decision?.stamp ?? null,
+      })),
       signatures,
       chain,
       permissions: {
@@ -391,8 +471,42 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         canSign,
         signBlocked,
         canDelete: roles.includes('LEGAL') || roles.includes('EXEC'),
+        canDecideDeviations:
+          editable && (roles.includes('DELEGATE') || roles.includes('EXEC')) && devRows.length > 0,
+        canAmendRisk: editable && roles.includes('LEGAL'),
+        canVary:
+          c.status === 'EXECUTED' &&
+          !c.parentId &&
+          (roles.includes('LEGAL') || roles.includes('PROCUREMENT')),
+        canEditRecord,
       },
     };
+  }
+
+  /** The current (not superseded) delegate decision on each changed clause. */
+  async function deviationDecisions(tx: Tx, tenantId: string, clauseIds: string[]) {
+    const out = new Map<string, { decision: 'APPROVED' | 'REJECTED'; by: string; stamp: string | null }>();
+    if (clauseIds.length === 0) return out;
+    const rows = await tx
+      .select({ a: approval, name: appUser.name })
+      .from(approval)
+      .innerJoin(appUser, eq(appUser.id, approval.userId))
+      .where(
+        and(
+          eq(approval.tenantId, tenantId),
+          eq(approval.subjectType, 'CONTRACT_DEVIATION'),
+          inArray(approval.subjectId, clauseIds),
+        ),
+      )
+      .orderBy(asc(approval.decidedAt));
+    for (const r of rows)
+      if (r.a.decision !== 'SUPERSEDED')
+        out.set(r.a.subjectId, {
+          decision: r.a.decision as 'APPROVED' | 'REJECTED',
+          by: r.name,
+          stamp: r.a.stamp,
+        });
+    return out;
   }
 
   async function load(tx: Tx, a: AuthContext, id: string) {
@@ -474,7 +588,9 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         );
       const out = [];
       for (const c of rows) {
-        if (!c.endDate || c.endDate < today || c.endDate > horizon) continue;
+        if (c.parentId) continue; // a variation is part of its parent
+        const end = (await effectiveEnd(tx, c)) ?? c.endDate;
+        if (!end || end < today || end > horizon) continue;
         const s = await summary(tx, a.user.tenantId, c);
         const rec = await recordOf(tx, c);
         out.push({
@@ -485,9 +601,9 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           value: s.value,
           owner: rec.owner?.name ?? null,
           startDate: c.startDate,
-          endDate: c.endDate,
-          noticeDeadline: addDays(c.endDate, -c.noticeDays),
-          daysRemaining: daysBetween(today, c.endDate),
+          endDate: end,
+          noticeDeadline: addDays(end, -c.noticeDays),
+          daysRemaining: daysBetween(today, end),
           optionalExtensions: rec.extensions.map((e) => ({
             months: Number(/\((\d+) months\)/.exec(e.label)?.[1] ?? 0),
             endDate: e.end,
@@ -764,11 +880,26 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       const { lib } = await templateClauses(tx, a.user.tenantId, c);
       const tpl = lib.find((x) => x.clauseId === clauseId);
       const title = body.title ?? k.title;
-      const changed = !tpl || tpl.text !== body.text.trim() || tpl.title !== title;
+      // A clause of a contract with no template (a variation) has nothing to deviate from.
+      const changed = !!tpl && (tpl.text !== body.text.trim() || tpl.title !== title);
+      const risk = changed
+        ? proposeRisk({ mandatory: k.mandatory, templateText: tpl!.text, currentText: body.text.trim() })
+        : null;
       await tx
         .update(clause)
-        .set({ text: body.text.trim(), title, changedFromTemplate: changed })
+        .set({ text: body.text.trim(), title, changedFromTemplate: changed, risk })
         .where(eq(clause.id, k.id));
+      // New wording needs a new decision: earlier approvals of this clause no longer apply.
+      await tx
+        .update(approval)
+        .set({ decision: 'SUPERSEDED' })
+        .where(
+          and(
+            eq(approval.subjectType, 'CONTRACT_DEVIATION'),
+            eq(approval.subjectId, k.id),
+            ne(approval.decision, 'SUPERSEDED'),
+          ),
+        );
       if (c.status === 'DRAFT')
         await tx
           .update(contract)
@@ -778,7 +909,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         action: 'contract.clause_edit',
         entityType: 'contract',
         entityId: id,
-        after: { clauseId, changedFromTemplate: changed, mandatory: k.mandatory },
+        after: { clauseId, changedFromTemplate: changed, mandatory: k.mandatory, risk },
       });
       const v = await view(tx, a, await load(tx, a, id));
       return v.clauses.find((x) => x.id === clauseId);
@@ -806,10 +937,23 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
               : 'The contract is already out for signature',
           );
         const clauses = await tx.select().from(clause).where(eq(clause.contractId, id));
-        const blockers = releaseBlockers(
-          { value: Number(c.value), startDate: c.startDate, endDate: c.endDate },
-          clauses,
+        const changedClauses = clauses.filter((k) => k.changedFromTemplate);
+        const decided = await deviationDecisions(
+          tx,
+          a.user.tenantId,
+          changedClauses.map((k) => k.id),
         );
+        const blockers = [
+          ...releaseBlockers({ value: Number(c.value), startDate: c.startDate, endDate: c.endDate }, clauses),
+          ...deviationBlockers(
+            changedClauses.map((k) => ({
+              title: k.title,
+              mandatory: k.mandatory,
+              risk: (k.risk ?? 'MEDIUM') as Risk,
+              decision: decided.get(k.id)?.decision ?? null,
+            })),
+          ),
+        ];
         if (blockers.length)
           throw new AppError(
             422,
@@ -826,12 +970,15 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           action: 'contract.release',
           entityType: 'contract',
           entityId: id,
-          after: { number: c.number, signers: requiredSigners(Number(c.value)).map((s) => s.role) },
+          after: {
+            number: c.number,
+            signers: requiredSigners(await authorityValue(tx, c)).map((s) => s.role),
+          },
         });
         await notifyRoles(
           tx,
           a.user.tenantId,
-          requiredSigners(Number(c.value)).map((s) => s.role as RoleName),
+          requiredSigners(await authorityValue(tx, c)).map((s) => s.role as RoleName),
           'Contract awaiting your signature',
           `${c.number} (${aud.format(Number(c.value))})`,
           `/app/contracts/${id}`,
@@ -852,7 +999,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       if (c.locked) throw locked();
       if (!['AWAITING_SIGNATURE', 'PARTIALLY_SIGNED'].includes(c.status))
         throw new AppError(409, 'INVALID_STATE', 'The contract is not out for signature');
-      const value = Number(c.value);
+      const value = await authorityValue(tx, c);
       const chain = requiredSigners(value);
       const sigs = (await signaturesOf(tx, a.user.tenantId, id)).filter((s) => s.decision === 'APPROVED');
       const mine = chain.filter((s) => a.user.roles.includes(s.role as RoleName));
@@ -976,10 +1123,17 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           .where(eq(contract.id, id));
         // US-CMG-01/02: the management record (owner, milestones, optional extensions) and the system alerts
         const { tpl } = await templateClauses(tx, a.user.tenantId, c);
-        const record = await createContractRecord(tx, c, {
-          extensions: (tpl?.body as Partial<TemplateBody> | undefined)?.extensions ?? [],
-          today: now.toISOString().slice(0, 10),
-        });
+        const record = c.parentId
+          ? { ownerId: null, milestones: [], alerts: [] as unknown[] }
+          : await createContractRecord(tx, c, {
+              extensions: (tpl?.body as Partial<TemplateBody> | undefined)?.extensions ?? [],
+              today: now.toISOString().slice(0, 10),
+            });
+        if (c.parentId) {
+          // an executed variation can move the end date: the parent's scheduled alerts follow it
+          const [parent] = await tx.select().from(contract).where(eq(contract.id, c.parentId));
+          if (parent) await rescheduleAlerts(tx, parent, now.toISOString().slice(0, 10));
+        }
         await d.audit.record(tx, a.ctx, {
           action: 'contract.sign',
           entityType: 'contract',
@@ -1043,6 +1197,18 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       });
     });
     return reply.status(204).send();
+  });
+
+  registerContractExtras(app, p, d, reg, {
+    load,
+    view,
+    recordOf,
+    alertView,
+    notifyRoles,
+    variationsOf,
+    authorityValue,
+    deviationDecisions,
+    alerts,
   });
 
   return done;

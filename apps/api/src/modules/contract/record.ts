@@ -3,7 +3,7 @@
  * executes (locks) the contract; alerts are fired by `AlertService.runDue`, which uses the injected clock so that the
  * tests can travel in time, and is safe to run any number of times (each alert fires once).
  */
-import { and, eq, inArray, lte } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lte } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import { withSystem, type Database, type RequestContext, type Tx } from '../../db/client.js';
@@ -19,8 +19,9 @@ import {
   request,
   roleAssignment,
   tender,
+  tenant,
 } from '../../db/schema.js';
-import { daysBetween, defaultMilestones, iso, scheduleAlerts } from './dates.js';
+import { daysBetween, defaultMilestones, iso, leadsFrom, scheduleAlerts } from './dates.js';
 
 type ContractRow = typeof contract.$inferSelect;
 
@@ -77,9 +78,11 @@ export async function createContractRecord(
     await tx
       .insert(contractExtension)
       .values({ tenantId: c.tenantId, contractId: c.id, months, position: i + 1 });
+  const [tn] = await tx.select({ config: tenant.config }).from(tenant).where(eq(tenant.id, c.tenantId));
   const alerts = scheduleAlerts(
     { endDate: c.endDate!, noticeDays: c.noticeDays, milestones, extensions: opts.extensions },
     opts.today,
+    leadsFrom(tn?.config),
   );
   for (const a of alerts)
     await tx
@@ -94,6 +97,57 @@ export async function createContractRecord(
       })
       .onConflictDoNothing();
   return { ownerId, milestones, alerts };
+}
+
+/** The end date that counts: the contract's own, or a later one set by an executed variation. */
+export async function effectiveEnd(tx: Tx, c: ContractRow): Promise<string | null> {
+  const kids = await tx
+    .select({ endDate: contract.endDate })
+    .from(contract)
+    .where(and(eq(contract.parentId, c.id), eq(contract.status, 'EXECUTED'), isNull(contract.deletedAt)));
+  return (
+    [c.endDate, ...kids.map((k) => k.endDate)]
+      .filter((x): x is string => !!x)
+      .sort()
+      .at(-1) ?? null
+  );
+}
+
+/**
+ * Recomputes the scheduled system alerts after the record changed (milestones, extensions, a variation, new lead
+ * times). Alerts already sent stay as history; scheduled ones are replaced.
+ */
+export async function rescheduleAlerts(tx: Tx, c: ContractRow, today: string) {
+  const end = (await effectiveEnd(tx, c)) ?? c.endDate!;
+  const milestones = await tx
+    .select({ title: contractMilestone.title, dueDate: contractMilestone.dueDate })
+    .from(contractMilestone)
+    .where(eq(contractMilestone.contractId, c.id));
+  const ext = await tx
+    .select({ months: contractExtension.months })
+    .from(contractExtension)
+    .where(eq(contractExtension.contractId, c.id));
+  const [tn] = await tx.select({ config: tenant.config }).from(tenant).where(eq(tenant.id, c.tenantId));
+  await tx
+    .delete(alert)
+    .where(and(eq(alert.contractId, c.id), eq(alert.origin, 'SYSTEM'), eq(alert.status, 'SCHEDULED')));
+  const planned = scheduleAlerts(
+    { endDate: end, noticeDays: c.noticeDays, milestones, extensions: ext.map((e) => e.months) },
+    today,
+    leadsFrom(tn?.config),
+  );
+  for (const a of planned)
+    await tx
+      .insert(alert)
+      .values({
+        tenantId: c.tenantId,
+        contractId: c.id,
+        kind: a.kind,
+        triggerDate: a.triggerDate,
+        origin: 'SYSTEM',
+      })
+      .onConflictDoNothing();
+  return planned.length;
 }
 
 const WHAT: Record<string, string> = {
@@ -133,7 +187,7 @@ export class AlertService {
           .where(and(eq(alert.id, a.id), eq(alert.status, 'SCHEDULED')))
           .returning({ id: alert.id });
         if (won.length === 0) continue;
-        const recipients = await this.recipients(tx, c);
+        const recipients = await this.recipients(tx, c, a);
         const [req] = c.tenderId
           ? await tx
               .select({ number: request.number, title: request.title })
@@ -142,7 +196,7 @@ export class AlertService {
               .where(eq(tender.id, c.tenderId))
           : [];
         const left = daysBetween(today, c.endDate!);
-        const body = `${c.number}${req ? ` ${req.title}` : ''}: ${WHAT[a.kind] ?? a.kind}. ${
+        const body = `${c.number}${req ? ` ${req.title}` : ''}: ${a.note ? `Your reminder: "${a.note}"` : (WHAT[a.kind] ?? a.kind)}. ${
           left >= 0
             ? `The contract ends in ${left} day(s) on ${c.endDate}.`
             : `The contract ended on ${c.endDate}.`
@@ -188,8 +242,34 @@ export class AlertService {
     });
   }
 
-  /** The recipient rule is resolved when the alert fires, not when it was created. */
-  private async recipients(tx: Tx, c: ContractRow): Promise<string[]> {
+  /**
+   * The recipient rule is resolved when the alert fires, not when it was created. System alerts go to the contract
+   * owner (else the contract managers). A custom alert goes to its author plus whoever the rule adds: their manager
+   * as it is at that moment, or everyone holding a named role.
+   */
+  private async recipients(tx: Tx, c: ContractRow, a: typeof alert.$inferSelect): Promise<string[]> {
+    if (a.origin === 'USER' && a.createdBy) {
+      const out = new Set<string>([a.createdBy]);
+      for (const part of a.recipientRule.split('+').slice(1)) {
+        if (part === 'MANAGER') {
+          const m = await resolveManager(tx, c.tenantId, a.createdBy);
+          if (m) out.add(m);
+        } else if (part.startsWith('ROLE:')) {
+          const rows = await tx
+            .select({ userId: roleAssignment.userId })
+            .from(roleAssignment)
+            .where(
+              and(eq(roleAssignment.tenantId, c.tenantId), eq(roleAssignment.role, part.slice(5) as never)),
+            );
+          for (const r of rows) out.add(r.userId);
+        }
+      }
+      return [...out];
+    }
+    return this.ownerRecipients(tx, c);
+  }
+
+  private async ownerRecipients(tx: Tx, c: ContractRow): Promise<string[]> {
     if (c.ownerId) {
       const [u] = await tx.select({ id: appUser.id }).from(appUser).where(eq(appUser.id, c.ownerId));
       if (u) return [u.id];
@@ -200,4 +280,29 @@ export class AlertService {
       .where(and(eq(roleAssignment.tenantId, c.tenantId), inArray(roleAssignment.role, ['CONTRACT_MGR'])));
     return [...new Set(mgrs.map((m) => m.userId))];
   }
+}
+
+/**
+ * "My manager": the nearest delegate or executive in the person's own organisation unit or the units above it, else any
+ * delegate. The proof of concept has no reporting lines, so this stands in for them (docs/swap-points.md).
+ */
+export async function resolveManager(tx: Tx, tenantId: string, userId: string): Promise<string | null> {
+  const people = await tx.select().from(appUser).where(eq(appUser.tenantId, tenantId));
+  const roles = await tx
+    .select({ userId: roleAssignment.userId, role: roleAssignment.role })
+    .from(roleAssignment)
+    .where(and(eq(roleAssignment.tenantId, tenantId), inArray(roleAssignment.role, ['DELEGATE', 'EXEC'])));
+  const approvers = people.filter((p) => p.id !== userId && roles.some((r) => r.userId === p.id));
+  const me = people.find((p) => p.id === userId);
+  return (
+    approvers.find(
+      (p) =>
+        me?.orgUnitId &&
+        p.orgUnitId === me.orgUnitId &&
+        roles.some((r) => r.userId === p.id && r.role === 'DELEGATE'),
+    )?.id ??
+    approvers.find((p) => roles.some((r) => r.userId === p.id && r.role === 'DELEGATE'))?.id ??
+    approvers[0]?.id ??
+    null
+  );
 }

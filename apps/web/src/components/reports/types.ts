@@ -8,6 +8,7 @@ export interface ProcurementRow {
   status: string;
   estimatedValue: number;
   steps: Record<'intake' | 'plan' | 'tender' | 'evaluation' | 'contract', boolean>;
+  evaluationId: string | null;
   updatedAt: string;
 }
 
@@ -16,10 +17,53 @@ export interface ProcurementTable {
   items: ProcurementRow[];
 }
 
+export interface SpendItem {
+  kind: 'REQUEST' | 'CONTRACT';
+  number: string;
+  title: string;
+  supplier: string | null;
+  value: number;
+}
 export interface SpendReport {
-  byCategory: Array<{ category: string; pipeline: number; committed: number }>;
+  byCategory: Array<{ category: string; pipeline: number; committed: number; items: SpendItem[] }>;
+  bySupplier: Array<{
+    supplierId: string;
+    company: string;
+    committed: number;
+    contracts: number;
+    share: number;
+  }>;
+  offContract: Array<{
+    requestId: string;
+    number: string;
+    title: string;
+    category: string;
+    value: number;
+    phase: string;
+  }>;
   totalPipeline: number;
   totalCommitted: number;
+  totalOffContract: number;
+  note: string;
+}
+
+export interface WorkloadReport {
+  today: string;
+  owners: Array<{
+    ownerId: string;
+    ownerName: string;
+    procurements: number;
+    value: number;
+    byPhase: Record<string, number>;
+  }>;
+  timeline: Array<{
+    requestId: string;
+    number: string;
+    title: string;
+    owner: string;
+    phase: string;
+    bars: Array<{ label: string; start: string; end: string; optional: boolean }>;
+  }>;
   note: string;
 }
 

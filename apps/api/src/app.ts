@@ -14,6 +14,7 @@ import { MockErpBudgetService, type ErpBudgetService } from './adapters/erp.js';
 import type { Database } from './db/client.js';
 import { registerIdempotency } from './http/idempotency.js';
 import { registerIntakeRoutes } from './modules/intake/routes.js';
+import { registerAdminRoutes } from './modules/admin/routes.js';
 import { registerReportingRoutes } from './modules/reporting/routes.js';
 import { registerContractRoutes } from './modules/contract/routes.js';
 import { registerEvaluationRoutes } from './modules/evaluation/routes.js';
@@ -21,7 +22,9 @@ import { registerPlanRoutes } from './modules/plan/routes.js';
 import { AppError } from './http/errors.js';
 import { registerShellRoutes } from './modules/shell.js';
 import { SealedStore } from './modules/tender/files.js';
+import { TenderService } from './modules/tender/service.js';
 import { registerTenderRoutes } from './modules/tender/routes.js';
+import { registerSupplierDirectory } from './modules/tender/supplier-directory.js';
 import { registerSupplierRoutes } from './modules/tender/supplier-routes.js';
 import { registerSpecStubs } from './spec-routes.js';
 
@@ -141,6 +144,23 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     publicRateLimitMax: deps.loginRateLimitMax ?? 20,
   }))
     implemented.add(k);
+  for (const k of registerSupplierDirectory(app, API_PREFIX, {
+    ...guardDeps,
+    store,
+    config,
+    publicRateLimitMax: deps.loginRateLimitMax ?? 20,
+  }))
+    implemented.add(k);
+  if (deps.alertSchedulerMinutes) {
+    // Tenders close on their own when their time comes, even if nobody opens a page (the pages also close what is due)
+    const closer = new TenderService(deps.clock, guardDeps.audit, store);
+    const h = setInterval(
+      () => void closer.closeDue(deps.database).catch(() => undefined),
+      deps.alertSchedulerMinutes * 60_000,
+    );
+    h.unref();
+    app.addHook('onClose', async () => clearInterval(h));
+  }
   for (const k of registerEvaluationRoutes(app, API_PREFIX, { ...guardDeps, store })) implemented.add(k);
   for (const k of registerContractRoutes(app, API_PREFIX, {
     ...guardDeps,
@@ -148,6 +168,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   }))
     implemented.add(k);
   for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerAdminRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

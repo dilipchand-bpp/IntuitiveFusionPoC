@@ -61,6 +61,7 @@ interface Row {
   status: string;
   estimatedValue: number;
   steps: Record<'intake' | 'plan' | 'tender' | 'evaluation' | 'contract', boolean>;
+  evaluationId: string | null;
 }
 const table = async (who: string, qs = '') =>
   (await call(who, 'GET', `/reports/procurements${qs}`)).json() as { scope: string; items: Row[] };
@@ -120,6 +121,7 @@ describe('US-RPT-01 role-scoped figures: executives see the portfolio, requester
     expect(t.scope).toBe('PANEL');
     expect(t.items).toHaveLength(1);
     expect(t.items[0]!.number).toMatch(/^PR-/);
+    expect(t.items[0]!.evaluationId).toMatch(/^[0-9a-f-]{36}$/); // so the row can lead to the evaluation
     const k = await kpis('evaluator-tech');
     expect(k.activeProcurements).toBe(1);
     expect(k.pendingMyAction).toBe(1);
@@ -187,26 +189,101 @@ describe('completion indicators follow the real records', () => {
   });
 });
 
-describe('spend by category', () => {
-  it('sums the pipeline and the executed contracts, with unlinked contracts shown honestly', async () => {
-    const r = (await call('finance', 'GET', '/reports/spend')).json() as {
-      byCategory: Array<{ category: string; pipeline: number; committed: number }>;
-      totalPipeline: number;
-      totalCommitted: number;
-    };
+describe('spend by category and supplier, off-contract spend and drill-down (US-RPT-03)', () => {
+  interface Spend {
+    byCategory: Array<{
+      category: string;
+      pipeline: number;
+      committed: number;
+      items: Array<{ kind: string; number: string; value: number; supplier: string | null }>;
+    }>;
+    bySupplier: Array<{ company: string; committed: number; contracts: number; share: number }>;
+    offContract: Array<{ number: string; value: number; phase: string }>;
+    totalPipeline: number;
+    totalCommitted: number;
+    totalOffContract: number;
+  }
+  const spend = async (who = 'finance') => (await call(who, 'GET', '/reports/spend')).json() as Spend;
+
+  it('sums the pipeline and the executed contracts by category, each contract under the category of its request', async () => {
+    const r = await spend();
     const all = await allRequests();
     expect(r.totalPipeline).toBe(
       all.filter((x) => x.status !== 'COMPLETE').reduce((n, x) => n + Number(x.estimatedValue ?? 0), 0),
     );
     expect(r.totalCommitted).toBe(210_000 + 95_000);
-    expect(r.byCategory.find((c) => c.category === 'Contracts not linked to a request')?.committed).toBe(
-      305_000,
-    );
+    expect(r.byCategory.find((c) => c.category === 'Contracts not linked to a request')).toBeUndefined();
     expect(r.byCategory.reduce((n, c) => n + c.pipeline, 0)).toBe(r.totalPipeline);
+    expect(r.byCategory.reduce((n, c) => n + c.committed, 0)).toBe(r.totalCommitted);
+    const apparel = r.byCategory.find((c) => c.category === 'Apparel')!;
+    expect(apparel.committed).toBe(95_000);
+    // drill-down: the contracts and requests behind each figure
+    expect(apparel.items).toEqual([
+      expect.objectContaining({ kind: 'CONTRACT', number: 'CT-2026-0002', value: 95_000 }),
+    ]);
+    for (const c of r.byCategory)
+      expect(c.items.reduce((n, i) => n + i.value, 0)).toBe(c.pipeline + c.committed);
+  });
+
+  it('splits committed spend by supplier with each supplier share', async () => {
+    const r = await spend();
+    expect(r.bySupplier.map((s) => [s.company, s.committed, s.contracts])).toEqual([
+      ['Northstar Property Care Pty Ltd', 210_000, 1],
+      ['Evergreen Facility Services Pty Ltd', 95_000, 1],
+    ]);
+    expect(r.bySupplier[0]!.share).toBeCloseTo(68.9, 1);
+    expect(r.bySupplier.reduce((n, s) => n + s.share, 0)).toBeCloseTo(100, 0);
+  });
+
+  it('highlights spend that reached delivery or was closed with no contract behind it', async () => {
+    const r = await spend();
+    expect(r.offContract.map((x) => [x.number, x.value])).toEqual([['PR-2026-0007', 38_000]]);
+    expect(r.totalOffContract).toBe(38_000);
+    // the requests that do have a contract are not flagged
+    expect(r.offContract.some((x) => x.number === 'PR-2026-0005' || x.number === 'PR-2026-0006')).toBe(false);
+  });
+
+  it('is for the executive, finance and procurement only', async () => {
     for (const who of ['exec', 'procurement'])
       expect((await call(who, 'GET', '/reports/spend')).statusCode, who).toBe(200);
     for (const who of ['requester', 'evaluator-tech', 'delegate', 'probity', 'admin', 'legal'])
       expect((await call(who, 'GET', '/reports/spend')).statusCode, who).toBe(403);
+  });
+});
+
+describe('workload and timeline (US-RPT-04)', () => {
+  it('shows volume and value per owner and a timeline of each active procurement', async () => {
+    const r = (await call('procurement', 'GET', '/reports/workload')).json() as {
+      owners: Array<{
+        ownerName: string;
+        procurements: number;
+        value: number;
+        byPhase: Record<string, number>;
+      }>;
+      timeline: Array<{
+        number: string;
+        owner: string;
+        bars: Array<{ label: string; start: string; end: string }>;
+      }>;
+      today: string;
+    };
+    const active = (await allRequests()).filter((x) => x.status !== 'COMPLETE');
+    expect(r.owners.reduce((n, o) => n + o.procurements, 0)).toBe(active.length);
+    expect(r.owners.reduce((n, o) => n + o.value, 0)).toBe(
+      active.reduce((n, x) => n + Number(x.estimatedValue ?? 0), 0),
+    );
+    expect(
+      r.owners.every((o) => Object.values(o.byPhase).reduce((a, b) => a + b, 0) === o.procurements),
+    ).toBe(true);
+    expect(r.timeline).toHaveLength(active.length);
+    const cleaning = r.timeline.find((x) => x.number === 'PR-2026-0001')!;
+    expect(cleaning.bars.map((b) => b.label)).toEqual(
+      expect.arrayContaining(['Request and plan', 'Tender open']),
+    );
+    expect(cleaning.bars.every((b) => b.start <= b.end)).toBe(true);
+    expect((await call('exec', 'GET', '/reports/workload')).statusCode).toBe(200);
+    for (const who of ['requester', 'finance', 'delegate', 'evaluator-tech', 'legal', 'contract-mgr'])
+      expect((await call(who, 'GET', '/reports/workload')).statusCode, who).toBe(403);
   });
 });
 

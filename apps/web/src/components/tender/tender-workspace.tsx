@@ -1,6 +1,7 @@
 'use client';
 import { CheckCircle2, Copy, Lock, Send } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { FileDown } from 'lucide-react';
 import { Badge, Button, Card, Field, Input, Stepper, Tabs, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
@@ -196,6 +197,22 @@ export function TenderWorkspace({ initial, csrf }: { initial: TenderView; csrf: 
           </form>
         )}
       </Card>
+
+      <div className="flex flex-wrap items-center gap-2" data-testid="pack-export">
+        <span className="text-sm font-semibold text-text-muted">Print or circulate the pack:</span>
+        <Button asChild variant="secondary">
+          <a href={`/api/v1/tenders/${t.id}/pack/pdf`} download className="text-text no-underline">
+            <FileDown className="size-4" aria-hidden="true" />
+            PDF
+          </a>
+        </Button>
+        <Button asChild variant="secondary">
+          <a href={`/api/v1/tenders/${t.id}/pack/docx`} download className="text-text no-underline">
+            <FileDown className="size-4" aria-hidden="true" />
+            Word
+          </a>
+        </Button>
+      </div>
 
       <Tabs
         label="Tender sections"

@@ -159,6 +159,8 @@ type Ev = {
   };
   me: null | { stream: string; coiState: string; scoringComplete: boolean; required: number; done: number };
   permissions: Record<string, boolean>;
+  probitySignoff?: { by: string; stamp: string } | null;
+  varianceLimitPct?: number;
   conflicts: Array<{ name: string; disposition: string; nature: string }>;
 };
 async function openEval(opts: Parameters<typeof closedTender>[0] = {}, panel = PANEL(U)) {
@@ -1366,5 +1368,162 @@ describe('bid file downloads', () => {
     );
     expect(res.statusCode).toBe(404);
     expect(res.json().code).toBe('FILE_UNAVAILABLE');
+  });
+});
+
+// =================================================================== M12b: per-evaluation variance limit and probity sign-off
+describe('the variance limit can be set per evaluation by the chair (US-EVL-04)', () => {
+  /** Tech 9, chair 7 on technical capability: 22% apart, so flagged only when the limit is below that. */
+  async function scored(limit?: number) {
+    const { ev } = await openEval();
+    await declareAll(ev.id);
+    if (limit !== undefined) {
+      const r = await call('chair', 'PUT', `/evaluations/${ev.id}/variance-limit`, { limitPct: limit });
+      expect(r.statusCode, r.body).toBe(200);
+      expect(r.json().varianceLimitPct).toBe(limit);
+    }
+    await scoreAndSubmit('evaluator-tech', ev.id, (_c, n) => (n.startsWith('Technical') ? 9 : 7));
+    await scoreAndSubmit('evaluator-comm', ev.id, () => 7);
+    await scoreAndSubmit('chair', ev.id, () => 7);
+    const opened = await call('chair', 'POST', `/evaluations/${ev.id}/consensus/open`);
+    expect(opened.statusCode, opened.body).toBe(200);
+    return opened.json() as Ev;
+  }
+
+  it('a lower limit flags what the default would let through, and a higher one flags less', async () => {
+    const byDefault = await scored();
+    expect(byDefault.varianceLimitPct).toBe(30);
+    expect(byDefault.consensus.filter((c) => c.flagged)).toHaveLength(0);
+    const strict = await scored(20);
+    expect(strict.consensus.filter((c) => c.flagged).length).toBeGreaterThan(0);
+    expect(strict.consensus.filter((c) => c.flagged).every((c) => (c.variancePct ?? 0) > 20)).toBe(true);
+    // the limit is recorded in the report's process section
+    const lenient = await scored(60);
+    expect(lenient.consensus.filter((c) => c.flagged)).toHaveLength(0);
+  });
+
+  it('only the chair, only before consensus opens, within 5 to 60 percent, and it is audited and announced', async () => {
+    const { ev } = await openEval();
+    await declareAll(ev.id);
+    for (const who of ['procurement', 'evaluator-tech', 'delegate', 'probity', 'requester'])
+      expect(
+        (await call(who, 'PUT', `/evaluations/${ev.id}/variance-limit`, { limitPct: 20 })).statusCode,
+        who,
+      ).toBe(403);
+    for (const bad of [4, 61, 12.5, '20'])
+      expect(
+        (await call('chair', 'PUT', `/evaluations/${ev.id}/variance-limit`, { limitPct: bad })).statusCode,
+        String(bad),
+      ).toBe(400);
+    expect((await call('chair', 'PUT', `/evaluations/${ev.id}/variance-limit`, {})).statusCode).toBe(400);
+    expect((await view('chair', ev.id)).permissions.canSetVarianceLimit).toBe(true);
+    expect(
+      (await call('chair', 'PUT', `/evaluations/${ev.id}/variance-limit`, { limitPct: 25 })).statusCode,
+    ).toBe(200);
+    const audit = await withSystem(database, (tx) =>
+      tx
+        .select()
+        .from(s.auditEvent)
+        .where(and(eq(s.auditEvent.entityId, ev.id), eq(s.auditEvent.action, 'evaluation.variance_limit'))),
+    );
+    expect(audit).toHaveLength(1);
+    expect(audit[0]!.before).toMatchObject({ limitPct: 30 });
+    expect(audit[0]!.after).toMatchObject({ limitPct: 25 });
+    const procId = uid('user:procurement');
+    const notes = await withSystem(database, (tx) =>
+      tx.select().from(s.notification).where(eq(s.notification.userId, procId)),
+    );
+    expect(notes.some((n) => n.title === 'Variance limit changed')).toBe(true);
+    // not once consensus is open
+    const id2 = (await scored()).id;
+    expect(
+      (await call('chair', 'PUT', `/evaluations/${id2}/variance-limit`, { limitPct: 10 })).statusCode,
+    ).toBe(409);
+    expect((await view('chair', id2)).permissions.canSetVarianceLimit).toBe(false);
+  });
+});
+
+describe('probity sign-off on the evaluation process (US-EVL-06/07)', () => {
+  it('is recorded once, by probity, after consensus is locked; it shows on the evaluation and in the PDF and is audited', async () => {
+    const { ev } = await openEval();
+    await declareAll(ev.id);
+    expect((await call('probity', 'POST', `/evaluations/${ev.id}/probity-signoff`, {})).statusCode).toBe(409); // not locked yet
+    const id = await lockedEval();
+    expect((await view('probity', id)).permissions.canProbitySignOff).toBe(true);
+    for (const who of ['procurement', 'chair', 'delegate', 'evaluator-tech', 'requester'])
+      expect((await call(who, 'POST', `/evaluations/${id}/probity-signoff`, {})).statusCode, who).toBe(403);
+    const r = await call('probity', 'POST', `/evaluations/${id}/probity-signoff`, {
+      comment: 'Process followed, conflicts declared',
+    });
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json().probitySignoff.by).toBe('Jonas Becker');
+    expect(r.json().probitySignoff.stamp).toMatch(
+      /^PROBITY SIGN-OFF · Jonas Becker · PROBITY · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/,
+    );
+    expect(r.json().permissions.canProbitySignOff).toBe(false);
+    expect((await call('probity', 'POST', `/evaluations/${id}/probity-signoff`, {})).json().code).toBe(
+      'ALREADY_SIGNED_OFF',
+    );
+    // others can read that it is signed off
+    expect((await view('procurement', id)).probitySignoff?.by).toBe('Jonas Becker');
+    expect((await view('chair', id)).probitySignoff?.by).toBe('Jonas Becker');
+    // it reaches the PDF
+    await call('procurement', 'POST', `/evaluations/${id}/report`);
+    const pdf = await call('procurement', 'GET', `/evaluations/${id}/report/pdf`);
+    expect(pdf.statusCode).toBe(200);
+    expect(pdf.rawPayload.toString('latin1')).toContain('Probity sign-off');
+    const audit = await withSystem(database, (tx) =>
+      tx
+        .select()
+        .from(s.auditEvent)
+        .where(and(eq(s.auditEvent.entityId, id), eq(s.auditEvent.action, 'evaluation.probity_signoff'))),
+    );
+    expect(audit).toHaveLength(1);
+    // it does not change the approval path: the delegate still decides the report
+    const rep = (await view('delegate', id)).report!;
+    expect(rep.status).toBe('AWAITING_APPROVAL');
+  });
+});
+
+describe('the report can be exported as a Word document', () => {
+  it('is a real .docx with the same content, version and approval as the PDF, for the same roles, and audited', async () => {
+    const id = await lockedEval();
+    await call('procurement', 'POST', `/evaluations/${id}/report`);
+    const res = await call('procurement', 'GET', `/evaluations/${id}/report/docx`);
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.headers['content-type']).toBe(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    expect(res.headers['content-disposition']).toMatch(
+      /attachment; filename="evaluation-report-PR-[\w-]+-v\d+\.docx"/,
+    );
+    const buf = res.rawPayload;
+    expect(buf.subarray(0, 4).toString('latin1')).toBe('PK\u0003\u0004');
+    const text = buf.toString('utf8');
+    expect(text).toContain('word/document.xml');
+    expect(text).toContain('Evaluation report');
+    expect(text).toContain('Awaiting approval');
+    expect(text).toContain('Brightwave');
+    expect(text).toMatch(/version \d+/);
+    // the same roles as the PDF, and not the others
+    for (const who of ['delegate', 'exec', 'probity', 'legal', 'chair'])
+      expect((await call(who, 'GET', `/evaluations/${id}/report/docx`)).statusCode, who).toBe(200);
+    for (const who of ['requester', 'evaluator-tech', 'finance', 'admin'])
+      expect((await call(who, 'GET', `/evaluations/${id}/report/docx`)).statusCode, who).toBe(403);
+    expect(
+      (await call('procurement', 'GET', '/evaluations/00000000-0000-4000-8000-000000000000/report/docx'))
+        .statusCode,
+    ).toBe(404);
+    const audit = await withSystem(database, (tx) =>
+      tx
+        .select()
+        .from(s.auditEvent)
+        .where(and(eq(s.auditEvent.entityId, id), eq(s.auditEvent.action, 'report.export'))),
+    );
+    expect(audit.some((e) => (e.after as { format: string }).format === 'DOCX')).toBe(true);
+  });
+  it('is refused before a report exists', async () => {
+    const id = await lockedEval();
+    expect((await call('procurement', 'GET', `/evaluations/${id}/report/docx`)).statusCode).toBe(404);
   });
 });

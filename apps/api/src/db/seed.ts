@@ -334,6 +334,20 @@ export async function seedDatabase(
         cx: 'LOW',
         requester: 'requester',
       },
+      {
+        key: 'catering',
+        number: 'PR-2026-0007',
+        title: 'Conference catering (bought without a contract)',
+        category: 'Catering (UNSPSC 90100000)',
+        value: '38000.00',
+        term: 1,
+        unit: 'Facilities',
+        phase: 'CLOSED',
+        status: 'COMPLETE',
+        mode: 'SELF_SERVICE',
+        cx: 'LOW',
+        requester: 'requester',
+      },
     ];
     for (const r of reqs) {
       const id = uid(`request:${r.key}`);
@@ -707,9 +721,22 @@ export async function seedDatabase(
     ];
     for (const c of contracts) {
       const id = uid(`contract:${c.key}`);
+      // the tender that led to this contract, so spend and the procurement table can follow contract to request
+      const tenderForContract = uid(`tender:${c.key}`);
+      await tx.insert(s.tender).values({
+        id: tenderForContract,
+        tenantId: TENANT_ID,
+        requestId: uid(`request:${c.request}`),
+        type: 'RFQ',
+        access: 'CLOSED',
+        status: 'AWARDED',
+        opensAt: new Date(c.start.getTime() - 120 * 86_400_000),
+        closesAt: new Date(c.start.getTime() - 90 * 86_400_000),
+      });
       await tx.insert(s.contract).values({
         id,
         tenantId: TENANT_ID,
+        tenderId: tenderForContract,
         number: c.number,
         supplierId: uid(`supplier:${c.supplier}`),
         templateId: 'tpl-services-std',

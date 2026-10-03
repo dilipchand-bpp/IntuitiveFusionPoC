@@ -1,7 +1,8 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, Dialog, Field, Input, Stepper, Textarea } from '@if/ui';
+import Link from 'next/link';
+import { Badge, Button, Card, Dialog, Field, Input, Select, Stepper, Textarea, type BadgeTone } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
 import { ManagementCard } from './management-card';
@@ -29,7 +30,11 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draftText, setDraftText] = useState('');
-  const [dialog, setDialog] = useState<null | 'terms' | 'return' | 'delete'>(null);
+  const [dialog, setDialog] = useState<null | 'terms' | 'return' | 'delete' | 'devreject' | 'variation'>(
+    null,
+  );
+  const [rejectClause, setRejectClause] = useState<string | null>(null);
+  const [variation, setVariation] = useState({ reason: '', value: '', endDate: '' });
   const [comment, setComment] = useState('');
   const [terms, setTerms] = useState({ value: '', startDate: '', endDate: '', noticeDays: '' });
   const p = c.permissions;
@@ -103,6 +108,47 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
         setDialog(null);
       },
     );
+  const decideDeviation = (clauseId: string, decision: 'APPROVE' | 'REJECT', why?: string) =>
+    run(
+      `dev-${clauseId}`,
+      () =>
+        api<ContractView>(`/contracts/${c.id}/deviations/${clauseId}/decision`, {
+          method: 'POST',
+          csrf,
+          body: { decision, ...(why ? { comment: why } : {}) },
+        }),
+      (r) => {
+        setC(r);
+        setDialog(null);
+        setComment('');
+      },
+    );
+  const setRisk = (clauseId: string, risk: string) =>
+    run(
+      `risk-${clauseId}`,
+      () =>
+        api<ContractView>(`/contracts/${c.id}/deviations/${clauseId}/risk`, {
+          method: 'PUT',
+          csrf,
+          body: { risk },
+        }),
+      setC,
+    );
+  const createVariation = () =>
+    run(
+      'variation',
+      () =>
+        api<{ id: string }>(`/contracts/${c.id}/variations`, {
+          method: 'POST',
+          csrf,
+          body: {
+            reason: variation.reason,
+            value: Number(variation.value || 0),
+            ...(variation.endDate ? { endDate: variation.endDate } : {}),
+          },
+        }),
+      (r) => router.push(`/app/contracts/${r.id}`),
+    );
   const remove = () =>
     run(
       'delete',
@@ -111,6 +157,7 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
     );
 
   const [statusLabel, tone] = CONTRACT_STATUS[c.status] ?? [c.status, 'neutral' as const];
+  const RISK_TONE: Record<string, BadgeTone> = { LOW: 'success', MEDIUM: 'warning', HIGH: 'error' };
   return (
     <div className="flex flex-col gap-6" data-testid="contract-workspace">
       <header className="flex flex-col gap-2">
@@ -121,6 +168,11 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
           <Badge tone={tone}>{statusLabel}</Badge>
         </div>
         <Stepper steps={STEPS} current={STEP_OF[c.status] ?? 0} />
+        {c.parent && (
+          <p className="text-sm" data-testid="parent-link">
+            Variation of <Link href={`/app/contracts/${c.parent.id}`}>{c.parent.number}</Link>
+          </p>
+        )}
       </header>
 
       {c.locked && (
@@ -198,7 +250,15 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
             </ol>
           </Card>
 
-          {c.status === 'EXECUTED' && <ManagementCard record={c.record} />}
+          {c.status === 'EXECUTED' && !c.parent && (
+            <ManagementCard
+              record={c.record}
+              contractId={c.id}
+              csrf={csrf}
+              editable={p.canEditRecord}
+              onChange={setC}
+            />
+          )}
 
           <Card aria-labelledby="dev-h" role="region">
             <h2 id="dev-h" className="font-heading text-xl font-bold">
@@ -211,8 +271,20 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
             ) : (
               <ul className="mt-3 flex flex-col gap-3" data-testid="deviations">
                 {c.deviations.map((x) => (
-                  <li key={x.clauseId} className="rounded-md border border-border p-3 text-sm">
-                    <p className="font-semibold">{x.title}</p>
+                  <li
+                    key={x.clauseId}
+                    className="rounded-md border border-border p-3 text-sm"
+                    data-testid={`deviation-${x.clauseId}`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{x.title}</p>
+                      <Badge tone={RISK_TONE[x.risk] ?? 'neutral'}>{x.risk.toLowerCase()} risk</Badge>
+                      {x.decision === 'APPROVED' && <Badge tone="success">Approved</Badge>}
+                      {x.decision === 'REJECTED' && <Badge tone="error">Rejected</Badge>}
+                      {!x.decision && (x.mandatory || x.risk === 'HIGH') && (
+                        <Badge tone="warning">Needs a delegate</Badge>
+                      )}
+                    </div>
                     <p className="mt-1 text-text-muted">
                       <span className="font-semibold">Template: </span>
                       {x.templateText}
@@ -221,6 +293,49 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
                       <span className="font-semibold">Now: </span>
                       {x.currentText}
                     </p>
+                    {x.stamp && <p className="mt-1 font-mono text-xs text-text-muted">{x.stamp}</p>}
+                    {(p.canAmendRisk || p.canDecideDeviations) && (
+                      <div className="mt-2 flex flex-wrap items-end gap-2">
+                        {p.canAmendRisk && (
+                          <label className="flex flex-col gap-1 text-xs font-semibold">
+                            Risk rating
+                            <Select
+                              aria-label={`Risk rating for ${x.title}`}
+                              value={x.risk}
+                              onChange={(e) => void setRisk(x.clauseId, e.target.value)}
+                              className="w-36"
+                            >
+                              <option value="LOW">Low</option>
+                              <option value="MEDIUM">Medium</option>
+                              <option value="HIGH">High</option>
+                            </Select>
+                          </label>
+                        )}
+                        {p.canDecideDeviations && (
+                          <>
+                            <Button
+                              aria-label={`Approve the change to ${x.title}`}
+                              loading={busy === `dev-${x.clauseId}`}
+                              onClick={() => void decideDeviation(x.clauseId, 'APPROVE')}
+                            >
+                              Approve change
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              aria-label={`Reject the change to ${x.title}`}
+                              onClick={() => {
+                                setError(null);
+                                setComment('');
+                                setRejectClause(x.clauseId);
+                                setDialog('devreject');
+                              }}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -244,7 +359,44 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
               <dd>{c.endDate ?? '–'}</dd>
               <dt className="text-text-muted">Notice</dt>
               <dd>{c.noticeDays} days</dd>
+              {c.variations.some((v) => v.status === 'EXECUTED') && (
+                <>
+                  <dt className="text-text-muted">With variations</dt>
+                  <dd className="font-semibold" data-testid="cumulative">
+                    {aud.format(c.cumulative.value)} to {c.cumulative.endDate}
+                  </dd>
+                </>
+              )}
             </dl>
+            {c.variations.length > 0 && (
+              <ul
+                className="mt-3 flex flex-col gap-1 text-sm"
+                aria-label="Variations"
+                data-testid="variations"
+              >
+                {c.variations.map((v) => (
+                  <li key={v.id} className="flex flex-wrap items-center justify-between gap-2">
+                    <Link href={`/app/contracts/${v.id}`}>{v.number}</Link>
+                    <span className="text-text-muted">
+                      {aud.format(v.value)} · {CONTRACT_STATUS[v.status]?.[0] ?? v.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {p.canVary && (
+              <Button
+                variant="secondary"
+                className="mt-3"
+                onClick={() => {
+                  setVariation({ reason: '', value: '', endDate: '' });
+                  setError(null);
+                  setDialog('variation');
+                }}
+              >
+                Create a variation
+              </Button>
+            )}
             {p.canEditTerms && (
               <Button
                 variant="secondary"
@@ -291,6 +443,13 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
                   .map((s) => s.comment)
                   .join('; ')}
               </p>
+            )}
+            {p.canRelease && c.deviationBlockers.length > 0 && (
+              <ul className="mt-2 list-disc pl-5 text-sm text-warning" data-testid="release-blockers">
+                {c.deviationBlockers.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
             )}
             {p.signBlocked && (
               <p className="mt-2 text-sm text-warning" data-testid="sign-blocked">
@@ -422,6 +581,89 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
           {error && (
             <p role="alert" className="text-sm font-medium text-error">
               {error.message}
+            </p>
+          )}
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={dialog === 'devreject'}
+        onOpenChange={(o) => !o && setDialog(null)}
+        title="Reject this change"
+        description="Legal will see your reason and can restore or reword the clause."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={comment.trim().length < 5}
+              loading={busy === `dev-${rejectClause}`}
+              onClick={() => rejectClause && void decideDeviation(rejectClause, 'REJECT', comment)}
+            >
+              Reject change
+            </Button>
+          </>
+        }
+      >
+        <Field label="Reason" required>
+          <Textarea rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />
+        </Field>
+        {error && (
+          <p role="alert" className="mt-2 text-sm font-medium text-error">
+            {error.message}
+          </p>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={dialog === 'variation'}
+        onOpenChange={(o) => !o && setDialog(null)}
+        title="Create a variation"
+        description="A variation is its own contract linked to this one. It is reviewed, signed and locked like any contract, and signing authority is judged on the total value."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              loading={busy === 'variation'}
+              disabled={variation.reason.trim().length < 10}
+              onClick={() => void createVariation()}
+            >
+              Create variation
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <Field label="Reason" required hint="Why the contract changes (at least 10 characters).">
+            <Textarea
+              rows={3}
+              value={variation.reason}
+              onChange={(e) => setVariation({ ...variation, reason: e.target.value })}
+            />
+          </Field>
+          <Field label="Additional value (AUD)" hint="Leave empty if only the end date changes.">
+            <Input
+              type="number"
+              min={0}
+              value={variation.value}
+              onChange={(e) => setVariation({ ...variation, value: e.target.value })}
+            />
+          </Field>
+          <Field label="New end date" hint="Leave empty to keep the current end date.">
+            <Input
+              type="date"
+              value={variation.endDate}
+              onChange={(e) => setVariation({ ...variation, endDate: e.target.value })}
+            />
+          </Field>
+          {error && (
+            <p role="alert" className="text-sm font-medium text-error">
+              {error.message}
+              {error.list.length > 0 ? ` ${error.list.join(' ')}` : ''}
             </p>
           )}
         </div>

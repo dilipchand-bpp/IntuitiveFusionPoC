@@ -523,6 +523,14 @@ describe('US-CON-03 release and sign under separate signing authority', () => {
     await call('legal', 'PUT', `/contracts/${d.c.id}/clauses/LIABILITY`, {
       text: 'Higher cap of 5x annual fees applies.',
     });
+    // a change to a mandatory clause needs a delegate's approval before release
+    expect(
+      (
+        await call('delegate', 'POST', `/contracts/${d.c.id}/deviations/LIABILITY/decision`, {
+          decision: 'APPROVE',
+        })
+      ).statusCode,
+    ).toBe(200);
     await call('legal', 'POST', `/contracts/${d.c.id}/release-for-signing`);
     await call('delegate', 'POST', `/contracts/${d.c.id}/sign`, { decision: 'APPROVE' });
     const done = await call(exec.email, 'POST', `/contracts/${d.c.id}/sign`, { decision: 'APPROVE' });

@@ -33,6 +33,34 @@ export const EXTENSION_LEAD_DAYS = 30;
 /** Days before a milestone is due. */
 export const MILESTONE_LEAD_DAYS = 14;
 
+/** Lead times of the system alerts; a tenant can change them (settings), these are the defaults. */
+export interface LeadDays {
+  expiry: number;
+  notice: number;
+  extension: number;
+  milestone: number;
+}
+export const DEFAULT_LEADS: LeadDays = {
+  expiry: EXPIRY_LEAD_DAYS,
+  notice: NOTICE_LEAD_DAYS,
+  extension: EXTENSION_LEAD_DAYS,
+  milestone: MILESTONE_LEAD_DAYS,
+};
+
+/** Reads lead times from a tenant config object, ignoring anything that is not a whole number of days from 1 to 365. */
+export function leadsFrom(config: unknown): LeadDays {
+  const c = ((config as { alertLeadDays?: Partial<Record<keyof LeadDays, unknown>> } | null)?.alertLeadDays ??
+    {}) as Partial<Record<keyof LeadDays, unknown>>;
+  const ok = (v: unknown, d: number) =>
+    typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 365 ? v : d;
+  return {
+    expiry: ok(c.expiry, DEFAULT_LEADS.expiry),
+    notice: ok(c.notice, DEFAULT_LEADS.notice),
+    extension: ok(c.extension, DEFAULT_LEADS.extension),
+    milestone: ok(c.milestone, DEFAULT_LEADS.milestone),
+  };
+}
+
 export interface ScheduleInput {
   endDate: string;
   noticeDays: number;
@@ -48,18 +76,22 @@ export interface ScheduledAlert {
  * The system alerts for a contract. Notice and expiry are always scheduled (a late warning beats none: if the date has
  * passed the alert fires on the next run). Milestone and extension reminders whose date has passed are dropped.
  */
-export function scheduleAlerts(i: ScheduleInput, today: string): ScheduledAlert[] {
+export function scheduleAlerts(
+  i: ScheduleInput,
+  today: string,
+  leads: LeadDays = DEFAULT_LEADS,
+): ScheduledAlert[] {
   const out: ScheduledAlert[] = [
-    { kind: 'NOTICE', triggerDate: addDays(i.endDate, -(i.noticeDays + NOTICE_LEAD_DAYS)) },
-    { kind: 'EXPIRY', triggerDate: addDays(i.endDate, -EXPIRY_LEAD_DAYS) },
+    { kind: 'NOTICE', triggerDate: addDays(i.endDate, -(i.noticeDays + leads.notice)) },
+    { kind: 'EXPIRY', triggerDate: addDays(i.endDate, -leads.expiry) },
   ];
   if (i.extensions.length)
     out.push({
       kind: 'EXTENSION',
-      triggerDate: addDays(i.endDate, -(i.noticeDays + EXTENSION_LEAD_DAYS)),
+      triggerDate: addDays(i.endDate, -(i.noticeDays + leads.extension)),
     });
   for (const m of i.milestones)
-    out.push({ kind: 'MILESTONE', triggerDate: addDays(m.dueDate, -MILESTONE_LEAD_DAYS) });
+    out.push({ kind: 'MILESTONE', triggerDate: addDays(m.dueDate, -leads.milestone) });
   const seen = new Set<string>();
   return out
     .filter((a) => a.kind === 'NOTICE' || a.kind === 'EXPIRY' || a.triggerDate >= today)

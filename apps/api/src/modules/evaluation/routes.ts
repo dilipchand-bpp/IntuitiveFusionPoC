@@ -36,7 +36,7 @@ import { evaluationCriteria } from '../tender/pack.js';
 import { TenderService } from '../tender/service.js';
 import { REPORT_SECTIONS, buildReport } from './report.js';
 import { atLeast, EvaluationService, isSuspended, type Loaded } from './service.js';
-import { evaluationReportPdf } from './report-pdf.js';
+import { evaluationReportDocx, evaluationReportPdf } from './report-pdf.js';
 import {
   canScoreCriterion,
   canSeeFileSection,
@@ -105,6 +105,8 @@ const consensusBody = z
       .max(50),
   })
   .strict();
+const varianceBody = z.object({ limitPct: z.number().int().min(5).max(60) }).strict();
+const signoffBody = z.object({ comment: z.string().trim().max(1000).optional() }).strict();
 const reopenBody = z.object({ reason: z.string().trim().min(10).max(1000) }).strict();
 const conflictDecisionBody = z
   .object({
@@ -729,6 +731,82 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
     return me;
   }
 
+  // ---------------------------------------------------------------- variance limit per evaluation (US-EVL-04)
+  reg('PUT', '/evaluations/{id}/variance-limit');
+  app.put(`${p}/evaluations/:id/variance-limit`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+    const a = req.auth!;
+    const id = eid(req);
+    const body = parse(varianceBody, req.body);
+    return withContext(d.database, a.ctx, async (tx) => {
+      const l = await visible(tx, a, id);
+      chairOnly(l, a);
+      if (l.ev.status !== 'COI_PENDING' && l.ev.status !== 'SCORING')
+        throw new AppError(409, 'INVALID_STATE', 'The limit can only change before consensus opens');
+      await tx
+        .update(evaluation)
+        .set({ varianceLimitPct: body.limitPct, updatedAt: d.clock.now(), version: l.ev.version + 1 })
+        .where(eq(evaluation.id, id));
+      await d.audit.record(tx, a.ctx, {
+        action: 'evaluation.variance_limit',
+        entityType: 'evaluation',
+        entityId: id,
+        before: { limitPct: l.ev.varianceLimitPct },
+        after: { limitPct: body.limitPct },
+      });
+      await svc.notifyRoles(
+        tx,
+        a.user.tenantId,
+        ['PROCUREMENT', 'PROBITY'],
+        'Variance limit changed',
+        `${l.req.number}: flagged at ${body.limitPct}% instead of ${l.ev.varianceLimitPct}%`,
+        `/app/evaluations/${id}`,
+      );
+      return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
+    });
+  });
+
+  // ---------------------------------------------------------------- probity sign-off (US-EVL-06/07)
+  reg('POST', '/evaluations/{id}/probity-signoff');
+  app.post(`${p}/evaluations/:id/probity-signoff`, { preHandler: guard(d, ['PROBITY']) }, async (req) => {
+    const a = req.auth!;
+    const id = eid(req);
+    const body = parse(signoffBody, req.body);
+    return withContext(d.database, a.ctx, async (tx) => {
+      const l = await visible(tx, a, id);
+      if (!atLeast(l.ev.status, 'LOCKED'))
+        throw new AppError(409, 'INVALID_STATE', 'The process can be signed off once consensus is locked');
+      if (await svc.probityOf(tx, l))
+        throw new AppError(409, 'ALREADY_SIGNED_OFF', 'The process is already signed off');
+      const now = d.clock.now();
+      await tx.insert(approval).values({
+        tenantId: a.user.tenantId,
+        subjectType: 'EVAL_PROBITY',
+        subjectId: id,
+        userId: a.user.id,
+        role: a.user.role,
+        decision: 'APPROVED',
+        comment: body.comment ?? null,
+        stamp: `PROBITY SIGN-OFF · ${a.user.name} · ${a.user.role.replace('_', ' ')} · ${now.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
+        decidedAt: now,
+      });
+      await d.audit.record(tx, a.ctx, {
+        action: 'evaluation.probity_signoff',
+        entityType: 'evaluation',
+        entityId: id,
+        after: { comment: body.comment },
+      });
+      await svc.notifyRoles(
+        tx,
+        a.user.tenantId,
+        ['PROCUREMENT', 'DELEGATE'],
+        'Probity sign-off recorded',
+        `${l.req.number} ${l.req.title}`,
+        `/app/evaluations/${id}`,
+      );
+      return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
+    });
+  });
+
   reg('POST', '/evaluations/{id}/consensus/open');
   app.post(`${p}/evaluations/:id/consensus/open`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
     const a = req.auth!;
@@ -1327,46 +1405,55 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
     });
   });
 
-  // ---------------------------------------------------------------- report as a PDF (US-TND-05)
-  reg('GET', '/evaluations/{id}/report/pdf');
-  app.get(
-    `${p}/evaluations/:id/report/pdf`,
-    { preHandler: guard(d, ['PROCUREMENT', 'DELEGATE', 'EXEC', 'PROBITY', 'LEGAL', 'CHAIR']) },
-    async (req, reply) => {
-      const a = req.auth!;
-      const id = eid(req);
-      const out = await withContext(d.database, a.ctx, async (tx) => {
-        const l = await visible(tx, a, id);
-        const v = await svc.view(tx, a, l);
-        if (!v.report) throw new AppError(404, 'NO_REPORT', 'There is no report to export yet');
-        await d.audit.record(tx, a.ctx, {
-          action: 'report.export',
-          entityType: 'evaluation',
-          entityId: id,
-          after: { format: 'PDF', reportStatus: v.report.status, version: l.ev.version },
+  // ---------------------------------------------------------------- report as a PDF or Word document (US-TND-05)
+  const EXPORTERS = ['PROCUREMENT', 'DELEGATE', 'EXEC', 'PROBITY', 'LEGAL', 'CHAIR'] as const;
+  for (const format of ['pdf', 'docx'] as const) {
+    reg('GET', `/evaluations/{id}/report/${format}`);
+    app.get(
+      `${p}/evaluations/:id/report/${format}`,
+      { preHandler: guard(d, [...EXPORTERS]) },
+      async (req, reply) => {
+        const a = req.auth!;
+        const id = eid(req);
+        const out = await withContext(d.database, a.ctx, async (tx) => {
+          const l = await visible(tx, a, id);
+          const v = await svc.view(tx, a, l);
+          if (!v.report) throw new AppError(404, 'NO_REPORT', 'There is no report to export yet');
+          await d.audit.record(tx, a.ctx, {
+            action: 'report.export',
+            entityType: 'evaluation',
+            entityId: id,
+            after: { format: format.toUpperCase(), reportStatus: v.report.status, version: l.ev.version },
+          });
+          return { v, number: l.req.number, version: l.ev.version, type: l.tender.type };
         });
-        return { v, number: l.req.number, version: l.ev.version, type: l.tender.type };
-      });
-      const pdf = evaluationReportPdf({
-        requestNumber: out.number,
-        title: out.v.title,
-        tenderType: out.type,
-        evaluationVersion: out.version,
-        reportStatus: out.v.report!.status,
-        generatedAt: new Date(out.v.report!.generatedAt),
-        sections: out.v.report!.sections,
-        ranking: out.v.ranking,
-        decision: out.v.report!.decision ? { stamp: out.v.report!.decision.stamp } : undefined,
-      });
-      return reply
-        .header('content-type', 'application/pdf')
-        .header(
-          'content-disposition',
-          `attachment; filename="evaluation-report-${out.number}-v${out.version}.pdf"`,
-        )
-        .send(pdf);
-    },
-  );
+        const input = {
+          requestNumber: out.number,
+          title: out.v.title,
+          tenderType: out.type,
+          evaluationVersion: out.version,
+          reportStatus: out.v.report!.status,
+          generatedAt: new Date(out.v.report!.generatedAt),
+          sections: out.v.report!.sections,
+          ranking: out.v.ranking,
+          decision: out.v.report!.decision ? { stamp: out.v.report!.decision.stamp } : undefined,
+          probity: out.v.probitySignoff,
+        };
+        return reply
+          .header(
+            'content-type',
+            format === 'pdf'
+              ? 'application/pdf'
+              : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          )
+          .header(
+            'content-disposition',
+            `attachment; filename="evaluation-report-${out.number}-v${out.version}.${format}"`,
+          )
+          .send(format === 'pdf' ? evaluationReportPdf(input) : evaluationReportDocx(input));
+      },
+    );
+  }
 
   void atLeast;
   return done;

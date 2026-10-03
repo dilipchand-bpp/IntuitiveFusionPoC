@@ -90,7 +90,10 @@ export interface EvalView {
     canDecideReport: boolean;
     canReopen: boolean;
     canDecideConflict: boolean;
+    canSetVarianceLimit: boolean;
+    canProbitySignOff: boolean;
   };
+  probitySignoff: null | { by: string; stamp: string; at: string; comment: string | null };
 }
 export interface MyScores {
   criteria: EvalCriterion[];

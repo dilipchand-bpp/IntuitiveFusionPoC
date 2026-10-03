@@ -56,7 +56,7 @@ describe('seed', () => {
     expect(c).toMatchObject({
       tenant: 1,
       app_user: SEED_USERS.length,
-      request: 6,
+      request: 7,
       contract: 2,
       supplier: 4,
       notification: 6,

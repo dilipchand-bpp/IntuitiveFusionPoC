@@ -9,6 +9,7 @@ export type NavIcon =
   | 'evaluations'
   | 'contracts'
   | 'reports'
+  | 'suppliers'
   | 'audit'
   | 'users'
   | 'delegations'
@@ -119,6 +120,16 @@ export const NAV: readonly NavItem[] = [
     module: 'Contract award & management',
     requirements: ['FR-0380', 'FR-0395', 'FR-0455', 'FR-0490', 'FR-0505', 'FR-0640'],
     blurb: 'Draft from template, sign with separate signing authority, then manage obligations and alerts.',
+  },
+  {
+    href: '/app/suppliers',
+    label: 'Suppliers',
+    icon: 'suppliers',
+    roles: ['PROCUREMENT', 'LEGAL', 'FINANCE'],
+    section: 'Work',
+    module: 'Supplier directory',
+    requirements: ['FR-0180', 'FR-0185', 'FR-0245', 'FR-0250'],
+    blurb: 'Supplier profiles with sanctions and insurance status, and their contacts.',
   },
   {
     href: '/app/reports',

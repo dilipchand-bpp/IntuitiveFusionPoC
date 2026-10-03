@@ -31,6 +31,7 @@ import { valuesOf } from '../intake/service.js';
 import { TENDER_FIELD_BY_KEY, TENDER_FIELDS, TENDER_TYPES } from './fields.js';
 import type { SealedStore } from './files.js';
 import { buildTenderPack } from './pack.js';
+import { packDocx, packPdf } from './pack-doc.js';
 import { validateWindow } from './rules.js';
 import { addendumView, questionView } from './serialisers.js';
 import { TenderService } from './service.js';
@@ -158,6 +159,52 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
       svc.staffView(tx, a, await visible(tx, a.user.tenantId, tid(req))),
     );
   });
+
+  // ---------------------------------------------------------------- export the pack as PDF or Word (US-TND-05)
+  for (const format of ['pdf', 'docx'] as const) {
+    reg('GET', `/tenders/{id}/pack/${format}`);
+    app.get(
+      `${p}/tenders/:id/pack/${format}`,
+      { preHandler: guard(d, ['PROCUREMENT', 'DELEGATE', 'LEGAL', 'PROBITY', 'EXEC']) },
+      async (req, reply) => {
+        const a = req.auth!;
+        const id = tid(req);
+        await fresh();
+        const doc = await withContext(d.database, a.ctx, async (tx) => {
+          const v = await svc.staffView(tx, a, await visible(tx, a.user.tenantId, id));
+          await d.audit.record(tx, a.ctx, {
+            action: 'tender_pack.export',
+            entityType: 'tender',
+            entityId: id,
+            after: { format: format.toUpperCase(), status: v.status, version: v.version },
+          });
+          return {
+            number: v.requestNumber,
+            title: v.title,
+            type: v.type,
+            status: v.status,
+            version: v.version,
+            opensAt: v.opensAt ? new Date(v.opensAt) : null,
+            closesAt: v.closesAt ? new Date(v.closesAt) : null,
+            generatedAt: d.clock.now(),
+            fields: v.fields.map((f) => ({ label: f.label, paragraphs: f.paragraphs })),
+          };
+        });
+        return reply
+          .header(
+            'content-type',
+            format === 'pdf'
+              ? 'application/pdf'
+              : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          )
+          .header(
+            'content-disposition',
+            `attachment; filename="tender-pack-${doc.number}-v${doc.version}.${format}"`,
+          )
+          .send(format === 'pdf' ? packPdf(doc) : packDocx(doc));
+      },
+    );
+  }
 
   // ---------------------------------------------------------------- create the pack (US-TND-01)
   reg('POST', '/tenders');

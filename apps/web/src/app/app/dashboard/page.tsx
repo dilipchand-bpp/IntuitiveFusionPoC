@@ -221,7 +221,11 @@ export default async function Dashboard({
                   </Td>
                   <Td label="Title">
                     {table.scope === 'PANEL' ? (
-                      r.title
+                      r.evaluationId ? (
+                        <Link href={`/app/evaluations/${r.evaluationId}`}>{r.title}</Link>
+                      ) : (
+                        r.title
+                      )
                     ) : (
                       <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
                     )}

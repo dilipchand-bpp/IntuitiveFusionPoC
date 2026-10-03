@@ -25,6 +25,8 @@
 | POST | `/coi/{id}/decision` | decideCoi | DELEGATE, EXEC, PROBITY | Delegate/Risk decides disposition |  |
 | GET | `/tenders` | listTenders | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | List tenders visible to caller (bid counts only; content stays sealed until close) |  |
 | POST | `/tenders` | createTender | PROCUREMENT | Create tender and generate pack from request/plan |  |
+| GET | `/tenders/{id}/pack/pdf` | exportTenderPackPdf | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC | The tender pack as a PDF with status, version and timestamp (US-TND-05) | application/pdf |
+| GET | `/tenders/{id}/pack/docx` | exportTenderPackDocx | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC | The tender pack as a Word document | Word .docx |
 | GET | `/tenders/{id}` | getTender | PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, PROBITY, EXEC, ADMIN | Get tender |  |
 | PUT | `/tenders/{id}/fields/{key}` | updateTenderField | PROCUREMENT, LEGAL | Edit a pack section while the tender is staged | 409 on stale version; 423 once published |
 | POST | `/tenders/{id}/publish-permission` | grantPublishPermission | DELEGATE | ECV-appropriate delegate grants permission to publish | 403 if value exceeds the delegate's publishing authority |
@@ -42,7 +44,11 @@
 | DELETE | `/supplier/tenders/{id}/submission/files/{fileId}` | deleteBidFile | SUPPLIER | Remove a file from an unsubmitted bid | 409 once submitted (withdraw first) or closed |
 | POST | `/supplier/tenders/{id}/submission` | submitBid | SUPPLIER | Submit; issues a receipt; refused after the closing time | 409 BID_CLOSED after closesAt (late attempt discarded and notified); 409 SUBMISSION_INCOMPLETE without technical and commercial files |
 | POST | `/supplier/tenders/{id}/submission/withdraw` | withdrawBid | SUPPLIER | Withdraw a submitted bid before close so files can be changed | 409 after close |
-| GET | `/suppliers/{id}` | getSupplier | PROCUREMENT, LEGAL, FINANCE, ADMIN | Supplier profile with sanctions/insurance status |  |
+| GET | `/suppliers` | listSuppliers | PROCUREMENT, LEGAL, FINANCE, ADMIN | Supplier directory with sanctions and insurance status |  |
+| GET | `/suppliers/{id}` | getSupplier | PROCUREMENT, LEGAL, FINANCE, ADMIN | Supplier profile: status, contacts, tenders bid on, contracts held |  |
+| POST | `/suppliers/{id}/contacts` | addSupplierContact | PROCUREMENT | A buyer adds a contact to an existing supplier; returns a one-time activation link (no email is sent in the proof of concept) | 409 EMAIL_IN_USE |
+| GET | `/supplier/activate/{token}` | getActivation | public | Look up an activation link (one generic 404 for unknown, used or expired) |  |
+| POST | `/supplier/activate` | activateContact | public | Set a password with a one-time activation link |  |
 | GET | `/evaluations` | listEvaluations | PROCUREMENT, EVALUATOR, CHAIR, DELEGATE, PROBITY, LEGAL, EXEC | Evaluations the caller can see, plus (procurement) closed tenders ready to evaluate |  |
 | GET | `/evaluators` | listEvaluators | PROCUREMENT | Users who can sit on a panel |  |
 | POST | `/tenders/{id}/evaluation` | openEvaluation | PROCUREMENT | Open the evaluation of a closed tender: one record per submitted bid, scoring sheet from the published criteria, panel chosen by procurement | 409 unless the tender is closed, has bids and is scored for award; 400 if the panel lacks a stream |
@@ -55,6 +61,9 @@
 | POST | `/evaluations/{id}/scores/submit` | submitScores | EVALUATOR, CHAIR | Mark own scoring complete (every supplier on every allowed criterion) | 409 SCORING_INCOMPLETE |
 | POST | `/evaluations/{id}/consensus/open` | openConsensus | CHAIR | Chair opens consensus once every member has finished; variance is computed and flagged | 409 SCORING_PENDING |
 | PUT | `/evaluations/{id}/consensus/{supplierId}` | setConsensus | CHAIR | Record consensus scores and rationale for one supplier |  |
+| PUT | `/evaluations/{id}/variance-limit` | setVarianceLimit | CHAIR | Chair sets the variance limit (5 to 60 percent) before consensus opens | 409 once consensus has opened |
+| POST | `/evaluations/{id}/probity-signoff` | probitySignoff | PROBITY | Probity advisor records that the process was followed (after the lock); a record, not a gate on the award | 409 before the lock or if already signed off |
+| GET | `/evaluations/{id}/report/docx` | exportReportDocx | PROCUREMENT, DELEGATE, EXEC, PROBITY, LEGAL, CHAIR | The evaluation report as a Word document (same content as the PDF) | 404 until a report exists |
 | POST | `/evaluations/{id}/consensus/reopen` | reopenConsensus | CHAIR | Chair reopens a locked consensus with a recorded reason; any report is invalidated and must be generated again | 409 once the report is approved |
 | POST | `/evaluations/{id}/consensus/lock` | lockConsensus | CHAIR | Lock consensus; refused while any flagged score lacks a rationale | 409 FLAGS_UNRESOLVED / CONSENSUS_INCOMPLETE |
 | POST | `/evaluations/{id}/report` | generateReport | PROCUREMENT | Generate the evaluation report from the locked consensus |  |
@@ -67,24 +76,34 @@
 | PATCH | `/contracts/{id}` | updateContractTerms | LEGAL, PROCUREMENT | Change value, dates or notice period of a draft; unedited clauses follow | 423 when executed |
 | DELETE | `/contracts/{id}` | deleteContract | LEGAL, EXEC | Logical delete with a reason (the record is kept and audited) |  |
 | GET | `/contracts/{id}` | getContract | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Get contract |  |
+| PUT | `/contracts/{id}/milestones` | setContractMilestones | CONTRACT_MGR, LEGAL, PROCUREMENT | Replace the milestones of an executed contract (within its term); scheduled reminders follow | 422 MILESTONE_OUTSIDE_TERM |
+| PUT | `/contracts/{id}/extensions` | setContractExtensions | CONTRACT_MGR, LEGAL, PROCUREMENT | Replace the optional extensions (months) of an executed contract |  |
+| PUT | `/contracts/{id}/owner` | setContractOwner | CONTRACT_MGR, LEGAL, PROCUREMENT | Change the contract owner to a contract manager | 422 NOT_A_CONTRACT_MANAGER |
+| POST | `/contracts/{id}/variations` | createVariation | LEGAL, PROCUREMENT | Create a variation of an executed contract: a child contract with cumulative value tracking, drafted, reviewed and signed like any contract | 409 VARIATION_OPEN; 422 EMPTY_VARIATION; signing authority is judged on the cumulative value |
+| PUT | `/contracts/{id}/deviations/{clauseId}/risk` | setDeviationRisk | LEGAL | Legal amends the proposed risk rating of a deviation |  |
+| POST | `/contracts/{id}/deviations/{clauseId}/decision` | decideDeviation | DELEGATE, EXEC | A delegate approves or rejects a deviation; a mandatory or high-risk change must be approved before release |  |
 | PUT | `/contracts/{id}/clauses/{clauseId}` | updateClause | LEGAL | Edit clause; a change from the template is marked (blocked when locked) | 423 CONTRACT_LOCKED when executed; 422 MANDATORY_CLAUSE |
 | POST | `/contracts/{id}/release-for-signing` | releaseForSigning | LEGAL, PROCUREMENT | Release the reviewed draft for signing | 422 RELEASE_BLOCKED lists what is missing; procurement can release only after legal review |
 | POST | `/contracts/{id}/sign` | signContract | DELEGATE, EXEC | Mock e-signature with a stamp (name, role, time); signing authority is checked separately from sourcing approval. Above 1M the executive co-signs. REJECT returns the contract to legal | 403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed |
 | GET | `/contracts/{id}/alerts` | listAlerts | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | Alerts of the contract with their delivery log (due alerts fire first) |  |
 | GET | `/alerts` | listAllAlerts | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | All contract alerts, soonest first (due alerts fire first) |  |
-| POST | `/contracts/{id}/alerts` | createAlert | CONTRACT_MGR | Create alert from plain-language instruction |  |
+| POST | `/contracts/{id}/alerts` | createAlert | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | Create a custom alert from a plain-language instruction such as: alert me 1 year before expiry and include whoever is my manager then. The recipients are resolved when it fires | 422 ALERT_NOT_UNDERSTOOD explains what to type |
 | GET | `/dashboard/kpis` | getKpis | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Role-scoped KPIs (staff only; requesters see their own requests) |  |
 | GET | `/reports/expiring-contracts` | expiringContracts | CONTRACT_MGR, PROCUREMENT, EXEC, LEGAL | Executed contracts ending within N days (default 90), soonest first, with the term and optional extensions for the Gantt chart |  |
 | GET | `/audit-events` | listAuditEvents | PROBITY, ADMIN, EXEC, PROCUREMENT | Search the audit trail (newest first, with field-level before and after). requestId returns the whole trail of one procurement: its plan, tender, evaluation, report and contract |  |
 | GET | `/audit-events/export` | exportAudit | PROBITY, ADMIN | Export the audit report as CSV with the same filters (no paging); the export is itself audited and not part of its own file | text/csv; 422 above 20,000 rows |
-| GET | `/reports/spend` | spendReport | EXEC, FINANCE, PROCUREMENT | Spend by category: pipeline (active requests) and committed (executed contracts) |  |
+| GET | `/reports/workload` | workloadReport | PROCUREMENT, EXEC | Procurements and value per owner, and a timeline of each active procurement |  |
+| GET | `/reports/spend` | spendReport | EXEC, FINANCE, PROCUREMENT | Spend by category (with drill-down) and by supplier; pipeline (active requests), committed (executed contracts and variations) and off-contract spend |  |
 | GET | `/reports/procurements` | procurementTable | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Procurement table with completion indicators, scoped to the caller (portfolio, panel or own) |  |
 | GET | `/notifications` | listNotifications | any signed-in | My notifications |  |
 | POST | `/notifications/{id}/read` | markRead | any signed-in | Mark read |  |
-| GET | `/admin/users` | adminListUsers | ADMIN | List users |  |
+| GET | `/admin/users` | adminListUsers | ADMIN | List staff users with their roles (read only; suppliers are not listed) |  |
 | POST | `/admin/users` | adminCreateUser | ADMIN | Create user |  |
 | GET | `/admin/delegations` | listDelegations | ADMIN, EXEC | Delegations of authority |  |
-| PUT | `/admin/delegations/{id}` | updateDelegation | ADMIN | Change threshold; audited |  |
+| POST | `/admin/delegations` | createDelegation | ADMIN | Grant a limit to a person (or role); audited; applies to the next approval or signature | 409 DELEGATION_EXISTS; 403 for oneself |
+| PUT | `/admin/delegations/{id}` | updateDelegation | ADMIN | Change a threshold or switch it off; audited; effective immediately; the person is notified |  |
+| GET | `/admin/alert-settings` | getAlertSettings | ADMIN | Contract alert lead times in days |  |
+| PUT | `/admin/alert-settings` | setAlertSettings | ADMIN | Change the lead times; scheduled alerts of executed contracts move at once; audited |  |
 | GET | `/admin/workflows` | listWorkflows | ADMIN, PROCUREMENT | Workflow library |  |
 | GET | `/admin/templates` | listTemplates | ADMIN, PROCUREMENT, LEGAL | Template library (read-only in POC) |  |
 | POST | `/migration/uploads` | uploadMigration | ADMIN, CONTRACT_MGR | Validate legacy contract CSV (profiling only in POC) | multipart/form-data |

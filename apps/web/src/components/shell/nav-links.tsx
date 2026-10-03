@@ -31,6 +31,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   evaluations: Scale,
   contracts: FileSignature,
   reports: BarChart3,
+  suppliers: Building2,
   audit: ShieldCheck,
   users: Users,
   delegations: Landmark,

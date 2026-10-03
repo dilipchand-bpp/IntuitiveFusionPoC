@@ -1,4 +1,5 @@
-import { renderPdf, type PdfBlock } from '../../documents/pdf.js';
+import { renderDocx } from '../../documents/docx.js';
+import { renderPdf, type PdfBlock, type PdfDocument } from '../../documents/pdf.js';
 
 export interface ReportPdfInput {
   requestNumber: string;
@@ -10,6 +11,7 @@ export interface ReportPdfInput {
   sections: Array<{ label: string; paragraphs: string[] }>;
   ranking: Array<{ displayName: string; weightedScore: number; rank: number | null; compliance: string }>;
   decision?: { stamp: string } | undefined;
+  probity?: { stamp: string } | null | undefined;
 }
 
 const STATUS = {
@@ -19,8 +21,8 @@ const STATUS = {
 } as const;
 const stamp = (d: Date) => `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 
-/** The evaluation report as a PDF carrying its generation time and version on every page (US-TND-05). */
-export function evaluationReportPdf(i: ReportPdfInput): Buffer {
+/** The report as document blocks, shared by the PDF and the Word export so the two never differ. */
+export function reportDocument(i: ReportPdfInput): PdfDocument {
   const blocks: PdfBlock[] = [
     { type: 'title', text: 'Evaluation report' },
     { type: 'subtitle', text: `${i.requestNumber} ${i.title}` },
@@ -29,6 +31,7 @@ export function evaluationReportPdf(i: ReportPdfInput): Buffer {
     { type: 'kv', label: 'Generated', value: stamp(i.generatedAt) },
     { type: 'kv', label: 'Version', value: `Evaluation record version ${i.evaluationVersion}` },
     ...(i.decision ? ([{ type: 'kv', label: 'Approval', value: i.decision.stamp }] as PdfBlock[]) : []),
+    ...(i.probity ? ([{ type: 'kv', label: 'Probity sign-off', value: i.probity.stamp }] as PdfBlock[]) : []),
     { type: 'rule' },
   ];
   for (const s of i.sections) {
@@ -53,10 +56,15 @@ export function evaluationReportPdf(i: ReportPdfInput): Buffer {
     }
     for (const p of s.paragraphs) blocks.push({ type: 'p', text: p });
   }
-  return renderPdf({
+  return {
     title: `Evaluation report ${i.requestNumber}`,
     footer: `Evaluation report ${i.requestNumber} - generated ${stamp(i.generatedAt)} - version ${i.evaluationVersion}`,
     created: i.generatedAt,
     blocks,
-  });
+  };
 }
+
+/** The evaluation report as a PDF carrying its generation time and version on every page (US-TND-05). */
+export const evaluationReportPdf = (i: ReportPdfInput): Buffer => renderPdf(reportDocument(i));
+/** The same report as a Word document. */
+export const evaluationReportDocx = (i: ReportPdfInput): Buffer => renderDocx(reportDocument(i));
