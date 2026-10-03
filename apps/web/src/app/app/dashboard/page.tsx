@@ -1,43 +1,29 @@
-import { Activity, AlarmClock, Banknote, Hourglass, ListChecks } from 'lucide-react';
+import Link from 'next/link';
+import { Activity, AlarmClock, Banknote, Check, Hourglass, ListChecks, Minus } from 'lucide-react';
 import { Badge, EmptyState, KpiCard, Table, Td, Th, type BadgeTone } from '@if/ui';
-import { apiGet } from '@/lib/session';
+import { SpendChart } from '@/components/reports/spend-chart';
+import type { ProcurementTable, SpendReport } from '@/components/reports/types';
+import { PHASE_LABEL, aud } from '@/lib/labels';
+import { apiGet, getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Dashboard – Intuitive Fusion' };
 
 interface Kpis {
+  scope: 'PORTFOLIO' | 'PANEL' | 'OWN';
   activeProcurements: number;
   valueInFlight: number;
   avgCycleDays: number;
-  alertsDue: number;
+  alertsDue: number | null;
   pendingMyAction: number;
   byPhase: Array<{ phase: string; count: number }>;
-  recent: Array<{
-    id: string;
-    number: string;
-    title: string;
-    phase: string;
-    status: string;
-    estimatedValue: number;
-    updatedAt: string;
-  }>;
 }
 
-const aud = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
 const audCompact = new Intl.NumberFormat('en-AU', {
   style: 'currency',
   currency: 'AUD',
   notation: 'compact',
   maximumFractionDigits: 2,
 });
-const PHASE_LABEL: Record<string, string> = {
-  INTAKE: 'Intake',
-  PLAN: 'Plan',
-  TENDER: 'Tender',
-  EVALUATION: 'Evaluation',
-  CONTRACT_AWARD: 'Contract award',
-  CONTRACT_MGMT: 'Contract management',
-  CLOSED: 'Closed',
-};
 const STATUS_TONE: Record<string, BadgeTone> = {
   DRAFT: 'neutral',
   SUBMITTED: 'info',
@@ -46,10 +32,36 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   COMPLETE: 'success',
 };
 const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace('_', ' ');
+const SCOPE_TEXT: Record<Kpis['scope'], string> = {
+  PORTFOLIO: 'Every procurement in the organisation.',
+  PANEL: 'The procurements you evaluate and the ones you raised.',
+  OWN: 'The requests you raised.',
+};
+const STEPS = [
+  ['intake', 'Intake'],
+  ['plan', 'Plan'],
+  ['tender', 'Tender'],
+  ['evaluation', 'Evaluation'],
+  ['contract', 'Contract'],
+] as const;
+const PHASES = Object.keys(PHASE_LABEL);
 
-// TODO(M12): role-based layouts, drill-down charts, completeness ticks (FR-0600, FR-0625, FR-0650).
-export default async function Dashboard() {
-  const k = await apiGet<Kpis>('/dashboard/kpis');
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ phase?: string; q?: string }>;
+}) {
+  const sp = await searchParams;
+  const phase = sp.phase && PHASES.includes(sp.phase) ? sp.phase : '';
+  const q = (sp.q ?? '').slice(0, 100);
+  const qs = new URLSearchParams({ ...(phase ? { phase } : {}), ...(q ? { q } : {}) }).toString();
+  const user = await getSessionUser();
+  const seesSpend = user?.roles.some((r) => ['EXEC', 'FINANCE', 'PROCUREMENT'].includes(r)) ?? false;
+  const [k, table, spend] = await Promise.all([
+    apiGet<Kpis>('/dashboard/kpis'),
+    apiGet<ProcurementTable>(`/reports/procurements${qs ? `?${qs}` : ''}`),
+    seesSpend ? apiGet<SpendReport>('/reports/spend') : Promise.resolve(null),
+  ]);
   if (!k) {
     return (
       <EmptyState
@@ -60,11 +72,11 @@ export default async function Dashboard() {
   }
   const max = Math.max(1, ...k.byPhase.map((p) => p.count));
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-8">
       <header>
         <h1 className="text-3xl font-extrabold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-text-muted">
-          Live overview of the procurements you can see. Figures come from synthetic demo data.
+        <p className="mt-1 text-text-muted" data-testid="scope-text">
+          {SCOPE_TEXT[k.scope]} Figures come from synthetic demo data.
         </p>
       </header>
 
@@ -91,7 +103,8 @@ export default async function Dashboard() {
         />
         <KpiCard
           label="Alerts due (30 days)"
-          value={k.alertsDue}
+          value={k.alertsDue ?? '–'}
+          hint={k.alertsDue === null ? 'Contract management only' : undefined}
           icon={<AlarmClock className="size-5" aria-hidden="true" />}
         />
         <KpiCard
@@ -102,7 +115,7 @@ export default async function Dashboard() {
         />
       </section>
 
-      <section aria-labelledby="by-phase" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <section aria-labelledby="by-phase" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="min-w-0 rounded-lg border border-border bg-surface p-6 shadow-sm">
           <h2 id="by-phase" className="font-heading text-lg font-semibold">
             By phase
@@ -128,42 +141,124 @@ export default async function Dashboard() {
             </ul>
           )}
         </div>
+        {spend && <SpendChart report={spend} />}
+      </section>
 
-        <div className="flex min-w-0 flex-col gap-3">
-          <h2 className="font-heading text-lg font-semibold">Recent procurements</h2>
-          {k.recent.length === 0 ? (
-            <EmptyState title="Nothing here yet" body="Procurements you can see will appear here." />
-          ) : (
-            <Table caption="Recent procurements">
-              <thead>
-                <tr>
-                  <Th>Number</Th>
-                  <Th>Title</Th>
-                  <Th>Phase</Th>
-                  <Th>Status</Th>
-                  <Th className="text-right">Value</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {k.recent.map((r) => (
-                  <tr key={r.id}>
-                    <Td label="Number" className="whitespace-nowrap font-mono text-xs">
-                      {r.number}
-                    </Td>
-                    <Td label="Title">{r.title}</Td>
-                    <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
-                    <Td label="Status">
-                      <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>{label(r.status)}</Badge>
-                    </Td>
-                    <Td label="Value" className="text-right">
-                      {aud.format(r.estimatedValue)}
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+      <section aria-labelledby="proc-h" className="flex min-w-0 flex-col gap-3">
+        <h2 id="proc-h" className="font-heading text-xl font-bold">
+          Procurements
+        </h2>
+        <form
+          method="get"
+          className="flex flex-wrap items-end gap-3"
+          role="search"
+          aria-label="Filter procurements"
+        >
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            Search
+            <input
+              name="q"
+              defaultValue={q}
+              className="min-h-[44px] w-56 rounded-md border border-border-strong bg-surface px-3 font-normal"
+              placeholder="Number, title or category"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            Phase
+            <select
+              name="phase"
+              defaultValue={phase}
+              className="min-h-[44px] rounded-md border border-border-strong bg-surface px-3 font-normal"
+            >
+              <option value="">All phases</option>
+              {PHASES.map((p) => (
+                <option key={p} value={p}>
+                  {PHASE_LABEL[p]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="min-h-[44px] rounded-md border border-border-strong bg-surface px-4 text-sm font-semibold hover:bg-surface-alt"
+          >
+            Apply
+          </button>
+          {(phase || q) && (
+            <Link href="/app/dashboard" className="min-h-[44px] py-3 text-sm">
+              Clear
+            </Link>
           )}
-        </div>
+        </form>
+        {!table ? (
+          <EmptyState title="The table is unavailable" body="Please refresh the page." />
+        ) : table.items.length === 0 ? (
+          <EmptyState
+            title="Nothing matches"
+            body={phase || q ? 'Try clearing the filters.' : 'Procurements you can see will appear here.'}
+          />
+        ) : (
+          <Table caption="Procurements">
+            <thead>
+              <tr>
+                <Th>Number</Th>
+                <Th>Title</Th>
+                <Th>Phase</Th>
+                <Th>Status</Th>
+                <Th className="text-right">Value</Th>
+                {STEPS.map(([, name]) => (
+                  <Th key={name} className="text-center">
+                    {name}
+                  </Th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {table.items.map((r) => (
+                <tr key={r.id} data-testid="proc-row">
+                  <Td label="Number" className="whitespace-nowrap font-mono text-xs">
+                    {r.number}
+                  </Td>
+                  <Td label="Title">
+                    {table.scope === 'PANEL' ? (
+                      r.title
+                    ) : (
+                      <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
+                    )}
+                  </Td>
+                  <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
+                  <Td label="Status">
+                    <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>{label(r.status)}</Badge>
+                  </Td>
+                  <Td label="Value" className="text-right">
+                    {aud.format(r.estimatedValue)}
+                  </Td>
+                  {STEPS.map(([key, name]) => (
+                    <Td key={key} label={name} className="text-center">
+                      {r.steps[key] ? (
+                        <span className="relative inline-flex items-center gap-1 text-success">
+                          <Check className="size-5" aria-hidden="true" />
+                          <span className="sr-only">{name} complete</span>
+                          <span className="text-xs font-semibold md:hidden" aria-hidden="true">
+                            Complete
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="relative inline-flex items-center gap-1 text-text-muted">
+                          <Minus className="size-5" aria-hidden="true" />
+                          <span className="sr-only">{name} not complete</span>
+                          <span className="text-xs md:hidden" aria-hidden="true">
+                            Not yet
+                          </span>
+                        </span>
+                      )}
+                    </Td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
       </section>
     </div>
   );

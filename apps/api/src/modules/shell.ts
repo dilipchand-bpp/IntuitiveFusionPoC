@@ -2,12 +2,13 @@
  * Routes that back the application shell: dashboard KPIs (US-RPT-01 frame) and notifications (US-PLT-04).
  * Reads run as the least-privilege app role with the caller's identity published for row level security.
  */
-import { and, desc, eq, gte, lte, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, ne, notInArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { guard, type GuardDeps } from '../auth/guard.js';
 import { withContext } from '../db/client.js';
-import { alert, evaluation, notification, plan, request } from '../db/schema.js';
+import { alert, evaluation, notification, panelMember, plan } from '../db/schema.js';
+import { visibleRequests } from './reporting/scope.js';
 import { AppError, parse } from '../http/errors.js';
 
 const STAFF = [
@@ -33,12 +34,8 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
   app.get(`${p}/dashboard/kpis`, { preHandler: guard(d, [...STAFF]) }, async (req) => {
     const a = req.auth!;
     const now = d.clock.now();
-    const own = a.user.roles.length === 1 && a.user.roles[0] === 'REQUESTER'; // requesters see only their own requests
     return withContext(d.database, a.ctx, async (tx) => {
-      const scope = own
-        ? and(eq(request.tenantId, a.user.tenantId), eq(request.requesterId, a.user.id))
-        : eq(request.tenantId, a.user.tenantId);
-      const rows = await tx.select().from(request).where(scope);
+      const { scope, rows } = await visibleRequests(tx, a);
       const active = rows.filter((r) => r.status !== 'COMPLETE');
       const done_ = rows.filter((r) => r.status === 'COMPLETE');
       const cycle = done_.length
@@ -46,17 +43,23 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
         : 0;
 
       const horizon = new Date(now.getTime() + 30 * DAY).toISOString().slice(0, 10);
-      const [alerts] = await tx
-        .select({ n: sql<number>`count(*)::int` })
-        .from(alert)
-        .where(
-          and(
-            eq(alert.tenantId, a.user.tenantId),
-            eq(alert.status, 'SCHEDULED'),
-            gte(alert.triggerDate, now.toISOString().slice(0, 10)),
-            lte(alert.triggerDate, horizon),
-          ),
-        );
+      // Contract alerts are a contract-management matter: other roles do not see the count
+      const seesAlerts = a.user.roles.some((r) =>
+        ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'].includes(r),
+      );
+      const [alerts] = seesAlerts
+        ? await tx
+            .select({ n: sql<number>`count(*)::int` })
+            .from(alert)
+            .where(
+              and(
+                eq(alert.tenantId, a.user.tenantId),
+                eq(alert.status, 'SCHEDULED'),
+                gte(alert.triggerDate, now.toISOString().slice(0, 10)),
+                lte(alert.triggerDate, horizon),
+              ),
+            )
+        : [{ n: null }];
 
       // "Waiting for me": what each role is expected to act on next.
       let pending = 0;
@@ -71,8 +74,15 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
       if (roles.includes('CHAIR') || roles.includes('EVALUATOR')) {
         const [x] = await tx
           .select({ n: sql<number>`count(*)::int` })
-          .from(evaluation)
-          .where(and(eq(evaluation.tenantId, a.user.tenantId), ne(evaluation.status, 'APPROVED')));
+          .from(panelMember)
+          .innerJoin(evaluation, eq(evaluation.id, panelMember.evaluationId))
+          .where(
+            and(
+              eq(panelMember.userId, a.user.id),
+              notInArray(panelMember.coiState, ['REMOVED', 'DECLARED_CONFLICT']),
+              ne(evaluation.status, 'APPROVED'),
+            ),
+          );
         pending += x?.n ?? 0;
       }
       if (roles.includes('REQUESTER'))
@@ -86,7 +96,8 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
         activeProcurements: active.length,
         valueInFlight: active.reduce((s, r) => s + Number(r.estimatedValue ?? 0), 0),
         avgCycleDays: Math.round(cycle * 10) / 10,
-        alertsDue: alerts?.n ?? 0,
+        scope,
+        alertsDue: alerts?.n ?? null,
         pendingMyAction: pending,
         byPhase,
         recent: [...rows]

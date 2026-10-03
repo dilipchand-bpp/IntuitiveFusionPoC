@@ -58,6 +58,10 @@ Sign in as `legal@...` and open **Contracts**: two executed, locked contracts ar
 
 Sign in as `contract-mgr@...` and open **Contracts**: **Expiring contracts** lists what ends in the next 90 days (CT-2026-0001 ends in 74 days) with a term chart including the optional extension; **Alerts** lists every alert. Open a contract to see its owner, milestones and alerts. When a contract is signed and locked its record and alerts are created automatically; alerts fire on their date (the browser tests cannot change the date, the API tests travel in time). Email is simulated. Existing dev databases need `npm run db:reset`.
 
+## Try the dashboards and audit trail
+
+Sign in as `exec@...` for the portfolio dashboard: key figures, spend by category, and every procurement with completion ticks (filter by phase or text). `requester@...` sees only their own requests and `evaluator-tech@...` only what they evaluate. `probity@...` opens **Audit trail** to search who did what, with before and after, filter to one procurement, and **Export CSV** (the export is itself recorded in the trail). Executives can read the trail but not export it.
+
 ## Checks
 
 ```bash

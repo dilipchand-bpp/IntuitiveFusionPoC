@@ -787,3 +787,86 @@ test.describe('contract management: record, alerts, expiring contracts and the G
     }
   });
 });
+
+// ---------------------------------------------------------------- M12: dashboards and audit
+test.describe('reporting: role-scoped dashboard, completion ticks, spend chart and the audit trail', () => {
+  test('the executive sees the portfolio with completion ticks and the spend chart with a table alternative', async ({
+    page,
+  }) => {
+    await signIn(page, 'exec');
+    await page.goto('/app/dashboard');
+    await expect(page.getByTestId('scope-text')).toContainText('Every procurement');
+    const rows = page.getByTestId('proc-row');
+    expect(await rows.count()).toBeGreaterThanOrEqual(6);
+    const cleaning = rows.filter({ hasText: 'PR-2026-0001' });
+    await expect(cleaning.getByText('Tender complete')).toBeAttached();
+    await expect(cleaning.getByText('Evaluation not complete')).toBeAttached();
+    await expect(page.getByTestId('spend-chart')).toBeVisible();
+    await expect(page.getByRole('table', { name: 'Spend by category' })).toContainText(
+      'Contracts not linked to a request',
+    );
+    // filter by phase
+    await page.locator('select[name=phase]').selectOption('EVALUATION');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page).toHaveURL(/phase=EVALUATION/);
+    for (const r of await rows.all()) await expect(r).toContainText('Evaluation');
+    const scan = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(scan.violations).toEqual([]);
+  });
+
+  test('requesters see only their own, evaluators only what they evaluate, and neither sees spend', async ({
+    page,
+  }) => {
+    await signIn(page, 'requester');
+    await page.goto('/app/dashboard');
+    await expect(page.getByTestId('scope-text')).toContainText('requests you raised');
+    await expect(page.getByTestId('spend-chart')).toHaveCount(0);
+    await signIn(page, 'evaluator-tech');
+    await page.goto('/app/dashboard');
+    await expect(page.getByTestId('scope-text')).toContainText('you evaluate');
+    const mine = await page.getByTestId('proc-row').count();
+    expect(mine).toBeGreaterThanOrEqual(1);
+    await signIn(page, 'exec');
+    await page.goto('/app/dashboard');
+    expect(await page.getByTestId('proc-row').count()).toBeGreaterThan(mine);
+    await signIn(page, 'evaluator-tech');
+    await page.goto('/app/dashboard');
+    await expect(page.getByTestId('spend-chart')).toHaveCount(0);
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
+  test('probity searches the audit trail and exports it as CSV; the export is itself in the trail', async ({
+    page,
+  }) => {
+    await signIn(page, 'probity');
+    await page.goto('/app/audit');
+    await expect(page.getByTestId('audit-row').first()).toBeVisible();
+    await page.getByLabel('Action starts with').fill('contract.');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page).toHaveURL(/action=contract\./);
+    for (const r of await page.getByTestId('audit-row').all()) await expect(r).toContainText('contract.');
+    const file = await download(page, () => page.getByRole('link', { name: 'Export CSV' }).click());
+    expect(file.name).toMatch(/^audit-trail-\d{8}\.csv$/);
+    const text = file.bytes.toString('utf8');
+    expect(text).toContain('Seq,Time (UTC),Actor,Role,Action,Entity type,Entity id,Result,Before,After,Hash');
+    expect(text).toContain('contract.');
+    await page.goto('/app/audit?action=audit.export');
+    await expect(page.getByTestId('audit-row').first()).toContainText('audit.export');
+    const scan = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(scan.violations).toEqual([]);
+  });
+
+  test('the executive can read the audit trail but not export it; others cannot open it', async ({
+    page,
+  }) => {
+    await signIn(page, 'exec');
+    await page.goto('/app/audit');
+    await expect(page.getByTestId('audit-count')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Export CSV' })).toHaveCount(0);
+    for (const who of ['finance', 'requester', 'delegate']) {
+      await signIn(page, who);
+      expect((await page.goto('/app/audit'))?.status(), who).toBe(403);
+    }
+  });
+});

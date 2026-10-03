@@ -75,9 +75,10 @@
 | POST | `/contracts/{id}/alerts` | createAlert | CONTRACT_MGR | Create alert from plain-language instruction |  |
 | GET | `/dashboard/kpis` | getKpis | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Role-scoped KPIs (staff only; requesters see their own requests) |  |
 | GET | `/reports/expiring-contracts` | expiringContracts | CONTRACT_MGR, PROCUREMENT, EXEC, LEGAL | Executed contracts ending within N days (default 90), soonest first, with the term and optional extensions for the Gantt chart |  |
-| GET | `/audit-events` | listAuditEvents | PROBITY, ADMIN, EXEC, PROCUREMENT | Search audit trail |  |
-| GET | `/audit-events/export` | exportAudit | PROBITY, ADMIN | Export audit report (CSV); the export is itself audited | text/csv |
-| GET | `/reports/spend` | spendReport | EXEC, FINANCE, PROCUREMENT | Spend by category/supplier (seed data) | Stub in POC (returns ComingSoon) |
+| GET | `/audit-events` | listAuditEvents | PROBITY, ADMIN, EXEC, PROCUREMENT | Search the audit trail (newest first, with field-level before and after). requestId returns the whole trail of one procurement: its plan, tender, evaluation, report and contract |  |
+| GET | `/audit-events/export` | exportAudit | PROBITY, ADMIN | Export the audit report as CSV with the same filters (no paging); the export is itself audited and not part of its own file | text/csv; 422 above 20,000 rows |
+| GET | `/reports/spend` | spendReport | EXEC, FINANCE, PROCUREMENT | Spend by category: pipeline (active requests) and committed (executed contracts) |  |
+| GET | `/reports/procurements` | procurementTable | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Procurement table with completion indicators, scoped to the caller (portfolio, panel or own) |  |
 | GET | `/notifications` | listNotifications | any signed-in | My notifications |  |
 | POST | `/notifications/{id}/read` | markRead | any signed-in | Mark read |  |
 | GET | `/admin/users` | adminListUsers | ADMIN | List users |  |

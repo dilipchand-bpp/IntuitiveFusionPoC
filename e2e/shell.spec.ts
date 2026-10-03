@@ -239,8 +239,8 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
       .first()
       .innerText();
     expect(Number(hint.replace(/[^\d]/g, ''))).toBeGreaterThanOrEqual(6_648_000);
-    const table = page.getByRole('table', { name: 'Recent procurements' });
-    await expect(table.getByRole('columnheader')).toHaveCount(5);
+    const table = page.getByRole('table', { name: 'Procurements' });
+    await expect(table.getByRole('columnheader')).toHaveCount(10);
     expect(await table.getByRole('row').count()).toBeGreaterThan(1);
   });
 

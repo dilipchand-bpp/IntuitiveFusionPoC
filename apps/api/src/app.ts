@@ -14,6 +14,7 @@ import { MockErpBudgetService, type ErpBudgetService } from './adapters/erp.js';
 import type { Database } from './db/client.js';
 import { registerIdempotency } from './http/idempotency.js';
 import { registerIntakeRoutes } from './modules/intake/routes.js';
+import { registerReportingRoutes } from './modules/reporting/routes.js';
 import { registerContractRoutes } from './modules/contract/routes.js';
 import { registerEvaluationRoutes } from './modules/evaluation/routes.js';
 import { registerPlanRoutes } from './modules/plan/routes.js';
@@ -146,6 +147,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     schedulerMinutes: deps.alertSchedulerMinutes,
   }))
     implemented.add(k);
+  for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

@@ -4312,7 +4312,7 @@
     "tags": [
      "Reporting"
     ],
-    "summary": "Search audit trail",
+    "summary": "Search the audit trail (newest first, with field-level before and after). requestId returns the whole trail of one procurement: its plan, tender, evaluation, report and contract",
     "parameters": [
      {
       "name": "entityType",
@@ -4332,6 +4332,30 @@
      },
      {
       "name": "actorId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "requestId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "action",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "result",
       "in": "query",
       "required": false,
       "schema": {
@@ -4409,8 +4433,73 @@
     "tags": [
      "Reporting"
     ],
-    "summary": "Export audit report (CSV); the export is itself audited",
-    "parameters": [],
+    "summary": "Export the audit report as CSV with the same filters (no paging); the export is itself audited and not part of its own file",
+    "parameters": [
+     {
+      "name": "entityType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "entityId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "actorId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "requestId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "action",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "result",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
     "x-roles": [
      "PROBITY",
      "ADMIN"
@@ -4432,7 +4521,7 @@
       "$ref": "#/components/responses/E404"
      }
     },
-    "description": "text/csv"
+    "description": "text/csv; 422 above 20,000 rows"
    }
   },
   "/reports/spend": {
@@ -4441,7 +4530,7 @@
     "tags": [
      "Reporting"
     ],
-    "summary": "Spend by category/supplier (seed data)",
+    "summary": "Spend by category: pipeline (active requests) and committed (executed contracts)",
     "parameters": [],
     "x-roles": [
      "EXEC",
@@ -4454,7 +4543,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/ComingSoon"
+         "$ref": "#/components/schemas/SpendReport"
         }
        }
       }
@@ -4471,8 +4560,79 @@
      "404": {
       "$ref": "#/components/responses/E404"
      }
-    },
-    "description": "Stub in POC (returns ComingSoon)"
+    }
+   }
+  },
+  "/reports/procurements": {
+   "get": {
+    "operationId": "procurementTable",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Procurement table with completion indicators, scoped to the caller (portfolio, panel or own)",
+    "parameters": [
+     {
+      "name": "phase",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcurementTable"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
    }
   },
   "/notifications": {
@@ -8504,6 +8664,14 @@
    "Kpis": {
     "type": "object",
     "properties": {
+     "scope": {
+      "type": "string",
+      "enum": [
+       "PORTFOLIO",
+       "PANEL",
+       "OWN"
+      ]
+     },
      "activeProcurements": {
       "type": "integer"
      },
@@ -8514,7 +8682,9 @@
       "type": "number"
      },
      "alertsDue": {
-      "type": "integer"
+      "type": "integer",
+      "nullable": true,
+      "description": "Null for roles outside contract management and oversight"
      },
      "pendingMyAction": {
       "type": "integer"
@@ -8652,13 +8822,135 @@
      "daysRemaining"
     ]
    },
-   "AuditEvent": {
+   "ProcurementRow": {
     "type": "object",
     "properties": {
      "id": {
       "type": "string",
       "format": "uuid"
      },
+     "number": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "category": {
+      "type": "string"
+     },
+     "businessUnit": {
+      "type": "string"
+     },
+     "phase": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "estimatedValue": {
+      "type": "number"
+     },
+     "steps": {
+      "type": "object",
+      "properties": {
+       "intake": {
+        "type": "boolean"
+       },
+       "plan": {
+        "type": "boolean"
+       },
+       "tender": {
+        "type": "boolean"
+       },
+       "evaluation": {
+        "type": "boolean"
+       },
+       "contract": {
+        "type": "boolean"
+       }
+      },
+      "additionalProperties": false
+     },
+     "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "number",
+     "title",
+     "phase",
+     "status",
+     "steps"
+    ]
+   },
+   "ProcurementTable": {
+    "type": "object",
+    "properties": {
+     "scope": {
+      "type": "string",
+      "enum": [
+       "PORTFOLIO",
+       "PANEL",
+       "OWN"
+      ]
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ProcurementRow"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "scope",
+     "items"
+    ]
+   },
+   "SpendReport": {
+    "type": "object",
+    "properties": {
+     "byCategory": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "category": {
+         "type": "string"
+        },
+        "pipeline": {
+         "type": "number"
+        },
+        "committed": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false
+      }
+     },
+     "totalPipeline": {
+      "type": "number"
+     },
+     "totalCommitted": {
+      "type": "number"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "byCategory",
+     "totalPipeline",
+     "totalCommitted"
+    ]
+   },
+   "AuditEvent": {
+    "type": "object",
+    "properties": {
      "seq": {
       "type": "integer"
      },
@@ -8669,6 +8961,9 @@
      "actorId": {
       "type": "string",
       "format": "uuid"
+     },
+     "actorName": {
+      "type": "string"
      },
      "actorRole": {
       "type": "string"
@@ -8691,9 +8986,6 @@
       "type": "object",
       "additionalProperties": true
      },
-     "correlationId": {
-      "type": "string"
-     },
      "result": {
       "type": "string",
       "enum": [
@@ -8708,7 +9000,6 @@
     },
     "additionalProperties": false,
     "required": [
-     "id",
      "seq",
      "at",
      "action",
