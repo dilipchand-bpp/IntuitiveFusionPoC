@@ -21,4 +21,6 @@ paths = [
   '''\.env\.example''',
   '''apps/api/openapi\.json''',
   '''spikes/.*''',
+  # generator scripts that copy the synthetic test fixtures above
+  '''_work/.*''',
 ]
