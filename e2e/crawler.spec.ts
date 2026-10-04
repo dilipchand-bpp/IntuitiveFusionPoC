@@ -64,6 +64,7 @@ const ALL_SCREENS = [
   '/app/suppliers',
   '/app/reports',
   '/app/audit',
+  '/app/probity',
   '/app/collaboration',
   '/app/roadmap',
   '/admin',

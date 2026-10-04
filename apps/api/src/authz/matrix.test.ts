@@ -17,7 +17,10 @@ import { freshDb, newClock } from '../test-helpers.js';
 const config = loadConfig({ NODE_ENV: 'test', SESSION_SECRET: 'm'.repeat(40), API_PORT: '0' });
 const PASSWORD = 'unit-test-password-123';
 const roleUser: Record<RoleName, string> = Object.fromEntries(
-  SEED_USERS.filter((u) => u.key !== 'evaluator-comm').map((u) => [u.role, u.key]),
+  SEED_USERS.filter((u) => !['evaluator-comm', 'evaluator-extra', 'advisor'].includes(u.key)).map((u) => [
+    u.role,
+    u.key,
+  ]),
 ) as never;
 
 let app: FastifyInstance;

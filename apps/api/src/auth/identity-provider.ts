@@ -18,6 +18,8 @@ export interface AuthenticatedUser {
   orgUnitId: string | null;
   supplierId: string | null;
   pool: 'STAFF' | 'SUPPLIER';
+  /** An external person, such as a probity advisor, who may use only what they are allocated (FR-0310). */
+  external: boolean;
 }
 
 export type AuthResult =
@@ -142,6 +144,7 @@ export class MockIdentityProvider implements IdentityProvider {
       orgUnitId: u.orgUnitId,
       supplierId: u.supplierId,
       pool: roles.includes('SUPPLIER') ? 'SUPPLIER' : 'STAFF',
+      external: u.external,
     };
   }
 

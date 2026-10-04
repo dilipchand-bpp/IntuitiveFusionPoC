@@ -24,6 +24,8 @@ import {
 } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
 import { REPORT_SECTIONS } from './report.js';
+import { blend, valueForMoney } from './commercial.js';
+import { gateRows, loadExtras, previousStages, routeApproval, type RankExtras } from './b3-service.js';
 import {
   anonymousName,
   canScoreCriterion,
@@ -115,6 +117,21 @@ export class EvaluationService {
   active(l: Loaded): MemberRow[] {
     return l.panel.filter((m) => !isSuspended(m));
   }
+  /** Suppliers this person may not assess because a delegate ruled their conflict minor and excluded them (FR-0330). */
+  async excludedFor(tx: Tx, l: Loaded, userId: string): Promise<Set<string>> {
+    const rows = await tx
+      .select({ s: coiDeclaration.excludedSupplierId })
+      .from(coiDeclaration)
+      .where(
+        and(
+          eq(coiDeclaration.scope, 'EVALUATION'),
+          eq(coiDeclaration.scopeId, l.ev.id),
+          eq(coiDeclaration.userId, userId),
+          eq(coiDeclaration.disposition, 'MANAGEABLE'),
+        ),
+      );
+    return new Set(rows.flatMap((r) => (r.s ? [r.s] : [])));
+  }
 
   async notifyUsers(tx: Tx, tenantId: string, userIds: string[], title: string, body: string, link: string) {
     for (const userId of new Set(userIds))
@@ -188,6 +205,7 @@ export class EvaluationService {
     // A panel member sees no identity and no file until they have declared no conflict.
     const namesVisible = processRole || declared;
     const myCriteria = this.criteriaFor(l, processRole ? undefined : me);
+    const excluded = processRole || !me ? new Set<string>() : await this.excludedFor(tx, l, a.user.id);
 
     const files = namesVisible
       ? await tx
@@ -200,23 +218,25 @@ export class EvaluationService {
             ),
           )
       : []; // the database also filters these by role, stream and close time (row level security)
-    const suppliers = l.bidders.map((b) => ({
-      supplierId: b.supplierId,
-      displayName: namesVisible ? b.company : b.label,
-      anonymised: !namesVisible,
-      files: files
-        .filter((f) => f.submissionId === b.submissionId)
-        .filter(
-          (f) => processRole || (me ? canSeeFileSection(me.stream as Stream, f.section as Stream) : false),
-        )
-        .map((f) => ({
-          id: f.id,
-          name: f.name,
-          section: f.section,
-          sizeBytes: f.sizeBytes,
-          contentType: f.contentType,
-        })),
-    }));
+    const suppliers = l.bidders
+      .filter((b) => !excluded.has(b.supplierId))
+      .map((b) => ({
+        supplierId: b.supplierId,
+        displayName: namesVisible ? b.company : b.label,
+        anonymised: !namesVisible,
+        files: files
+          .filter((f) => f.submissionId === b.submissionId)
+          .filter(
+            (f) => processRole || (me ? canSeeFileSection(me.stream as Stream, f.section as Stream) : false),
+          )
+          .map((f) => ({
+            id: f.id,
+            name: f.name,
+            section: f.section,
+            sizeBytes: f.sizeBytes,
+            contentType: f.contentType,
+          })),
+      }));
 
     // Scores: the database returns a member only their own before consensus; the chair and probity see all afterwards.
     const rows = await tx.select().from(score).where(eq(score.evaluationId, l.ev.id));
@@ -246,13 +266,23 @@ export class EvaluationService {
                     evaluator: names.get(r.evaluatorId) ?? '',
                     score: Number(r.score),
                     comment: r.comment ?? null,
+                    // a departed evaluator's marks stay as read-only history and are left out of the averages (FR-0305)
+                    ...(l.panel.find((m) => m.userId === r.evaluatorId)?.coiState === 'REMOVED'
+                      ? { departed: true }
+                      : {}),
                   })),
               }
             : {}),
         }))
       : [];
 
-    const ranking = processRole || chair ? await this.ranking(l, items) : [];
+    const extras = processRole || chair ? await loadExtras(tx, l) : undefined;
+    const ranking = extras ? await this.ranking(l, items, extras) : [];
+    const gate = extras ? await gateRows(tx, l.ev.id) : [];
+    const stages = extras ? await previousStages(tx, l, this) : [];
+    const heldBy = l.ev.heldBy
+      ? (await tx.select({ name: appUser.name }).from(appUser).where(eq(appUser.id, l.ev.heldBy)))[0]?.name
+      : undefined;
     const [rep] = await tx.select().from(evalReport).where(eq(evalReport.evaluationId, l.ev.id));
     const seeReport = rep && (processRole || chair);
     const reportFields = seeReport
@@ -266,6 +296,19 @@ export class EvaluationService {
           .select()
           .from(approval)
           .where(and(eq(approval.subjectType, 'EVAL_REPORT'), eq(approval.subjectId, rep.id)))
+      : [];
+
+    // who the report goes to for approval: the holders of the lowest sourcing authority that covers the value (FR-0375)
+    const route = seeReport
+      ? await routeApproval(tx, l.ev.tenantId, Number(l.req.estimatedValue ?? 0))
+      : null;
+    const routedNames = route
+      ? (
+          await tx
+            .select({ name: appUser.name })
+            .from(appUser)
+            .where(inArray(appUser.id, route.userIds.concat('00000000-0000-0000-0000-000000000000')))
+        ).map((x) => x.name)
       : [];
 
     const roster = processRole || chair ? l.panel : l.panel.filter((m) => m.userId === a.user.id);
@@ -291,6 +334,14 @@ export class EvaluationService {
       title: l.req.title,
       tenderType: l.tender.type,
       status,
+      mode: l.ev.mode,
+      priceWeightPct: l.ev.priceWeightPct,
+      stage: l.tender.stage,
+      previousStages: stages,
+      held: l.ev.held
+        ? { reason: l.ev.holdReason ?? '', by: heldBy ?? '', at: l.ev.heldAt?.toISOString() ?? '' }
+        : null,
+      compliance: gate,
       varianceLimitPct: l.ev.varianceLimitPct,
       version: l.ev.version,
       criteria: myCriteria.map((c) => ({
@@ -306,6 +357,8 @@ export class EvaluationService {
         stream: m.stream,
         coiState: m.coiState,
         scoringComplete: Boolean(m.scoredAt),
+        redeclaration: m.redeclaration ?? null,
+        ...(m.redeclaredAt ? { redeclaredAt: m.redeclaredAt.toISOString() } : {}),
       })),
       suppliers,
       conflicts: declarations.map((c) => ({
@@ -318,7 +371,14 @@ export class EvaluationService {
         ...(c.decidedAt ? { decidedAt: c.decidedAt.toISOString() } : {}),
       })),
       me: me
-        ? { stream: me.stream, coiState: me.coiState, scoringComplete: Boolean(me.scoredAt), required, done }
+        ? {
+            stream: me.stream,
+            coiState: me.coiState,
+            scoringComplete: Boolean(me.scoredAt),
+            required,
+            done,
+            needsRedeclaration: me.coiState === 'DECLARED_NONE' && !me.redeclaredAt,
+          }
         : null,
       consensus,
       ranking,
@@ -327,6 +387,9 @@ export class EvaluationService {
             id: rep.id,
             status: rep.status,
             generatedAt: rep.generatedAt.toISOString(),
+            routedTo: routedNames,
+            approverLimit: route?.tierLimit ?? null,
+            value: Number(l.req.estimatedValue ?? 0),
             sections: REPORT_SECTIONS.map((s) => ({
               key: s.key,
               label: s.label,
@@ -342,6 +405,18 @@ export class EvaluationService {
       probitySignoff,
       permissions: {
         ...this.permissions(l, a, me, chair, proc, items, rep),
+        canRedeclare: Boolean(
+          me &&
+          me.coiState === 'DECLARED_NONE' &&
+          !me.redeclaredAt &&
+          !atLeast(status, 'LOCKED') &&
+          !l.ev.held,
+        ),
+        canHold: probity && !l.ev.held && status !== 'APPROVED',
+        canRelease: probity && l.ev.held,
+        canRunGate: proc && (status === 'COI_PENDING' || status === 'SCORING') && !l.ev.held,
+        canEditCriteria: proc && status === 'COI_PENDING' && !l.ev.held,
+        canSubstitute: proc && (status === 'COI_PENDING' || status === 'SCORING') && !l.ev.held,
         canSetVarianceLimit: chair && (l.ev.status === 'COI_PENDING' || l.ev.status === 'SCORING'),
         canProbitySignOff:
           a.user.roles.includes('PROBITY') && atLeast(l.ev.status, 'LOCKED') && probitySignoff === null,
@@ -411,7 +486,7 @@ export class EvaluationService {
   }
 
   /** Weighted scores and ranks from the consensus items (only meaningful once consensus is complete). */
-  async ranking(l: Loaded, items: Array<typeof consensusItem.$inferSelect>) {
+  async ranking(l: Loaded, items: Array<typeof consensusItem.$inferSelect>, extras?: RankExtras) {
     if (!atLeast(l.ev.status, 'LOCKED')) return [];
     const defs = l.criteria.map((c) => ({ id: c.id, weight: Number(c.weight), passFail: c.passFail }));
     const entries = l.bidders.map((b) => {
@@ -420,7 +495,16 @@ export class EvaluationService {
           .filter((i) => i.supplierId === b.supplierId && i.consensusScore !== null)
           .map((i) => [i.criterionId, Number(i.consensusScore)] as const),
       );
-      return { supplierId: b.supplierId, score: weightedScore(defs, m), compliant: complies(defs, m) };
+      const quality = weightedScore(defs, m);
+      const priceScore = extras?.priceScore.get(b.supplierId) ?? null;
+      // in ranking mode the final order blends the panel's view with normalised total cost of ownership (FR-0280)
+      const final = l.ev.mode === 'RANKING' ? blend(quality, priceScore, l.ev.priceWeightPct) : quality;
+      return {
+        supplierId: b.supplierId,
+        score: final,
+        quality,
+        compliant: complies(defs, m) && !extras?.gateFailed.has(b.supplierId),
+      };
     });
     const ranked = rank(entries);
     return ranked
@@ -428,8 +512,15 @@ export class EvaluationService {
         supplierId: r.supplierId,
         displayName: l.bidders.find((b) => b.supplierId === r.supplierId)!.company,
         weightedScore: r.score,
+        qualityScore: entries.find((e) => e.supplierId === r.supplierId)!.quality,
         rank: r.rank,
         compliance: r.compliant ? 'PASS' : 'FAIL',
+        tco: extras?.tco.get(r.supplierId) ?? null,
+        priceScore: extras?.priceScore.get(r.supplierId) ?? null,
+        valueForMoney: valueForMoney(
+          entries.find((e) => e.supplierId === r.supplierId)!.quality,
+          extras?.priceScore.get(r.supplierId) ?? null,
+        ),
       }))
       .sort((x, y) => (x.rank ?? 99) - (y.rank ?? 99) || y.weightedScore - x.weightedScore);
   }

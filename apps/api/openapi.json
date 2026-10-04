@@ -3213,7 +3213,7 @@
     "tags": [
      "Evaluation"
     ],
-    "summary": "Delegate (or executive) decides a declared conflict: immaterial or manageable reinstates the evaluator, material removes them",
+    "summary": "A delegate, the executive or the probity advisor decides a declared conflict: immaterial reinstates the evaluator, minor reinstates them but excludes one supplier, material removes them",
     "parameters": [
      {
       "name": "id",
@@ -3236,7 +3236,8 @@
     ],
     "x-roles": [
      "DELEGATE",
-     "EXEC"
+     "EXEC",
+     "PROBITY"
     ],
     "responses": {
      "200": {
@@ -9397,6 +9398,2363 @@
      }
     }
    }
+  },
+  "/criteria-library": {
+   "get": {
+    "operationId": "getCriteriaLibrary",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The pre-populated criteria library an evaluation's criteria are chosen from",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN",
+     "CHAIR",
+     "DELEGATE",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CriteriaLibrary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/criteria": {
+   "put": {
+    "operationId": "setEvaluationCriteria",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Set this evaluation's criteria before scoring opens (weights add to 100); each stage can differ",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 once scoring has opened; 400 unless weights add to 100",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CriteriaSet"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/compliance/run": {
+   "post": {
+    "operationId": "runComplianceGate",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Run the mandatory pass or fail checks again; each newly failing check sends the supplier a clarification request",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/compliance/{supplierId}/{key}/waive": {
+   "post": {
+    "operationId": "waiveComplianceCheck",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Waive a failed check with a recorded reason; probity is told",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "supplierId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ComplianceWaive"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/clarifications": {
+   "post": {
+    "operationId": "requestClarification",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Ask a bidder to clarify, with a response deadline; the supplier is told in the app and by email",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Clarification"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ClarificationCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listClarifications",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Clarification requests and answers for this evaluation",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Clarification"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/clarifications/{id}/close": {
+   "post": {
+    "operationId": "closeClarification",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Close a clarification request",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Clarification"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/bafo": {
+   "get": {
+    "operationId": "listBafoRounds",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Best and final offer rounds; offers stay sealed until a round closes and the original bids are untouched",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BafoView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "openBafoRound",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Open a controlled mini-tender for updated pricing from chosen suppliers",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BafoView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BafoCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/bafo-rounds/{id}/close": {
+   "post": {
+    "operationId": "closeBafoRound",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Close a round (rounds also close at their time)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BafoView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/bafo-offers/{id}/accept": {
+   "post": {
+    "operationId": "acceptBafoOffer",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Accept an offer: its total cost replaces the supplier's original for ranking, and the draft report is rebuilt",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BafoView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/negotiation-advice": {
+   "get": {
+    "operationId": "getNegotiationAdvice",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Suggested discounts, clauses and insurance to negotiate, from pricing and terms against the other bids (simulated model)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NegotiationAdvice"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/panel/{userId}/substitute": {
+   "post": {
+    "operationId": "substituteEvaluator",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Replace an evaluator: their marks stay as read-only history, the replacement declares a conflict and starts with a clean scoring matrix",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "userId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PanelSubstitute"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/coi/redeclare": {
+   "post": {
+    "operationId": "redeclareEvalCoi",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Confirm the conflict declaration again once supplier identities are visible; a conflict suspends the member",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CoiOutcome"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CoiRedeclare"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/coi/status": {
+   "get": {
+    "operationId": "getCoiStatus",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Who has declared, who has confirmed again, and who is outstanding",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "PROBITY",
+     "CHAIR",
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CoiStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/coi/remind": {
+   "post": {
+    "operationId": "remindCoi",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Remind members who still owe a declaration (reminders also go out on a schedule)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CoiStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluation-reports/{id}/coi": {
+   "post": {
+    "operationId": "declareReportCoi",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Declare a conflict of interest at the report stage, as at the plan",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "CHAIR",
+     "PROBITY",
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportCoi"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CoiRedeclare"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listReportCoi",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Conflict declarations made on the report",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "CHAIR",
+     "PROBITY",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportCoi"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluation-reports/{id}/coi/{coiId}/decision": {
+   "post": {
+    "operationId": "decideReportCoi",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Decide a conflict declared on the report; a material conflict stops that person approving",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "coiId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportCoi"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReportCoiDecision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/scores/plain": {
+   "post": {
+    "operationId": "enterPlainScores",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Scores and commentary in plain language: read back for confirmation, saved only when apply is true",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlainScoresResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlainScores"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/ranking": {
+   "put": {
+    "operationId": "enterRanking",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Ranking evaluations: order every supplier once, first to last",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RankingEntry"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RankingEntry"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/ranking/plain": {
+   "post": {
+    "operationId": "enterPlainRanking",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Ranking in plain language, for example B first then A then C",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlainRankingResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlainRanking"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/probity-advisors": {
+   "get": {
+    "operationId": "listProbityAdvisors",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Probity advisors allocated to this procurement and those available",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityAdvisors"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "allocateProbityAdvisor",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Allocate an external probity advisor to this procurement",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityAdvisors"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProbityAdvisorAllocate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/probity-advisors/{userId}": {
+   "delete": {
+    "operationId": "deallocateProbityAdvisor",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Remove an advisor's allocation",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "userId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/probity/portal": {
+   "get": {
+    "operationId": "getProbityPortal",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The advisor's read-only oversight portal: only the procurements they are allocated to",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityPortal"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/hold": {
+   "post": {
+    "operationId": "holdEvaluation",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "System hold: freeze the evaluation workspace on suspected bias or a process breach",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProbityHold"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/release": {
+   "post": {
+    "operationId": "releaseEvaluation",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Release a hold",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Evaluation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProbityRelease"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity": {
+   "get": {
+    "operationId": "listProbityDocuments",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The probity plan and probity outcomes report",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityDocuments"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity/{kind}": {
+   "put": {
+    "operationId": "saveProbityDocument",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Author the probity plan (PLAN) or outcomes report (OUTCOMES) in the platform; editing a signed document starts a new version",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityDocument"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProbityDocumentSave"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity/{kind}/upload": {
+   "post": {
+    "operationId": "uploadProbityDocument",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Upload the probity plan or outcomes report as a file (base64)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityDocument"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProbityDocumentUpload"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity/{kind}/sign": {
+   "post": {
+    "operationId": "signProbityDocument",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "Sign off the current version with a profile stamp attributed to the advisor",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProbityDocument"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity/{kind}/pdf": {
+   "get": {
+    "operationId": "exportProbityPdf",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The authored document as a PDF with the sign-off stamp (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity/{kind}/docx": {
+   "get": {
+    "operationId": "exportProbityDocx",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The authored document as a Word file with the sign-off stamp (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/probity/{kind}/file": {
+   "get": {
+    "operationId": "downloadProbityFile",
+    "tags": [
+     "Evaluation"
+    ],
+    "summary": "The uploaded file (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/clarifications": {
+   "get": {
+    "operationId": "listMyClarifications",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Clarification and compliance requests addressed to this supplier",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Clarification"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/clarifications/{id}/response": {
+   "post": {
+    "operationId": "answerClarification",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Answer a request before its deadline",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Clarification"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ClarificationResponse"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/pricing": {
+   "get": {
+    "operationId": "getMyPricing",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The supplier's own bid pricing (total cost of ownership)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BidPricingView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setMyPricing",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Enter price, implementation and running costs so total cost of ownership can be compared",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BidPricingView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BidPricing"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/bafo": {
+   "get": {
+    "operationId": "listMyBafoRounds",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Best and final offer rounds the supplier is invited to, with their own offers",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BafoView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/bafo/{id}/offer": {
+   "put": {
+    "operationId": "submitBafoOffer",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Submit a new offer revision while the round is open; the original bid is unchanged",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BafoView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BafoOfferCreate"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -15196,6 +17554,399 @@
      "name",
      "email"
     ]
+   },
+   "CriteriaLibrary": {
+    "type": "object",
+    "properties": {
+     "criteria": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "criteria"
+    ]
+   },
+   "CriteriaSet": {
+    "type": "object",
+    "properties": {
+     "criteria": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "stream": {
+         "type": "string",
+         "enum": [
+          "TECHNICAL",
+          "COMMERCIAL",
+          "OTHER"
+         ]
+        },
+        "weight": "Notifications",
+        "passFail": {
+         "type": "boolean"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "name",
+        "stream",
+        "weight",
+        "passFail"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "criteria"
+    ]
+   },
+   "ComplianceWaive": {
+    "type": "object",
+    "properties": {
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "note"
+    ]
+   },
+   "ClarificationCreate": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "subject": {
+      "type": "string"
+     },
+     "question": {
+      "type": "string"
+     },
+     "dueInDays": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "subject",
+     "question"
+    ]
+   },
+   "Clarification": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClarificationResponse": {
+    "type": "object",
+    "properties": {
+     "response": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "response"
+    ]
+   },
+   "BidPricing": {
+    "type": "object",
+    "properties": {
+     "basePrice": "Notifications",
+     "implementation": "Notifications",
+     "annualRunning": "Notifications",
+     "years": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "basePrice"
+    ]
+   },
+   "BidPricingView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BafoCreate": {
+    "type": "object",
+    "properties": {
+     "supplierIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     "note": {
+      "type": "string"
+     },
+     "closesInDays": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierIds",
+     "note"
+    ]
+   },
+   "BafoOfferCreate": {
+    "type": "object",
+    "properties": {
+     "basePrice": "Notifications",
+     "implementation": "Notifications",
+     "annualRunning": "Notifications",
+     "years": {
+      "type": "integer"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "basePrice"
+    ]
+   },
+   "BafoView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "NegotiationAdvice": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PanelSubstitute": {
+    "type": "object",
+    "properties": {
+     "replacementUserId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "reason": {
+      "type": "string",
+      "enum": [
+       "CONFLICT",
+       "OTHER"
+      ]
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "replacementUserId",
+     "reason"
+    ]
+   },
+   "CoiRedeclare": {
+    "type": "object",
+    "properties": {
+     "none": {
+      "type": "boolean"
+     },
+     "nature": {
+      "type": "string"
+     },
+     "subjectOrg": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "none"
+    ]
+   },
+   "CoiStatus": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReportCoi": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReportCoiDecision": {
+    "type": "object",
+    "properties": {
+     "disposition": {
+      "type": "string",
+      "enum": [
+       "IMMATERIAL",
+       "MANAGEABLE",
+       "MATERIAL"
+      ]
+     },
+     "rationale": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "disposition"
+    ]
+   },
+   "ProbityAdvisorAllocate": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "userId"
+    ]
+   },
+   "ProbityAdvisors": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProbityPortal": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProbityHold": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "ProbityRelease": {
+    "type": "object",
+    "properties": {
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "note"
+    ]
+   },
+   "ProbityDocumentSave": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "body": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "title",
+     "body"
+    ]
+   },
+   "ProbityDocumentUpload": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "fileName": {
+      "type": "string"
+     },
+     "contentBase64": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "title",
+     "fileName",
+     "contentBase64"
+    ]
+   },
+   "ProbityDocument": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProbityDocuments": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PlainScores": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "text": {
+      "type": "string"
+     },
+     "apply": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "text"
+    ]
+   },
+   "PlainScoresResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RankingEntry": {
+    "type": "object",
+    "properties": {
+     "order": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "order"
+    ]
+   },
+   "PlainRanking": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "apply": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "PlainRankingResult": {
+    "type": "object",
+    "additionalProperties": true
    }
   },
   "responses": {

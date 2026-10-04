@@ -120,13 +120,25 @@ export default async function EvaluationsPage({
                     {e.requestNumber}
                   </Td>
                   <Td label="Title">
-                    <Link href={`/app/evaluations/${e.id}`}>{e.title}</Link>
+                    <Link href={`/app/evaluations/${e.id}`} className="underline">
+                      {e.title}
+                    </Link>
                     {mine(e) && <span className="ml-2 text-xs font-semibold text-warning">{mine(e)}</span>}
                   </Td>
                   <Td label="Stage">
                     <Badge tone={STATUS[e.status]?.[1] ?? 'neutral'}>
                       {STATUS[e.status]?.[0] ?? e.status}
                     </Badge>
+                    {e.held && (
+                      <Badge tone="error" className="ml-2">
+                        On hold
+                      </Badge>
+                    )}
+                    {e.mode === 'RANKING' && (
+                      <Badge tone="neutral" className="ml-2">
+                        Ranking
+                      </Badge>
+                    )}
                   </Td>
                   <Td label="Bids" className="text-right">
                     {e.bids}

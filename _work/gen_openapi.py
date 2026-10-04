@@ -20,7 +20,7 @@ schemas = {
  "Problem": obj({"type": S, "title": S, "status": I, "detail": S, "code": S, "correlationId": S,
                  "errors": arr(obj({"field": S, "message": S}, ["field", "message"]))}, ["type", "title", "status", "code", "correlationId"]),
  "Page": obj({"total": I, "limit": I, "offset": I}, ["total", "limit", "offset"], True),
- "User": obj({"id": UUID, "name": S, "email": {"type": "string", "format": "email"}, "role": enum(*ROLES), "roles": arr(enum(*ROLES)), "orgUnit": S, "delegationLimit": N, "homePath": S, "csrfToken": S}, ["id", "name", "email", "role"]),
+ "User": obj({"id": UUID, "name": S, "email": {"type": "string", "format": "email"}, "role": enum(*ROLES), "roles": arr(enum(*ROLES)), "orgUnit": S, "delegationLimit": N, "homePath": S, "external": B, "csrfToken": S}, ["id", "name", "email", "role"]),
  "LoginRequest": obj({"email": {"type": "string", "format": "email"}, "password": {"type": "string", "minLength": 8, "maxLength": 128}}, ["email", "password"]),
  "Session": obj({"user": ref("User"), "expiresAt": DT, "mfaRequired": B, "mfaToken": S, "mfaEnrolmentRequired": B, "csrfToken": S}, ["mfaRequired"]),
  "AccessDenied": obj({"path": {"type": "string", "maxLength": 200, "pattern": "^/"}}, ["path"]),
@@ -241,7 +241,7 @@ ep("GET", "/evaluations/{id}", "getEvaluation", V, "Get the evaluation as the ca
 ep("POST", "/evaluations/{id}/coi", "declareEvalCoi", V, "Mandatory conflict declaration before any access; a conflict suspends the member at once, alerts chair, probity and procurement, and goes to a delegate to decide", ["EVALUATOR", "CHAIR"], "CoiDeclaration", "CoiOutcome", 201)
 ep("GET", "/evaluations/{id}/scores/mine", "getMyScores", V, "Own scores and progress only", ["EVALUATOR", "CHAIR"], None, "ScoreSet", note="403 COI_REQUIRED until declared")
 ep("PUT", "/evaluations/{id}/scores", "saveScores", V, "Save own scores for one supplier (hidden from everyone else)", ["EVALUATOR", "CHAIR"], "ScoresUpdate", "ScoreSet", note="404 for a criterion outside the caller's stream; 409 once marked complete")
-ep("POST", "/evaluations/{id}/conflicts/{userId}/decision", "decideEvalConflict", V, "Delegate (or executive) decides a declared conflict: immaterial or manageable reinstates the evaluator, material removes them", ["DELEGATE", "EXEC"], "ConflictDecision", "Evaluation", note="409 if nothing is waiting; 403 for your own conflict")
+ep("POST", "/evaluations/{id}/conflicts/{userId}/decision", "decideEvalConflict", V, "A delegate, the executive or the probity advisor decides a declared conflict: immaterial reinstates the evaluator, minor reinstates them but excludes one supplier, material removes them", ["DELEGATE", "EXEC", "PROBITY"], "ConflictDecision", "Evaluation", note="409 if nothing is waiting; 403 for your own conflict")
 ep("POST", "/evaluations/{id}/scores/submit", "submitScores", V, "Mark own scoring complete (every supplier on every allowed criterion)", ["EVALUATOR", "CHAIR"], None, "Evaluation", note="409 SCORING_INCOMPLETE")
 ep("POST", "/evaluations/{id}/consensus/open", "openConsensus", V, "Chair opens consensus once every member has finished; variance is computed and flagged", ["CHAIR"], None, "Evaluation", note="409 SCORING_PENDING")
 ep("PUT", "/evaluations/{id}/consensus/{supplierId}", "setConsensus", V, "Record consensus scores and rationale for one supplier", ["CHAIR"], "ConsensusUpdate", "Evaluation")

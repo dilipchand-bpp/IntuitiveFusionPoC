@@ -167,6 +167,17 @@ export const NAV: readonly NavItem[] = [
     blurb: 'Spend, maverick spend, workload and contract expiry views.',
   },
   {
+    href: '/app/probity',
+    label: 'Probity portal',
+    icon: 'audit',
+    roles: ['PROBITY'],
+    section: 'Oversight',
+    module: 'Probity oversight',
+    requirements: ['FR-0310', 'FR-0340'],
+    blurb:
+      'Read-only oversight of the procurements you are allocated to, with a system hold and the probity documents.',
+  },
+  {
     href: '/app/audit',
     label: 'Audit trail',
     icon: 'audit',
@@ -280,8 +291,13 @@ export const NAV: readonly NavItem[] = [
 ];
 
 /** Items a user with these roles can see in the navigation. */
-export const navFor = (roles: readonly string[]): NavItem[] =>
-  NAV.filter((n) => n.roles.some((r) => roles.includes(r)));
+export const navFor = (roles: readonly string[], external = false): NavItem[] =>
+  NAV.filter(
+    (n) =>
+      n.roles.some((r) => roles.includes(r)) &&
+      // an external advisor sees only the probity portal and the evaluations they are allocated to
+      (!external || n.href === '/app/probity' || n.href === '/app/evaluations'),
+  );
 
 /** Longest-prefix match so /app/requests/123 resolves to the Requests module page. */
 export function resolveNav(pathname: string): NavItem | null {

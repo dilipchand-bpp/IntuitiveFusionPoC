@@ -422,161 +422,177 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0265',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'The evaluation workflow shall include a mandatory pass/fail compliance gate covering matters such as entity registration, mandatory declarations and insurance limits,...',
+    batch: 'B3',
   }, // TODO(FR-0265)
   {
     id: 'FR-0280',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Support both numeric scoring and simple ranking, with ranking available as a configurable option for low-value/low-risk arrangements',
+    batch: 'B3',
   }, // TODO(FR-0280)
   {
     id: 'FR-0285',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Support multi-stage evaluations, with each stage able to shortlist one or more suppliers before the next stage is run, and scores retained for all rounds',
+    batch: 'B3',
   }, // TODO(FR-0285)
   {
     id: 'FR-0290',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Provide a negotiation and Best and Final Offer workspace supporting audited clarification requests with response deadlines, and a controlled mini-tendering cycle for...',
+    batch: 'B3',
   }, // TODO(FR-0290)
   {
     id: 'FR-0295',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Should',
     title:
       'Generate AI-assisted negotiation recommendations (for example a suggested discount percentage, or specific clauses/indemnities to negotiate) based on submitted...',
+    batch: 'B3',
   }, // TODO(FR-0295)
   {
     id: 'FR-0305',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title: 'Support an evaluator substitution workflow',
+    batch: 'B3',
   }, // TODO(FR-0305)
   {
     id: 'FR-0310',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Provide a read-only Probity Advisor oversight portal for external auditors, scoped to only the procurements the advisor is allocated to, including a system-hold...',
+    batch: 'B3',
   }, // TODO(FR-0310)
   {
     id: 'FR-0315',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Scoring, ranking and evaluation commentary shall be capable of being entered in plain language, in addition to structured score entry',
+    batch: 'B3',
   }, // TODO(FR-0315)
   {
     id: 'FR-0320',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Evaluation criteria shall be selectable from a pre-populated criteria library, easily amendable, and configurable to be the same or different across evaluation stages',
+    batch: 'B3',
   }, // TODO(FR-0320)
   {
     id: 'FR-0325',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Automatically issue conflict-of-interest re-declaration reminders after the tender closes, once supplier identities are known, and shall report which users have not...',
+    batch: 'B3',
   }, // TODO(FR-0325)
   {
     id: 'FR-0330',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Conflict-of-interest outcomes shall be recorded against a defined set of dispositions — immaterial (remain in role), minor (remain but excluded from assessing the...',
+    batch: 'B3',
   }, // TODO(FR-0330)
   {
     id: 'FR-0335',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Where a person is removed from a procurement for a material conflict, the platform shall support nominating a replacement and shall automatically issue the...',
+    batch: 'B3',
   }, // TODO(FR-0335)
   {
     id: 'FR-0340',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation',
     area: '/app/evaluations',
     priority: 'Should',
     title:
       'A probity advisor shall be able to upload, or author in-platform, a probity plan and probity outcomes report, generated to Word or PDF with a profile-based sign-off...',
+    batch: 'B3',
   }, // TODO(FR-0340)
   {
     id: 'FR-0350',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation Report',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'On consensus lock, the system shall automatically compile a Sourcing Recommendation Report combining pass/fail compliance logs, scoring distributions, panel...',
+    batch: 'B3',
   }, // TODO(FR-0350)
   {
     id: 'FR-0355',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation Report',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'The evaluation report shall be printable, shall carry a timestamp containing all required audit information, and shall be viewable and actionable for review and...',
+    batch: 'B3',
   }, // TODO(FR-0355)
   {
     id: 'FR-0360',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation Report',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'For multi-stage evaluations, the evaluation report shall document the outcomes of each individual stage',
+    batch: 'B3',
   }, // TODO(FR-0360)
   {
     id: 'FR-0365',
@@ -591,22 +607,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0370',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation Report',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       'Conflict-of-interest declarations shall be capable of being captured and recorded at the evaluation report stage in the same manner as at the procurement plan stage',
+    batch: 'B3',
   }, // TODO(FR-0370)
   {
     id: 'FR-0375',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Evaluation Report',
     area: '/app/evaluations',
     priority: 'Must',
     title:
       "The evaluation report shall include an explicit sign-off/approval step, routed to the delegate holding the appropriate authority for the procurement's value tier,...",
+    batch: 'B3',
   }, // TODO(FR-0375)
   {
     id: 'FR-0385',

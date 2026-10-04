@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Button, Dialog, Select } from '@if/ui';
+import { Button, Dialog, Field, Input, Select } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 interface Candidate {
@@ -16,6 +16,8 @@ export function OpenEvaluation({ tenderId, title, csrf }: { tenderId: string; ti
   const [people, setPeople] = useState<Candidate[] | null>(null);
   const [chairs, setChairs] = useState<Candidate[]>([]);
   const [picked, setPicked] = useState<Record<string, 'TECHNICAL' | 'COMMERCIAL'>>({});
+  const [ranking, setRanking] = useState(false);
+  const [weight, setWeight] = useState('30');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +39,10 @@ export function OpenEvaluation({ tenderId, title, csrf }: { tenderId: string; ti
       const r = await api<{ id: string }>(`/tenders/${tenderId}/evaluation`, {
         method: 'POST',
         csrf,
-        body: { panel: Object.entries(picked).map(([userId, stream]) => ({ userId, stream })) },
+        body: {
+          panel: Object.entries(picked).map(([userId, stream]) => ({ userId, stream })),
+          ...(ranking ? { mode: 'RANKING', priceWeightPct: Number(weight) || 30 } : {}),
+        },
       });
       router.push(`/app/evaluations/${r.id}`);
     } catch (e) {
@@ -109,6 +114,35 @@ export function OpenEvaluation({ tenderId, title, csrf }: { tenderId: string; ti
                 </li>
               ))}
             </ul>
+            <div className="rounded-md border border-border p-3">
+              <label className="flex min-h-[44px] items-center gap-3 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  className="size-5 accent-[var(--if-color-accent)]"
+                  checked={ranking}
+                  onChange={(e) => setRanking(e.target.checked)}
+                />
+                Rank the suppliers instead of scoring every criterion
+              </label>
+              <p className="text-xs text-text-muted">
+                For low-value, low-risk arrangements. The final order blends the panel&apos;s ranking with
+                normalised total cost of ownership.
+              </p>
+              {ranking && (
+                <div className="mt-2">
+                  <Field label="Weight of total cost in the final ranking (%)">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={80}
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      className="w-28"
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-text-muted">
               {chairs.length
                 ? `${chairs.map((c) => c.name).join(', ')} chairs the panel and is added automatically.`

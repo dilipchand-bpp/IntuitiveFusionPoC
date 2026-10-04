@@ -57,7 +57,7 @@
 | POST | `/evaluations/{id}/coi` | declareEvalCoi | EVALUATOR, CHAIR | Mandatory conflict declaration before any access; a conflict suspends the member at once, alerts chair, probity and procurement, and goes to a delegate to decide |  |
 | GET | `/evaluations/{id}/scores/mine` | getMyScores | EVALUATOR, CHAIR | Own scores and progress only | 403 COI_REQUIRED until declared |
 | PUT | `/evaluations/{id}/scores` | saveScores | EVALUATOR, CHAIR | Save own scores for one supplier (hidden from everyone else) | 404 for a criterion outside the caller's stream; 409 once marked complete |
-| POST | `/evaluations/{id}/conflicts/{userId}/decision` | decideEvalConflict | DELEGATE, EXEC | Delegate (or executive) decides a declared conflict: immaterial or manageable reinstates the evaluator, material removes them | 409 if nothing is waiting; 403 for your own conflict |
+| POST | `/evaluations/{id}/conflicts/{userId}/decision` | decideEvalConflict | DELEGATE, EXEC, PROBITY | A delegate, the executive or the probity advisor decides a declared conflict: immaterial reinstates the evaluator, minor reinstates them but excludes one supplier, material removes them | 409 if nothing is waiting; 403 for your own conflict |
 | POST | `/evaluations/{id}/scores/submit` | submitScores | EVALUATOR, CHAIR | Mark own scoring complete (every supplier on every allowed criterion) | 409 SCORING_INCOMPLETE |
 | POST | `/evaluations/{id}/consensus/open` | openConsensus | CHAIR | Chair opens consensus once every member has finished; variance is computed and flagged | 409 SCORING_PENDING |
 | PUT | `/evaluations/{id}/consensus/{supplierId}` | setConsensus | CHAIR | Record consensus scores and rationale for one supplier |  |
@@ -170,3 +170,44 @@
 | PUT | `/supplier/profile/insurance` | setSupplierInsurance | SUPPLIER | Record the current insurance certificate |  |
 | POST | `/supplier/contacts` | addSupplierContact | SUPPLIER | Add a colleague; they receive a one-time link through the person who added them |  |
 | POST | `/supplier/contacts/{userId}/deprovision` | removeSupplierContact | SUPPLIER | End a colleague's access; sessions end and they are told |  |
+| GET | `/criteria-library` | getCriteriaLibrary | PROCUREMENT, ADMIN, CHAIR, DELEGATE, PROBITY, EXEC | The pre-populated criteria library an evaluation's criteria are chosen from |  |
+| PUT | `/evaluations/{id}/criteria` | setEvaluationCriteria | PROCUREMENT | Set this evaluation's criteria before scoring opens (weights add to 100); each stage can differ | 409 once scoring has opened; 400 unless weights add to 100 |
+| POST | `/evaluations/{id}/compliance/run` | runComplianceGate | PROCUREMENT | Run the mandatory pass or fail checks again; each newly failing check sends the supplier a clarification request |  |
+| POST | `/evaluations/{id}/compliance/{supplierId}/{key}/waive` | waiveComplianceCheck | PROCUREMENT, DELEGATE | Waive a failed check with a recorded reason; probity is told |  |
+| POST | `/evaluations/{id}/clarifications` | requestClarification | PROCUREMENT | Ask a bidder to clarify, with a response deadline; the supplier is told in the app and by email |  |
+| GET | `/evaluations/{id}/clarifications` | listClarifications | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC, CHAIR | Clarification requests and answers for this evaluation |  |
+| POST | `/clarifications/{id}/close` | closeClarification | PROCUREMENT | Close a clarification request |  |
+| GET | `/evaluations/{id}/bafo` | listBafoRounds | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC, CHAIR | Best and final offer rounds; offers stay sealed until a round closes and the original bids are untouched |  |
+| POST | `/evaluations/{id}/bafo` | openBafoRound | PROCUREMENT | Open a controlled mini-tender for updated pricing from chosen suppliers |  |
+| POST | `/bafo-rounds/{id}/close` | closeBafoRound | PROCUREMENT | Close a round (rounds also close at their time) |  |
+| POST | `/bafo-offers/{id}/accept` | acceptBafoOffer | PROCUREMENT | Accept an offer: its total cost replaces the supplier's original for ranking, and the draft report is rebuilt |  |
+| GET | `/evaluations/{id}/negotiation-advice` | getNegotiationAdvice | PROCUREMENT, DELEGATE, EXEC | Suggested discounts, clauses and insurance to negotiate, from pricing and terms against the other bids (simulated model) |  |
+| POST | `/evaluations/{id}/panel/{userId}/substitute` | substituteEvaluator | PROCUREMENT | Replace an evaluator: their marks stay as read-only history, the replacement declares a conflict and starts with a clean scoring matrix |  |
+| POST | `/evaluations/{id}/coi/redeclare` | redeclareEvalCoi | EVALUATOR, CHAIR | Confirm the conflict declaration again once supplier identities are visible; a conflict suspends the member |  |
+| GET | `/evaluations/{id}/coi/status` | getCoiStatus | PROCUREMENT, PROBITY, CHAIR, DELEGATE, EXEC | Who has declared, who has confirmed again, and who is outstanding |  |
+| POST | `/evaluations/{id}/coi/remind` | remindCoi | PROCUREMENT, CHAIR | Remind members who still owe a declaration (reminders also go out on a schedule) |  |
+| POST | `/evaluation-reports/{id}/coi` | declareReportCoi | PROCUREMENT, DELEGATE, EXEC, CHAIR, PROBITY, LEGAL | Declare a conflict of interest at the report stage, as at the plan |  |
+| GET | `/evaluation-reports/{id}/coi` | listReportCoi | PROCUREMENT, DELEGATE, EXEC, CHAIR, PROBITY, LEGAL | Conflict declarations made on the report |  |
+| POST | `/evaluation-reports/{id}/coi/{coiId}/decision` | decideReportCoi | DELEGATE, EXEC, PROBITY | Decide a conflict declared on the report; a material conflict stops that person approving |  |
+| POST | `/evaluations/{id}/scores/plain` | enterPlainScores | EVALUATOR, CHAIR | Scores and commentary in plain language: read back for confirmation, saved only when apply is true |  |
+| PUT | `/evaluations/{id}/ranking` | enterRanking | EVALUATOR, CHAIR | Ranking evaluations: order every supplier once, first to last |  |
+| POST | `/evaluations/{id}/ranking/plain` | enterPlainRanking | EVALUATOR, CHAIR | Ranking in plain language, for example B first then A then C |  |
+| GET | `/tenders/{id}/probity-advisors` | listProbityAdvisors | PROCUREMENT, ADMIN, PROBITY | Probity advisors allocated to this procurement and those available |  |
+| POST | `/tenders/{id}/probity-advisors` | allocateProbityAdvisor | PROCUREMENT, ADMIN | Allocate an external probity advisor to this procurement |  |
+| DELETE | `/tenders/{id}/probity-advisors/{userId}` | deallocateProbityAdvisor | PROCUREMENT, ADMIN | Remove an advisor's allocation |  |
+| GET | `/probity/portal` | getProbityPortal | PROBITY | The advisor's read-only oversight portal: only the procurements they are allocated to |  |
+| POST | `/evaluations/{id}/hold` | holdEvaluation | PROBITY | System hold: freeze the evaluation workspace on suspected bias or a process breach |  |
+| POST | `/evaluations/{id}/release` | releaseEvaluation | PROBITY | Release a hold |  |
+| GET | `/evaluations/{id}/probity` | listProbityDocuments | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC, CHAIR | The probity plan and probity outcomes report |  |
+| PUT | `/evaluations/{id}/probity/{kind}` | saveProbityDocument | PROBITY | Author the probity plan (PLAN) or outcomes report (OUTCOMES) in the platform; editing a signed document starts a new version |  |
+| POST | `/evaluations/{id}/probity/{kind}/upload` | uploadProbityDocument | PROBITY | Upload the probity plan or outcomes report as a file (base64) |  |
+| POST | `/evaluations/{id}/probity/{kind}/sign` | signProbityDocument | PROBITY | Sign off the current version with a profile stamp attributed to the advisor |  |
+| GET | `/evaluations/{id}/probity/{kind}/pdf` | exportProbityPdf | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC, CHAIR | The authored document as a PDF with the sign-off stamp (audited) |  |
+| GET | `/evaluations/{id}/probity/{kind}/docx` | exportProbityDocx | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC, CHAIR | The authored document as a Word file with the sign-off stamp (audited) |  |
+| GET | `/evaluations/{id}/probity/{kind}/file` | downloadProbityFile | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC, CHAIR | The uploaded file (audited) |  |
+| GET | `/supplier/clarifications` | listMyClarifications | SUPPLIER | Clarification and compliance requests addressed to this supplier |  |
+| POST | `/supplier/clarifications/{id}/response` | answerClarification | SUPPLIER | Answer a request before its deadline |  |
+| GET | `/supplier/tenders/{id}/pricing` | getMyPricing | SUPPLIER | The supplier's own bid pricing (total cost of ownership) |  |
+| PUT | `/supplier/tenders/{id}/pricing` | setMyPricing | SUPPLIER | Enter price, implementation and running costs so total cost of ownership can be compared |  |
+| GET | `/supplier/bafo` | listMyBafoRounds | SUPPLIER | Best and final offer rounds the supplier is invited to, with their own offers |  |
+| PUT | `/supplier/bafo/{id}/offer` | submitBafoOffer | SUPPLIER | Submit a new offer revision while the round is open; the original bid is unchanged |  |

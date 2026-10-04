@@ -61,10 +61,13 @@ export const SEED_USERS: Array<{ key: string; name: string; role: Role; unit: st
   { key: 'delegate', name: 'Dana Okafor', role: 'DELEGATE', unit: 'Executive' },
   { key: 'evaluator-tech', name: 'Tomas Silva', role: 'EVALUATOR', unit: 'IT' },
   { key: 'evaluator-comm', name: 'Mei Tanaka', role: 'EVALUATOR', unit: 'Finance' },
+  { key: 'evaluator-extra', name: 'Nia Okoro', role: 'EVALUATOR', unit: 'Facilities' },
   { key: 'chair', name: 'Grace Mwangi', role: 'CHAIR', unit: 'Procurement' },
   { key: 'legal', name: 'Henry Albright', role: 'LEGAL', unit: 'Legal' },
   { key: 'contract-mgr', name: 'Sofia Rossi', role: 'CONTRACT_MGR', unit: 'Facilities' },
   { key: 'probity', name: 'Jonas Becker', role: 'PROBITY', unit: 'Risk' },
+  // an external probity advisor: sees only the procurements allocated to them (FR-0310)
+  { key: 'advisor', name: 'Alex Marlow', role: 'PROBITY', unit: 'Risk' },
   { key: 'finance', name: 'Aisha Rahman', role: 'FINANCE', unit: 'Finance' },
   { key: 'admin', name: 'Noah Kim', role: 'ADMIN', unit: 'IT' },
   { key: 'exec', name: 'Elena Petrova', role: 'EXEC', unit: 'Executive' },
@@ -244,6 +247,7 @@ export async function seedDatabase(
         orgUnitId: uid(`unit:${u.unit}`),
         passwordHash,
         supplierId: u.role === 'SUPPLIER' ? uid('supplier:brightwave') : null,
+        external: u.key === 'advisor',
       });
       await tx.insert(s.roleAssignment).values({ tenantId: TENANT_ID, userId: userId(u.key), role: u.role });
       await log('user.create', 'app_user', userId(u.key), {

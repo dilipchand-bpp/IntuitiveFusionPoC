@@ -21,7 +21,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         csrfToken: user.csrfToken,
         homePath: user.homePath,
       }}
-      items={navFor(user.roles)}
+      items={navFor(user.roles, Boolean(user.external))}
     >
       {mustEnrol && mfa ? <MfaPanel status={mfa} csrf={user.csrfToken} gate /> : children}
     </ShellFrame>

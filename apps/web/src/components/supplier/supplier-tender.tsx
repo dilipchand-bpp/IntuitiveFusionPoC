@@ -13,6 +13,7 @@ import {
   formatDateTime,
 } from '@/lib/labels';
 import { DeviationsCard } from './deviations-card';
+import { SupplierEvaluationCard } from './evaluation-card';
 import type { BidFile, SupplierTenderView } from '@/components/tender/types';
 
 const SECTION_LABEL = { TECHNICAL: 'Technical', COMMERCIAL: 'Commercial', OTHER: 'Other' } as const;
@@ -182,6 +183,9 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
 
       {/* ------------------------------------------------------------ proposed contract changes */}
       <DeviationsCard tenderId={t.id} open={open} csrf={csrf} />
+
+      {/* ------------------------------------------------------------ pricing, requests from the buyer, best and final offers */}
+      <SupplierEvaluationCard tenderId={t.id} open={open} csrf={csrf} />
 
       {/* ------------------------------------------------------------ your bid */}
       <Card role="region" aria-labelledby="bid-h">

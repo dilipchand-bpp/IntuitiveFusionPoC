@@ -1012,7 +1012,7 @@ describe('a declared conflict is decided by a delegate', () => {
       });
       expect(c.json().suspended).toBe(true);
       expect((await call('evaluator-comm', 'GET', `/evaluations/${ev.id}`)).statusCode).toBe(404); // suspended while it is decided
-      for (const who of ['procurement', 'chair', 'probity', 'evaluator-tech'])
+      for (const who of ['procurement', 'chair', 'evaluator-tech'])
         expect(
           (await call(who, 'POST', `/evaluations/${ev.id}/conflicts/${U.comm}/decision`, { disposition }))
             .statusCode,
@@ -1245,8 +1245,13 @@ describe('the report can be exported as a PDF', () => {
   const text = (res: { rawPayload: Buffer }) => res.rawPayload.toString('latin1');
 
   it('is a real PDF carrying the content, timestamp and version, for the roles that may read the report; refused for others', async () => {
+    const early = await openEval();
+    expect((await call('procurement', 'GET', `/evaluations/${early.ev.id}/report/pdf`)).json().code).toBe(
+      'NO_REPORT',
+    );
     const id = await lockedEval();
-    expect((await call('procurement', 'GET', `/evaluations/${id}/report/pdf`)).json().code).toBe('NO_REPORT');
+    // locking compiles the report at once, as a draft anyone who may read the report can export
+    expect((await call('procurement', 'GET', `/evaluations/${id}/report/pdf`)).statusCode).toBe(200);
     const gen = (await call('procurement', 'POST', `/evaluations/${id}/report`)).json() as Ev;
     const res = await call('procurement', 'GET', `/evaluations/${id}/report/pdf`);
     expect(res.statusCode, res.body).toBe(200);
@@ -1523,7 +1528,7 @@ describe('the report can be exported as a Word document', () => {
     expect(audit.some((e) => (e.after as { format: string }).format === 'DOCX')).toBe(true);
   });
   it('is refused before a report exists', async () => {
-    const id = await lockedEval();
-    expect((await call('procurement', 'GET', `/evaluations/${id}/report/docx`)).statusCode).toBe(404);
+    const { ev } = await openEval();
+    expect((await call('procurement', 'GET', `/evaluations/${ev.id}/report/docx`)).statusCode).toBe(404);
   });
 });

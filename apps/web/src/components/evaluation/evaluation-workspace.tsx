@@ -8,14 +8,29 @@ import {
   Flag,
   Info,
   Lock,
+  Printer,
   RotateCcw,
   UserX,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Badge, Button, Dialog, Field, Input, Select, Stepper, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { TENDER_TYPE_LABEL, formatDateTime } from '@/lib/labels';
+import { Card, problem } from './eval-card';
+import { ClarificationsPanel, NegotiationPanel, PlainScoreEntry, RankingEntry } from './b3-commercial';
+import {
+  AdvisorAllocation,
+  CompliancePanel,
+  CriteriaEditor,
+  HoldBanner,
+  HoldControls,
+  PanelTools,
+  ProbityDocs,
+  RedeclarePrompt,
+  ReportCoi,
+  StagesCard,
+} from './b3-governance';
 import type { EvalCriterion, EvalView, MyScores } from './types';
 
 const STEPS = ['Conflicts', 'Scoring', 'Consensus', 'Locked', 'Report', 'Approved'];
@@ -35,63 +50,22 @@ const COI_LABEL: Record<string, string> = {
 };
 const STREAM_LABEL = { TECHNICAL: 'Technical', COMMERCIAL: 'Commercial', OTHER: 'Chair' } as const;
 
-const problem = (e: unknown) =>
-  e instanceof ApiError
-    ? [e.message, ...(e.problem.errors ?? []).map((x) => x.message)]
-        .filter((x, i, a) => a.indexOf(x) === i)
-        .join(' ')
-    : 'Something went wrong. Please try again.';
 const kb = (n: number) =>
   n >= 1_048_576 ? `${(n / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
 
-function Card({
-  id,
-  title,
-  children,
-  tone,
-  testId,
-  badge,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-  tone?: 'accent' | 'warning';
-  testId?: string;
-  badge?: ReactNode;
-}) {
-  return (
-    <section
-      aria-labelledby={id}
-      data-testid={testId}
-      className={cn(
-        'relative overflow-hidden rounded-lg border bg-surface p-5 shadow-sm',
-        tone === 'accent' ? 'border-accent' : tone === 'warning' ? 'border-warning' : 'border-border',
-      )}
-    >
-      {tone && (
-        <span
-          aria-hidden="true"
-          className={cn(
-            'absolute inset-x-0 top-0 h-1',
-            tone === 'accent' ? 'bg-brand-gradient' : 'bg-warning',
-          )}
-        />
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 id={id} className="font-heading text-lg font-bold">
-          {title}
-        </h2>
-        {badge}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 /** One screen for every person on an evaluation. What it shows depends on who is looking and which stage it is at. */
-export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf: string }) {
+export function EvaluationWorkspace({
+  initial,
+  csrf,
+  roles = [],
+}: {
+  initial: EvalView;
+  csrf: string;
+  roles?: string[];
+}) {
   const router = useRouter();
   const [ev, setEv] = useState(initial);
+  const [sheetKey, setSheetKey] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -167,8 +141,11 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
         <Badge tone="info">{TENDER_TYPE_LABEL[ev.tenderType] ?? ev.tenderType}</Badge>
         {me && <Badge tone="neutral">Your seat: {STREAM_LABEL[me.stream]}</Badge>}
         {!me && <Badge tone="neutral">Read-only view</Badge>}
+        {ev.mode === 'RANKING' && <Badge tone="warning">Ranking evaluation</Badge>}
+        {ev.stage > 1 && <Badge tone="info">Stage {ev.stage}</Badge>}
       </div>
       <Stepper steps={STEPS} current={STEP_OF[ev.status]} />
+      <HoldBanner ev={ev} />
 
       {error && (
         <p
@@ -274,6 +251,8 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
         </Card>
       )}
 
+      <HoldControls ev={ev} csrf={csrf} roles={roles} onChange={setEv} />
+
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ['Bidders', String(ev.suppliers.length)],
@@ -355,6 +334,8 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
             {p.canManagePanel && <AddMember evalId={ev.id} csrf={csrf} onDone={refresh} />}
           </Card>
 
+          <PanelTools ev={ev} csrf={csrf} roles={roles} onChange={setEv} />
+
           {ev.conflicts.length > 0 && (
             <ConflictReview ev={ev} csrf={csrf} onDone={setEv} run={run} busy={busy} />
           )}
@@ -364,6 +345,10 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
 
         <div className="flex min-w-0 flex-col gap-4 lg:order-1">
           <StageGuide ev={ev} />
+          <StagesCard ev={ev} />
+          <CompliancePanel ev={ev} csrf={csrf} roles={roles} onChange={setEv} />
+          <CriteriaEditor ev={ev} csrf={csrf} roles={roles} onChange={setEv} />
+          <RedeclarePrompt ev={ev} csrf={csrf} roles={roles} onChange={setEv} />
           {!suppliersInRail && suppliersCard(true)}
           {me?.coiState === 'NOT_DECLARED' && (
             <Card id="gate-h" title="Declare before you begin" tone="warning">
@@ -382,7 +367,13 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
             </Card>
           )}
 
-          {p.canScore && <ScoringSheet ev={ev} csrf={csrf} onDone={refresh} />}
+          {p.canScore && ev.mode === 'RANKING' && <RankingEntry ev={ev} csrf={csrf} onDone={refresh} />}
+          {p.canScore && ev.mode !== 'RANKING' && (
+            <>
+              <PlainScoreEntry ev={ev} csrf={csrf} onSaved={() => setSheetKey((k) => k + 1)} />
+              <ScoringSheet key={sheetKey} ev={ev} csrf={csrf} onDone={refresh} />
+            </>
+          )}
 
           {ev.status === 'SCORING' && me?.scoringComplete && (
             <Card id="done-h" title="Your scores are in">
@@ -433,6 +424,12 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
                     </span>
                     <strong className="min-w-0 flex-1">{r.displayName}</strong>
                     <span className="font-mono text-sm">{r.weightedScore.toFixed(1)} / 100</span>
+                    {r.tco !== null && (
+                      <span className="text-xs text-text-muted">
+                        Total cost AUD {Math.round(r.tco).toLocaleString('en-AU')}
+                        {r.priceScore !== null ? ` (price score ${r.priceScore.toFixed(1)})` : ''}
+                      </span>
+                    )}
                     {r.compliance === 'FAIL' && <Badge tone="error">Not compliant</Badge>}
                   </li>
                 ))}
@@ -440,9 +437,14 @@ export function EvaluationWorkspace({ initial, csrf }: { initial: EvalView; csrf
             </Card>
           )}
 
+          <ClarificationsPanel ev={ev} csrf={csrf} roles={roles} />
+          <NegotiationPanel ev={ev} csrf={csrf} roles={roles} onChanged={refresh} />
+
           {p.canReopen && <ReopenCard ev={ev} csrf={csrf} onDone={setEv} />}
 
-          <ReportPanel ev={ev} csrf={csrf} busy={busy} run={run} post={post} setEv={setEv} />
+          <ReportPanel ev={ev} csrf={csrf} roles={roles} busy={busy} run={run} post={post} setEv={setEv} />
+          <ProbityDocs ev={ev} csrf={csrf} roles={roles} />
+          <AdvisorAllocation ev={ev} csrf={csrf} roles={roles} />
         </div>
       </div>
     </div>
@@ -966,6 +968,7 @@ function ConsensusPanel({
 function ReportPanel({
   ev,
   csrf,
+  roles,
   busy,
   run,
   post,
@@ -973,6 +976,7 @@ function ReportPanel({
 }: {
   ev: EvalView;
   csrf: string;
+  roles: string[];
   busy: string | null;
   run: (n: string, f: () => Promise<void>, ok?: string) => Promise<void>;
   post: <T>(path: string, body?: unknown) => Promise<T>;
@@ -982,7 +986,6 @@ function ReportPanel({
   const p = ev.permissions;
   const rep = ev.report;
   if (!rep && !p.canGenerateReport) return null;
-  void csrf;
   return (
     <Card
       id="rep-h"
@@ -997,7 +1000,9 @@ function ReportPanel({
             {rep.status === 'APPROVED'
               ? 'Approved'
               : rep.status === 'DRAFT'
-                ? 'Needs regenerating'
+                ? ev.status === 'LOCKED'
+                  ? 'Draft: ready to review'
+                  : 'Needs regenerating'
                 : 'Awaiting approval'}
           </Badge>
         )
@@ -1017,6 +1022,10 @@ function ReportPanel({
               Download Word
             </a>
           </Button>
+          <Button variant="secondary" onClick={() => window.print()}>
+            <Printer className="size-4" aria-hidden="true" />
+            Print
+          </Button>
         </div>
       )}
       {p.canGenerateReport && (
@@ -1031,7 +1040,7 @@ function ReportPanel({
               )
             }
           >
-            {rep ? 'Regenerate report' : 'Generate report'}
+            {rep && ev.status !== 'LOCKED' ? 'Regenerate report' : 'Generate report'}
           </Button>
         </div>
       )}
@@ -1039,20 +1048,33 @@ function ReportPanel({
         <>
           <p className="mt-2 text-sm text-text-muted">
             Generated {formatDateTime(rep.generatedAt)} from the locked consensus scores.
+            {rep.status === 'AWAITING_APPROVAL' && rep.routedTo.length > 0 && (
+              <>
+                {' '}
+                Sent for approval to <strong data-testid="routed-to">{rep.routedTo.join(' or ')}</strong>,
+                whose sourcing authority covers AUD {Math.round(rep.value).toLocaleString('en-AU')}.
+              </>
+            )}
           </p>
-          <div className="mt-3 flex flex-col gap-4">
-            {rep.sections.map((s) => (
-              <section key={s.key} aria-label={s.label} data-report-section={s.key}>
-                <h3 className="font-heading text-base font-bold">{s.label}</h3>
-                <div className="mt-1 flex flex-col gap-2 text-sm">
-                  {s.paragraphs.map((t, i) => (
-                    <p key={i} className="max-w-prose whitespace-pre-wrap">
-                      {t}
-                    </p>
-                  ))}
-                </div>
-              </section>
-            ))}
+          <div className="mt-3 flex flex-col gap-4" data-print-area>
+            <p className="hidden print:block">
+              {ev.requestNumber} {ev.title}: report {rep.id.slice(0, 8).toUpperCase()}, evaluation version{' '}
+              {ev.version}, generated {formatDateTime(rep.generatedAt)}.
+            </p>
+            {rep.sections
+              .filter((x) => x.paragraphs.length > 0)
+              .map((s) => (
+                <section key={s.key} aria-label={s.label} data-report-section={s.key}>
+                  <h3 className="font-heading text-base font-bold">{s.label}</h3>
+                  <div className="mt-1 flex flex-col gap-2 text-sm">
+                    {s.paragraphs.map((t, i) => (
+                      <p key={i} className="max-w-prose whitespace-pre-wrap">
+                        {t}
+                      </p>
+                    ))}
+                  </div>
+                </section>
+              ))}
           </div>
           {rep.decision && (
             <p
@@ -1064,6 +1086,7 @@ function ReportPanel({
           )}
         </>
       )}
+      {rep && <ReportCoi ev={ev} csrf={csrf} roles={roles} reportId={rep.id} />}
       {p.canDecideReport && (
         <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
           <Field label="Comment (required to return the report)">
@@ -1171,7 +1194,7 @@ function StageGuide({ ev }: { ev: EvalView }) {
 const DISPOSITION: Record<string, string> = {
   PENDING: 'Awaiting decision',
   IMMATERIAL: 'Immaterial: reinstated',
-  MANAGEABLE: 'Manageable: reinstated',
+  MANAGEABLE: 'Manageable: reinstated (may be kept from one supplier)',
   MATERIAL: 'Material: removed',
 };
 
@@ -1190,6 +1213,7 @@ function ConflictReview({
   busy: string | null;
 }) {
   const [why, setWhy] = useState<Record<string, string>>({});
+  const [exclude, setExclude] = useState<Record<string, string>>({});
   const decide = (userId: string, disposition: 'IMMATERIAL' | 'MANAGEABLE' | 'MATERIAL') =>
     run(
       `conflict-${userId}`,
@@ -1198,7 +1222,13 @@ function ConflictReview({
           await api<EvalView>(`/evaluations/${ev.id}/conflicts/${userId}/decision`, {
             method: 'POST',
             csrf,
-            body: { disposition, ...(why[userId] ? { rationale: why[userId] } : {}) },
+            body: {
+              disposition,
+              ...(why[userId] ? { rationale: why[userId] } : {}),
+              ...(disposition === 'MANAGEABLE' && exclude[userId]
+                ? { excludeSupplierId: exclude[userId] }
+                : {}),
+            },
           }),
         ),
       'Decision recorded.',
@@ -1238,6 +1268,22 @@ function ConflictReview({
                     value={why[c.userId] ?? ''}
                     onChange={(e) => setWhy((cur) => ({ ...cur, [c.userId]: e.target.value }))}
                   />
+                </Field>
+                <Field
+                  label={`Supplier ${c.name} must not assess (for a manageable conflict)`}
+                  hint="A manageable (minor) conflict keeps the person on the panel but away from this supplier."
+                >
+                  <Select
+                    value={exclude[c.userId] ?? ''}
+                    onChange={(e) => setExclude((cur) => ({ ...cur, [c.userId]: e.target.value }))}
+                  >
+                    <option value="">None: reinstate fully</option>
+                    {ev.suppliers.map((s) => (
+                      <option key={s.supplierId} value={s.supplierId}>
+                        {s.displayName}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
                 <div className="flex flex-wrap gap-2">
                   <Button

@@ -23,7 +23,7 @@ export default async function EvaluationPage({ params }: { params: Promise<{ id:
             <span className="font-mono text-lg text-text-muted">{res.data.requestNumber}</span>{' '}
             {res.data.title}
           </h1>
-          <EvaluationWorkspace initial={res.data} csrf={user.csrfToken} />
+          <EvaluationWorkspace initial={res.data} csrf={user.csrfToken} roles={user.roles} />
         </>
       ) : (
         <EmptyState

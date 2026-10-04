@@ -4,6 +4,7 @@
  * consensus with variance flags -> lock -> report -> delegate approval.
  * An evaluation a person may not see is a 404, never a 403.
  */
+import { createHash } from 'node:crypto';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -21,7 +22,6 @@ import {
   criterion,
   evalReport,
   evaluation,
-  fieldValue,
   fileObject,
   panelMember,
   request,
@@ -35,7 +35,10 @@ import { loadSettings } from '../settings/settings.js';
 import type { SealedStore } from '../tender/files.js';
 import { evaluationCriteria } from '../tender/pack.js';
 import { TenderService } from '../tender/service.js';
-import { REPORT_SECTIONS, buildReport } from './report.js';
+import { composeReport, storeReport } from './report-compose.js';
+import { registerEvaluationB3 } from './b3-routes.js';
+import { sweepReminders } from './b3-routes2.js';
+import { allocatedTenders, noticeToSupplier, routeApproval, runComplianceGate } from './b3-service.js';
 import { atLeast, EvaluationService, isSuspended, type Loaded } from './service.js';
 import { evaluationReportDocx, evaluationReportPdf } from './report-pdf.js';
 import {
@@ -64,6 +67,10 @@ const openBody = z
       .array(z.object({ userId: uuid, stream: z.enum(['TECHNICAL', 'COMMERCIAL']) }).strict())
       .min(1)
       .max(12),
+    /** Ranking instead of numeric scoring, for low-value arrangements (FR-0280). */
+    mode: z.enum(['SCORING', 'RANKING']).optional(),
+    /** In ranking mode, the share of the final order that comes from normalised total cost of ownership. */
+    priceWeightPct: z.number().int().min(0).max(80).optional(),
   })
   .strict();
 const addPanelBody = z
@@ -113,6 +120,8 @@ const conflictDecisionBody = z
   .object({
     disposition: z.enum(['IMMATERIAL', 'MANAGEABLE', 'MATERIAL']),
     rationale: z.string().trim().max(2000).optional(),
+    /** For a minor (MANAGEABLE) conflict: the supplier this person may not assess (FR-0330). */
+    excludeSupplierId: uuid.optional(),
   })
   .strict();
 const decisionBody = z
@@ -148,10 +157,44 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   const fresh = () => tenders.closeDue(d.database);
   const eid = (req: FastifyRequest) => parse(z.object({ id: uuid }), req.params).id;
 
+  /** A probity advisor's system hold freezes the workspace: every change is refused until it is released (FR-0310). */
+  const heldGate = async (req: FastifyRequest) => {
+    const raw = (req.params as { id?: string } | undefined)?.id;
+    if (!raw || !uuid.safeParse(raw).success) return;
+    const reason = await withSystem(d.database, async (tx) => {
+      const evId = req.url.includes('/evaluation-reports/')
+        ? (await tx.select({ e: evalReport.evaluationId }).from(evalReport).where(eq(evalReport.id, raw)))[0]
+            ?.e
+        : raw;
+      if (!evId) return null;
+      const [ev] = await tx
+        .select({ held: evaluation.held, reason: evaluation.holdReason })
+        .from(evaluation)
+        .where(eq(evaluation.id, evId));
+      return ev?.held ? (ev.reason ?? '') : null;
+    });
+    if (reason !== null)
+      throw new AppError(
+        423,
+        'EVALUATION_ON_HOLD',
+        `This evaluation is on hold by the probity advisor${reason ? `: ${reason}` : ''}. Nothing can change until it is released.`,
+      );
+  };
+  const mguard = (dd: GuardDeps, roles: Parameters<typeof guard>[1]) => [guard(dd, roles), heldGate];
+
+  /** An external probity advisor sees only the procurements they are allocated to (FR-0310). */
+  async function advisorScope(tx: Tx, a: AuthContext): Promise<Set<string> | null> {
+    if (!a.user.roles.includes('PROBITY')) return null;
+    const [u] = await tx.select({ e: appUser.external }).from(appUser).where(eq(appUser.id, a.user.id));
+    return allocatedTenders(tx, a.user.tenantId, { id: a.user.id, external: Boolean(u?.e) });
+  }
+
   /** Loads an evaluation the caller may see, else 404. Panel members who were removed have no access. */
   async function visible(tx: Tx, a: AuthContext, id: string): Promise<Loaded> {
     const l = await svc.load(tx, a.user.tenantId, id);
     if (!l) throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
+    const scope = await advisorScope(tx, a);
+    if (scope && !scope.has(l.tender.id)) throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
     const processRole = a.user.roles.some((r) => PROCESS.includes(r));
     const me = svc.memberOf(l, a.user.id);
     if (!processRole && (!me || isSuspended(me)))
@@ -175,15 +218,19 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
     async (req) => {
       const a = req.auth!;
       await fresh();
+      await sweepReminders(d.database, svc, d.clock.now());
       return withContext(d.database, a.ctx, async (tx) => {
         const processRole = a.user.roles.some((r) => PROCESS.includes(r));
-        const rows = await tx
-          .select({ ev: evaluation, r: request })
-          .from(evaluation)
-          .innerJoin(tender, eq(tender.id, evaluation.tenderId))
-          .innerJoin(request, eq(request.id, tender.requestId))
-          .where(eq(evaluation.tenantId, a.user.tenantId))
-          .orderBy(desc(evaluation.updatedAt));
+        const scope = await advisorScope(tx, a);
+        const rows = (
+          await tx
+            .select({ ev: evaluation, r: request })
+            .from(evaluation)
+            .innerJoin(tender, eq(tender.id, evaluation.tenderId))
+            .innerJoin(request, eq(request.id, tender.requestId))
+            .where(eq(evaluation.tenantId, a.user.tenantId))
+            .orderBy(desc(evaluation.updatedAt))
+        ).filter((x) => !scope || scope.has(x.ev.tenderId));
         const evaluations = [];
         for (const { ev, r } of rows) {
           const panel = await tx.select().from(panelMember).where(eq(panelMember.evaluationId, ev.id));
@@ -199,6 +246,8 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
             requestNumber: r.number,
             title: r.title,
             status: ev.status,
+            held: ev.held,
+            mode: ev.mode,
             bids: bids?.n ?? 0,
             panelSize: panel.filter((m) => !isSuspended(m)).length,
             ...(mine ? { myCoiState: mine.coiState, myScoringComplete: Boolean(mine.scoredAt) } : {}),
@@ -286,6 +335,17 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       if (bids.length === 0)
         throw new AppError(409, 'NO_BIDS', 'No bids were submitted, so there is nothing to evaluate');
       const [req0] = await tx.select().from(request).where(eq(request.id, t.requestId));
+      const rules = (await loadSettings(tx, a.user.tenantId)).evaluationRules;
+      const rankingMode = body.mode === 'RANKING';
+      if (rankingMode && Number(req0!.estimatedValue ?? 0) > rules.rankingMaxValueAud)
+        throw new AppError(
+          409,
+          'RANKING_NOT_ALLOWED',
+          `Ranking is for arrangements up to ${aud.format(rules.rankingMaxValueAud)}; this one is estimated at ${aud.format(Number(req0!.estimatedValue ?? 0))}`,
+        );
+      const criteriaSet = rankingMode
+        ? [{ name: 'Overall preference', weight: 100, stream: 'OTHER' as const, passFail: false }]
+        : template;
 
       const ids = body.panel.map((m) => m.userId);
       if (new Set(ids).size !== ids.length)
@@ -312,7 +372,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         );
       await assertSegregated(tx, a.user.tenantId, [...ids, ...(chairCandidate ? [chairCandidate] : [])]);
       for (const s of ['TECHNICAL', 'COMMERCIAL'] as const)
-        if (template.some((c) => c.stream === s) && !body.panel.some((m) => m.stream === s))
+        if (criteriaSet.some((c) => c.stream === s) && !body.panel.some((m) => m.stream === s))
           throw new AppError(
             400,
             'PANEL_INVALID',
@@ -330,11 +390,13 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           tenderId,
           status: 'COI_PENDING',
           varianceLimitPct: 30,
+          mode: rankingMode ? 'RANKING' : 'SCORING',
+          priceWeightPct: body.priceWeightPct ?? 30,
           createdAt: now,
           updatedAt: now,
         })
         .returning();
-      for (const c of template)
+      for (const c of criteriaSet)
         await tx.insert(criterion).values({
           tenantId: a.user.tenantId,
           evaluationId: ev!.id,
@@ -364,8 +426,31 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         action: 'evaluation.open',
         entityType: 'evaluation',
         entityId: ev!.id,
-        after: { tenderId, bidders: bids.length, panel: members.length, criteria: template.length },
+        after: {
+          tenderId,
+          bidders: bids.length,
+          panel: members.length,
+          criteria: criteriaSet.length,
+          mode: rankingMode ? 'RANKING' : 'SCORING',
+        },
       });
+      // the mandatory pass or fail gate runs on every bidder at once; each missed requirement gets a clarification request
+      const opened = (await svc.load(tx, a.user.tenantId, ev!.id))!;
+      const gate = await runComplianceGate(tx, opened, now, a.user.id);
+      for (const r of gate.requests)
+        await noticeToSupplier(tx, a.user.tenantId, r.supplierId, {
+          title: r.subject,
+          body: `${req0!.number} ${req0!.title}: ${r.question}`,
+          link: `/supplier/tenders/${tenderId}`,
+          kind: 'CLARIFICATION',
+        });
+      if (gate.failed)
+        await d.audit.record(tx, a.ctx, {
+          action: 'evaluation.compliance_gate',
+          entityType: 'evaluation',
+          entityId: ev!.id,
+          after: { failed: gate.failed, requests: gate.requests.length },
+        });
       await svc.notifyUsers(
         tx,
         a.user.tenantId,
@@ -381,7 +466,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   });
 
   reg('POST', '/evaluations/{id}/panel');
-  app.post(`${p}/evaluations/:id/panel`, { preHandler: guard(d, ['PROCUREMENT']) }, async (req, reply) => {
+  app.post(`${p}/evaluations/:id/panel`, { preHandler: mguard(d, ['PROCUREMENT']) }, async (req, reply) => {
     const a = req.auth!;
     const id = eid(req);
     const body = parse(addPanelBody, req.body);
@@ -451,7 +536,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   reg('POST', '/evaluations/{id}/coi');
   app.post(
     `${p}/evaluations/:id/coi`,
-    { preHandler: guard(d, ['EVALUATOR', 'CHAIR']) },
+    { preHandler: mguard(d, ['EVALUATOR', 'CHAIR']) },
     async (req, reply) => {
       const a = req.auth!;
       const id = eid(req);
@@ -511,6 +596,15 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
               : { nature: body.nature, subjectOrg: body.subjectOrg ?? null, access: 'REVOKED' }),
           },
         });
+        if (body.none)
+          await svc.notifyUsers(
+            tx,
+            a.user.tenantId,
+            [a.user.id],
+            'Confirm your declaration now you can see the suppliers',
+            `${l.req.number} ${l.req.title}: supplier names are now visible to you. Confirm that you still have no conflict of interest.`,
+            `/app/evaluations/${id}`,
+          );
         if (!body.none) {
           await svc.notifyRoles(
             tx,
@@ -557,6 +651,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   async function myScores(tx: Tx, a: AuthContext, l: Loaded) {
     const me = declaredMember(l, a);
     const criteria = svc.criteriaFor(l, me);
+    const excluded = await svc.excludedFor(tx, l, a.user.id);
     const rows = await tx
       .select()
       .from(score)
@@ -565,13 +660,15 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       me,
       criteria,
       rows,
-      suppliers: l.bidders.map((b) => ({
-        supplierId: b.supplierId,
-        displayName: b.company,
-        scores: rows
-          .filter((r) => r.supplierId === b.supplierId && criteria.some((c) => c.id === r.criterionId))
-          .map((r) => ({ criterionId: r.criterionId, score: Number(r.score), comment: r.comment ?? null })),
-      })),
+      suppliers: l.bidders
+        .filter((b) => !excluded.has(b.supplierId))
+        .map((b) => ({
+          supplierId: b.supplierId,
+          displayName: b.company,
+          scores: rows
+            .filter((r) => r.supplierId === b.supplierId && criteria.some((c) => c.id === r.criterionId))
+            .map((r) => ({ criterionId: r.criterionId, score: Number(r.score), comment: r.comment ?? null })),
+        })),
     };
   }
 
@@ -602,7 +699,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   );
 
   reg('PUT', '/evaluations/{id}/scores');
-  app.put(`${p}/evaluations/:id/scores`, { preHandler: guard(d, ['EVALUATOR', 'CHAIR']) }, async (req) => {
+  app.put(`${p}/evaluations/:id/scores`, { preHandler: mguard(d, ['EVALUATOR', 'CHAIR']) }, async (req) => {
     const a = req.auth!;
     const id = eid(req);
     const body = parse(scoresBody, req.body);
@@ -620,6 +717,12 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       if (me.scoredAt) throw new AppError(409, 'SCORING_SUBMITTED', 'You have marked your scoring complete');
       if (!l.bidders.some((b) => b.supplierId === body.supplierId))
         throw new AppError(404, 'NOT_FOUND', 'Supplier not found');
+      if ((await svc.excludedFor(tx, l, a.user.id)).has(body.supplierId))
+        throw new AppError(
+          403,
+          'COI_EXCLUDED_SUPPLIER',
+          'You were excluded from assessing this supplier because of a conflict of interest',
+        );
       const allowed = svc.criteriaFor(l, me);
       const seen = new Set<string>();
       for (const s of body.scores) {
@@ -696,7 +799,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   reg('POST', '/evaluations/{id}/scores/submit');
   app.post(
     `${p}/evaluations/:id/scores/submit`,
-    { preHandler: guard(d, ['EVALUATOR', 'CHAIR']) },
+    { preHandler: mguard(d, ['EVALUATOR', 'CHAIR']) },
     async (req) => {
       const a = req.auth!;
       const id = eid(req);
@@ -759,7 +862,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
 
   // ---------------------------------------------------------------- variance limit per evaluation (US-EVL-04)
   reg('PUT', '/evaluations/{id}/variance-limit');
-  app.put(`${p}/evaluations/:id/variance-limit`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+  app.put(`${p}/evaluations/:id/variance-limit`, { preHandler: mguard(d, ['CHAIR']) }, async (req) => {
     const a = req.auth!;
     const id = eid(req);
     const body = parse(varianceBody, req.body);
@@ -834,7 +937,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   });
 
   reg('POST', '/evaluations/{id}/consensus/open');
-  app.post(`${p}/evaluations/:id/consensus/open`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+  app.post(`${p}/evaluations/:id/consensus/open`, { preHandler: mguard(d, ['CHAIR']) }, async (req) => {
     const a = req.auth!;
     const id = eid(req);
     return withContext(d.database, a.ctx, async (tx) => {
@@ -861,7 +964,10 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         .set({ status: 'CONSENSUS', updatedAt: now, version: l.ev.version + 1 })
         .where(eq(evaluation.id, id));
       // From here the chair (and probity) can read everyone's scores: row level security opens at this status.
-      const rows = await tx.select().from(score).where(eq(score.evaluationId, id));
+      const departed = new Set(l.panel.filter((m) => m.coiState === 'REMOVED').map((m) => m.userId));
+      const rows = (await tx.select().from(score).where(eq(score.evaluationId, id))).filter(
+        (r) => !departed.has(r.evaluatorId),
+      );
       let flagged = 0;
       for (const b of l.bidders)
         for (const c of l.criteria) {
@@ -902,7 +1008,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   });
 
   reg('PUT', '/evaluations/{id}/consensus/{supplierId}');
-  app.put(`${p}/evaluations/:id/consensus/:supplierId`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+  app.put(`${p}/evaluations/:id/consensus/:supplierId`, { preHandler: mguard(d, ['CHAIR']) }, async (req) => {
     const a = req.auth!;
     const { id, supplierId } = parse(z.object({ id: uuid, supplierId: uuid }), req.params);
     const body = parse(consensusBody, req.body);
@@ -947,10 +1053,10 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   });
 
   reg('POST', '/evaluations/{id}/consensus/lock');
-  app.post(`${p}/evaluations/:id/consensus/lock`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+  app.post(`${p}/evaluations/:id/consensus/lock`, { preHandler: mguard(d, ['CHAIR']) }, async (req) => {
     const a = req.auth!;
     const id = eid(req);
-    return withContext(d.database, a.ctx, async (tx) => {
+    const locked = await withContext(d.database, a.ctx, async (tx) => {
       const l = await visible(tx, a, id);
       chairOnly(l, a);
       if (l.ev.status !== 'CONSENSUS') throw new AppError(409, 'INVALID_STATE', 'Consensus is not open');
@@ -997,14 +1103,28 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       );
       return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
     });
+    // the report is compiled at once, as a draft that procurement reviews and puts forward for approval
+    await withSystem(d.database, async (tx) => {
+      const l = (await svc.load(tx, a.user.tenantId, id))!;
+      const now = d.clock.now();
+      const text = await composeReport(tx, svc, l, now);
+      const rep = await storeReport(tx, a.user.tenantId, id, text, 'DRAFT', now);
+      await d.audit.record(tx, a.ctx, {
+        action: 'report.compile',
+        entityType: 'evaluation',
+        entityId: id,
+        after: { reportId: rep.id, status: 'DRAFT' },
+      });
+    });
+    return locked;
   });
 
   // ---------------------------------------------------------------- report (US-EVL-05)
   reg('POST', '/evaluations/{id}/report');
-  app.post(`${p}/evaluations/:id/report`, { preHandler: guard(d, ['PROCUREMENT']) }, async (req, reply) => {
+  app.post(`${p}/evaluations/:id/report`, { preHandler: mguard(d, ['PROCUREMENT']) }, async (req, reply) => {
     const a = req.auth!;
     const id = eid(req);
-    // 1. check state and gather what the report needs (inside the caller's own permissions)
+    // 1. check state (inside the caller's own permissions)
     const gathered = await withContext(d.database, a.ctx, async (tx) => {
       const l = await visible(tx, a, id);
       const [existing] = await tx.select().from(evalReport).where(eq(evalReport.evaluationId, id));
@@ -1028,117 +1148,21 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
             note: 'Report generated before consensus was locked',
           },
         });
-      const decl = await tx
-        .select()
-        .from(coiDeclaration)
-        .where(
-          and(
-            eq(coiDeclaration.scope, 'EVALUATION'),
-            eq(coiDeclaration.scopeId, id),
-            eq(coiDeclaration.none, false),
-          ),
-        );
-      return { l, items, existing, conflictUsers: new Set(decl.map((x) => x.userId)) };
+      return { l };
     });
     // 2. the evaluators' comments are readable only by the chair and probity (row level security), so the report reads
     //    them as the system, and quotes them without saying who wrote them
-    const comments = await withSystem(d.database, (tx) =>
-      tx.select().from(score).where(eq(score.evaluationId, id)),
-    );
-    const { l, items, conflictUsers } = gathered;
-    const ranking = await svc.ranking({ ...l, ev: { ...l.ev, status: 'LOCKED' } }, items);
     const now = d.clock.now();
-    const text = buildReport({
-      title: l.req.title,
-      number: l.req.number,
-      type: l.tender.type,
-      generatedAt: now,
-      varianceLimitPct: l.ev.varianceLimitPct,
-      panel: l.panel.map((m) => ({
-        name: m.name,
-        stream: m.stream,
-        outcome:
-          m.coiState === 'REMOVED'
-            ? ('CONFLICT_REMOVED' as const)
-            : conflictUsers.has(m.userId)
-              ? ('CONFLICT_REVIEWED' as const)
-              : ('NO_CONFLICT' as const),
-      })),
-      criteria: l.criteria.map((c) => ({
-        id: c.id,
-        name: c.name,
-        weight: Number(c.weight),
-        stream: c.stream,
-        passFail: c.passFail,
-      })),
-      suppliers: l.bidders.map((b) => {
-        const r = ranking.find((x) => x.supplierId === b.supplierId)!;
-        return {
-          name: b.company,
-          score: r.weightedScore,
-          rank: r.rank,
-          compliant: r.compliance === 'PASS',
-          items: items
-            .filter((i) => i.supplierId === b.supplierId)
-            .map((i) => ({
-              criterionId: i.criterionId,
-              consensus: Number(i.consensusScore ?? 0),
-              flagged: i.flagged,
-              variance: i.variancePct === null ? null : Number(i.variancePct),
-              rationale: i.rationale ?? null,
-            })),
-          comments: comments.filter((c) => c.supplierId === b.supplierId && c.comment).map((c) => c.comment!),
-        };
-      }),
-    });
-    // 3. store it
+    const text = await withSystem(d.database, (tx) => composeReport(tx, svc, gathered.l, now));
+    // 3. store it and route it to the delegate whose authority covers the value (FR-0375)
     const out = await withContext(d.database, a.ctx, async (tx) => {
       const l2 = (await svc.load(tx, a.user.tenantId, id))!;
-      let [rep] = await tx.select().from(evalReport).where(eq(evalReport.evaluationId, id));
-      if (rep) {
-        await tx
-          .update(evalReport)
-          .set({ status: 'AWAITING_APPROVAL', generatedAt: now })
-          .where(eq(evalReport.id, rep.id));
-      } else {
-        [rep] = await tx
-          .insert(evalReport)
-          .values({
-            tenantId: a.user.tenantId,
-            evaluationId: id,
-            status: 'AWAITING_APPROVAL',
-            generatedAt: now,
-          })
-          .returning();
-      }
-      for (const sec of REPORT_SECTIONS) {
-        const [row] = await tx
-          .select()
-          .from(fieldValue)
-          .where(
-            and(
-              eq(fieldValue.ownerType, 'EVAL_REPORT'),
-              eq(fieldValue.ownerId, rep!.id),
-              eq(fieldValue.key, sec.key),
-            ),
-          );
-        if (row)
-          await tx
-            .update(fieldValue)
-            .set({ value: text[sec.key] ?? '', source: 'SYSTEM', updatedAt: now })
-            .where(eq(fieldValue.id, row.id));
-        else
-          await tx.insert(fieldValue).values({
-            tenantId: a.user.tenantId,
-            ownerType: 'EVAL_REPORT',
-            ownerId: rep!.id,
-            key: sec.key,
-            label: sec.label,
-            value: text[sec.key] ?? '',
-            source: 'SYSTEM',
-            updatedAt: now,
-          });
-      }
+      const value = Number(l2.req.estimatedValue ?? 0);
+      const routing = await routeApproval(tx, a.user.tenantId, value);
+      const rep = await storeReport(tx, a.user.tenantId, id, text, 'AWAITING_APPROVAL', now, {
+        routedTo: routing.userIds[0] ?? null,
+        requiredAuthority: value,
+      });
       await tx
         .update(evaluation)
         .set({ status: 'REPORTED', updatedAt: now, version: l2.ev.version + 1 })
@@ -1147,16 +1171,31 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         action: 'report.generate',
         entityType: 'evaluation',
         entityId: id,
-        after: { reportId: rep!.id, generatedAt: now.toISOString() },
+        after: {
+          reportId: rep.id,
+          generatedAt: now.toISOString(),
+          routedTo: routing.userIds,
+          requiredAuthority: value,
+        },
       });
-      await svc.notifyRoles(
-        tx,
-        a.user.tenantId,
-        ['DELEGATE', 'EXEC'],
-        'Evaluation report awaiting approval',
-        `${l2.req.number} ${l2.req.title}`,
-        `/app/evaluations/${id}`,
-      );
+      if (routing.userIds.length)
+        await svc.notifyUsers(
+          tx,
+          a.user.tenantId,
+          routing.userIds,
+          'Evaluation report awaiting your approval',
+          `${l2.req.number} ${l2.req.title}: ${aud.format(value)} is within your authority`,
+          `/app/evaluations/${id}`,
+        );
+      else
+        await svc.notifyRoles(
+          tx,
+          a.user.tenantId,
+          ['EXEC', 'PROCUREMENT'],
+          'Evaluation report needs an approver',
+          `${l2.req.number} ${l2.req.title}: nobody holds sourcing authority for ${aud.format(value)}`,
+          `/app/evaluations/${id}`,
+        );
       return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
     });
     return reply.status(201).send(out);
@@ -1165,7 +1204,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   reg('POST', '/evaluation-reports/{id}/decision');
   app.post(
     `${p}/evaluation-reports/:id/decision`,
-    { preHandler: guard(d, ['DELEGATE', 'EXEC']) },
+    { preHandler: mguard(d, ['DELEGATE', 'EXEC']) },
     async (req) => {
       const a = req.auth!;
       const reportId = eid(req);
@@ -1188,6 +1227,26 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           isAuthorOfSubject: l.req.requesterId === a.user.id,
         });
         if (!sod.ok) throw new AppError(403, sod.code, sod.message);
+        if (body.decision === 'APPROVE') {
+          const [own] = await tx
+            .select({ d: coiDeclaration.disposition })
+            .from(coiDeclaration)
+            .where(
+              and(
+                eq(coiDeclaration.scope, 'REPORT'),
+                eq(coiDeclaration.scopeId, reportId),
+                eq(coiDeclaration.userId, a.user.id),
+                eq(coiDeclaration.none, false),
+              ),
+            )
+            .orderBy(desc(coiDeclaration.createdAt));
+          if (own && own.d !== 'IMMATERIAL' && own.d !== 'MANAGEABLE')
+            throw new AppError(
+              409,
+              'COI_DECLARED',
+              'You declared a conflict of interest on this report, which has not been cleared: someone else must approve it',
+            );
+        }
         const now = d.clock.now();
         const stamp = (verb: string) =>
           `${verb} · ${a.user.name} · ${a.user.role.replace('_', ' ')} · ${now.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
@@ -1317,7 +1376,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
   reg('POST', '/evaluations/{id}/conflicts/{userId}/decision');
   app.post(
     `${p}/evaluations/:id/conflicts/:userId/decision`,
-    { preHandler: guard(d, ['DELEGATE', 'EXEC']) },
+    { preHandler: mguard(d, ['DELEGATE', 'EXEC', 'PROBITY']) },
     async (req) => {
       const a = req.auth!;
       const { id, userId } = parse(z.object({ id: uuid, userId: uuid }), req.params);
@@ -1343,14 +1402,36 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
               eq(coiDeclaration.userId, userId),
               eq(coiDeclaration.none, false),
             ),
-          );
+          )
+          .orderBy(desc(coiDeclaration.createdAt));
         if (!decl || decl.disposition !== 'PENDING')
           throw new AppError(409, 'INVALID_STATE', 'This declaration has already been decided');
         const now = d.clock.now();
         const stays = body.disposition !== 'MATERIAL';
+        // a minor conflict keeps the person on the panel but away from the supplier the conflict concerns
+        let excludeId: string | null = null;
+        if (body.disposition === 'MANAGEABLE') {
+          excludeId =
+            body.excludeSupplierId ??
+            l.bidders.find(
+              (b) => decl.subjectOrg && b.company.toLowerCase().includes(decl.subjectOrg.toLowerCase()),
+            )?.supplierId ??
+            null;
+          if (excludeId && !l.bidders.some((b) => b.supplierId === excludeId))
+            throw new AppError(400, 'VALIDATION_FAILED', 'That supplier did not bid', [
+              { field: 'excludeSupplierId', message: 'Choose one of the bidders' },
+            ]);
+        }
         await tx
           .update(coiDeclaration)
-          .set({ disposition: body.disposition, decidedAt: now })
+          .set({
+            disposition: body.disposition,
+            decidedAt: now,
+            excludedSupplierId: excludeId,
+            decidedBy: a.user.id,
+            decidedByRole: a.user.role,
+            decisionNote: body.rationale ?? null,
+          })
           .where(eq(coiDeclaration.id, decl.id));
         await tx
           .update(panelMember)
@@ -1365,6 +1446,8 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
             userId,
             disposition: body.disposition,
             outcome: stays ? 'REINSTATED' : 'REMOVED',
+            excludedSupplierId: excludeId,
+            decidedByRole: a.user.role,
             rationale: body.rationale ?? null,
           },
         });
@@ -1404,7 +1487,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
 
   // ---------------------------------------------------------------- reopen consensus after the lock
   reg('POST', '/evaluations/{id}/consensus/reopen');
-  app.post(`${p}/evaluations/:id/consensus/reopen`, { preHandler: guard(d, ['CHAIR']) }, async (req) => {
+  app.post(`${p}/evaluations/:id/consensus/reopen`, { preHandler: mguard(d, ['CHAIR']) }, async (req) => {
     const a = req.auth!;
     const id = eid(req);
     const body = parse(reopenBody, req.body);
@@ -1478,6 +1561,15 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           generatedAt: new Date(out.v.report!.generatedAt),
           sections: out.v.report!.sections,
           ranking: out.v.ranking,
+          audit: {
+            reportId: out.v.report!.id,
+            fingerprint: createHash('sha256')
+              .update(JSON.stringify(out.v.report!.sections))
+              .digest('hex')
+              .slice(0, 16),
+            exportedBy: a.user.name,
+            exportedAt: d.clock.now(),
+          },
           decision: out.v.report!.decision ? { stamp: out.v.report!.decision.stamp } : undefined,
           probity: out.v.probitySignoff,
         };
@@ -1496,6 +1588,16 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       },
     );
   }
+
+  for (const k of registerEvaluationB3(app, p, d, {
+    svc,
+    visible,
+    declaredMember,
+    mguard,
+    eid,
+    assertSegregated,
+  }))
+    done.add(k);
 
   void atLeast;
   return done;

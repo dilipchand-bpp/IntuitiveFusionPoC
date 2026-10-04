@@ -609,7 +609,7 @@ test.describe('downloads, conflict review, reopening consensus and the PDF repor
     // 7. procurement regenerates, the delegate approves; after approval nobody can reopen
     await signIn(page, 'procurement');
     await page.goto(url);
-    await page.getByRole('button', { name: 'Regenerate report' }).click();
+    await page.getByRole('button', { name: 'Generate report' }).click();
     await expect(page.getByTestId('report-panel')).toContainText('Awaiting approval');
     await signIn(page, 'delegate');
     await page.goto(url);

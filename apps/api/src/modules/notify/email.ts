@@ -24,7 +24,9 @@ export interface EmailInput {
     | 'CONTACT_ADDED'
     | 'CONTACT_REMOVED'
     | 'SANCTIONS_HOLD'
-    | 'WELCOME';
+    | 'WELCOME'
+    | 'CLARIFICATION'
+    | 'BAFO';
   refType?: string;
   refId?: string;
 }

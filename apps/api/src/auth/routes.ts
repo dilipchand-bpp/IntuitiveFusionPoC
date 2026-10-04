@@ -30,7 +30,8 @@ const publicUser = (u: AuthenticatedUser) => ({
   role: u.role,
   roles: u.roles,
   orgUnit: u.orgUnitId ?? undefined,
-  homePath: ROLE_HOME[u.role],
+  homePath: u.external ? '/app/probity' : ROLE_HOME[u.role],
+  ...(u.external ? { external: true } : {}),
 });
 
 const cookieOpts = (config: AppConfig, expires?: Date) => ({

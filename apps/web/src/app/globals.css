@@ -137,3 +137,20 @@
     }
   }
 }
+
+/* The evaluation report prints on its own: everything else on the page is hidden (FR-0355). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-print-area],
+  [data-print-area] * {
+    visibility: visible;
+  }
+  [data-print-area] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

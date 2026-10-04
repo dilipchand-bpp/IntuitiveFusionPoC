@@ -7,6 +7,7 @@ export interface SessionUser {
   role: string;
   roles: string[];
   homePath: string;
+  external?: boolean;
   csrfToken: string;
 }
 

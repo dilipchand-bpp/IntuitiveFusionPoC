@@ -120,3 +120,15 @@ This page lists the swap points that exist **today**; later milestones append to
 | Sanctions screening (FR-0180) | `adapters/sanctions.ts` `MockSanctionsScreening` matches a synthetic watchlist ("blocked holdings", "sanctioned trading", "embargo exports") | Implement `SanctionsScreening` against a screening provider; hold, review and audit stay |
 | Public registers (FR-0205) | Notices are recorded in `public_notice` with the thresholds in settings; nothing is posted | Post to AusTender, SAM.gov or TED and store the returned notice number |
 | Insurance (FR-0245) | Details only (insurer, policy, cover, expiry); no certificate file | Add a certificate upload and, optionally, an insurer verification call |
+
+## Evaluation and report (B3)
+
+| Item | Today | Swap |
+| --- | --- | --- |
+| Plain-language scores and rankings (FR-0315) | `evaluation/plain-language.ts`: fixed rules read a sentence into scores or an order, shown for confirmation before anything is saved; no network call | Replace `readScores` and `readOrder` with a language model; the confirmation step, validation and audit stay |
+| Negotiation recommendations (FR-0295) | `evaluation/commercial.ts` `adviseNegotiation`: rules over pricing, deviations and insurance against the other bids; every item states its basis; labelled `rules-simulated-v1` in the response | Replace with a model fed the same inputs and a category or market benchmark source |
+| Compliance gate checks (FR-0265) | Registration (ABN, screening), declarations (flagged onboarding answers), insurance status and response completeness, from data the platform already holds | Add checks that call an external registry or insurer; the gate rows, waivers and clarification requests stay |
+| Supplier clarification and offer notices | In-app notification plus a simulated email (`CLARIFICATION`, `BAFO` kinds in the email log) | The real mail sender, as for the other tender emails |
+| Probity advisor identity (FR-0310) | An external advisor is a user flagged `external` with the probity role; the API refuses every route outside sign-in, notifications, evaluations and probity, and evaluations outside their allocation look like they do not exist | Single sign-on for the advisor's own organisation; the allocation table and the route allow-list stay |
+| Probity documents (FR-0340) | Authored text exports to PDF and Word with a sign-off stamp; an uploaded file is stored sealed with its hash | Electronic signature for the sign-off stamp |
+| Bid pricing (FR-0280, FR-0350) | Entered by the supplier as price, implementation and running cost, held beside the bid and sealed until close; total cost of ownership is computed on the platform | Read the pricing from the supplier's commercial file or a pricing template |

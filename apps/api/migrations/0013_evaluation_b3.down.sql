@@ -1,0 +1,13 @@
+DROP TABLE IF EXISTS probity_document;
+DROP TABLE IF EXISTS probity_allocation;
+DROP TABLE IF EXISTS panel_substitution;
+DROP TABLE IF EXISTS bafo_offer;
+DROP TABLE IF EXISTS bafo_round;
+DROP TABLE IF EXISTS bid_pricing;
+DROP TABLE IF EXISTS clarification;
+DROP TABLE IF EXISTS compliance_check;
+ALTER TABLE app_user DROP COLUMN IF EXISTS external;
+ALTER TABLE eval_report DROP COLUMN IF EXISTS required_authority, DROP COLUMN IF EXISTS routed_to;
+ALTER TABLE coi_declaration DROP COLUMN IF EXISTS decision_note, DROP COLUMN IF EXISTS decided_by_role, DROP COLUMN IF EXISTS decided_by, DROP COLUMN IF EXISTS excluded_supplier_id;
+ALTER TABLE panel_member DROP COLUMN IF EXISTS reminded_at, DROP COLUMN IF EXISTS redeclaration, DROP COLUMN IF EXISTS redeclared_at;
+ALTER TABLE evaluation DROP COLUMN IF EXISTS held_at, DROP COLUMN IF EXISTS held_by, DROP COLUMN IF EXISTS hold_reason, DROP COLUMN IF EXISTS held, DROP COLUMN IF EXISTS price_weight_pct, DROP COLUMN IF EXISTS mode;

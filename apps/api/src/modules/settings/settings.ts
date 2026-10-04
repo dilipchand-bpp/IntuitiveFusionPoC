@@ -110,6 +110,34 @@ export const SECTIONS = {
         .strict(),
     )
     .max(6),
+  criteriaLibrary: z
+    .array(
+      z
+        .object({
+          name: z.string().trim().min(3).max(120),
+          stream: z.enum(['TECHNICAL', 'COMMERCIAL', 'OTHER']),
+          weight: z.number().min(0).max(100),
+          passFail: z.boolean(),
+        })
+        .strict(),
+    )
+    .max(60)
+    .refine(
+      (a) => new Set(a.map((c) => c.name.toLowerCase())).size === a.length,
+      'Each criterion can appear once',
+    ),
+  evaluationRules: z
+    .object({
+      /** An unrecorded insurance certificate fails the compliance gate (an expired one always does). */
+      requireInsurance: z.boolean(),
+      /** Ranking instead of numeric scoring is allowed only up to this estimated value. */
+      rankingMaxValueAud: z.number().min(0).max(1e10),
+      /** Hours before an outstanding conflict re-declaration is reminded again. */
+      redeclarationReminderHours: z.number().int().min(1).max(720),
+      /** Days a supplier has to answer a clarification unless the buyer sets another. */
+      clarificationDays: z.number().int().min(1).max(60),
+    })
+    .strict(),
   security: z
     .object({
       requireMfa: z.boolean(),
@@ -204,6 +232,36 @@ export const DEFAULTS: Settings = {
     { register: 'SAM.gov', jurisdiction: 'United States (federal)', minValueAud: 250_000, enabled: false },
     { register: 'TED', jurisdiction: 'European Union', minValueAud: 215_000, enabled: false },
   ],
+  // a starting library of criteria to pick from when setting up an evaluation (FR-0320)
+  criteriaLibrary: [
+    { name: 'Technical capability and approach', stream: 'TECHNICAL', weight: 40, passFail: false },
+    { name: 'Delivery, transition and risk management', stream: 'TECHNICAL', weight: 20, passFail: false },
+    { name: 'Quality of proposed solution', stream: 'TECHNICAL', weight: 40, passFail: false },
+    { name: 'Delivery approach and team', stream: 'TECHNICAL', weight: 20, passFail: false },
+    { name: 'Security and data protection', stream: 'TECHNICAL', weight: 15, passFail: false },
+    { name: 'Sustainability and social value', stream: 'OTHER', weight: 10, passFail: false },
+    { name: 'Price and commercial terms', stream: 'COMMERCIAL', weight: 30, passFail: false },
+    { name: 'Price and value for money', stream: 'COMMERCIAL', weight: 30, passFail: false },
+    { name: 'Experience and references', stream: 'OTHER', weight: 10, passFail: false },
+    {
+      name: 'Compliance with the specification (pass or fail)',
+      stream: 'TECHNICAL',
+      weight: 0,
+      passFail: true,
+    },
+    {
+      name: 'Meets mandatory insurance and licensing (pass or fail)',
+      stream: 'OTHER',
+      weight: 0,
+      passFail: true,
+    },
+  ],
+  evaluationRules: {
+    requireInsurance: false,
+    rankingMaxValueAud: 100_000,
+    redeclarationReminderHours: 24,
+    clarificationDays: 5,
+  },
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },
