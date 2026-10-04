@@ -305,8 +305,12 @@ export function SettingsPanel({
         onSave={() => void save('customFields', s.customFields)}
       >
         {s.customFields.map((f, i) => (
-          <div key={i} className="flex flex-wrap items-end gap-2" data-testid="custom-field-row">
-            <Field label={`Key ${i + 1}`} hint="letters and digits">
+          <div
+            key={i}
+            className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]"
+            data-testid="custom-field-row"
+          >
+            <Field label={`Key ${i + 1} (letters and digits)`}>
               <Input
                 value={f.key}
                 onChange={(e) =>
@@ -491,7 +495,11 @@ export function SettingsPanel({
         <div className="flex flex-col gap-2" aria-label="Review rules">
           <h3 className="text-sm font-semibold">Reviews a request triggers</h3>
           {s.intake.engagementRules.map((r, i) => (
-            <div key={r.id} className="flex flex-wrap items-end gap-2" data-testid="engagement-rule">
+            <div
+              key={r.id}
+              className="grid items-end gap-3 sm:grid-cols-[2fr_1fr_2fr_auto]"
+              data-testid="engagement-rule"
+            >
               <Field label={`Rule ${i + 1}`}>
                 <Input
                   value={r.label}
@@ -530,7 +538,7 @@ export function SettingsPanel({
                   ))}
                 </Select>
               </Field>
-              <Field label={`Words ${i + 1}`} hint="comma separated">
+              <Field label={`Words ${i + 1} (comma separated)`}>
                 <Input
                   value={r.keywords.join(', ')}
                   onChange={(e) =>
@@ -726,8 +734,12 @@ export function SettingsPanel({
         onSave={() => void save('onboardingQuestions', s.onboardingQuestions)}
       >
         {s.onboardingQuestions.map((q, i) => (
-          <div key={i} className="flex flex-wrap items-end gap-2" data-testid="onboarding-question">
-            <Field label={`Key ${i + 1}`} hint="letters and digits">
+          <div
+            key={i}
+            className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]"
+            data-testid="onboarding-question"
+          >
+            <Field label={`Key ${i + 1} (letters and digits)`}>
               <Input
                 value={q.id}
                 onChange={(e) =>
@@ -845,7 +857,10 @@ export function SettingsPanel({
         onSave={() => void save('publicRegisters', s.publicRegisters)}
       >
         {s.publicRegisters.map((r, i) => (
-          <div key={r.register} className="flex flex-wrap items-end gap-3">
+          <div
+            key={r.register}
+            className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]"
+          >
             <label className="flex min-h-[44px] items-center gap-2 text-sm font-semibold">
               <input
                 type="checkbox"
@@ -961,7 +976,7 @@ export function SettingsPanel({
           {s.criteriaLibrary.map((c, i) => (
             <li
               key={`${c.name}-${i}`}
-              className="flex flex-wrap items-end gap-2 rounded-md border border-border p-2 text-sm"
+              className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] rounded-md border border-border p-2 text-sm"
             >
               <span className="min-w-0 flex-1">
                 <span className="font-semibold">{c.name}</span>{' '}
@@ -1055,7 +1070,7 @@ export function SettingsPanel({
         onSave={() => void save('erpFieldMap', s.erpFieldMap)}
       >
         {s.erpFieldMap.map((m, i) => (
-          <div key={i} className="flex flex-wrap items-end gap-2">
+          <div key={i} className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
             <Field label={`ERP name ${i + 1}`}>
               <Input
                 value={m.erpName}
@@ -1091,7 +1106,7 @@ export function SettingsPanel({
             </Button>
           </div>
         ))}
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
           <Button
             variant="secondary"
             onClick={() => setS({ ...s, erpFieldMap: [...s.erpFieldMap, { erpName: '', platformKey: '' }] })}
@@ -1146,9 +1161,9 @@ function LibraryAdd({ onAdd }: { onAdd: (c: SettingsData['criteriaLibrary'][numb
   const [weight, setWeight] = useState('10');
   const [passFail, setPassFail] = useState(false);
   return (
-    <div className="flex flex-wrap items-end gap-2 border-t border-border pt-3">
+    <div className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] border-t border-border pt-3">
       <Field label="New criterion">
-        <Input value={name} onChange={(e) => setName(e.target.value)} className="w-72 max-w-full" />
+        <Input value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
       <Field label="Stream">
         <Select value={stream} onChange={(e) => setStream(e.target.value as typeof stream)}>
@@ -1158,14 +1173,7 @@ function LibraryAdd({ onAdd }: { onAdd: (c: SettingsData['criteriaLibrary'][numb
         </Select>
       </Field>
       <Field label="Usual weight">
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          className="w-24"
-        />
+        <Input type="number" min={0} max={100} value={weight} onChange={(e) => setWeight(e.target.value)} />
       </Field>
       <label className="flex min-h-[44px] items-center gap-2 text-sm">
         <input

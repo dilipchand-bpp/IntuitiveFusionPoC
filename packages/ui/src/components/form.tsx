@@ -47,11 +47,6 @@ export function Field({ label, hint, error, required, children }: FieldProps) {
           </span>
         )}
       </label>
-      {hint && (
-        <p id={hintId} className="text-sm text-text-muted">
-          {hint}
-        </p>
-      )}
       {isValidElement(children) &&
         cloneElement(children, {
           id,
@@ -59,6 +54,11 @@ export function Field({ label, hint, error, required, children }: FieldProps) {
           'aria-invalid': error ? true : undefined,
           required,
         })}
+      {hint && (
+        <p id={hintId} className="text-xs text-text-muted">
+          {hint}
+        </p>
+      )}
       {error && (
         <p id={errId} role="alert" className="text-sm font-medium text-error">
           {error}
