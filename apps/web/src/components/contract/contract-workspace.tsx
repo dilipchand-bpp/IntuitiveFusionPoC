@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Badge, Button, Card, Dialog, Field, Input, Select, Stepper, Textarea, type BadgeTone } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
+import { ContractManagementTabs, VariationInfo } from './b5-management';
 import { ManagementCard } from './management-card';
 import {
   ChecksCard,
@@ -299,6 +300,9 @@ export function ContractWorkspace({
               onChange={setC}
             />
           )}
+
+          {c.status === 'EXECUTED' && !c.parent && <ContractManagementTabs c={c} csrf={csrf} roles={roles} />}
+          {c.variation && <VariationInfo v={c.variation} />}
 
           <Card aria-labelledby="dev-h" role="region">
             <h2 id="dev-h" className="font-heading text-xl font-bold">

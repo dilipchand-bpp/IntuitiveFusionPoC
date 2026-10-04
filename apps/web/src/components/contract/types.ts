@@ -68,6 +68,20 @@ export interface ContractView extends ContractSummary {
   signatureBlocks: Array<{ role: string; label?: string; position?: string }>;
   deviationBlockers: string[];
   parent: { id: string; number: string } | null;
+  /** Set on a variation: its business case, how it was measured and what that means for signing (FR-0535, FR-0540). */
+  variation: {
+    businessCase: string | null;
+    variancePct: number | null;
+    model: 'CUMULATIVE' | 'INCREMENTAL';
+    standingValue: number;
+    cumulativeValue: number;
+    requiredSigners: string[];
+    tierBefore: number;
+    tierAfter: number;
+    tierChanged: boolean;
+    disclosure: { id: string; register: string; dueOn: string; status: 'OPEN' | 'DONE' } | null;
+    linkedRequestId: string | null;
+  } | null;
   variations: Array<{ id: string; number: string; status: string; value: number; endDate: string | null }>;
   cumulative: { value: number; endDate: string | null };
   signatures: Array<{
@@ -108,14 +122,20 @@ export interface TermBar {
 export interface AlertRow {
   id: string;
   contractId: string;
-  kind: 'EXPIRY' | 'NOTICE' | 'MILESTONE' | 'EXTENSION' | 'CUSTOM';
+  kind: 'EXPIRY' | 'NOTICE' | 'MILESTONE' | 'EXTENSION' | 'CUSTOM' | 'COUNTDOWN' | 'INSURANCE' | 'CLAUSE';
   triggerDate: string;
   status: 'SCHEDULED' | 'SENT' | 'CANCELLED';
   sentAt: string | null;
   note?: string | null;
-  origin?: 'SYSTEM' | 'USER';
+  origin?: 'SYSTEM' | 'USER' | 'AI';
+  channels?: Array<'IN_APP' | 'EMAIL' | 'SMS' | 'SLACK'>;
+  ownerId?: string | null;
   contractNumber?: string;
-  deliveries: Array<{ channel: 'IN_APP' | 'EMAIL'; status: 'DELIVERED' | 'SIMULATED'; deliveredAt: string }>;
+  deliveries: Array<{
+    channel: 'IN_APP' | 'EMAIL' | 'SMS' | 'SLACK';
+    status: 'DELIVERED' | 'SIMULATED';
+    deliveredAt: string;
+  }>;
 }
 
 export interface ContractRecord {

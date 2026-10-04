@@ -154,4 +154,14 @@ export const ALERT_KIND: Record<string, string> = {
   EXTENSION: 'Extension decision',
   MILESTONE: 'Milestone',
   CUSTOM: 'Custom reminder',
+  COUNTDOWN: 'Expiry countdown (fixed)',
+  INSURANCE: 'Insurance certificate expiring (fixed)',
+  CLAUSE: 'Date from the contract wording',
+};
+
+export const CHANNEL_LABEL: Record<string, string> = {
+  IN_APP: 'in-app',
+  EMAIL: 'email (simulated)',
+  SMS: 'SMS (simulated)',
+  SLACK: 'Slack (simulated)',
 };

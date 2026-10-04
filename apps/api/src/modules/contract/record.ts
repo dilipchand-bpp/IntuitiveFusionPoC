@@ -3,13 +3,14 @@
  * executes (locks) the contract; alerts are fired by `AlertService.runDue`, which uses the injected clock so that the
  * tests can travel in time, and is safe to run any number of times (each alert fires once).
  */
-import { and, eq, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, ne } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import { withSystem, type Database, type RequestContext, type Tx } from '../../db/client.js';
 import {
   alert,
   alertDelivery,
+  alertPreference,
   appUser,
   contract,
   contractExtension,
@@ -21,6 +22,8 @@ import {
   tender,
   tenant,
 } from '../../db/schema.js';
+import { countdownAlerts, MANDATORY_KINDS } from './b5-rules.js';
+import { runComplianceSweep } from './compliance.js';
 import { daysBetween, defaultMilestones, iso, leadsFrom, scheduleAlerts } from './dates.js';
 
 type ContractRow = typeof contract.$inferSelect;
@@ -52,10 +55,13 @@ export async function resolveOwner(
       }
     }
   }
+  // with several contract managers the longest-serving one, so the choice never depends on row order
   const [mgr] = await tx
     .select({ userId: roleAssignment.userId })
     .from(roleAssignment)
-    .where(and(eq(roleAssignment.tenantId, tenantId), eq(roleAssignment.role, 'CONTRACT_MGR')));
+    .innerJoin(appUser, eq(appUser.id, roleAssignment.userId))
+    .where(and(eq(roleAssignment.tenantId, tenantId), eq(roleAssignment.role, 'CONTRACT_MGR')))
+    .orderBy(asc(appUser.createdAt), asc(appUser.id));
   return mgr?.userId ?? null;
 }
 
@@ -96,7 +102,24 @@ export async function createContractRecord(
         ...(opts.pastAsSent && a.triggerDate < opts.today ? { status: 'SENT' as const } : {}),
       })
       .onConflictDoNothing();
-  return { ownerId, milestones, alerts };
+  // the fixed countdown (FR-0510): 180, 90 and 60 days before expiry and before the extension decision closes
+  const fixed = countdownAlerts(
+    { endDate: c.endDate!, noticeDays: c.noticeDays, hasExtensions: opts.extensions.length > 0 },
+    opts.today,
+  );
+  for (const a of fixed)
+    await tx
+      .insert(alert)
+      .values({
+        tenantId: c.tenantId,
+        contractId: c.id,
+        kind: 'COUNTDOWN',
+        triggerDate: a.triggerDate,
+        origin: 'SYSTEM',
+        note: a.note,
+      })
+      .onConflictDoNothing();
+  return { ownerId, milestones, alerts: [...alerts, ...fixed] };
 }
 
 /** The end date that counts: the contract's own, or a later one set by an executed variation. */
@@ -130,7 +153,14 @@ export async function rescheduleAlerts(tx: Tx, c: ContractRow, today: string) {
   const [tn] = await tx.select({ config: tenant.config }).from(tenant).where(eq(tenant.id, c.tenantId));
   await tx
     .delete(alert)
-    .where(and(eq(alert.contractId, c.id), eq(alert.origin, 'SYSTEM'), eq(alert.status, 'SCHEDULED')));
+    .where(
+      and(
+        eq(alert.contractId, c.id),
+        eq(alert.origin, 'SYSTEM'),
+        eq(alert.status, 'SCHEDULED'),
+        ne(alert.kind, 'INSURANCE'),
+      ),
+    );
   const planned = scheduleAlerts(
     { endDate: end, noticeDays: c.noticeDays, milestones, extensions: ext.map((e) => e.months) },
     today,
@@ -147,7 +177,23 @@ export async function rescheduleAlerts(tx: Tx, c: ContractRow, today: string) {
         origin: 'SYSTEM',
       })
       .onConflictDoNothing();
-  return planned.length;
+  const fixed = countdownAlerts(
+    { endDate: end, noticeDays: c.noticeDays, hasExtensions: ext.length > 0 },
+    today,
+  );
+  for (const a of fixed)
+    await tx
+      .insert(alert)
+      .values({
+        tenantId: c.tenantId,
+        contractId: c.id,
+        kind: 'COUNTDOWN',
+        triggerDate: a.triggerDate,
+        origin: 'SYSTEM',
+        note: a.note,
+      })
+      .onConflictDoNothing();
+  return planned.length + fixed.length;
 }
 
 const WHAT: Record<string, string> = {
@@ -156,6 +202,9 @@ const WHAT: Record<string, string> = {
   EXTENSION: 'Decide whether to take up the optional extension',
   MILESTONE: 'A milestone is coming up',
   CUSTOM: 'Your reminder',
+  COUNTDOWN: 'The contract is counting down to expiry',
+  INSURANCE: "The supplier's insurance certificate is about to expire",
+  CLAUSE: 'A date taken from the contract wording is coming up',
 };
 
 export class AlertService {
@@ -169,6 +218,7 @@ export class AlertService {
     const today = iso(this.clock.now());
     const now = this.clock.now();
     return withSystem(database, async (tx) => {
+      await runComplianceSweep(tx, this.audit, now);
       const due = await tx
         .select()
         .from(alert)
@@ -196,45 +246,67 @@ export class AlertService {
               .where(eq(tender.id, c.tenderId))
           : [];
         const left = daysBetween(today, c.endDate!);
-        const body = `${c.number}${req ? ` ${req.title}` : ''}: ${a.note ? `Your reminder: "${a.note}"` : (WHAT[a.kind] ?? a.kind)}. ${
+        const what = a.note
+          ? a.origin === 'USER'
+            ? `Your reminder: "${a.note}"`
+            : a.note
+          : (WHAT[a.kind] ?? a.kind);
+        const body = `${c.number}${req ? ` ${req.title}` : ''}: ${what}. ${
           left >= 0
             ? `The contract ends in ${left} day(s) on ${c.endDate}.`
             : `The contract ended on ${c.endDate}.`
         }`;
+        // the fixed alerts cannot be muted (FR-0510); the others follow each person's preferences
+        const mandatory = (MANDATORY_KINDS as readonly string[]).includes(a.kind);
+        const prefs = mandatory
+          ? []
+          : await tx.select().from(alertPreference).where(inArray(alertPreference.userId, recipients));
+        const channels = (
+          a.origin === 'SYSTEM' ? ['IN_APP', 'EMAIL'] : ((a.channels as string[] | null) ?? ['IN_APP'])
+        ).filter((ch): ch is 'IN_APP' | 'EMAIL' | 'SMS' | 'SLACK' =>
+          ['IN_APP', 'EMAIL', 'SMS', 'SLACK'].includes(ch),
+        );
+        let muted = 0;
         for (const userId of recipients) {
-          await tx.insert(notification).values({
-            tenantId: c.tenantId,
-            userId,
-            title: `Contract alert: ${a.kind.toLowerCase()}`,
-            body,
-            link: `/app/contracts/${c.id}`,
-          });
-          await tx.insert(alertDelivery).values([
-            {
+          if (
+            !mandatory &&
+            ((prefs.find((x) => x.userId === userId)?.muted as string[] | undefined) ?? []).includes(a.kind)
+          ) {
+            muted += 1;
+            continue;
+          }
+          if (channels.includes('IN_APP'))
+            await tx.insert(notification).values({
+              tenantId: c.tenantId,
+              userId,
+              title: `Contract alert: ${a.kind.toLowerCase()}`,
+              body,
+              link: `/app/contracts/${c.id}`,
+            });
+          // No mail, text or chat service in the proof of concept: those channels are recorded as simulated (docs/swap-points.md).
+          for (const channel of channels)
+            await tx.insert(alertDelivery).values({
               tenantId: c.tenantId,
               alertId: a.id,
               userId,
-              channel: 'IN_APP',
-              status: 'DELIVERED',
+              channel,
+              status: channel === 'IN_APP' ? 'DELIVERED' : 'SIMULATED',
               deliveredAt: now,
-            },
-            // No mail server in the proof of concept: the email is recorded as simulated (docs/swap-points.md).
-            {
-              tenantId: c.tenantId,
-              alertId: a.id,
-              userId,
-              channel: 'EMAIL',
-              status: 'SIMULATED',
-              deliveredAt: now,
-            },
-          ]);
+            });
         }
         const ctx: RequestContext = { tenantId: c.tenantId, userId: null, role: 'SYSTEM' };
         await this.audit.record(tx, ctx, {
           action: 'alert.fire',
           entityType: 'contract',
           entityId: c.id,
-          after: { alertId: a.id, kind: a.kind, triggerDate: a.triggerDate, recipients: recipients.length },
+          after: {
+            alertId: a.id,
+            kind: a.kind,
+            triggerDate: a.triggerDate,
+            recipients: recipients.length,
+            muted,
+            channels,
+          },
         });
         fired += 1;
       }
@@ -248,8 +320,10 @@ export class AlertService {
    * as it is at that moment, or everyone holding a named role.
    */
   private async recipients(tx: Tx, c: ContractRow, a: typeof alert.$inferSelect): Promise<string[]> {
-    if (a.origin === 'USER' && a.createdBy) {
+    if ((a.origin === 'USER' || a.origin === 'AI') && a.createdBy) {
       const out = new Set<string>([a.createdBy]);
+      if (a.ownerId) out.add(a.ownerId);
+      if (a.origin === 'AI') for (const o of await this.ownerRecipients(tx, c)) out.add(o);
       for (const part of a.recipientRule.split('+').slice(1)) {
         if (part === 'MANAGER') {
           const m = await resolveManager(tx, c.tenantId, a.createdBy);

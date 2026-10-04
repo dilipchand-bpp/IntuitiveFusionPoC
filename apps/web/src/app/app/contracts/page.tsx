@@ -45,6 +45,32 @@ export default async function ContractsPage() {
             >
               Alerts
             </Link>
+            <Link
+              href="/app/contracts/mine"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              My contracts and next steps
+            </Link>
+            <Link
+              href="/app/contracts/masters"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              Master agreements
+            </Link>
+            {user?.roles.some((r) => ['FINANCE', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC'].includes(r)) && (
+              <Link
+                href="/app/contracts/invoices"
+                className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+              >
+                Invoices
+              </Link>
+            )}
+            <Link
+              href="/app/contracts/disclosures"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              Register disclosures
+            </Link>
           </nav>
         )}
       </header>

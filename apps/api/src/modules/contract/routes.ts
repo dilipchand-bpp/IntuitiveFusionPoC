@@ -21,6 +21,7 @@ import {
   consensusItem,
   contract,
   contractExtension,
+  disclosureTask,
   contractMilestone,
   evaluation,
   fieldValue,
@@ -39,6 +40,9 @@ import { MockVendorRegistry, type VendorRegistry } from '../../adapters/vendor-r
 import type { SealedStore } from '../tender/files.js';
 import { isProtected } from './b4-rules.js';
 import { releaseExtra, registerContractB4 } from './b4-routes.js';
+import { registerContractB5 } from './b5-routes.js';
+import { canSee, generatePlans, isNarrow, teamUserIds } from './b5-service.js';
+import { syncContractCompliance } from './compliance.js';
 import {
   inviteSigners,
   lockState,
@@ -51,7 +55,7 @@ import {
 import { loadSettings } from '../settings/settings.js';
 import { addDays, addMonths, daysBetween, iso, termBars } from './dates.js';
 import { deviationBlockers, proposeRisk, type Risk } from './deviation.js';
-import { registerContractExtras } from './extras.js';
+import { makeVariationCreator, registerContractExtras } from './extras.js';
 import { AlertService, createContractRecord, effectiveEnd, rescheduleAlerts } from './record.js';
 import { EvaluationService } from '../evaluation/service.js';
 import {
@@ -129,6 +133,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     app.addHook('onClose', async () => clearInterval(h));
   }
   const cid = (req: FastifyRequest) => parse(z.object({ id: uuid }), req.params).id;
+  const registry = d.registry ?? new MockVendorRegistry();
 
   async function notifyRoles(
     tx: Tx,
@@ -254,6 +259,9 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
   /** Value that counts for signing authority: a variation is judged on the cumulative value of the contract it varies. */
   async function authorityValue(tx: Tx, c: ContractRow): Promise<number> {
     if (!c.parentId) return Number(c.value);
+    // incremental: a variation is judged on its own additional spend, not on the whole contract
+    if ((await loadSettings(tx, c.tenantId)).contractManagement.variationModel === 'INCREMENTAL')
+      return Number(c.value);
     const [parent] = await tx.select().from(contract).where(eq(contract.id, c.parentId));
     if (!parent) return Number(c.value);
     const done = (await variationsOf(tx, parent)).filter((v) => v.status === 'EXECUTED' && v.id !== c.id);
@@ -362,6 +370,8 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       origin: x.origin,
       sentAt: x.sentAt?.toISOString() ?? null,
       note: x.note,
+      channels: x.channels as string[],
+      ownerId: x.ownerId,
       deliveries: dl.map((y) => ({
         channel: y.channel,
         status: y.status,
@@ -478,8 +488,32 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     const kids = c.parentId ? [] : await variationsOf(tx, c);
     const [parent] = c.parentId ? await tx.select().from(contract).where(eq(contract.id, c.parentId)) : [];
     const execKids = kids.filter((v) => v.status === 'EXECUTED');
+    let variation: unknown = null;
+    if (c.parentId && parent) {
+      const others = (await variationsOf(tx, parent)).filter((v) => v.status === 'EXECUTED' && v.id !== c.id);
+      const standing = Number(parent.value) + others.reduce((s2, v) => s2 + Number(v.value), 0);
+      const after = standing + Number(c.value);
+      const needs = requiredSigners(await authorityValue(tx, c)).map((s2) => s2.label);
+      const [task] = await tx.select().from(disclosureTask).where(eq(disclosureTask.contractId, c.id));
+      variation = {
+        businessCase: c.businessCase,
+        variancePct: c.variancePct === null ? null : Number(c.variancePct),
+        model: c.varianceModel ?? settings.contractManagement.variationModel,
+        standingValue: standing,
+        cumulativeValue: after,
+        requiredSigners: needs,
+        tierBefore: requiredSigners(standing).length,
+        tierAfter: requiredSigners(after).length,
+        tierChanged: requiredSigners(standing).length !== requiredSigners(after).length,
+        disclosure: task
+          ? { id: task.id, register: task.register, dueOn: task.dueOn, status: task.status }
+          : null,
+        linkedRequestId: c.linkedRequestId,
+      };
+    }
     return {
       ...base,
+      variation,
       record,
       parent: parent ? { id: parent.id, number: parent.number } : null,
       variations: kids.map((v) => ({
@@ -606,7 +640,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       .select()
       .from(contract)
       .where(and(eq(contract.id, id), eq(contract.tenantId, a.user.tenantId), isNull(contract.deletedAt)));
-    if (!c) throw new AppError(404, 'NOT_FOUND', 'Contract not found');
+    if (!c || !(await canSee(tx, a, c))) throw new AppError(404, 'NOT_FOUND', 'Contract not found');
     return c;
   }
   const locked = () => new AppError(423, 'CONTRACT_LOCKED', 'This contract is executed and locked');
@@ -762,8 +796,11 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         .where(and(eq(contract.tenantId, a.user.tenantId), isNull(contract.deletedAt)))
         .orderBy(desc(contract.number));
       const out = [];
+      const narrow = isNarrow(a.user.roles);
+      const team = narrow ? await teamUserIds(tx, a) : null;
       for (const c of rows) {
         if (q.status && c.status !== q.status) continue;
+        if (!(await canSee(tx, a, c, team))) continue;
         const s = await summary(tx, a.user.tenantId, c);
         if (q.q) {
           const hay = `${s.number} ${s.supplierName} ${s.title ?? ''} ${s.requestNumber ?? ''}`.toLowerCase();
@@ -1330,6 +1367,20 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
               extensions: (tpl?.body as Partial<TemplateBody> | undefined)?.extensions ?? [],
               today: now.toISOString().slice(0, 10),
             });
+        if (!c.parentId) {
+          const [sup] = await tx.select().from(supplier).where(eq(supplier.id, c.supplierId));
+          const [fresh] = await tx.select().from(contract).where(eq(contract.id, id));
+          if (sup && fresh) await syncContractCompliance(tx, d.audit, fresh, sup, now);
+          if (fresh && ['CONTRACT', 'MASTER'].includes(fresh.docType))
+            await generatePlans(
+              tx,
+              { registry, audit: d.audit, now },
+              a.ctx,
+              fresh,
+              await loadSettings(tx, a.user.tenantId),
+              { manual: false },
+            );
+        }
         if (c.parentId) {
           // an executed variation can move the end date: the parent's scheduled alerts follow it
           const [parent] = await tx.select().from(contract).where(eq(contract.id, c.parentId));
@@ -1401,7 +1452,6 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     return reply.status(204).send();
   });
 
-  const registry = d.registry ?? new MockVendorRegistry();
   registerContractB4(app, p, d, reg, {
     load,
     view,
@@ -1423,6 +1473,15 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     authorityValue,
     deviationDecisions,
     alerts,
+  });
+  registerContractB5(app, p, d, reg, {
+    load,
+    summary,
+    view,
+    variationsOf,
+    notifyRoles,
+    createVariation: makeVariationCreator(d, { variationsOf, notifyRoles }),
+    registry,
   });
 
   return done;

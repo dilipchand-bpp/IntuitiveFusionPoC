@@ -59,6 +59,9 @@
   },
   {
    "name": "Access"
+  },
+  {
+   "name": "Contract management"
   }
  ],
  "security": [
@@ -14246,6 +14249,2294 @@
      }
     }
    }
+  },
+  "/contracts/{id}/commercial": {
+   "get": {
+    "operationId": "getContractCommercial",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The rate card, price escalation clauses, rebates with their status, the insurance hold and what the caller may edit",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CommercialView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/rates": {
+   "put": {
+    "operationId": "setContractRates",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Replace the contract rate card used by the three-way match",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RateCard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RateCard"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/escalations": {
+   "put": {
+    "operationId": "setContractEscalations",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Replace the price-escalation clauses: scheduled steps, or an index movement up to a cap",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EscalationSet"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 ESCALATION_BEFORE_START",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EscalationSet"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/rebates": {
+   "post": {
+    "operationId": "addContractRebate",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Record a rebate term: a rate on spend in a period once a threshold is reached",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RebateView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RebateCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/rebates/{rebateId}/claim": {
+   "post": {
+    "operationId": "claimContractRebate",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Record an amount claimed from the supplier against a rebate",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "rebateId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RebateView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RebateClaim"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/rebates/{rebateId}/follow-up": {
+   "post": {
+    "operationId": "followUpContractRebate",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Record a follow-up of a missed or under-claimed rebate",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "rebateId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RebateView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NOT_FLAGGED"
+   }
+  },
+  "/contracts/{id}/purchase-orders": {
+   "post": {
+    "operationId": "createPurchaseOrder",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Raise a purchase order (the simulated ERP feed). Blocked, and recorded, when it would take commitments above the contract limit; refused while an insurance hold is on",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "CONTRACT_MGR",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseOrder"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 SPEND_CEILING; 409 PURCHASE_ORDER_HELD",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PurchaseOrderCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listPurchaseOrders",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Purchase orders against the contract, including any that were blocked",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/PurchaseOrder"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/invoices": {
+   "post": {
+    "operationId": "recordInvoice",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Record an invoice (the simulated ERP feed). It is matched to its purchase order and the rate card with the escalation formula; a price increase not allowed blocks it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvoiceResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InvoiceCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listContractInvoices",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Invoices against the contract with their match findings",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Invoice"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/invoices": {
+   "get": {
+    "operationId": "listInvoices",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Invoices across contracts; filter by status to see what is blocked",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Invoice"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/invoices/{id}/override": {
+   "post": {
+    "operationId": "overrideBlockedInvoice",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Release a blocked invoice as a recorded exception, with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Invoice"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InvoiceOverride"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/invoices/{id}/pay": {
+   "post": {
+    "operationId": "payInvoice",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Record payment of a matched or excepted invoice",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Invoice"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 while the invoice is blocked"
+   }
+  },
+  "/contracts/{id}/spend": {
+   "get": {
+    "operationId": "getContractSpend",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Live spend against the contract from invoice and payment data: progress of spend and term, and the notices raised",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractSpend"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/alerts/rules": {
+   "get": {
+    "operationId": "getFixedAlertRules",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The alerts the platform fixes (expiry countdown, insurance lapse, spend ceiling) that no one can mute or change",
+    "parameters": [],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC",
+     "DELEGATE",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertRules"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/me/alert-preferences": {
+   "get": {
+    "operationId": "getAlertPreferences",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The alert kinds the caller has muted, and the fixed ones that cannot be",
+    "parameters": [],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC",
+     "DELEGATE",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertPreferenceView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setAlertPreferences",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Mute alert kinds for the caller; the fixed kinds are refused",
+    "parameters": [],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC",
+     "DELEGATE",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertPreferenceView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 ALERT_NOT_MUTABLE",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AlertPreferences"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/alerts/extract": {
+   "post": {
+    "operationId": "extractAlertTriggers",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Propose alerts from notice periods, review cycles and anniversaries in the clause wording (rules-simulated model); nothing is scheduled",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertExtraction"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/alerts/extract/apply": {
+   "post": {
+    "operationId": "applyAlertTriggers",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Schedule the proposed alerts the caller confirms",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertExtractResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 PROPOSAL_NOT_FOUND",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AlertExtractApply"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/plans": {
+   "get": {
+    "operationId": "getContractPlans",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The contract management plan and risk management plan, their tier and reasons, and the generated activities",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractPlans"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/plans/generate": {
+   "post": {
+    "operationId": "generateContractPlans",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Generate (or regenerate) both plans and their activities from the contract's size, term and risk, using the customer's template where one is uploaded",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlanGenerated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/activities/{activityId}/complete": {
+   "post": {
+    "operationId": "completeContractActivity",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Mark a contract management activity done",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "activityId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractPlans"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ActivityComplete"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-plan-templates": {
+   "get": {
+    "operationId": "getPlanTemplates",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The standard plan templates and any the customer uploaded",
+    "parameters": [],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlanTemplates"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contract-plan-templates/{kind}": {
+   "put": {
+    "operationId": "uploadPlanTemplate",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Upload the customer's template for the management plan (CMP) or the risk plan (RMP), as headed text or sections",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlanTemplates"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlanTemplateUpload"
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "operationId": "removePlanTemplate",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Go back to the standard template",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlanTemplates"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/work-orders": {
+   "post": {
+    "operationId": "createWorkOrder",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Raise a work order under a master agreement, within its value and term",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkOrder"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 WORK_ORDER_OVER_MASTER; 409 NOT_A_MASTER",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkOrderCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listWorkOrders",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The master agreement's work orders with committed and invoiced amounts, and totals",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkOrders"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/work-orders/{id}": {
+   "patch": {
+    "operationId": "updateWorkOrder",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Complete or cancel a work order",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkOrder"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkOrderPatch"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/reports/master-agreements": {
+   "get": {
+    "operationId": "reportMasterAgreements",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Master agreements and their work orders, reportable at both levels",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MasterAgreementReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/procurements": {
+   "post": {
+    "operationId": "linkProcurementToContract",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Start a new procurement number linked to a contract to renew it, vary it or take up an extension; not a new tender",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcurementLinked"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 NO_EXTENSION; 409 EXTENSION_EXERCISED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProcurementLink"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/management": {
+   "get": {
+    "operationId": "getContractManagement",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Variation count, extensions exercised and remaining, cumulative value, historic versions, linked procurements and next-step suggestions",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractManagement"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/search": {
+   "get": {
+    "operationId": "searchMyContracts",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Search the contracts that belong to the caller and their team, with a suggested next step near the end date",
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "endingWithinDays",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractSearch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/disclosure-tasks": {
+   "get": {
+    "operationId": "listDisclosureTasks",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Public register disclosure tasks raised by contract changes over the statutory threshold",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DisclosureTask"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/disclosure-tasks/{id}/complete": {
+   "post": {
+    "operationId": "completeDisclosureTask",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Record the register reference once the disclosure is made",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DisclosureTask"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DisclosureComplete"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/envelopes/candidates": {
+   "get": {
+    "operationId": "listEnvelopeCandidates",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "People who can be nominated to approve commitments from an envelope",
+    "parameters": [],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EnvelopeCandidates"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/envelopes": {
+   "get": {
+    "operationId": "listFundingEnvelopes",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "Funding envelopes the caller holds, is nominated for, or oversees",
+    "parameters": [],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "REQUESTER",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Envelope"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createFundingEnvelope",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "A delegate approves an allocated funding envelope, within their delegated authority, and nominates who can commit against it",
+    "parameters": [],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Envelope"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 DELEGATION_EXCEEDED; 422 INVALID_NOMINEE",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EnvelopeCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/envelopes/{id}": {
+   "get": {
+    "operationId": "getFundingEnvelope",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "One envelope with its commitments and what is left",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "REQUESTER",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Envelope"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/envelopes/{id}/commitments": {
+   "post": {
+    "operationId": "commitFromEnvelope",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "A nominated person approves a commitment against the envelope; warns the holder as it nears exhaustion",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "REQUESTER",
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Envelope"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 ENVELOPE_EXHAUSTED; 403 NOT_NOMINATED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EnvelopeCommit"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/envelopes/{id}/top-up": {
+   "post": {
+    "operationId": "topUpFundingEnvelope",
+    "tags": [
+     "Contract management"
+    ],
+    "summary": "The holder or an executive adds to the envelope, within delegated authority",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Envelope"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 DELEGATION_EXCEEDED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EnvelopeTopUp"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -17432,6 +19723,10 @@
      "endDate": {
       "type": "string",
       "format": "date"
+     },
+     "requestId": {
+      "type": "string",
+      "format": "uuid"
      }
     },
     "additionalProperties": false,
@@ -17882,7 +20177,10 @@
        "NOTICE",
        "MILESTONE",
        "EXTENSION",
-       "CUSTOM"
+       "CUSTOM",
+       "COUNTDOWN",
+       "INSURANCE",
+       "CLAUSE"
       ]
      },
      "triggerDate": {
@@ -17904,8 +20202,28 @@
       "type": "string",
       "enum": [
        "SYSTEM",
-       "USER"
+       "USER",
+       "AI"
       ]
+     },
+     "channels": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "enum": [
+        "IN_APP",
+        "EMAIL",
+        "SMS",
+        "SLACK"
+       ]
+      }
+     },
+     "ownerId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "note": {
+      "type": "string"
      },
      "sentAt": {
       "type": "string",
@@ -18052,6 +20370,22 @@
       "type": "string",
       "minLength": 5,
       "maxLength": 500
+     },
+     "channels": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "enum": [
+        "IN_APP",
+        "EMAIL",
+        "SMS",
+        "SLACK"
+       ]
+      }
+     },
+     "ownerId": {
+      "type": "string",
+      "format": "uuid"
      }
     },
     "additionalProperties": false,
@@ -20852,6 +23186,530 @@
     "additionalProperties": true
    },
    "SupplierContractView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RateCard": {
+    "type": "object",
+    "properties": {
+     "rates": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "item": {
+         "type": "string"
+        },
+        "unit": {
+         "type": "string"
+        },
+        "unitPrice": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "item",
+        "unitPrice"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "rates"
+    ]
+   },
+   "EscalationSet": {
+    "type": "object",
+    "properties": {
+     "escalations": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "kind": {
+         "type": "string",
+         "enum": [
+          "CPI",
+          "SCHEDULED"
+         ]
+        },
+        "effectiveOn": {
+         "type": "string"
+        },
+        "pct": {
+         "type": "number"
+        },
+        "capPct": {
+         "type": "number"
+        },
+        "note": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "kind",
+        "effectiveOn",
+        "pct"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "escalations"
+    ]
+   },
+   "RebateCreate": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "threshold": {
+      "type": "number"
+     },
+     "ratePct": {
+      "type": "number"
+     },
+     "periodStart": {
+      "type": "string"
+     },
+     "periodEnd": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "title",
+     "threshold",
+     "ratePct",
+     "periodStart",
+     "periodEnd"
+    ]
+   },
+   "RebateClaim": {
+    "type": "object",
+    "properties": {
+     "amount": {
+      "type": "number"
+     },
+     "claimedOn": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "amount"
+    ]
+   },
+   "RebateView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CommercialView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PurchaseOrderCreate": {
+    "type": "object",
+    "properties": {
+     "description": {
+      "type": "string"
+     },
+     "workOrderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "lines": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "item": {
+         "type": "string"
+        },
+        "qty": {
+         "type": "number"
+        },
+        "unitPrice": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "item",
+        "qty",
+        "unitPrice"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "description",
+     "lines"
+    ]
+   },
+   "PurchaseOrder": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "InvoiceCreate": {
+    "type": "object",
+    "properties": {
+     "number": {
+      "type": "string"
+     },
+     "invoiceDate": {
+      "type": "string"
+     },
+     "poId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "workOrderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "lines": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "item": {
+         "type": "string"
+        },
+        "qty": {
+         "type": "number"
+        },
+        "unitPrice": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "item",
+        "qty",
+        "unitPrice"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "invoiceDate",
+     "lines"
+    ]
+   },
+   "InvoiceResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Invoice": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "InvoiceOverride": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "ContractSpend": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AlertRules": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AlertPreferences": {
+    "type": "object",
+    "properties": {
+     "muted": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "enum": [
+        "NOTICE",
+        "EXPIRY",
+        "MILESTONE",
+        "EXTENSION",
+        "CUSTOM",
+        "CLAUSE",
+        "COUNTDOWN",
+        "INSURANCE"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "muted"
+    ]
+   },
+   "AlertPreferenceView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AlertExtraction": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AlertExtractApply": {
+    "type": "object",
+    "properties": {
+     "keys": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "keys"
+    ]
+   },
+   "AlertExtractResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractPlans": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PlanGenerated": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ActivityComplete": {
+    "type": "object",
+    "properties": {
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "PlanTemplates": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PlanTemplateUpload": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "sections": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "title": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "title",
+        "text"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name"
+    ]
+   },
+   "WorkOrderCreate": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "value": {
+      "type": "number"
+     },
+     "startDate": {
+      "type": "string"
+     },
+     "endDate": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "title",
+     "value",
+     "startDate",
+     "endDate"
+    ]
+   },
+   "WorkOrderPatch": {
+    "type": "object",
+    "properties": {
+     "status": {
+      "type": "string",
+      "enum": [
+       "OPEN",
+       "COMPLETE",
+       "CANCELLED"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "status"
+    ]
+   },
+   "WorkOrder": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "WorkOrders": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MasterAgreementReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProcurementLink": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "RENEW",
+       "VARY",
+       "EXTEND"
+      ]
+     },
+     "note": {
+      "type": "string"
+     },
+     "extensionPosition": {
+      "type": "integer"
+     },
+     "value": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "kind",
+     "note"
+    ]
+   },
+   "ProcurementLinked": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractManagement": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractSearch": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DisclosureTask": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DisclosureComplete": {
+    "type": "object",
+    "properties": {
+     "reference": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reference"
+    ]
+   },
+   "EnvelopeCreate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "amount": {
+      "type": "number"
+     },
+     "nominees": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     "warnPct": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "amount"
+    ]
+   },
+   "Envelope": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EnvelopeCommit": {
+    "type": "object",
+    "properties": {
+     "description": {
+      "type": "string"
+     },
+     "amount": {
+      "type": "number"
+     },
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "description",
+     "amount"
+    ]
+   },
+   "EnvelopeTopUp": {
+    "type": "object",
+    "properties": {
+     "amount": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "amount"
+    ]
+   },
+   "EnvelopeCandidates": {
     "type": "object",
     "additionalProperties": true
    }

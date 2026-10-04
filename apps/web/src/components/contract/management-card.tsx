@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Dialog, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Checkbox, Dialog, Field, Input, Select } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
-import { ALERT_KIND, formatDateTime } from '@/lib/labels';
+import { ALERT_KIND, CHANNEL_LABEL, formatDateTime } from '@/lib/labels';
 import { Gantt } from './gantt';
 import type { ContractRecord, ContractView } from './types';
 
@@ -32,6 +32,8 @@ export function ManagementCard({
   const [months, setMonths] = useState<string[]>([]);
   const [owner, setOwner] = useState(record.owner?.id ?? '');
   const [instruction, setInstruction] = useState('');
+  const [channels, setChannels] = useState<string[]>(['IN_APP', 'EMAIL']);
+  const [assignee, setAssignee] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -165,7 +167,7 @@ export function ManagementCard({
               <p className="mt-1 text-xs text-text-muted">
                 Delivered {formatDateTime(a.sentAt)} by{' '}
                 {a.deliveries
-                  .map((d) => (d.channel === 'IN_APP' ? 'in-app' : 'email (simulated)'))
+                  .map((d) => CHANNEL_LABEL[d.channel] ?? d.channel)
                   .filter((v, i, all) => all.indexOf(v) === i)
                   .join(' and ')}
               </p>
@@ -183,7 +185,7 @@ export function ManagementCard({
               const r = await api<{ summary: string }>(`/contracts/${contractId}/alerts`, {
                 method: 'POST',
                 csrf,
-                body: { instruction },
+                body: { instruction, channels, ...(assignee ? { ownerId: assignee } : {}) },
               });
               setInstruction('');
               setNote(`Alert created: ${r.summary}.`);
@@ -201,12 +203,37 @@ export function ManagementCard({
               maxLength={500}
             />
           </Field>
+          <fieldset className="flex flex-wrap gap-x-4">
+            <legend className="text-sm font-semibold">Deliver it by</legend>
+            {(['IN_APP', 'EMAIL', 'SMS', 'SLACK'] as const).map((ch) => (
+              <Checkbox
+                key={ch}
+                label={CHANNEL_LABEL[ch]}
+                checked={channels.includes(ch)}
+                onChange={(e) =>
+                  setChannels(e.target.checked ? [...channels, ch] : channels.filter((x) => x !== ch))
+                }
+              />
+            ))}
+          </fieldset>
+          {(record.ownerCandidates?.length ?? 0) > 0 && (
+            <Field label="Assign it to" hint="Besides you, this person is told when it fires.">
+              <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="w-64">
+                <option value="">No one else</option>
+                {record.ownerCandidates!.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <div>
             <Button
               type="submit"
               variant="secondary"
               loading={busy === 'alert'}
-              disabled={instruction.trim().length < 5}
+              disabled={instruction.trim().length < 5 || channels.length === 0}
             >
               Add alert
             </Button>

@@ -143,3 +143,13 @@ This page lists the swap points that exist **today**; later milestones append to
 | Signing invitations and reminders (FR-0445) | In-app notifications plus simulated email (`SIGNING_INVITATION`, `SIGNING_REMINDER`); the supplier reads the contract in its portal | The real mail sender; an e-signature provider for external signing |
 | Signing modes (FR-0425) | Blind and staged signing are enforced by the platform; signature-block positions come from the template | Pass the positions to an e-signature provider |
 | Time-bound access (FR-0435) | Grants are checked and ended whenever they are read (no background job); only the contract and report PDFs are shared | Extend to document repositories; add a nightly sweep so ends are audited even if nobody reads |
+
+## Contract management feeds and models (B5)
+
+| | |
+| --- | --- |
+| ERP purchase orders and invoices | `POST /contracts/{id}/purchase-orders` and `/invoices` are the simulated feed. A real ERP integration posts the same records (or a connector writes the `purchase_order` and `invoice` tables); the three-way match, the spend-ceiling guard and the spend notices run unchanged. The guard is off when `contractManagement.erpIntegrated` is false |
+| Alert channels | In-app is real; email, SMS and Slack are recorded in `alert_delivery` as `SIMULATED`. A real sender reads those rows |
+| Insurance certificates | The supplier enters the certificate in its portal; the monitor (`modules/contract/compliance.ts`) reads `supplier.insurance_expires_on`. A real source would be a certificate-of-currency service |
+| Clause trigger extraction, next-step suggestions, plan risk tiers | Fixed rules in `b5-rules.ts`, labelled `rules-simulated-v1`; a model replaces the functions `extractTriggers`, `nextSteps`, `planTier` |
+| Public register | The disclosure task records the reference a person types; no register is called |

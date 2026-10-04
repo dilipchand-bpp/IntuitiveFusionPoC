@@ -15,6 +15,18 @@ interface Item {
   complexity?: string;
   estimatedValue: number;
   updatedAt: string;
+  /** Set when the procurement was started from a contract to renew, vary or extend it. */
+  linkKind?: 'RENEW' | 'VARY' | 'EXTEND';
+  linkedContract?: { id: string; number: string | null };
+}
+const LINK_LABEL = { RENEW: 'Renewal of', VARY: 'Variation of', EXTEND: 'Extension of' } as const;
+function LinkedBadge({ r }: { r: Item }) {
+  if (!r.linkKind || !r.linkedContract) return null;
+  return (
+    <Badge tone="info">
+      {LINK_LABEL[r.linkKind]} {r.linkedContract.number ?? 'a contract'}
+    </Badge>
+  );
 }
 interface Page {
   items: Item[];
@@ -30,7 +42,7 @@ const LAYOUTS = [
   ['CALENDAR', 'Calendar'],
 ] as const;
 type Layout = (typeof LAYOUTS)[number][0];
-const PHASE_ORDER = ['INTAKE', 'PLAN', 'TENDER', 'EVALUATION', 'CONTRACT'];
+const PHASE_ORDER = ['INTAKE', 'PLAN', 'TENDER', 'EVALUATION', 'CONTRACT_AWARD', 'CONTRACT_MGMT'];
 const month = new Intl.DateTimeFormat('en-AU', { month: 'long', year: 'numeric' });
 
 export default async function RequestsPage({
@@ -148,7 +160,7 @@ export default async function RequestsPage({
       ) : (
         <>
           {layout === 'KANBAN' ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5" data-testid="board">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6" data-testid="board">
               {PHASE_ORDER.map((ph) => (
                 <section
                   key={ph}
@@ -170,6 +182,7 @@ export default async function RequestsPage({
                           <Link href={`/app/requests/${r.id}`} className="font-semibold">
                             {r.title}
                           </Link>
+                          <LinkedBadge r={r} />
                           <span className="mt-1 block text-xs text-text-muted">
                             {aud.format(r.estimatedValue)}
                           </span>
@@ -194,6 +207,7 @@ export default async function RequestsPage({
                           <Link href={`/app/requests/${r.id}`} className="font-semibold">
                             {r.title}
                           </Link>
+                          <LinkedBadge r={r} />
                           <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>
                             {STATUS_LABEL[r.status] ?? r.status}
                           </Badge>
@@ -227,7 +241,7 @@ export default async function RequestsPage({
                         {r.number}
                       </Td>
                       <Td label="Title">
-                        <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
+                        <Link href={`/app/requests/${r.id}`}>{r.title}</Link> <LinkedBadge r={r} />
                       </Td>
                       <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
                       <Td label="Status">

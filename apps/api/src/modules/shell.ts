@@ -47,9 +47,12 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
       const seesAlerts = a.user.roles.some((r) =>
         ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'].includes(r),
       );
+      // counted once per contract and day: the expiry reminder and the fixed countdown can fall on the same date
       const [alerts] = seesAlerts
         ? await tx
-            .select({ n: sql<number>`count(*)::int` })
+            .select({
+              n: sql<number>`count(distinct (${alert.contractId}::text || ':' || ${alert.triggerDate}::text))::int`,
+            })
             .from(alert)
             .where(
               and(

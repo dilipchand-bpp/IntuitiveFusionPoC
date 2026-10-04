@@ -154,7 +154,10 @@ describe('US-CMG-01 the contract record is created when the contract is locked',
     expect(r.extensions[0].label).toBe('Option 1 (12 months)');
     expect(r.extensions[0].start).toBe(view.endDate);
     expect(r.bars).toHaveLength(2);
-    const kinds = r.alerts.map((a: { kind: string }) => a.kind).sort();
+    const kinds = r.alerts
+      .map((a: { kind: string }) => a.kind)
+      .filter((k: string) => k !== 'COUNTDOWN') // the fixed countdown is covered in b5.test.ts (FR-0510)
+      .sort();
     expect(kinds).toEqual(['EXPIRY', 'EXTENSION', 'MILESTONE', 'MILESTONE', 'NOTICE']);
     expect(
       r.alerts.every(
@@ -205,7 +208,7 @@ describe('US-CMG-02 alerts fire on the right date, once, and are logged', () => 
         await withSystem(database, (tx) =>
           tx.select().from(s.notification).where(eq(s.notification.userId, mgr)),
         )
-      ).filter((n) => n.link === `/app/contracts/${id}`).length;
+      ).filter((n) => n.link === `/app/contracts/${id}` && n.title === 'Contract alert: notice').length;
 
     clock.set(`${notice.triggerDate}T00:00:00Z`);
     clock.advanceDays(-1);

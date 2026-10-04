@@ -123,6 +123,17 @@ export const NAV: readonly NavItem[] = [
     blurb: 'Draft from template, sign with separate signing authority, then manage obligations and alerts.',
   },
   {
+    href: '/app/envelopes',
+    label: 'Funding envelopes',
+    icon: 'delegations',
+    roles: ['DELEGATE', 'EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR', 'REQUESTER', 'LEGAL'],
+    section: 'Work',
+    module: 'Funding envelopes',
+    requirements: ['FR-0585'],
+    blurb:
+      'An allocated envelope a delegate approves once, against which nominated people approve commitments, with a warning as it runs out.',
+  },
+  {
     href: '/app/collaboration',
     label: 'Collaboration',
     icon: 'plans',

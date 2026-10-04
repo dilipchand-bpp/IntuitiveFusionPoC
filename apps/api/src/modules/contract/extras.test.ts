@@ -82,7 +82,9 @@ describe('editing the management record (M11 follow-up)', () => {
     const ok = await env.call('contract-mgr', 'PUT', `/contracts/${id}/owner`, { ownerId: other.id });
     expect(ok.statusCode, ok.body).toBe(200);
     expect(ok.json().record.owner.id).toBe(other.id);
-    const notMgr = await env.call('contract-mgr', 'PUT', `/contracts/${id}/owner`, {
+    // the contract now belongs to someone else's team, so the earlier owner no longer sees it (FR-0560)
+    expect((await env.call('contract-mgr', 'GET', `/contracts/${id}`)).statusCode).toBe(404);
+    const notMgr = await env.call('legal', 'PUT', `/contracts/${id}/owner`, {
       ownerId: uid('user:requester'),
     });
     expect(notMgr.statusCode).toBe(422);

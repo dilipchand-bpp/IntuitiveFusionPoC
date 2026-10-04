@@ -814,181 +814,199 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0495',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Should',
     title:
       "Where a customer's ERP is integrated, the system shall enforce spend-ceiling guards that block purchase requisitions exceeding the contract limit",
+    batch: 'B5',
   }, // TODO(FR-0495)
   {
     id: 'FR-0500',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Perform automated line-item rate-card matching (3-way match) between purchase orders, contracts and invoices to block unapproved price increases',
+    batch: 'B5',
   }, // TODO(FR-0500)
   {
     id: 'FR-0510',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title: 'Implement non-negotiable, hard-coded system alerts that cannot be muted by users',
+    batch: 'B5',
   }, // TODO(FR-0510)
   {
     id: 'FR-0515',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Provide user-configurable custom milestone alerts, addable in plain language, with selectable delivery channels (in-app, email, SMS or Slack) and assigned owners',
+    batch: 'B5',
   }, // TODO(FR-0515)
   {
     id: 'FR-0520',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Support rebate tracking against contracted rebate terms, automatically detecting and flagging missed or under-claimed rebates for follow-up',
+    batch: 'B5',
   }, // TODO(FR-0520)
   {
     id: 'FR-0525',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Monitor price-escalation clauses (for example CPI-linked or scheduled increases) and flag supplier invoices that apply an escalation outside the contracted formula or...',
+    batch: 'B5',
   }, // TODO(FR-0525)
   {
     id: 'FR-0530',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Derive additional alert triggers directly from contract clause language using AI extraction — for example automatically scheduling an alert ahead of a clause-stated...',
+    batch: 'B5',
   }, // TODO(FR-0530)
   {
     id: 'FR-0535',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Contract variations shall be processed through a dedicated variation workflow requiring a logged business case and cumulative-variance calculation, saved as a...',
+    batch: 'B5',
   }, // TODO(FR-0535)
   {
     id: 'FR-0540',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Support both cumulative-spend and incremental/additional-spend-only variation models, configurable per organisation, with the workflow and required delegate authority...',
+    batch: 'B5',
   }, // TODO(FR-0540)
   {
     id: 'FR-0545',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'For public-sector customers, a contract modification exceeding a statutory value-change threshold (for example 10%) shall trigger a mandatory public register...',
+    batch: 'B5',
   }, // TODO(FR-0545)
   {
     id: 'FR-0550',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Run automated compliance monitoring on supplier insurance and compliance records and shall place a transactional hold blocking new purchase orders against a contract...',
+    batch: 'B5',
   }, // TODO(FR-0550)
   {
     id: 'FR-0555',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Contract management plan and risk management plan templates shall auto-populate for high-value/high-risk contracts, with support for customer-uploaded templates, and...',
+    batch: 'B5',
   }, // TODO(FR-0555)
   {
     id: 'FR-0560',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Users shall be able to search for and access only the contracts belonging to them or their team, per the configured access hierarchy, and shall receive AI-recommended...',
+    batch: 'B5',
   }, // TODO(FR-0560)
   {
     id: 'FR-0565',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'A parent-child relationship shall be maintained between an original contract and each of its variations, including where each variation is treated as a new...',
+    batch: 'B5',
   }, // TODO(FR-0565)
   {
     id: 'FR-0570',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Users shall be able to create a new procurement linked to an existing contract in order to renew it, vary it, or exercise an optional extension, generating a new...',
+    batch: 'B5',
   }, // TODO(FR-0570)
   {
     id: 'FR-0575',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Support head/master agreement parent-child structures, with work orders linked to their master agreement and reportable at both master and work-order level',
+    batch: 'B5',
   }, // TODO(FR-0575)
   {
     id: 'FR-0580',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Track live spend against a contract using invoice and payment data, present visual progress bars for contract term and spend consumed, and raise automatic alerts when...',
+    batch: 'B5',
   }, // TODO(FR-0580)
   {
     id: 'FR-0585',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Management',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'The delegation model shall support approval of an allocated funding envelope, against which nominated users may approve individual commitments, with an alert to seek...',
+    batch: 'B5',
   }, // TODO(FR-0585)
   {
     id: 'FR-0595',

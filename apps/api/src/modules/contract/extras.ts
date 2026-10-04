@@ -16,10 +16,14 @@ import {
   contractExtension,
   contractMilestone,
   roleAssignment,
+  appUser,
+  request,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { loadSettings } from '../settings/settings.js';
 import { isProtected } from './b4-rules.js';
+import { measureVariation } from './b5-rules.js';
+import { createLinkedRequest, raiseDisclosureIfDue } from './b5-service.js';
 import { parseAlert } from './alert-text.js';
 import { iso } from './dates.js';
 import { effectiveEnd, rescheduleAlerts, type AlertService } from './record.js';
@@ -63,16 +67,161 @@ const extensionsBody = z.object({ extensions: z.array(z.number().int().min(1).ma
 const ownerBody = z.object({ ownerId: uuid }).strict();
 const variationBody = z
   .object({
+    /** The business case for the change, logged with the variation (FR-0535). */
     reason: z.string().trim().min(10).max(1000),
     value: z.number().min(0).max(1e10),
     endDate: isoDate.optional(),
+    /** A procurement started for this variation (FR-0570). */
+    requestId: z.string().uuid().optional(),
   })
   .strict();
 const riskBody = z.object({ risk: z.enum(['LOW', 'MEDIUM', 'HIGH']) }).strict();
 const decisionBody = z
   .object({ decision: z.enum(['APPROVE', 'REJECT']), comment: z.string().trim().max(2000).optional() })
   .strict();
-const alertBody = z.object({ instruction: z.string().trim().min(5).max(500) }).strict();
+const alertBody = z
+  .object({
+    instruction: z.string().trim().min(5).max(500),
+    /** Where the alert is delivered, and who it is assigned to besides its author (FR-0515). */
+    channels: z
+      .array(z.enum(['IN_APP', 'EMAIL', 'SMS', 'SLACK']))
+      .min(1)
+      .max(4)
+      .optional(),
+    ownerId: uuid.optional(),
+  })
+  .strict();
+
+/** Creates a draft variation of an executed contract: its business case, measures, disclosure task and linked procurement. */
+export function makeVariationCreator(d: ContractDeps, x: Pick<ContractCtx, 'variationsOf' | 'notifyRoles'>) {
+  return async function createVariation(
+    tx: Tx,
+    a: AuthContext,
+    parent: ContractRow,
+    body: { reason: string; value: number; endDate?: string | undefined; requestId?: string | undefined },
+  ): Promise<ContractRow> {
+    const start = iso(d.clock.now());
+    let linkedRequestId = body.requestId ?? null;
+    if (linkedRequestId) {
+      const [r] = await tx
+        .select({ id: request.id, kind: request.linkKind, contractId: request.linkedContractId })
+        .from(request)
+        .where(and(eq(request.id, linkedRequestId), eq(request.tenantId, a.user.tenantId)));
+      if (!r || r.contractId !== parent.id)
+        throw new AppError(422, 'PROCUREMENT_NOT_LINKED', 'That procurement is not linked to this contract', [
+          { field: 'requestId', message: 'Choose a procurement started from this contract' },
+        ]);
+    }
+    const kids = await x.variationsOf(tx, parent);
+    const open = kids.find((v) => v.status !== 'EXECUTED');
+    if (open) throw new AppError(409, 'VARIATION_OPEN', `Variation ${open.number} is still being prepared`);
+    // numbered by every variation ever raised, including removed ones, so a number is never reused
+    const [{ n } = { n: 0 }] = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(contract)
+      .where(eq(contract.parentId, parent.id));
+    const settings = await loadSettings(tx, a.user.tenantId);
+    const parentEnd = (await effectiveEnd(tx, parent)) ?? parent.endDate!;
+    const end = body.endDate ?? parentEnd;
+    if (end < start)
+      throw new AppError(400, 'VALIDATION_FAILED', 'The end date cannot be in the past', [
+        { field: 'endDate', message: 'Choose a date from today' },
+      ]);
+    if (body.value === 0 && end <= parentEnd)
+      throw new AppError(422, 'EMPTY_VARIATION', 'A variation must change the value or extend the end date', [
+        { field: 'value', message: 'Enter an amount or a later end date' },
+      ]);
+    const measure = measureVariation(settings.contractManagement.variationModel, {
+      original: Number(parent.value),
+      earlier: kids.filter((v) => v.status === 'EXECUTED').reduce((s, v) => s + Number(v.value), 0),
+      value: body.value,
+    });
+    const [row] = await tx
+      .insert(contract)
+      .values({
+        tenantId: a.user.tenantId,
+        number: `${parent.number}-V${n + 1}`,
+        parentId: parent.id,
+        supplierId: parent.supplierId,
+        status: 'DRAFT',
+        value: body.value.toFixed(2),
+        startDate: start,
+        endDate: end,
+        noticeDays: parent.noticeDays,
+        businessCase: body.reason,
+        variancePct: String(measure.variancePct),
+        varianceModel: measure.model,
+        linkedRequestId,
+        createdAt: d.clock.now(),
+        updatedAt: d.clock.now(),
+      })
+      .returning();
+    if (!linkedRequestId && settings.contractManagement.variationNumbering === 'NEW_PROCUREMENT') {
+      const r = await createLinkedRequest(tx, d, a.ctx, parent, 'VARY', {
+        title: `Variation: ${parent.number}`,
+        value: body.value,
+        termMonths: undefined,
+      });
+      linkedRequestId = r.id;
+      await tx.update(contract).set({ linkedRequestId }).where(eq(contract.id, row!.id));
+    }
+    const text = [
+      `This variation amends ${parent.number}.`,
+      body.value > 0
+        ? `The contract value increases by ${aud.format(body.value)} to a total of ${aud.format(measure.cumulativeValue)}.`
+        : 'The contract value does not change.',
+      end > parentEnd ? `The end date is extended to ${end}.` : '',
+      `Variance: ${measure.variancePct}% (${measure.model === 'CUMULATIVE' ? 'cumulative: all variations against the original value' : 'incremental: this change against the contract as it stood'}).`,
+      `Business case: ${body.reason}`,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    await tx.insert(clause).values({
+      tenantId: a.user.tenantId,
+      contractId: row!.id,
+      clauseId: 'VARIATION',
+      title: 'Variation',
+      text,
+      mandatory: true,
+      changedFromTemplate: false,
+    });
+    const task = await raiseDisclosureIfDue(
+      tx,
+      d.audit,
+      a.ctx,
+      row!,
+      measure.variancePct,
+      settings,
+      d.clock.now(),
+    );
+    await d.audit.record(tx, a.ctx, {
+      action: 'contract.variation_create',
+      entityType: 'contract',
+      entityId: row!.id,
+      after: {
+        parentId: parent.id,
+        number: row!.number,
+        value: body.value,
+        endDate: end,
+        businessCase: body.reason,
+        variancePct: measure.variancePct,
+        model: measure.model,
+        cumulativeValue: measure.cumulativeValue,
+        disclosureTask: task?.id ?? null,
+        requestId: linkedRequestId,
+      },
+    });
+    await x.notifyRoles(
+      tx,
+      a.user.tenantId,
+      ['LEGAL'],
+      'Variation ready for review',
+      `${row!.number} varies ${parent.number}`,
+      `/app/contracts/${row!.id}`,
+    );
+    return row!;
+  };
+}
 
 export function registerContractExtras(
   app: FastifyInstance,
@@ -83,6 +232,7 @@ export function registerContractExtras(
 ) {
   const cid = (req: { params: unknown }) => parse(z.object({ id: uuid }), req.params).id;
   const today = () => iso(d.clock.now());
+  const createVariation = makeVariationCreator(d, x);
 
   /** The record of an executed contract can be changed; variations belong to their parent. */
   async function recordTarget(tx: Tx, a: AuthContext, id: string) {
@@ -175,7 +325,9 @@ export function registerContractExtras(
         before: { ownerId: c.ownerId },
         after: { ownerId: body.ownerId },
       });
-      return x.view(tx, a, await x.load(tx, a, id));
+      // the caller may have handed the contract to another team, so it is read back without the team filter
+      const [changed] = await tx.select().from(contract).where(eq(contract.id, id));
+      return x.view(tx, a, changed!);
     });
   });
 
@@ -190,78 +342,8 @@ export function registerContractExtras(
       const body = parse(variationBody, req.body);
       const out = await withContext(d.database, a.ctx, async (tx) => {
         const parent = await recordTarget(tx, a, id);
-        const open = (await x.variationsOf(tx, parent)).find((v) => v.status !== 'EXECUTED');
-        if (open)
-          throw new AppError(409, 'VARIATION_OPEN', `Variation ${open.number} is still being prepared`);
-        const [{ n } = { n: 0 }] = await tx
-          .select({ n: sql<number>`count(*)::int` })
-          .from(contract)
-          .where(eq(contract.parentId, id));
-        const start = today();
-        const parentEnd = (await effectiveEnd(tx, parent)) ?? parent.endDate!;
-        const end = body.endDate ?? parentEnd;
-        if (end < start)
-          throw new AppError(400, 'VALIDATION_FAILED', 'The end date cannot be in the past', [
-            { field: 'endDate', message: 'Choose a date from today' },
-          ]);
-        if (body.value === 0 && end <= parentEnd)
-          throw new AppError(
-            422,
-            'EMPTY_VARIATION',
-            'A variation must change the value or extend the end date',
-            [{ field: 'value', message: 'Enter an amount or a later end date' }],
-          );
-        const [row] = await tx
-          .insert(contract)
-          .values({
-            tenantId: a.user.tenantId,
-            number: `${parent.number}-V${n + 1}`,
-            parentId: id,
-            supplierId: parent.supplierId,
-            status: 'DRAFT',
-            value: body.value.toFixed(2),
-            startDate: start,
-            endDate: end,
-            noticeDays: parent.noticeDays,
-            createdAt: d.clock.now(),
-            updatedAt: d.clock.now(),
-          })
-          .returning();
-        const cumulative = Number(parent.value) + body.value;
-        const text = [
-          `This variation amends ${parent.number}.`,
-          body.value > 0
-            ? `The contract value increases by ${aud.format(body.value)} to a total of ${aud.format(cumulative)} (excluding earlier variations).`
-            : 'The contract value does not change.',
-          end > parentEnd ? `The end date is extended to ${end}.` : '',
-          `Reason: ${body.reason}`,
-        ]
-          .filter(Boolean)
-          .join(' ');
-        await tx.insert(clause).values({
-          tenantId: a.user.tenantId,
-          contractId: row!.id,
-          clauseId: 'VARIATION',
-          title: 'Variation',
-          text,
-          mandatory: true,
-          changedFromTemplate: false,
-        });
-        await d.audit.record(tx, a.ctx, {
-          action: 'contract.variation_create',
-          entityType: 'contract',
-          entityId: row!.id,
-          after: { parentId: id, number: row!.number, value: body.value, endDate: end },
-        });
-        await x.notifyRoles(
-          tx,
-          a.user.tenantId,
-          ['LEGAL'],
-          'Variation ready for review',
-          `${row!.number} varies ${parent.number}`,
-          `/app/contracts/${row!.id}`,
-        );
-        return x.view(tx, a, await x.load(tx, a, row!.id));
+        const row = await createVariation(tx, a, parent, body);
+        return x.view(tx, a, await x.load(tx, a, row.id));
       });
       return reply.status(201).send(out);
     },
@@ -398,6 +480,19 @@ export function registerContractExtras(
           throw new AppError(422, 'ALERT_NOT_UNDERSTOOD', parsed.message, [
             { field: 'instruction', message: parsed.message },
           ]);
+        if (body.ownerId) {
+          const [o] = await tx
+            .select({ id: appUser.id })
+            .from(appUser)
+            .where(and(eq(appUser.id, body.ownerId), eq(appUser.tenantId, a.user.tenantId)));
+          if (!o)
+            throw new AppError(
+              422,
+              'OWNER_NOT_FOUND',
+              'The person you assigned this alert to was not found',
+              [{ field: 'ownerId', message: 'Choose someone in the organisation' }],
+            );
+        }
         const [row] = await tx
           .insert(alert)
           .values({
@@ -409,6 +504,8 @@ export function registerContractExtras(
             origin: 'USER',
             note: body.instruction,
             createdBy: a.user.id,
+            channels: body.channels ?? ['IN_APP', 'EMAIL'],
+            ownerId: body.ownerId ?? null,
           })
           .returning();
         await d.audit.record(tx, a.ctx, {
@@ -420,6 +517,8 @@ export function registerContractExtras(
             instruction: body.instruction,
             triggerDate: parsed.value.triggerDate,
             recipientRule: parsed.value.recipientRule,
+            channels: body.channels ?? ['IN_APP', 'EMAIL'],
+            ownerId: body.ownerId ?? null,
           },
         });
         return { ...(x.alertView(row!, []) as object), note: row!.note, summary: parsed.value.summary };

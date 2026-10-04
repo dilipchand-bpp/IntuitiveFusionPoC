@@ -3,7 +3,7 @@
  * Visibility: a user whose only role is REQUESTER sees their own requests; other staff roles see the tenant.
  * A request that exists but is not visible looks exactly like one that does not exist (404, never 403).
  */
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Clock } from '@if/shared';
@@ -12,7 +12,7 @@ import type { ErpBudgetService } from '../../adapters/erp.js';
 import type { AuditService } from '../../audit/audit-service.js';
 import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext, type Tx } from '../../db/client.js';
-import { chatMessage, conversation, request, tenant } from '../../db/schema.js';
+import { chatMessage, contract, conversation, request, tenant } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { dispatch, usersWithRole } from '../notify/dispatch.js';
 import { FUNCTION_ROLES, requiredEngagements } from './classify.js';
@@ -130,8 +130,23 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
         .orderBy(desc(request.updatedAt), asc(request.number))
         .limit(q.limit)
         .offset(q.offset);
+      // a procurement started from a contract (renew, vary, extend) names that contract (FR-0570)
+      const linkedIds = [...new Set(rows.map((r) => r.linkedContractId).filter((v): v is string => !!v))];
+      const linked = linkedIds.length
+        ? await tx
+            .select({ id: contract.id, number: contract.number })
+            .from(contract)
+            .where(inArray(contract.id, linkedIds))
+        : [];
       return {
         items: rows.map((r) => ({
+          linkKind: r.linkKind ?? undefined,
+          linkedContract: r.linkedContractId
+            ? {
+                id: r.linkedContractId,
+                number: linked.find((c) => c.id === r.linkedContractId)?.number ?? null,
+              }
+            : undefined,
           id: r.id,
           number: r.number,
           title: r.title,

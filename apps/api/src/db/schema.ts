@@ -181,6 +181,9 @@ export const request = pgTable(
     nominatedDelegates: jsonb('nominated_delegates').notNull().default({}),
     ecv: jsonb('ecv'),
     sourceSystem: text('source_system'),
+    /** A procurement linked to an existing contract to renew it, vary it or take up an extension (FR-0570). */
+    linkedContractId: uuid('linked_contract_id'),
+    linkKind: text('link_kind', { enum: ['RENEW', 'VARY', 'EXTEND'] }),
     createdAt: created(),
     updatedAt: updated(),
     version: version(),
@@ -519,6 +522,11 @@ export const contract = pgTable('contract', {
     .default('STANDARD'),
   title: text('title'),
   releasedAt: timestamp('released_at', { withTimezone: true }),
+  /** A variation's logged business case, its variance and the model it was measured by (FR-0535, FR-0540). */
+  businessCase: text('business_case'),
+  variancePct: numeric('variance_pct', { precision: 9, scale: 2 }),
+  varianceModel: text('variance_model', { enum: ['CUMULATIVE', 'INCREMENTAL'] }),
+  linkedRequestId: uuid('linked_request_id'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }), // logical delete only (NFR-CA02)
   createdAt: created(),
   updatedAt: updated(),
@@ -543,18 +551,23 @@ export const alert = pgTable('alert', {
   id: id(),
   tenantId: tenantId(),
   contractId: uuid('contract_id').notNull(),
-  kind: text('kind', { enum: ['EXPIRY', 'NOTICE', 'MILESTONE', 'EXTENSION', 'CUSTOM'] }).notNull(),
+  kind: text('kind', {
+    enum: ['EXPIRY', 'NOTICE', 'MILESTONE', 'EXTENSION', 'CUSTOM', 'COUNTDOWN', 'INSURANCE', 'CLAUSE'],
+  }).notNull(),
   triggerDate: date('trigger_date').notNull(),
   recipientRule: text('recipient_rule').notNull().default('CONTRACT_OWNER'),
   status: text('status', { enum: ['SCHEDULED', 'SENT', 'CANCELLED'] })
     .notNull()
     .default('SCHEDULED'),
-  origin: text('origin', { enum: ['SYSTEM', 'USER'] })
+  origin: text('origin', { enum: ['SYSTEM', 'USER', 'AI'] })
     .notNull()
     .default('SYSTEM'),
   sentAt: timestamp('sent_at', { withTimezone: true }),
   note: text('note'),
   createdBy: uuid('created_by'),
+  /** Where a custom alert is delivered, and who it is assigned to besides its author (FR-0515). */
+  channels: jsonb('channels').notNull().default(['IN_APP', 'EMAIL']),
+  ownerId: uuid('owner_id'),
 });
 
 export const contractMilestone = pgTable('contract_milestone', {
@@ -571,6 +584,8 @@ export const contractExtension = pgTable('contract_extension', {
   contractId: uuid('contract_id').notNull(),
   months: integer('months').notNull(),
   position: integer('position').notNull().default(1),
+  exercisedAt: timestamp('exercised_at', { withTimezone: true }),
+  exercisedRequestId: uuid('exercised_request_id'),
 });
 
 export const alertDelivery = pgTable('alert_delivery', {
@@ -578,7 +593,7 @@ export const alertDelivery = pgTable('alert_delivery', {
   tenantId: tenantId(),
   alertId: uuid('alert_id').notNull(),
   userId: uuid('user_id').notNull(),
-  channel: text('channel', { enum: ['IN_APP', 'EMAIL'] }).notNull(),
+  channel: text('channel', { enum: ['IN_APP', 'EMAIL', 'SMS', 'SLACK'] }).notNull(),
   status: text('status', { enum: ['DELIVERED', 'SIMULATED'] }).notNull(),
   deliveredAt: timestamp('delivered_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -1127,3 +1142,221 @@ export const accessGrant = pgTable('access_grant', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
   revokedReason: text('revoked_reason'),
 });
+
+// ---------------------------------------------------------------- B5: contract management
+export const alertPreference = pgTable('alert_preference', {
+  userId: uuid('user_id').primaryKey(),
+  tenantId: tenantId(),
+  muted: jsonb('muted').notNull().default([]),
+  updatedAt: updated(),
+});
+
+export const contractRate = pgTable(
+  'contract_rate',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    contractId: uuid('contract_id').notNull(),
+    item: text('item').notNull(),
+    unit: text('unit').notNull().default('each'),
+    unitPrice: numeric('unit_price', { precision: 14, scale: 4 }).notNull(),
+  },
+  (t) => [uniqueIndex('contract_rate_uq').on(t.contractId, t.item)],
+);
+
+export const contractEscalation = pgTable('contract_escalation', {
+  id: id(),
+  tenantId: tenantId(),
+  contractId: uuid('contract_id').notNull(),
+  kind: text('kind', { enum: ['CPI', 'SCHEDULED'] }).notNull(),
+  effectiveOn: date('effective_on').notNull(),
+  pct: numeric('pct', { precision: 7, scale: 3 }).notNull(),
+  capPct: numeric('cap_pct', { precision: 7, scale: 3 }),
+  note: text('note'),
+  createdBy: uuid('created_by').notNull(),
+  createdAt: created(),
+});
+
+export const contractRebate = pgTable('contract_rebate', {
+  id: id(),
+  tenantId: tenantId(),
+  contractId: uuid('contract_id').notNull(),
+  title: text('title').notNull(),
+  threshold: numeric('threshold', { precision: 14, scale: 2 }).notNull(),
+  ratePct: numeric('rate_pct', { precision: 7, scale: 3 }).notNull(),
+  periodStart: date('period_start').notNull(),
+  periodEnd: date('period_end').notNull(),
+  claimed: numeric('claimed', { precision: 14, scale: 2 }).notNull().default('0'),
+  claimedOn: date('claimed_on'),
+  followedUpAt: timestamp('followed_up_at', { withTimezone: true }),
+  createdBy: uuid('created_by').notNull(),
+  createdAt: created(),
+});
+
+export const workOrder = pgTable(
+  'work_order',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    masterId: uuid('master_id').notNull(),
+    number: text('number').notNull(),
+    title: text('title').notNull(),
+    value: numeric('value', { precision: 14, scale: 2 }).notNull(),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date').notNull(),
+    status: text('status', { enum: ['OPEN', 'COMPLETE', 'CANCELLED'] })
+      .notNull()
+      .default('OPEN'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: created(),
+  },
+  (t) => [uniqueIndex('work_order_uq').on(t.tenantId, t.number)],
+);
+
+export const purchaseOrder = pgTable(
+  'purchase_order',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    contractId: uuid('contract_id').notNull(),
+    workOrderId: uuid('work_order_id'),
+    number: text('number').notNull(),
+    description: text('description').notNull(),
+    amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
+    lines: jsonb('lines').notNull().default([]),
+    status: text('status', { enum: ['APPROVED', 'BLOCKED'] }).notNull(),
+    blockedReason: text('blocked_reason'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex('purchase_order_uq').on(t.tenantId, t.number)],
+);
+
+export const invoice = pgTable(
+  'invoice',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    contractId: uuid('contract_id').notNull(),
+    workOrderId: uuid('work_order_id'),
+    poId: uuid('po_id'),
+    number: text('number').notNull(),
+    invoiceDate: date('invoice_date').notNull(),
+    amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
+    lines: jsonb('lines').notNull().default([]),
+    status: text('status', { enum: ['MATCHED', 'BLOCKED', 'EXCEPTION', 'PAID'] }).notNull(),
+    findings: jsonb('findings').notNull().default([]),
+    overrideBy: uuid('override_by'),
+    overrideReason: text('override_reason'),
+    paidAmount: numeric('paid_amount', { precision: 14, scale: 2 }).notNull().default('0'),
+    paidOn: date('paid_on'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex('invoice_uq').on(t.tenantId, t.number)],
+);
+
+export const contractHold = pgTable('contract_hold', {
+  id: id(),
+  tenantId: tenantId(),
+  contractId: uuid('contract_id').notNull(),
+  kind: text('kind', { enum: ['INSURANCE'] }).notNull(),
+  reason: text('reason').notNull(),
+  placedAt: timestamp('placed_at', { withTimezone: true }).notNull(),
+  releasedAt: timestamp('released_at', { withTimezone: true }),
+  releaseNote: text('release_note'),
+});
+
+export const spendAlert = pgTable(
+  'spend_alert',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    contractId: uuid('contract_id').notNull(),
+    kind: text('kind', { enum: ['MANDATORY', 'CONFIGURED'] }).notNull(),
+    threshold: integer('threshold').notNull(),
+    spentPct: numeric('spent_pct', { precision: 9, scale: 2 }).notNull(),
+    raisedAt: timestamp('raised_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex('spend_alert_uq').on(t.contractId, t.kind, t.threshold)],
+);
+
+export const contractPlan = pgTable(
+  'contract_plan',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    contractId: uuid('contract_id').notNull(),
+    kind: text('kind', { enum: ['CMP', 'RMP'] }).notNull(),
+    tier: text('tier', { enum: ['STANDARD', 'ELEVATED', 'HIGH'] }).notNull(),
+    template: text('template').notNull(),
+    sections: jsonb('sections').notNull(),
+    reasons: jsonb('reasons').notNull().default([]),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).notNull(),
+    generatedBy: uuid('generated_by'),
+  },
+  (t) => [uniqueIndex('contract_plan_uq').on(t.contractId, t.kind)],
+);
+
+export const contractActivity = pgTable('contract_activity', {
+  id: id(),
+  tenantId: tenantId(),
+  contractId: uuid('contract_id').notNull(),
+  planKind: text('plan_kind', { enum: ['CMP', 'RMP'] }).notNull(),
+  title: text('title').notNull(),
+  dueDate: date('due_date').notNull(),
+  ownerId: uuid('owner_id'),
+  status: text('status', { enum: ['OPEN', 'DONE'] })
+    .notNull()
+    .default('OPEN'),
+  doneAt: timestamp('done_at', { withTimezone: true }),
+  doneBy: uuid('done_by'),
+  note: text('note'),
+});
+
+export const fundingEnvelope = pgTable('funding_envelope', {
+  id: id(),
+  tenantId: tenantId(),
+  name: text('name').notNull(),
+  amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
+  holderId: uuid('holder_id').notNull(),
+  nominees: jsonb('nominees').notNull().default([]),
+  warnPct: integer('warn_pct').notNull().default(80),
+  warnedAt: timestamp('warned_at', { withTimezone: true }),
+  status: text('status', { enum: ['ACTIVE', 'CLOSED'] })
+    .notNull()
+    .default('ACTIVE'),
+  approvedBy: uuid('approved_by').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+
+export const envelopeCommitment = pgTable('envelope_commitment', {
+  id: id(),
+  tenantId: tenantId(),
+  envelopeId: uuid('envelope_id').notNull(),
+  contractId: uuid('contract_id'),
+  description: text('description').notNull(),
+  amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
+  approvedBy: uuid('approved_by').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+
+export const disclosureTask = pgTable(
+  'disclosure_task',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    contractId: uuid('contract_id').notNull(),
+    register: text('register').notNull(),
+    variancePct: numeric('variance_pct', { precision: 9, scale: 2 }).notNull(),
+    dueOn: date('due_on').notNull(),
+    status: text('status', { enum: ['OPEN', 'DONE'] })
+      .notNull()
+      .default('OPEN'),
+    reference: text('reference'),
+    doneBy: uuid('done_by'),
+    doneAt: timestamp('done_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex('disclosure_task_uq').on(t.contractId)],
+);

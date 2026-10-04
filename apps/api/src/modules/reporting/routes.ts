@@ -235,7 +235,10 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
       // Off-contract ("maverick") spend: a purchase that reached delivery or was closed with no executed contract behind it
       const withContract = new Set(executed.map((c) => requestOf(c)?.id).filter(Boolean));
       const offContract = rows
-        .filter((r) => ['CONTRACT_MGMT', 'CLOSED'].includes(r.phase) && !withContract.has(r.id))
+        .filter(
+          (r) =>
+            ['CONTRACT_MGMT', 'CLOSED'].includes(r.phase) && !withContract.has(r.id) && !r.linkedContractId,
+        )
         .map((r) => ({
           requestId: r.id,
           number: r.number,

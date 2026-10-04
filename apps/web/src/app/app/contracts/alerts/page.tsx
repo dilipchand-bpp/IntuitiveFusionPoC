@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { AlertPreferences } from '@/components/contract/b5-pages';
 import type { AlertRow } from '@/components/contract/types';
-import { ALERT_KIND, formatDateTime } from '@/lib/labels';
-import { apiGet } from '@/lib/session';
+import { ALERT_KIND, CHANNEL_LABEL, formatDateTime } from '@/lib/labels';
+import { apiGet, getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Contract alerts – Intuitive Fusion' };
 
 export default async function AlertsPage() {
-  const rows = await apiGet<AlertRow[]>('/alerts');
+  const [rows, user] = await Promise.all([apiGet<AlertRow[]>('/alerts'), getSessionUser()]);
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm">
@@ -20,6 +21,7 @@ export default async function AlertsPage() {
           email. In this proof of concept the email is recorded but not sent.
         </p>
       </header>
+      <AlertPreferences csrf={user!.csrfToken} />
       {!rows ? (
         <EmptyState title="Alerts are unavailable" body="Please refresh the page." />
       ) : rows.length === 0 ? (
@@ -54,7 +56,7 @@ export default async function AlertsPage() {
                 </Td>
                 <Td label="Delivery">
                   {a.deliveries.length
-                    ? `${formatDateTime(a.sentAt)} · ${a.deliveries.length / 2 >= 1 ? 'in-app and email (simulated)' : 'in-app'}`
+                    ? `${formatDateTime(a.sentAt)} · ${[...new Set(a.deliveries.map((d) => CHANNEL_LABEL[d.channel] ?? d.channel))].join(' and ')}`
                     : '–'}
                 </Td>
               </tr>

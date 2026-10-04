@@ -257,3 +257,43 @@
 | GET | `/supplier/contracts/{id}` | getSupplierContract | SUPPLIER | The full contract text, and the supplier's own questions with answers |  |
 | POST | `/supplier/contracts/{id}/questions` | askSupplierContractQuestion | SUPPLIER | Raise a question before the contract is signed |  |
 | GET | `/access-grants/candidates` | listGrantCandidates | PROCUREMENT, ADMIN | The staff and projects a grant can be made for |  |
+| GET | `/contracts/{id}/commercial` | getContractCommercial | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The rate card, price escalation clauses, rebates with their status, the insurance hold and what the caller may edit |  |
+| PUT | `/contracts/{id}/rates` | setContractRates | CONTRACT_MGR, LEGAL, PROCUREMENT | Replace the contract rate card used by the three-way match |  |
+| PUT | `/contracts/{id}/escalations` | setContractEscalations | CONTRACT_MGR, LEGAL, PROCUREMENT | Replace the price-escalation clauses: scheduled steps, or an index movement up to a cap | 422 ESCALATION_BEFORE_START |
+| POST | `/contracts/{id}/rebates` | addContractRebate | CONTRACT_MGR, LEGAL, PROCUREMENT | Record a rebate term: a rate on spend in a period once a threshold is reached |  |
+| POST | `/contracts/{id}/rebates/{rebateId}/claim` | claimContractRebate | FINANCE, CONTRACT_MGR | Record an amount claimed from the supplier against a rebate |  |
+| POST | `/contracts/{id}/rebates/{rebateId}/follow-up` | followUpContractRebate | FINANCE, CONTRACT_MGR | Record a follow-up of a missed or under-claimed rebate | 409 NOT_FLAGGED |
+| POST | `/contracts/{id}/purchase-orders` | createPurchaseOrder | FINANCE, CONTRACT_MGR, PROCUREMENT | Raise a purchase order (the simulated ERP feed). Blocked, and recorded, when it would take commitments above the contract limit; refused while an insurance hold is on | 422 SPEND_CEILING; 409 PURCHASE_ORDER_HELD |
+| GET | `/contracts/{id}/purchase-orders` | listPurchaseOrders | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Purchase orders against the contract, including any that were blocked |  |
+| POST | `/contracts/{id}/invoices` | recordInvoice | FINANCE, CONTRACT_MGR | Record an invoice (the simulated ERP feed). It is matched to its purchase order and the rate card with the escalation formula; a price increase not allowed blocks it |  |
+| GET | `/contracts/{id}/invoices` | listContractInvoices | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Invoices against the contract with their match findings |  |
+| GET | `/invoices` | listInvoices | FINANCE, CONTRACT_MGR, PROCUREMENT, EXEC | Invoices across contracts; filter by status to see what is blocked |  |
+| POST | `/invoices/{id}/override` | overrideBlockedInvoice | FINANCE, EXEC | Release a blocked invoice as a recorded exception, with a reason |  |
+| POST | `/invoices/{id}/pay` | payInvoice | FINANCE | Record payment of a matched or excepted invoice | 409 while the invoice is blocked |
+| GET | `/contracts/{id}/spend` | getContractSpend | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Live spend against the contract from invoice and payment data: progress of spend and term, and the notices raised |  |
+| GET | `/alerts/rules` | getFixedAlertRules | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC, DELEGATE, FINANCE | The alerts the platform fixes (expiry countdown, insurance lapse, spend ceiling) that no one can mute or change |  |
+| GET | `/me/alert-preferences` | getAlertPreferences | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC, DELEGATE, FINANCE | The alert kinds the caller has muted, and the fixed ones that cannot be |  |
+| PUT | `/me/alert-preferences` | setAlertPreferences | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC, DELEGATE, FINANCE | Mute alert kinds for the caller; the fixed kinds are refused | 422 ALERT_NOT_MUTABLE |
+| POST | `/contracts/{id}/alerts/extract` | extractAlertTriggers | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | Propose alerts from notice periods, review cycles and anniversaries in the clause wording (rules-simulated model); nothing is scheduled |  |
+| POST | `/contracts/{id}/alerts/extract/apply` | applyAlertTriggers | CONTRACT_MGR, PROCUREMENT, LEGAL, EXEC | Schedule the proposed alerts the caller confirms | 422 PROPOSAL_NOT_FOUND |
+| GET | `/contracts/{id}/plans` | getContractPlans | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The contract management plan and risk management plan, their tier and reasons, and the generated activities |  |
+| POST | `/contracts/{id}/plans/generate` | generateContractPlans | CONTRACT_MGR, LEGAL, PROCUREMENT | Generate (or regenerate) both plans and their activities from the contract's size, term and risk, using the customer's template where one is uploaded |  |
+| POST | `/contracts/{id}/activities/{activityId}/complete` | completeContractActivity | CONTRACT_MGR, LEGAL, PROCUREMENT | Mark a contract management activity done |  |
+| GET | `/contract-plan-templates` | getPlanTemplates | CONTRACT_MGR, LEGAL, ADMIN | The standard plan templates and any the customer uploaded |  |
+| PUT | `/contract-plan-templates/{kind}` | uploadPlanTemplate | CONTRACT_MGR, LEGAL, ADMIN | Upload the customer's template for the management plan (CMP) or the risk plan (RMP), as headed text or sections |  |
+| DELETE | `/contract-plan-templates/{kind}` | removePlanTemplate | CONTRACT_MGR, LEGAL, ADMIN | Go back to the standard template |  |
+| POST | `/contracts/{id}/work-orders` | createWorkOrder | CONTRACT_MGR, LEGAL, PROCUREMENT | Raise a work order under a master agreement, within its value and term | 422 WORK_ORDER_OVER_MASTER; 409 NOT_A_MASTER |
+| GET | `/contracts/{id}/work-orders` | listWorkOrders | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The master agreement's work orders with committed and invoiced amounts, and totals |  |
+| PATCH | `/work-orders/{id}` | updateWorkOrder | CONTRACT_MGR, LEGAL, PROCUREMENT | Complete or cancel a work order |  |
+| GET | `/reports/master-agreements` | reportMasterAgreements | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Master agreements and their work orders, reportable at both levels |  |
+| POST | `/contracts/{id}/procurements` | linkProcurementToContract | CONTRACT_MGR, LEGAL, PROCUREMENT | Start a new procurement number linked to a contract to renew it, vary it or take up an extension; not a new tender | 422 NO_EXTENSION; 409 EXTENSION_EXERCISED |
+| GET | `/contracts/{id}/management` | getContractManagement | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Variation count, extensions exercised and remaining, cumulative value, historic versions, linked procurements and next-step suggestions |  |
+| GET | `/contracts/search` | searchMyContracts | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Search the contracts that belong to the caller and their team, with a suggested next step near the end date |  |
+| GET | `/disclosure-tasks` | listDisclosureTasks | PROCUREMENT, LEGAL, CONTRACT_MGR, EXEC | Public register disclosure tasks raised by contract changes over the statutory threshold |  |
+| POST | `/disclosure-tasks/{id}/complete` | completeDisclosureTask | PROCUREMENT, LEGAL | Record the register reference once the disclosure is made |  |
+| GET | `/envelopes/candidates` | listEnvelopeCandidates | DELEGATE, EXEC | People who can be nominated to approve commitments from an envelope |  |
+| GET | `/envelopes` | listFundingEnvelopes | DELEGATE, EXEC, FINANCE, PROCUREMENT, CONTRACT_MGR, REQUESTER, LEGAL | Funding envelopes the caller holds, is nominated for, or oversees |  |
+| GET | `/envelopes/{id}` | getFundingEnvelope | DELEGATE, EXEC, FINANCE, PROCUREMENT, CONTRACT_MGR, REQUESTER, LEGAL | One envelope with its commitments and what is left |  |
+| POST | `/envelopes` | createFundingEnvelope | DELEGATE, EXEC | A delegate approves an allocated funding envelope, within their delegated authority, and nominates who can commit against it | 403 DELEGATION_EXCEEDED; 422 INVALID_NOMINEE |
+| POST | `/envelopes/{id}/commitments` | commitFromEnvelope | DELEGATE, EXEC, FINANCE, PROCUREMENT, CONTRACT_MGR, REQUESTER, LEGAL | A nominated person approves a commitment against the envelope; warns the holder as it nears exhaustion | 422 ENVELOPE_EXHAUSTED; 403 NOT_NOMINATED |
+| POST | `/envelopes/{id}/top-up` | topUpFundingEnvelope | DELEGATE, EXEC | The holder or an executive adds to the envelope, within delegated authority | 403 DELEGATION_EXCEEDED |
