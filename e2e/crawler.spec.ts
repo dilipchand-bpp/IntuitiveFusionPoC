@@ -65,6 +65,8 @@ const ALL_SCREENS = [
   '/app/reports',
   '/app/audit',
   '/app/probity',
+  '/app/legal',
+  '/app/shared',
   '/app/collaboration',
   '/app/roadmap',
   '/admin',
@@ -77,6 +79,7 @@ const ALL_SCREENS = [
   '/app/security',
   '/supplier',
   '/supplier/profile',
+  '/supplier/contracts',
 ];
 
 /** The screens the navigation offers this person, read from the page itself. */

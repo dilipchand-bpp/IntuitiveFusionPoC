@@ -27,12 +27,27 @@ import {
   notification,
   request,
   roleAssignment,
+  signingInvitation,
   supplier,
   template,
   tender,
   tenant,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { MockSanctionsScreening, type SanctionsScreening } from '../../adapters/sanctions.js';
+import { MockVendorRegistry, type VendorRegistry } from '../../adapters/vendor-registry.js';
+import type { SealedStore } from '../tender/files.js';
+import { isProtected } from './b4-rules.js';
+import { releaseExtra, registerContractB4 } from './b4-routes.js';
+import {
+  inviteSigners,
+  lockState,
+  releaseGate,
+  signBlock,
+  endorsementState,
+  checkRows,
+  sweepSigningReminders,
+} from './b4-service.js';
 import { loadSettings } from '../settings/settings.js';
 import { addDays, addMonths, daysBetween, iso, termBars } from './dates.js';
 import { deviationBlockers, proposeRisk, type Risk } from './deviation.js';
@@ -53,6 +68,9 @@ export interface ContractDeps extends GuardDeps {
   clock: Clock;
   audit: AuditService;
   schedulerMinutes?: number | undefined;
+  store: SealedStore;
+  registry?: VendorRegistry;
+  sanctions?: SanctionsScreening;
 }
 
 const uuid = z.string().uuid();
@@ -269,7 +287,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       value: Number(c.value),
       supplierId: c.supplierId,
       supplierName: s?.company ?? '',
-      title: req?.title ?? null,
+      title: req?.title ?? c.title ?? null,
       requestNumber: req?.number ?? null,
       templateId: c.templateId,
       startDate: c.startDate,
@@ -281,6 +299,8 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       version: c.version,
       signed: sigs.length,
       parentId: c.parentId,
+      docType: c.docType,
+      signingMode: c.signingMode,
       signaturesRequired: requiredSigners(await authorityValue(tx, c)).length,
     };
   }
@@ -353,7 +373,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
   async function view(tx: Tx, a: AuthContext, c: typeof contract.$inferSelect) {
     const base = await summary(tx, a.user.tenantId, c);
     const clauses = await tx.select().from(clause).where(eq(clause.contractId, c.id)).orderBy(asc(clause.id));
-    const { lib } = await templateClauses(tx, a.user.tenantId, c);
+    const { lib, tpl } = await templateClauses(tx, a.user.tenantId, c);
     const libBy = new Map(lib.map((x, i) => [x.clauseId, { x, i }]));
     const ordered = [...clauses].sort(
       (x, y) => (libBy.get(x.clauseId)?.i ?? 99) - (libBy.get(y.clauseId)?.i ?? 99),
@@ -366,6 +386,12 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       return { role: s.role, label: s.label, signedBy: sig?.userName ?? null, stamp: sig?.stamp ?? null };
     });
     const roles = a.user.roles;
+    const settings = await loadSettings(tx, a.user.tenantId);
+    // in blind signing a signatory sees no other signature or identity until the contract is executed (FR-0425)
+    const blind =
+      c.signingMode === 'BLIND' &&
+      c.status !== 'EXECUTED' &&
+      !roles.some((r) => ['LEGAL', 'PROCUREMENT', 'PROBITY'].includes(r));
     const editable = !c.locked && ['DRAFT', 'LEGAL_REVIEW'].includes(c.status);
     const nextSigner = chain.find((s) => !s.signedBy && roles.includes(s.role as RoleName));
     const open = ['AWAITING_SIGNATURE', 'PARTIALLY_SIGNED'].includes(c.status) && !c.locked;
@@ -384,7 +410,11 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           authority,
         );
         canSign = del.allowed;
-        if (!del.allowed)
+        const blk = await signBlock(tx, c, chain, nextSigner.role, d.clock.now());
+        if (canSign && blk) {
+          canSign = false;
+          signBlocked = blk.message;
+        } else if (!del.allowed)
           signBlocked =
             del.limit === null
               ? 'You do not hold contract signing authority. Sourcing approval does not confer it.'
@@ -420,12 +450,31 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         mandatory: k.mandatory,
         risk: (k.risk ?? 'MEDIUM') as Risk,
         decision: decisions.get(k.id) ?? null,
+        protected: isProtected(k.clauseId, settings.contractRules.protectedClauses),
         templateText: libBy.get(k.clauseId)?.x.text ?? '',
         currentText: k.text,
       }));
     const blockers = deviationBlockers(
       devRows.map((x) => ({ ...x, decision: x.decision?.decision ?? null })),
     );
+    const acceptances = ordered.length
+      ? await tx
+          .select({ a: approval, name: appUser.name })
+          .from(approval)
+          .innerJoin(appUser, eq(appUser.id, approval.userId))
+          .where(
+            and(
+              eq(approval.subjectType, 'CONTRACT_RISK_ACCEPTANCE'),
+              inArray(
+                approval.subjectId,
+                ordered.map((k) => k.id),
+              ),
+            ),
+          )
+      : [];
+    const endorse = await endorsementState(tx, c);
+    const allChecks = await checkRows(tx, c.id);
+    const lock = await lockState(tx, c, d.clock.now());
     const kids = c.parentId ? [] : await variationsOf(tx, c);
     const [parent] = c.parentId ? await tx.select().from(contract).where(eq(contract.id, c.parentId)) : [];
     const execKids = kids.filter((v) => v.status === 'EXECUTED');
@@ -456,14 +505,46 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         mandatory: k.mandatory,
         changedFromTemplate: k.changedFromTemplate,
       })),
-      deviations: devRows.map(({ id: _id, ...x }) => ({
+      deviations: devRows.map(({ id: kid, ...x }) => ({
         ...x,
         decision: x.decision?.decision ?? null,
         decidedBy: x.decision?.by ?? null,
         stamp: x.decision?.stamp ?? null,
+        acceptances: acceptances
+          .filter((y) => y.a.subjectId === kid)
+          .map((y) => ({ by: y.name, stamp: y.a.stamp, statement: y.a.comment })),
       })),
-      signatures,
-      chain,
+      signatures: blind ? signatures.filter((s) => s.userId === a.user.id) : signatures,
+      chain: blind ? chain.map((s) => ({ ...s, signedBy: null, stamp: null })) : chain,
+      title: base.title,
+      endorsements: endorse,
+      checks: {
+        tender: allChecks.filter((r) => r.kind === 'TENDER_CONSISTENCY'),
+        vendor: allChecks.filter((r) => r.kind === 'VENDOR_PREFLIGHT'),
+        recheck: allChecks.filter((r) => r.kind === 'RECHECK'),
+      },
+      negotiation: {
+        locked: lock.locked,
+        lockAt: lock.lockAt.toISOString(),
+        daysOpen: lock.daysOpen,
+        limitDays: lock.limitDays,
+      },
+      blind,
+      // where each signature block sits on the page: preset in the template, else in signing order (FR-0425)
+      signatureBlocks:
+        (
+          (
+            tpl?.body as
+              { signatureBlocks?: Array<{ role: string; label?: string; position?: string }> } | undefined
+          )?.signatureBlocks ?? []
+        ).length > 0
+          ? (tpl!.body as { signatureBlocks: Array<{ role: string; label?: string; position?: string }> })
+              .signatureBlocks
+          : chain.map((s, i) => ({
+              role: s.role,
+              label: s.label,
+              position: i === 0 ? 'bottom-left' : 'bottom-right',
+            })),
       permissions: {
         canEdit: editable && roles.includes('LEGAL'),
         canEditTerms: editable && (roles.includes('LEGAL') || roles.includes('PROCUREMENT')),
@@ -474,13 +555,22 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         signBlocked,
         canDelete: roles.includes('LEGAL') || roles.includes('EXEC'),
         canDecideDeviations:
-          editable && (roles.includes('DELEGATE') || roles.includes('EXEC')) && devRows.length > 0,
+          editable &&
+          devRows.length > 0 &&
+          (roles.includes('DELEGATE') ||
+            roles.includes('EXEC') ||
+            (roles.includes('PROBITY') && devRows.some((x) => x.protected))),
         canAmendRisk: editable && roles.includes('LEGAL'),
         canVary:
           c.status === 'EXECUTED' &&
           !c.parentId &&
           (roles.includes('LEGAL') || roles.includes('PROCUREMENT')),
         canEditRecord,
+        canEndorse: editable && endorse.missing.some((r) => roles.includes(r as RoleName)),
+        canRunChecks: !c.locked && roles.some((r) => ['LEGAL', 'PROCUREMENT'].includes(r)),
+        canComment: roles.some((r) => ['LEGAL', 'PROCUREMENT', 'CONTRACT_MGR', 'FINANCE'].includes(r)),
+        canAskQuestion:
+          !c.locked && roles.some((r) => ['DELEGATE', 'EXEC', 'LEGAL', 'PROCUREMENT'].includes(r)),
       },
     };
   }
@@ -660,6 +750,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
   reg('GET', '/contracts');
   app.get(`${p}/contracts`, { preHandler: guard(d, READERS) }, async (req) => {
     const a = req.auth!;
+    await sweepSigningReminders(d.database, d.clock.now()).catch(() => undefined);
     const q = parse(
       z.object({ status: z.string().max(40).optional(), q: z.string().max(100).optional() }),
       req.query,
@@ -688,7 +779,20 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
   app.get(`${p}/contracts/:id`, { preHandler: guard(d, READERS) }, async (req) => {
     const a = req.auth!;
     const id = cid(req);
-    return withContext(d.database, a.ctx, async (tx) => view(tx, a, await load(tx, a, id)));
+    return withContext(d.database, a.ctx, async (tx) => {
+      // a signatory who opens the contract has seen it (FR-0445)
+      await tx
+        .update(signingInvitation)
+        .set({ viewedAt: d.clock.now() })
+        .where(
+          and(
+            eq(signingInvitation.contractId, id),
+            eq(signingInvitation.userId, a.user.id),
+            isNull(signingInvitation.viewedAt),
+          ),
+        );
+      return view(tx, a, await load(tx, a, id));
+    });
   });
 
   // ------------------------------------------------------------ draft (US-CON-01)
@@ -778,6 +882,8 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           startDate: start,
           endDate: end,
           noticeDays: 90,
+          createdAt: d.clock.now(),
+          updatedAt: d.clock.now(),
         })
         .returning();
       const { facts } = await factsFor(tx, a.user.tenantId, row!);
@@ -903,7 +1009,14 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         : null;
       await tx
         .update(clause)
-        .set({ text: body.text.trim(), title, changedFromTemplate: changed, risk })
+        .set({
+          text: body.text.trim(),
+          title,
+          changedFromTemplate: changed,
+          risk,
+          editedBy: a.user.id,
+          editedAt: d.clock.now(),
+        })
         .where(eq(clause.id, k.id));
       // New wording needs a new decision: earlier approvals of this clause no longer apply.
       await tx
@@ -916,6 +1029,26 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
             ne(approval.decision, 'SUPERSEDED'),
           ),
         );
+      // a change to a non-negotiable clause goes to General Counsel and the risk delegate at once (FR-0400)
+      if (
+        changed &&
+        isProtected(clauseId, (await loadSettings(tx, a.user.tenantId)).contractRules.protectedClauses)
+      ) {
+        await notifyRoles(
+          tx,
+          a.user.tenantId,
+          ['EXEC', 'PROBITY'],
+          'A non-negotiable clause was changed',
+          `${c.number}: ${k.title}. Signature routing is blocked until General Counsel or the risk delegate approves.`,
+          `/app/contracts/${id}`,
+        );
+        await d.audit.record(tx, a.ctx, {
+          action: 'contract.protected_clause_changed',
+          entityType: 'contract',
+          entityId: id,
+          after: { clauseId, risk },
+        });
+      }
       if (c.status === 'DRAFT')
         await tx
           .update(contract)
@@ -959,8 +1092,25 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           a.user.tenantId,
           changedClauses.map((k) => k.id),
         );
+        const extra = releaseExtra.safeParse(req.body ?? {});
+        if (!extra.success)
+          throw new AppError(400, 'VALIDATION_FAILED', 'Invalid request', [
+            { field: 'signingMode', message: 'Use STANDARD, BLIND or STAGED' },
+          ]);
+        const now0 = d.clock.now();
+        const gate = await releaseGate(tx, c, now0, registry);
+        const lockNow = await lockState(tx, c, now0);
         const blockers = [
-          ...releaseBlockers({ value: Number(c.value), startDate: c.startDate, endDate: c.endDate }, clauses),
+          ...releaseBlockers(
+            { value: Number(c.value), startDate: c.startDate, endDate: c.endDate },
+            clauses,
+          ).filter((m) => c.docType === 'CONTRACT' || !/value is missing|dates are required/.test(m)),
+          ...gate,
+          ...(lockNow.locked
+            ? [
+                `Negotiation has run past ${lockNow.limitDays} days: run the sanctions and financial risk checks again first`,
+              ]
+            : []),
           ...deviationBlockers(
             changedClauses.map((k) => ({
               title: k.title,
@@ -980,8 +1130,21 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         const now = d.clock.now();
         await tx
           .update(contract)
-          .set({ status: 'AWAITING_SIGNATURE', updatedAt: now, version: c.version + 1 })
+          .set({
+            status: 'AWAITING_SIGNATURE',
+            releasedAt: now,
+            ...(extra.data.signingMode ? { signingMode: extra.data.signingMode } : {}),
+            updatedAt: now,
+            version: c.version + 1,
+          })
           .where(eq(contract.id, id));
+        await inviteSigners(
+          tx,
+          c,
+          requiredSigners(await authorityValue(tx, c)).map((s) => s.role),
+          `${c.number}`,
+          now,
+        );
         await d.audit.record(tx, a.ctx, {
           action: 'contract.release',
           entityType: 'contract',
@@ -1027,6 +1190,20 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       const now = d.clock.now();
       const stamp = (verb: string) =>
         `${verb} · ${a.user.name} · ${a.user.role.replace('_', ' ')} · ${now.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+
+      if (body.decision === 'APPROVE') {
+        const blocked = await signBlock(
+          tx,
+          c,
+          chain.map((s) => ({
+            role: s.role,
+            signedBy: sigs.find((x2) => x2.role === s.role)?.userName ?? null,
+          })),
+          slot.role,
+          now,
+        );
+        if (blocked) return { blocked };
+      }
 
       if (body.decision === 'REJECT') {
         if ((body.comment ?? '').length < 5)
@@ -1111,6 +1288,14 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         stamp: stamp('SIGNED'),
         decidedAt: now,
       });
+      await notifyRoles(
+        tx,
+        a.user.tenantId,
+        ['PROCUREMENT', 'LEGAL'],
+        'Signing progress',
+        `${c.number}: signed by ${a.user.name} (${sigs.length + 1} of ${chain.length})`,
+        `/app/contracts/${id}`,
+      );
       const complete = chain.every((s) => s.role === slot.role || sigs.some((x) => x.role === s.role));
       if (!complete) {
         await tx
@@ -1179,6 +1364,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       }
       return view(tx, a, await load(tx, a, id));
     });
+    if ('blocked' in out && out.blocked) throw new AppError(409, out.blocked.code, out.blocked.message);
     if ('denied' in out) {
       await d.audit.recordOutsideTx(d.database, a.ctx, {
         action: 'contract.sign',
@@ -1215,6 +1401,18 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     return reply.status(204).send();
   });
 
+  const registry = d.registry ?? new MockVendorRegistry();
+  registerContractB4(app, p, d, reg, {
+    load,
+    view,
+    notifyRoles,
+    signaturesOf,
+    authorityValue,
+    templateClauses,
+    store: d.store,
+    registry,
+    sanctions: d.sanctions ?? new MockSanctionsScreening(),
+  });
   registerContractExtras(app, p, d, reg, {
     load,
     view,

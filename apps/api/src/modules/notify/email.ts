@@ -26,7 +26,9 @@ export interface EmailInput {
     | 'SANCTIONS_HOLD'
     | 'WELCOME'
     | 'CLARIFICATION'
-    | 'BAFO';
+    | 'BAFO'
+    | 'SIGNING_INVITATION'
+    | 'SIGNING_REMINDER';
   refType?: string;
   refId?: string;
 }

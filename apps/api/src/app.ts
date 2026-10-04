@@ -180,6 +180,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   for (const k of registerContractRoutes(app, API_PREFIX, {
     ...guardDeps,
     schedulerMinutes: deps.alertSchedulerMinutes,
+    store,
   }))
     implemented.add(k);
   for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);

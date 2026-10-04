@@ -18,7 +18,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         <Link href="/app/contracts">← Contracts</Link>
       </p>
       {res.data ? (
-        <ContractWorkspace initial={res.data} csrf={user.csrfToken} />
+        <ContractWorkspace initial={res.data} csrf={user.csrfToken} roles={user.roles} />
       ) : (
         <EmptyState title="The contract could not be loaded" body="Please refresh the page." />
       )}

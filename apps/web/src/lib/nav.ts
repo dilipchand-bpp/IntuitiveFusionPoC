@@ -178,6 +178,26 @@ export const NAV: readonly NavItem[] = [
       'Read-only oversight of the procurements you are allocated to, with a system hold and the probity documents.',
   },
   {
+    href: '/app/legal',
+    label: 'Legal desk',
+    icon: 'contracts',
+    roles: ['LEGAL', 'PROCUREMENT'],
+    section: 'Work',
+    module: 'Legal matter management',
+    requirements: ['FR-0385', 'FR-0470'],
+    blurb: 'A board of legal matters, review hours, and the knowledge base legal keeps for the platform.',
+  },
+  {
+    href: '/app/shared',
+    label: 'Shared documents',
+    icon: 'reports',
+    roles: STAFF_ALL,
+    section: 'Oversight',
+    module: 'Time-bound access',
+    requirements: ['FR-0435'],
+    blurb: 'Projects whose documents you have been given access to, and when that access ends.',
+  },
+  {
     href: '/app/audit',
     label: 'Audit trail',
     icon: 'audit',
@@ -277,6 +297,16 @@ export const NAV: readonly NavItem[] = [
     requirements: ['FR-0155', 'FR-0160', 'FR-0165', 'FR-0170'],
     blurb:
       'See the tender you are invited to, ask questions, upload and submit your response before the close.',
+  },
+  {
+    href: '/supplier/contracts',
+    label: 'Contracts',
+    icon: 'contracts',
+    roles: ['SUPPLIER'],
+    section: 'Supplier',
+    module: 'Contracts',
+    requirements: ['FR-0445'],
+    blurb: 'Read a contract before it is signed, and ask questions.',
   },
   {
     href: '/supplier/profile',

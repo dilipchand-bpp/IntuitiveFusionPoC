@@ -62,6 +62,7 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
   { prefix: '/supplier', roles: ['SUPPLIER'] },
   { prefix: '/app/audit', roles: ['PROBITY', 'ADMIN', 'EXEC', 'PROCUREMENT'] },
   { prefix: '/app/probity', roles: ['PROBITY'] },
+  { prefix: '/app/legal', roles: ['LEGAL', 'PROCUREMENT'] },
   {
     prefix: '/app/evaluations',
     roles: ['EVALUATOR', 'CHAIR', 'PROCUREMENT', 'DELEGATE', 'PROBITY', 'LEGAL', 'EXEC'],

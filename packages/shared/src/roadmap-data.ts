@@ -629,12 +629,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0385',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Where a customer has no external legal system, the platform shall provide native legal matter management, comprising a legal kanban board, review-hour logging, and a...',
+    batch: 'B4',
   }, // TODO(FR-0385)
   {
     id: 'FR-0390',
@@ -649,151 +650,166 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0400',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Monitor the negotiation room for material deviations to non-negotiable mandatory clauses (for example indemnity limits, liability caps, IP governance)',
+    batch: 'B4',
   }, // TODO(FR-0400)
   {
     id: 'FR-0405',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       "During contract drafting, the system shall cross-check the winning supplier's tender submission against the original RFx and flag any inconsistencies (for example...",
+    batch: 'B4',
   }, // TODO(FR-0405)
   {
     id: 'FR-0415',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       "Run a pre-flight verification of the vendor's legal name, tax registration and banking details against ERP/vetted records before signature options unlock",
+    batch: 'B4',
   }, // TODO(FR-0415)
   {
     id: 'FR-0425',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       "Support advanced signing workflows, including blind signing (a signatory signs without other parties' signatures or identities visible) and staged endorsement...",
+    batch: 'B4',
   }, // TODO(FR-0425)
   {
     id: 'FR-0430',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'The signing capability shall extend to document types beyond the primary contract, including NDAs, confidentiality agreements and master agreements',
+    batch: 'B4',
   }, // TODO(FR-0430)
   {
     id: 'FR-0435',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       "Support time-bound access grants for evaluation committee members, auditors and advisors, automatically revoking access to a project's documents at a configured...",
+    batch: 'B4',
   }, // TODO(FR-0435)
   {
     id: 'FR-0440',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Where contract negotiations extend beyond 30 days, the platform shall automatically lock signature blocks and force a re-run of sanctions and financial risk checks on...',
+    batch: 'B4',
   }, // TODO(FR-0440)
   {
     id: 'FR-0445',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Send email invitations to internal and external signing delegates, with automated reminders where action has not been taken, shall allow signatories to view the full...',
+    batch: 'B4',
   }, // TODO(FR-0445)
   {
     id: 'FR-0450',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Present an AI-generated, auto-populated summary of contract risks to the delegate ahead of signing, with legal retaining final review and edit before release',
+    batch: 'B4',
   }, // TODO(FR-0450)
   {
     id: 'FR-0460',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title: 'Contract variations shall be linked back to their originating (parent) contract record',
+    batch: 'B4',
   }, // TODO(FR-0460)
   {
     id: 'FR-0465',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Legal shall be able to collaborate in-platform and make live changes to the contract without a generate-edit-regenerate cycle, and shall be able to download final...',
+    batch: 'B4',
   }, // TODO(FR-0465)
   {
     id: 'FR-0470',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'Legal shall be able to upload policies and historical legal advice for the AI to draw on when advising on deviations and negotiation positions',
+    batch: 'B4',
   }, // TODO(FR-0470)
   {
     id: 'FR-0475',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'The deviation register shall auto-populate a risk rating for each deviation, amendable by legal in plain language',
+    batch: 'B4',
   }, // TODO(FR-0475)
   {
     id: 'FR-0480',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Must',
     title:
       'Support an optional legal endorsement gate and optional endorsement by other business units (for example finance) before a contract is released for signing',
+    batch: 'B4',
   }, // TODO(FR-0480)
   {
     id: 'FR-0485',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
     title:
       'The AI shall generate a negotiation strategy for the category, sector and procurement type, covering how to frame the negotiation, likely techniques, and a graduated...',
+    batch: 'B4',
   }, // TODO(FR-0485)
   {
     id: 'FR-0495',

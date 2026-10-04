@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
 import { DraftContract } from '@/components/contract/draft-contract';
+import { NewDocument } from '@/components/contract/new-document';
 import type { ContractAward, ContractSummary } from '@/components/contract/types';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
 import { apiGet, getSessionUser } from '@/lib/session';
@@ -25,6 +26,11 @@ export default async function ContractsPage() {
           A contract is drafted from the approved evaluation report, reviewed by legal, then signed by people
           who hold signing authority. Once signed it is locked.
         </p>
+        {drafter && (
+          <div className="mt-3">
+            <NewDocument csrf={user!.csrfToken} />
+          </div>
+        )}
         {manager && (
           <nav aria-label="Contract management" className="mt-3 flex flex-wrap gap-2">
             <Link

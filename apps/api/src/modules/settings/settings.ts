@@ -138,6 +138,22 @@ export const SECTIONS = {
       clarificationDays: z.number().int().min(1).max(60),
     })
     .strict(),
+  contractRules: z
+    .object({
+      /** Bank details must be on record and match the company name before signature options unlock. */
+      requireBankDetails: z.boolean(),
+      /** Legal must review the risk summary before a contract is released for signing. */
+      requireRiskSummaryReview: z.boolean(),
+      /** Endorsements needed before release: legal and any other business unit. */
+      endorsements: z.array(z.enum(['LEGAL', 'FINANCE'])).max(2),
+      /** Clauses that are non-negotiable: a change needs General Counsel or the risk delegate. */
+      protectedClauses: z.array(z.string().trim().min(1).max(60)).max(20),
+      /** After this many days of negotiation, signature blocks lock until the checks are run again. */
+      negotiationLockDays: z.number().int().min(1).max(365),
+      /** Hours before an unsigned signing invitation is reminded again. */
+      signingReminderHours: z.number().int().min(1).max(720),
+    })
+    .strict(),
   security: z
     .object({
       requireMfa: z.boolean(),
@@ -261,6 +277,14 @@ export const DEFAULTS: Settings = {
     rankingMaxValueAud: 100_000,
     redeclarationReminderHours: 24,
     clarificationDays: 5,
+  },
+  contractRules: {
+    requireBankDetails: false,
+    requireRiskSummaryReview: false,
+    endorsements: [],
+    protectedClauses: [],
+    negotiationLockDays: 30,
+    signingReminderHours: 48,
   },
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],

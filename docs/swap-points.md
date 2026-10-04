@@ -132,3 +132,14 @@ This page lists the swap points that exist **today**; later milestones append to
 | Probity advisor identity (FR-0310) | An external advisor is a user flagged `external` with the probity role; the API refuses every route outside sign-in, notifications, evaluations and probity, and evaluations outside their allocation look like they do not exist | Single sign-on for the advisor's own organisation; the allocation table and the route allow-list stay |
 | Probity documents (FR-0340) | Authored text exports to PDF and Word with a sign-off stamp; an uploaded file is stored sealed with its hash | Electronic signature for the sign-off stamp |
 | Bid pricing (FR-0280, FR-0350) | Entered by the supplier as price, implementation and running cost, held beside the bid and sealed until close; total cost of ownership is computed on the platform | Read the pricing from the supplier's commercial file or a pricing template |
+
+## Contract award and legal (B4)
+
+| Item | Today | Swap |
+| --- | --- | --- |
+| Vendor register, tax and financial risk (FR-0415, FR-0440) | `adapters/vendor-registry.ts` `MockVendorRegistry`: any supplier with a valid ABN is "registered" under the name it gave; a few synthetic names (dissolved, in administration) fail so the failure paths can be shown | Implement `VendorRegistry` against the business register, the tax authority and a credit-risk provider; the checks, reviews and locks stay |
+| Banking verification (FR-0415) | Details the supplier enters are checked for format and for the account name matching the legal name; no bank is called | Verify the account with a bank-account verification service or the ERP's vetted vendor record |
+| Contract risk summary, deviation explanations and negotiation strategy (FR-0450, FR-0475, FR-0485) | `contract/b4-rules.ts`: fixed rules over the contract, its checks, the bids and the legal knowledge base; labelled `rules-simulated-v1` | Replace with a language model given the same inputs and the knowledge base; legal's review and edit step stays |
+| Signing invitations and reminders (FR-0445) | In-app notifications plus simulated email (`SIGNING_INVITATION`, `SIGNING_REMINDER`); the supplier reads the contract in its portal | The real mail sender; an e-signature provider for external signing |
+| Signing modes (FR-0425) | Blind and staged signing are enforced by the platform; signature-block positions come from the template | Pass the positions to an e-signature provider |
+| Time-bound access (FR-0435) | Grants are checked and ended whenever they are read (no background job); only the contract and report PDFs are shared | Extend to document repositories; add a nightly sweep so ends are audited even if nobody reads |

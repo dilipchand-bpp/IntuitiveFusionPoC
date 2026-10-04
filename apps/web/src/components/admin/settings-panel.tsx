@@ -46,6 +46,14 @@ export interface SettingsData {
     minValueAud: number;
     enabled: boolean;
   }>;
+  contractRules: {
+    requireBankDetails: boolean;
+    requireRiskSummaryReview: boolean;
+    endorsements: Array<'LEGAL' | 'FINANCE'>;
+    protectedClauses: string[];
+    negotiationLockDays: number;
+    signingReminderHours: number;
+  };
   criteriaLibrary: Array<{
     name: string;
     stream: 'TECHNICAL' | 'COMMERCIAL' | 'OTHER';
@@ -959,6 +967,104 @@ export function SettingsPanel({
                 setS({
                   ...s,
                   evaluationRules: { ...s.evaluationRules, clarificationDays: Number(e.target.value) },
+                })
+              }
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section
+        {...sec('contractRules')}
+        title="Contract rules"
+        blurb="What must happen before a contract is released for signing, which clauses are non-negotiable, and how long a negotiation may run."
+        onSave={() => void save('contractRules', s.contractRules)}
+      >
+        {(
+          [
+            [
+              'requireBankDetails',
+              'The supplier must have banking details on record, matching its legal name',
+            ],
+            ['requireRiskSummaryReview', 'Legal must review the risk summary before a contract is released'],
+          ] as const
+        ).map(([key, text]) => (
+          <label key={key} className="flex min-h-[44px] items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="size-5 accent-[var(--if-color-accent)]"
+              checked={s.contractRules[key]}
+              onChange={(e) => setS({ ...s, contractRules: { ...s.contractRules, [key]: e.target.checked } })}
+            />
+            <span>{text}</span>
+          </label>
+        ))}
+        <fieldset className="flex flex-wrap gap-4">
+          <legend className="text-sm font-semibold">Endorsements needed before release</legend>
+          {(['LEGAL', 'FINANCE'] as const).map((r) => (
+            <label key={r} className="flex min-h-[44px] items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-5 accent-[var(--if-color-accent)]"
+                checked={s.contractRules.endorsements.includes(r)}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    contractRules: {
+                      ...s.contractRules,
+                      endorsements: e.target.checked
+                        ? [...s.contractRules.endorsements, r]
+                        : s.contractRules.endorsements.filter((x) => x !== r),
+                    },
+                  })
+                }
+              />
+              {r === 'LEGAL' ? 'Legal' : 'Finance'}
+            </label>
+          ))}
+        </fieldset>
+        <Field label="Non-negotiable clause ids (comma separated)">
+          <Input
+            value={s.contractRules.protectedClauses.join(', ')}
+            onChange={(e) =>
+              setS({
+                ...s,
+                contractRules: {
+                  ...s.contractRules,
+                  protectedClauses: e.target.value
+                    .split(',')
+                    .map((x) => x.trim().toUpperCase())
+                    .filter(Boolean),
+                },
+              })
+            }
+          />
+        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Lock signing after this many days of negotiation">
+            <Input
+              type="number"
+              min={1}
+              max={365}
+              value={s.contractRules.negotiationLockDays}
+              onChange={(e) =>
+                setS({
+                  ...s,
+                  contractRules: { ...s.contractRules, negotiationLockDays: Number(e.target.value) },
+                })
+              }
+            />
+          </Field>
+          <Field label="Remind unsigned signatories every (hours)">
+            <Input
+              type="number"
+              min={1}
+              max={720}
+              value={s.contractRules.signingReminderHours}
+              onChange={(e) =>
+                setS({
+                  ...s,
+                  contractRules: { ...s.contractRules, signingReminderHours: Number(e.target.value) },
                 })
               }
             />

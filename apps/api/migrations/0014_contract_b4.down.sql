@@ -1,0 +1,14 @@
+DROP TABLE IF EXISTS access_grant;
+DROP TABLE IF EXISTS contract_risk_summary;
+DROP TABLE IF EXISTS legal_time_entry;
+DROP TABLE IF EXISTS legal_matter;
+DROP TABLE IF EXISTS legal_knowledge;
+DROP TABLE IF EXISTS contract_file;
+DROP TABLE IF EXISTS contract_comment;
+DROP TABLE IF EXISTS contract_question;
+DROP TABLE IF EXISTS signing_invitation;
+DROP TABLE IF EXISTS contract_endorsement;
+DROP TABLE IF EXISTS contract_check;
+ALTER TABLE supplier DROP COLUMN IF EXISTS bank;
+ALTER TABLE clause DROP COLUMN IF EXISTS edited_at, DROP COLUMN IF EXISTS edited_by;
+ALTER TABLE contract DROP COLUMN IF EXISTS released_at, DROP COLUMN IF EXISTS title, DROP COLUMN IF EXISTS signing_mode, DROP COLUMN IF EXISTS doc_type;

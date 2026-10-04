@@ -81,7 +81,7 @@
 | PUT | `/contracts/{id}/owner` | setContractOwner | CONTRACT_MGR, LEGAL, PROCUREMENT | Change the contract owner to a contract manager | 422 NOT_A_CONTRACT_MANAGER |
 | POST | `/contracts/{id}/variations` | createVariation | LEGAL, PROCUREMENT | Create a variation of an executed contract: a child contract with cumulative value tracking, drafted, reviewed and signed like any contract | 409 VARIATION_OPEN; 422 EMPTY_VARIATION; signing authority is judged on the cumulative value |
 | PUT | `/contracts/{id}/deviations/{clauseId}/risk` | setDeviationRisk | LEGAL | Legal amends the proposed risk rating of a deviation |  |
-| POST | `/contracts/{id}/deviations/{clauseId}/decision` | decideDeviation | DELEGATE, EXEC | A delegate approves or rejects a deviation; a mandatory or high-risk change must be approved before release |  |
+| POST | `/contracts/{id}/deviations/{clauseId}/decision` | decideDeviation | DELEGATE, EXEC, PROBITY | A delegate approves or rejects a deviation; a mandatory or high-risk change must be approved before release | A non-negotiable clause needs General Counsel (executive) or the risk delegate (probity); 403 PROTECTED_CLAUSE otherwise |
 | PUT | `/contracts/{id}/clauses/{clauseId}` | updateClause | LEGAL | Edit clause; a change from the template is marked (blocked when locked) | 423 CONTRACT_LOCKED when executed; 422 MANDATORY_CLAUSE |
 | POST | `/contracts/{id}/release-for-signing` | releaseForSigning | LEGAL, PROCUREMENT | Release the reviewed draft for signing | 422 RELEASE_BLOCKED lists what is missing; procurement can release only after legal review |
 | POST | `/contracts/{id}/sign` | signContract | DELEGATE, EXEC | Mock e-signature with a stamp (name, role, time); signing authority is checked separately from sourcing approval. Above 1M the executive co-signs. REJECT returns the contract to legal | 403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed |
@@ -211,3 +211,49 @@
 | PUT | `/supplier/tenders/{id}/pricing` | setMyPricing | SUPPLIER | Enter price, implementation and running costs so total cost of ownership can be compared |  |
 | GET | `/supplier/bafo` | listMyBafoRounds | SUPPLIER | Best and final offer rounds the supplier is invited to, with their own offers |  |
 | PUT | `/supplier/bafo/{id}/offer` | submitBafoOffer | SUPPLIER | Submit a new offer revision while the round is open; the original bid is unchanged |  |
+| GET | `/contracts/{id}/checks` | getContractChecks | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The tender cross-check, vendor pre-flight and counterparty re-check results, and whether negotiation has locked signing |  |
+| POST | `/contracts/{id}/checks/run` | runContractChecks | LEGAL, PROCUREMENT | Run the tender cross-check and the vendor pre-flight (legal name, tax, banking) now |  |
+| POST | `/contracts/{id}/checks/{kind}/{key}/review` | reviewContractCheck | LEGAL, PROCUREMENT | Review a failed or flagged check with a recorded reason so it no longer blocks |  |
+| POST | `/contracts/{id}/recheck` | recheckCounterparty | LEGAL, PROCUREMENT | Run sanctions and financial risk checks again; unlocks signing after a long negotiation when they pass |  |
+| POST | `/contracts/{id}/endorse` | endorseContract | LEGAL, FINANCE | Endorse before release (legal, finance) where the organisation requires it |  |
+| PUT | `/contracts/{id}/signing-mode` | setSigningMode | LEGAL, PROCUREMENT | STANDARD, BLIND (signatories see no one else's signature) or STAGED (signed in sequence), set before release |  |
+| GET | `/contracts/{id}/signing` | getSigningProgress | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Who was invited to sign, who has seen the contract, reminders sent, and who has signed |  |
+| POST | `/contracts/{id}/signing/remind` | remindSigners | LEGAL, PROCUREMENT | Remind the signatories who have not signed |  |
+| POST | `/contracts/{id}/questions` | askContractQuestion | DELEGATE, EXEC, LEGAL, PROCUREMENT | A signatory or reviewer raises a question before signing |  |
+| GET | `/contracts/{id}/questions` | listContractQuestions | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Questions raised about the contract, from the business and from the supplier, with answers |  |
+| POST | `/contract-questions/{id}/answer` | answerContractQuestion | LEGAL | Legal answers a question |  |
+| GET | `/contracts/{id}/risk-summary` | getContractRiskSummary | DELEGATE, EXEC, LEGAL, PROCUREMENT | An auto-populated summary of the risks in signing (simulated model); refresh=true regenerates it |  |
+| PUT | `/contracts/{id}/risk-summary` | editContractRiskSummary | LEGAL | Legal edits the summary before it goes to the delegate |  |
+| POST | `/contracts/{id}/risk-summary/review` | reviewContractRiskSummary | LEGAL | Legal confirms the summary after review |  |
+| POST | `/contracts/documents` | createSigningDocument | LEGAL, PROCUREMENT | Create an NDA, confidentiality agreement or master agreement signed the same way as a contract |  |
+| GET | `/contracts/{id}/export.pdf` | exportContractPdf | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The current contract as a PDF with its version and any signatures (audited) |  |
+| GET | `/contracts/{id}/export.docx` | exportContractDocx | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The current contract as a Word document (audited) |  |
+| POST | `/contracts/{id}/drafts` | uploadAmendedDraft | LEGAL | Upload an externally amended draft (kept as a numbered version with its hash) |  |
+| GET | `/contracts/{id}/drafts` | listAmendedDrafts | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Amended drafts uploaded for this contract |  |
+| GET | `/contracts/{id}/drafts/{fileId}` | downloadAmendedDraft | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Download an uploaded draft (audited) |  |
+| POST | `/contracts/{id}/comments` | commentOnContract | LEGAL, PROCUREMENT, CONTRACT_MGR, FINANCE | Comment on the draft or one clause while it is being worked on |  |
+| GET | `/contracts/{id}/comments` | listContractComments | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | Comments on the draft |  |
+| GET | `/contracts/{id}/lineage` | getContractLineage | PROCUREMENT, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY | The parent contract and its variations, with cumulative value and the latest end date |  |
+| POST | `/contracts/{id}/deviations/{clauseId}/explain` | explainDeviation | LEGAL, PROCUREMENT, DELEGATE, EXEC, CONTRACT_MGR, FINANCE | What a deviation means in plain language, with the corporate fallback where one is on file (simulated model) |  |
+| POST | `/contracts/{id}/deviations/{clauseId}/risk/plain` | rateDeviationInWords | LEGAL | Legal amends a deviation's risk rating in plain language; read back, saved only when apply is true |  |
+| POST | `/contracts/{id}/deviations/{clauseId}/accept-risk` | acceptDeviationRisk | DELEGATE, EXEC, CONTRACT_MGR | The business or a delegate formally accepts the identified risk, with a statement |  |
+| GET | `/contracts/{id}/negotiation-strategy` | getNegotiationStrategy | LEGAL, PROCUREMENT, DELEGATE, EXEC | A negotiation strategy: framing, techniques, a graduated set of positions and levers (simulated model) |  |
+| GET | `/legal-knowledge` | listLegalKnowledge | LEGAL, PROCUREMENT | Policies, historical advice, corporate fallback positions and mandatory boilerplate the advisers draw on |  |
+| POST | `/legal-knowledge` | addLegalKnowledge | LEGAL | Add a policy, advice, fallback position or boilerplate |  |
+| DELETE | `/legal-knowledge/{id}` | removeLegalKnowledge | LEGAL | Remove an entry |  |
+| GET | `/legal/matters` | listLegalMatters | LEGAL, PROCUREMENT | The legal kanban board with review hours per matter |  |
+| POST | `/legal/matters` | createLegalMatter | LEGAL | Open a legal matter, optionally linked to a contract |  |
+| PATCH | `/legal/matters/{id}` | updateLegalMatter | LEGAL | Move a matter between lanes or change its assignee, priority or due date |  |
+| POST | `/legal/matters/{id}/time` | logReviewHours | LEGAL | Log review hours against a matter |  |
+| GET | `/legal/matters/{id}/time` | listReviewHours | LEGAL, PROCUREMENT | Review hours logged against a matter |  |
+| POST | `/access-grants` | grantProjectAccess | PROCUREMENT, ADMIN | Give a committee member, auditor or advisor access to one project's documents until a date or an event (for example 30 days after signature) |  |
+| GET | `/access-grants` | listProjectAccess | PROCUREMENT, ADMIN, PROBITY | Access grants with whether each is still live; an expired grant is revoked and audited when read |  |
+| DELETE | `/access-grants/{id}` | revokeProjectAccess | PROCUREMENT, ADMIN | End a grant now, with a reason |  |
+| GET | `/shared/projects` | listSharedProjects | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | The projects the caller has a grant for, and the documents each opens while it is live |  |
+| GET | `/shared/projects/{id}/contract.pdf` | downloadSharedContract | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | The project's contract as a PDF, while the caller's grant is live |  |
+| GET | `/shared/projects/{id}/report.pdf` | downloadSharedReport | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | The project's evaluation report as a PDF, while the caller's grant is live |  |
+| PUT | `/supplier/profile/bank` | setSupplierBank | SUPPLIER | Give banking details, checked against the legal name before signature |  |
+| GET | `/supplier/contracts` | listSupplierContracts | SUPPLIER | Contracts out for signature or signed, for this supplier to read |  |
+| GET | `/supplier/contracts/{id}` | getSupplierContract | SUPPLIER | The full contract text, and the supplier's own questions with answers |  |
+| POST | `/supplier/contracts/{id}/questions` | askSupplierContractQuestion | SUPPLIER | Raise a question before the contract is signed |  |
+| GET | `/access-grants/candidates` | listGrantCandidates | PROCUREMENT, ADMIN | The staff and projects a grant can be made for |  |

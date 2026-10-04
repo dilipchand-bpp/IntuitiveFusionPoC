@@ -18,6 +18,8 @@ import {
   roleAssignment,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { loadSettings } from '../settings/settings.js';
+import { isProtected } from './b4-rules.js';
 import { parseAlert } from './alert-text.js';
 import { iso } from './dates.js';
 import { effectiveEnd, rescheduleAlerts, type AlertService } from './record.js';
@@ -221,6 +223,8 @@ export function registerContractExtras(
             startDate: start,
             endDate: end,
             noticeDays: parent.noticeDays,
+            createdAt: d.clock.now(),
+            updatedAt: d.clock.now(),
           })
           .returning();
         const cumulative = Number(parent.value) + body.value;
@@ -306,7 +310,7 @@ export function registerContractExtras(
   reg('POST', '/contracts/{id}/deviations/{clauseId}/decision');
   app.post(
     `${p}/contracts/:id/deviations/:clauseId/decision`,
-    { preHandler: guard(d, ['DELEGATE', 'EXEC']) },
+    { preHandler: guard(d, ['DELEGATE', 'EXEC', 'PROBITY']) },
     async (req) => {
       const a = req.auth!;
       const { id, clauseId } = parse(z.object({ id: uuid, clauseId: z.string().min(1).max(60) }), req.params);
@@ -317,6 +321,20 @@ export function registerContractExtras(
         ]);
       return withContext(d.database, a.ctx, async (tx) => {
         const { c, k } = await deviationTarget(tx, a, id, clauseId);
+        // a non-negotiable clause needs General Counsel (the executive) or the risk delegate; others, an ordinary delegate (FR-0400)
+        const protectedClause = isProtected(
+          clauseId,
+          (await loadSettings(tx, a.user.tenantId)).contractRules.protectedClauses,
+        );
+        const senior = a.user.roles.includes('EXEC') || a.user.roles.includes('PROBITY');
+        if (protectedClause && !senior)
+          throw new AppError(
+            403,
+            'PROTECTED_CLAUSE',
+            'This is a non-negotiable clause: only General Counsel or the risk delegate can approve a change',
+          );
+        if (!protectedClause && !a.user.roles.some((r) => r === 'DELEGATE' || r === 'EXEC'))
+          throw new AppError(403, 'FORBIDDEN', 'Only a delegate can decide this change');
         const now = d.clock.now();
         await tx
           .update(approval)

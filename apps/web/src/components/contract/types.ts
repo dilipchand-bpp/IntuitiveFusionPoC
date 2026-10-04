@@ -10,6 +10,17 @@ export interface ContractSummary {
   locked: boolean;
   signed: number;
   signaturesRequired: number;
+  docType?: 'CONTRACT' | 'NDA' | 'CONFIDENTIALITY' | 'MASTER';
+  signingMode?: 'STANDARD' | 'BLIND' | 'STAGED';
+}
+
+export interface CheckRow {
+  kind: 'TENDER_CONSISTENCY' | 'VENDOR_PREFLIGHT' | 'RECHECK';
+  key: string;
+  label: string;
+  result: 'PASS' | 'WARN' | 'FAIL' | 'REVIEWED';
+  detail: string;
+  reviewNote: string | null;
 }
 
 export interface ContractAward {
@@ -43,7 +54,18 @@ export interface ContractView extends ContractSummary {
     stamp: string | null;
     templateText: string;
     currentText: string;
+    protected: boolean;
+    acceptances: Array<{ by: string; stamp: string | null; statement: string | null }>;
   }>;
+  endorsements: {
+    required: string[];
+    done: Array<{ role: string; by: string; at: string; comment: string | null }>;
+    missing: string[];
+  };
+  checks: { tender: CheckRow[]; vendor: CheckRow[]; recheck: CheckRow[] };
+  negotiation: { locked: boolean; lockAt: string; daysOpen: number; limitDays: number };
+  blind: boolean;
+  signatureBlocks: Array<{ role: string; label?: string; position?: string }>;
   deviationBlockers: string[];
   parent: { id: string; number: string } | null;
   variations: Array<{ id: string; number: string; status: string; value: number; endDate: string | null }>;
@@ -69,6 +91,10 @@ export interface ContractView extends ContractSummary {
     canAmendRisk: boolean;
     canVary: boolean;
     canEditRecord: boolean;
+    canEndorse: boolean;
+    canRunChecks: boolean;
+    canComment: boolean;
+    canAskQuestion: boolean;
   };
 }
 

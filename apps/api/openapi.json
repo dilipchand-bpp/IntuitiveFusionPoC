@@ -53,6 +53,12 @@
   },
   {
    "name": "Suppliers"
+  },
+  {
+   "name": "Legal"
+  },
+  {
+   "name": "Access"
   }
  ],
  "security": [
@@ -4668,7 +4674,8 @@
     ],
     "x-roles": [
      "DELEGATE",
-     "EXEC"
+     "EXEC",
+     "PROBITY"
     ],
     "responses": {
      "200": {
@@ -4700,6 +4707,7 @@
       "$ref": "#/components/responses/E422"
      }
     },
+    "description": "A non-negotiable clause needs General Counsel (executive) or the risk delegate (probity); 403 PROTECTED_CLAUSE otherwise",
     "requestBody": {
      "required": true,
      "content": {
@@ -11755,6 +11763,2489 @@
      }
     }
    }
+  },
+  "/contracts/{id}/checks": {
+   "get": {
+    "operationId": "getContractChecks",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "The tender cross-check, vendor pre-flight and counterparty re-check results, and whether negotiation has locked signing",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractChecks"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/checks/run": {
+   "post": {
+    "operationId": "runContractChecks",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Run the tender cross-check and the vendor pre-flight (legal name, tax, banking) now",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractChecks"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/checks/{kind}/{key}/review": {
+   "post": {
+    "operationId": "reviewContractCheck",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Review a failed or flagged check with a recorded reason so it no longer blocks",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CheckReview"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/recheck": {
+   "post": {
+    "operationId": "recheckCounterparty",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Run sanctions and financial risk checks again; unlocks signing after a long negotiation when they pass",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/endorse": {
+   "post": {
+    "operationId": "endorseContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Endorse before release (legal, finance) where the organisation requires it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Endorse"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/signing-mode": {
+   "put": {
+    "operationId": "setSigningMode",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "STANDARD, BLIND (signatories see no one else's signature) or STAGED (signed in sequence), set before release",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SigningMode"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/signing": {
+   "get": {
+    "operationId": "getSigningProgress",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Who was invited to sign, who has seen the contract, reminders sent, and who has signed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SigningProgress"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/signing/remind": {
+   "post": {
+    "operationId": "remindSigners",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Remind the signatories who have not signed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SigningProgress"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/questions": {
+   "post": {
+    "operationId": "askContractQuestion",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "A signatory or reviewer raises a question before signing",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractQuestions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractQuestionCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listContractQuestions",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Questions raised about the contract, from the business and from the supplier, with answers",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractQuestions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contract-questions/{id}/answer": {
+   "post": {
+    "operationId": "answerContractQuestion",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Legal answers a question",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractQuestions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractAnswer"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/risk-summary": {
+   "get": {
+    "operationId": "getContractRiskSummary",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "An auto-populated summary of the risks in signing (simulated model); refresh=true regenerates it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskSummary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "editContractRiskSummary",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Legal edits the summary before it goes to the delegate",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskSummary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RiskSummaryEdit"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/risk-summary/review": {
+   "post": {
+    "operationId": "reviewContractRiskSummary",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Legal confirms the summary after review",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskSummary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/documents": {
+   "post": {
+    "operationId": "createSigningDocument",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Create an NDA, confidentiality agreement or master agreement signed the same way as a contract",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DocumentCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/export.pdf": {
+   "get": {
+    "operationId": "exportContractPdf",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "The current contract as a PDF with its version and any signatures (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/export.docx": {
+   "get": {
+    "operationId": "exportContractDocx",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "The current contract as a Word document (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/drafts": {
+   "post": {
+    "operationId": "uploadAmendedDraft",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Upload an externally amended draft (kept as a numbered version with its hash)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DraftFile"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DraftUpload"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listAmendedDrafts",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Amended drafts uploaded for this contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DraftList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/drafts/{fileId}": {
+   "get": {
+    "operationId": "downloadAmendedDraft",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Download an uploaded draft (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "fileId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/comments": {
+   "post": {
+    "operationId": "commentOnContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Comment on the draft or one clause while it is being worked on",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "FINANCE"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CommentList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommentCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listContractComments",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Comments on the draft",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CommentList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/lineage": {
+   "get": {
+    "operationId": "getContractLineage",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "The parent contract and its variations, with cumulative value and the latest end date",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Lineage"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/deviations/{clauseId}/explain": {
+   "post": {
+    "operationId": "explainDeviation",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "What a deviation means in plain language, with the corporate fallback where one is on file (simulated model)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "clauseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "CONTRACT_MGR",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviationExplanation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/deviations/{clauseId}/risk/plain": {
+   "post": {
+    "operationId": "rateDeviationInWords",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Legal amends a deviation's risk rating in plain language; read back, saved only when apply is true",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "clauseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlainRiskResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlainRisk"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/deviations/{clauseId}/accept-risk": {
+   "post": {
+    "operationId": "acceptDeviationRisk",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "The business or a delegate formally accepts the identified risk, with a statement",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "clauseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Contract"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RiskAcceptance"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/negotiation-strategy": {
+   "get": {
+    "operationId": "getNegotiationStrategy",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "A negotiation strategy: framing, techniques, a graduated set of positions and levers (simulated model)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NegotiationStrategy"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/legal-knowledge": {
+   "get": {
+    "operationId": "listLegalKnowledge",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Policies, historical advice, corporate fallback positions and mandatory boilerplate the advisers draw on",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KnowledgeList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "addLegalKnowledge",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Add a policy, advice, fallback position or boilerplate",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KnowledgeList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/KnowledgeCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/legal-knowledge/{id}": {
+   "delete": {
+    "operationId": "removeLegalKnowledge",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Remove an entry",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/legal/matters": {
+   "get": {
+    "operationId": "listLegalMatters",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "The legal kanban board with review hours per matter",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MatterBoard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createLegalMatter",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Open a legal matter, optionally linked to a contract",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MatterBoard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MatterCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/legal/matters/{id}": {
+   "patch": {
+    "operationId": "updateLegalMatter",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Move a matter between lanes or change its assignee, priority or due date",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MatterBoard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MatterPatch"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/legal/matters/{id}/time": {
+   "post": {
+    "operationId": "logReviewHours",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Log review hours against a matter",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TimeEntries"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TimeEntry"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listReviewHours",
+    "tags": [
+     "Legal"
+    ],
+    "summary": "Review hours logged against a matter",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TimeEntries"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/access-grants": {
+   "post": {
+    "operationId": "grantProjectAccess",
+    "tags": [
+     "Access"
+    ],
+    "summary": "Give a committee member, auditor or advisor access to one project's documents until a date or an event (for example 30 days after signature)",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrantList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrantCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listProjectAccess",
+    "tags": [
+     "Access"
+    ],
+    "summary": "Access grants with whether each is still live; an expired grant is revoked and audited when read",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrantList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/access-grants/{id}": {
+   "delete": {
+    "operationId": "revokeProjectAccess",
+    "tags": [
+     "Access"
+    ],
+    "summary": "End a grant now, with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrantRevoke"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/shared/projects": {
+   "get": {
+    "operationId": "listSharedProjects",
+    "tags": [
+     "Access"
+    ],
+    "summary": "The projects the caller has a grant for, and the documents each opens while it is live",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SharedProjects"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/shared/projects/{id}/contract.pdf": {
+   "get": {
+    "operationId": "downloadSharedContract",
+    "tags": [
+     "Access"
+    ],
+    "summary": "The project's contract as a PDF, while the caller's grant is live",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/shared/projects/{id}/report.pdf": {
+   "get": {
+    "operationId": "downloadSharedReport",
+    "tags": [
+     "Access"
+    ],
+    "summary": "The project's evaluation report as a PDF, while the caller's grant is live",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/profile/bank": {
+   "put": {
+    "operationId": "setSupplierBank",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Give banking details, checked against the legal name before signature",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BankDetailsView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BankDetails"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/contracts": {
+   "get": {
+    "operationId": "listSupplierContracts",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Contracts out for signature or signed, for this supplier to read",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierContractList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/contracts/{id}": {
+   "get": {
+    "operationId": "getSupplierContract",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The full contract text, and the supplier's own questions with answers",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierContractView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/contracts/{id}/questions": {
+   "post": {
+    "operationId": "askSupplierContractQuestion",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Raise a question before the contract is signed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractQuestions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractQuestionCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access-grants/candidates": {
+   "get": {
+    "operationId": "listGrantCandidates",
+    "tags": [
+     "Access"
+    ],
+    "summary": "The staff and projects a grant can be made for",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrantList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -11895,6 +14386,9 @@
      },
      "homePath": {
       "type": "string"
+     },
+     "external": {
+      "type": "boolean"
      },
      "csrfToken": {
       "type": "string"
@@ -17945,6 +20439,419 @@
     ]
    },
    "PlainRankingResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractChecks": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CheckReview": {
+    "type": "object",
+    "properties": {
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "note"
+    ]
+   },
+   "BankDetails": {
+    "type": "object",
+    "properties": {
+     "bsb": {
+      "type": "string"
+     },
+     "account": {
+      "type": "string"
+     },
+     "accountName": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "bsb",
+     "account",
+     "accountName"
+    ]
+   },
+   "BankDetailsView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Endorse": {
+    "type": "object",
+    "properties": {
+     "role": {
+      "type": "string",
+      "enum": [
+       "LEGAL",
+       "FINANCE"
+      ]
+     },
+     "comment": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "SigningMode": {
+    "type": "object",
+    "properties": {
+     "signingMode": {
+      "type": "string",
+      "enum": [
+       "STANDARD",
+       "BLIND",
+       "STAGED"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "signingMode"
+    ]
+   },
+   "SigningProgress": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractQuestionCreate": {
+    "type": "object",
+    "properties": {
+     "question": {
+      "type": "string"
+     },
+     "clauseId": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "question"
+    ]
+   },
+   "ContractQuestions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractAnswer": {
+    "type": "object",
+    "properties": {
+     "answer": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "answer"
+    ]
+   },
+   "RiskSummary": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RiskSummaryEdit": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "DocumentCreate": {
+    "type": "object",
+    "properties": {
+     "docType": {
+      "type": "string",
+      "enum": [
+       "NDA",
+       "CONFIDENTIALITY",
+       "MASTER"
+      ]
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "title": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "startDate": {
+      "type": "string"
+     },
+     "endDate": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "docType",
+     "supplierId",
+     "title",
+     "text"
+    ]
+   },
+   "DraftUpload": {
+    "type": "object",
+    "properties": {
+     "fileName": {
+      "type": "string"
+     },
+     "contentBase64": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "fileName",
+     "contentBase64"
+    ]
+   },
+   "DraftFile": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DraftList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CommentCreate": {
+    "type": "object",
+    "properties": {
+     "body": {
+      "type": "string"
+     },
+     "clauseId": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "body"
+    ]
+   },
+   "CommentList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "KnowledgeCreate": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "POLICY",
+       "ADVICE",
+       "FALLBACK",
+       "BOILERPLATE"
+      ]
+     },
+     "title": {
+      "type": "string"
+     },
+     "body": {
+      "type": "string"
+     },
+     "clauseId": {
+      "type": "string"
+     },
+     "tags": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "kind",
+     "title",
+     "body"
+    ]
+   },
+   "KnowledgeList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DeviationExplanation": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PlainRisk": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "apply": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "PlainRiskResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RiskAcceptance": {
+    "type": "object",
+    "properties": {
+     "statement": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "statement"
+    ]
+   },
+   "NegotiationStrategy": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Lineage": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MatterCreate": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "priority": {
+      "type": "string",
+      "enum": [
+       "LOW",
+       "NORMAL",
+       "HIGH"
+      ]
+     },
+     "assigneeId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "dueOn": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "title"
+    ]
+   },
+   "MatterPatch": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MatterBoard": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "TimeEntry": {
+    "type": "object",
+    "properties": {
+     "hours": "Notifications",
+     "workDate": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "hours",
+     "workDate"
+    ]
+   },
+   "TimeEntries": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrantCreate": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "tenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "label": {
+      "type": "string",
+      "enum": [
+       "COMMITTEE",
+       "AUDITOR",
+       "ADVISOR"
+      ]
+     },
+     "expiresOn": {
+      "type": "string"
+     },
+     "event": {
+      "type": "string",
+      "enum": [
+       "CONTRACT_SIGNED",
+       "REPORT_APPROVED"
+      ]
+     },
+     "eventDays": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "userId",
+     "tenderId",
+     "label"
+    ]
+   },
+   "GrantList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrantRevoke": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "SharedProjects": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierContractList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierContractView": {
     "type": "object",
     "additionalProperties": true
    }

@@ -184,6 +184,8 @@ export function SupplierProfile({
         </div>
       </Card>
 
+      <BankCard csrf={csrf} />
+
       <Card role="region" aria-labelledby="priv-h" data-testid="privacy-card">
         <h2 id="priv-h" className="font-heading text-xl font-bold">
           Privacy
@@ -313,5 +315,73 @@ export function SupplierProfile({
         )}
       </Card>
     </div>
+  );
+}
+
+/** Banking details, checked against the company's legal name before a contract can be signed (FR-0415). */
+function BankCard({ csrf }: { csrf: string }) {
+  const [f, setF] = useState({ bsb: '', account: '', accountName: '' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  async function save() {
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    try {
+      const r = await api<{ account: string }>('/supplier/profile/bank', { method: 'PUT', csrf, body: f });
+      setNote(`Saved. Account ${r.account} is on record.`);
+      setF({ bsb: '', account: '', accountName: '' });
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Card role="region" aria-labelledby="bank-h" data-testid="bank-card">
+      <h2 id="bank-h" className="font-heading text-xl font-bold">
+        Banking details
+      </h2>
+      <p className="mt-1 max-w-prose text-sm text-text-muted">
+        The account name must match your company&apos;s legal name. The buyer checks this before a contract is
+        signed. Only the last three digits are ever shown back to you.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <Field label="BSB">
+          <Input value={f.bsb} onChange={(e) => setF({ ...f, bsb: e.target.value })} placeholder="062-000" />
+        </Field>
+        <Field label="Account number">
+          <Input
+            value={f.account}
+            onChange={(e) => setF({ ...f, account: e.target.value })}
+            inputMode="numeric"
+          />
+        </Field>
+        <Field label="Account name">
+          <Input value={f.accountName} onChange={(e) => setF({ ...f, accountName: e.target.value })} />
+        </Field>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-sm font-medium text-error">
+          {error}
+        </p>
+      )}
+      {note && (
+        <p role="status" className="mt-2 text-sm font-medium text-success">
+          {note}
+        </p>
+      )}
+      <div className="mt-3">
+        <Button
+          variant="secondary"
+          loading={busy}
+          disabled={!f.bsb || !f.account || !f.accountName}
+          onClick={() => void save()}
+        >
+          Save banking details
+        </Button>
+      </div>
+    </Card>
   );
 }

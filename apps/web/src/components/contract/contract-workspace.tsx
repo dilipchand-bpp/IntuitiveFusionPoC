@@ -6,6 +6,17 @@ import { Badge, Button, Card, Dialog, Field, Input, Select, Stepper, Textarea, t
 import { ApiError, api } from '@/lib/api-client';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
 import { ManagementCard } from './management-card';
+import {
+  ChecksCard,
+  CollabCard,
+  ContractBanners,
+  DeviationTools,
+  EndorsementsCard,
+  QuestionsCard,
+  RiskSummaryCard,
+  SigningCard,
+  StrategyCard,
+} from './b4-panels';
 import type { ContractView } from './types';
 
 const STEPS = ['Draft', 'Legal review', 'Signing', 'Executed'];
@@ -23,7 +34,15 @@ const problem = (e: unknown): Problem =>
     ? { message: e.message, list: (e.problem.errors ?? []).map((x) => x.message) }
     : { message: 'Something went wrong. Please try again.', list: [] };
 
-export function ContractWorkspace({ initial, csrf }: { initial: ContractView; csrf: string }) {
+export function ContractWorkspace({
+  initial,
+  csrf,
+  roles = [],
+}: {
+  initial: ContractView;
+  csrf: string;
+  roles?: string[];
+}) {
   const router = useRouter();
   const [c, setC] = useState(initial);
   const [error, setError] = useState<Problem | null>(null);
@@ -36,6 +55,7 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
   const [rejectClause, setRejectClause] = useState<string | null>(null);
   const [variation, setVariation] = useState({ reason: '', value: '', endDate: '' });
   const [comment, setComment] = useState('');
+  const [signingMode, setSigningMode] = useState<'STANDARD' | 'BLIND' | 'STAGED'>('STANDARD');
   const [terms, setTerms] = useState({ value: '', startDate: '', endDate: '', noticeDays: '' });
   const p = c.permissions;
 
@@ -64,7 +84,12 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
   const release = () =>
     run(
       'release',
-      () => api<ContractView>(`/contracts/${c.id}/release-for-signing`, { method: 'POST', csrf }),
+      () =>
+        api<ContractView>(`/contracts/${c.id}/release-for-signing`, {
+          method: 'POST',
+          csrf,
+          body: { signingMode },
+        }),
       setC,
     );
   const sign = () =>
@@ -166,6 +191,20 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
             <span className="font-mono text-lg text-text-muted">{c.number}</span> {c.title ?? 'Contract'}
           </h1>
           <Badge tone={tone}>{statusLabel}</Badge>
+          {c.docType && c.docType !== 'CONTRACT' && (
+            <Badge tone="info">
+              {
+                {
+                  NDA: 'Non-disclosure agreement',
+                  CONFIDENTIALITY: 'Confidentiality agreement',
+                  MASTER: 'Master agreement',
+                }[c.docType]
+              }
+            </Badge>
+          )}
+          {c.signingMode && c.signingMode !== 'STANDARD' && (
+            <Badge tone="neutral">{c.signingMode === 'BLIND' ? 'Blind signing' : 'Staged signing'}</Badge>
+          )}
         </div>
         <Stepper steps={STEPS} current={STEP_OF[c.status] ?? 0} />
         {c.parent && (
@@ -175,6 +214,7 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
         )}
       </header>
 
+      <ContractBanners c={c} />
       {c.locked && (
         <p
           role="status"
@@ -281,7 +321,11 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
                       <Badge tone={RISK_TONE[x.risk] ?? 'neutral'}>{x.risk.toLowerCase()} risk</Badge>
                       {x.decision === 'APPROVED' && <Badge tone="success">Approved</Badge>}
                       {x.decision === 'REJECTED' && <Badge tone="error">Rejected</Badge>}
-                      {!x.decision && (x.mandatory || x.risk === 'HIGH') && (
+                      {x.protected && <Badge tone="error">Non-negotiable clause</Badge>}
+                      {!x.decision && x.protected && (
+                        <Badge tone="warning">Needs General Counsel or the risk delegate</Badge>
+                      )}
+                      {!x.decision && !x.protected && (x.mandatory || x.risk === 'HIGH') && (
                         <Badge tone="warning">Needs a delegate</Badge>
                       )}
                     </div>
@@ -294,6 +338,11 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
                       {x.currentText}
                     </p>
                     {x.stamp && <p className="mt-1 font-mono text-xs text-text-muted">{x.stamp}</p>}
+                    {x.acceptances.map((y) => (
+                      <p key={y.stamp} className="mt-1 text-xs text-text-muted">
+                        {y.stamp}: {y.statement}
+                      </p>
+                    ))}
                     {(p.canAmendRisk || p.canDecideDeviations) && (
                       <div className="mt-2 flex flex-wrap items-end gap-2">
                         {p.canAmendRisk && (
@@ -336,11 +385,24 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
                         )}
                       </div>
                     )}
+                    <DeviationTools
+                      c={c}
+                      csrf={csrf}
+                      roles={roles}
+                      onChange={setC}
+                      clauseId={x.clauseId}
+                      title={x.title}
+                    />
                   </li>
                 ))}
               </ul>
             )}
           </Card>
+
+          <ChecksCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          <EndorsementsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          <CollabCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          <StrategyCard c={c} csrf={csrf} roles={roles} onChange={setC} />
         </div>
 
         <aside className="flex flex-col gap-6">
@@ -456,6 +518,20 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
                 {p.signBlocked}
               </p>
             )}
+            {p.canRelease && (
+              <div className="mt-3">
+                <Field label="How signatures are collected">
+                  <Select
+                    value={signingMode}
+                    onChange={(e) => setSigningMode(e.target.value as typeof signingMode)}
+                  >
+                    <option value="STANDARD">Standard</option>
+                    <option value="BLIND">Blind: signatories see no one else&apos;s signature</option>
+                    <option value="STAGED">Staged: signed in sequence</option>
+                  </Select>
+                </Field>
+              </div>
+            )}
             <div className="mt-3 flex flex-wrap gap-2">
               {p.canRelease && (
                 <Button loading={busy === 'release'} onClick={() => void release()}>
@@ -493,6 +569,9 @@ export function ContractWorkspace({ initial, csrf }: { initial: ContractView; cs
               )}
             </div>
           </Card>
+          <SigningCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          <RiskSummaryCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          <QuestionsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
         </aside>
       </div>
 
