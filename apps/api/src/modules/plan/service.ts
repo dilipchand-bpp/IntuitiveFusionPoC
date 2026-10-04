@@ -19,6 +19,7 @@ import {
 import { AppError } from '../../http/errors.js';
 import { toView as requestView, valuesOf } from '../intake/service.js';
 import { loadSettings } from '../settings/settings.js';
+import { applyLayout, loadLayout } from '../collab/routes.js';
 import { PLAN_FIELDS, PLAN_FIELD_BY_KEY, splitParagraphs } from './fields.js';
 import { summarisePlan } from './summary.js';
 
@@ -363,11 +364,14 @@ export class PlanService {
     const rv = requestView(l.req, l.reqFields);
     const gates = await this.evaluateGates(tx, l);
     const byKey = new Map(l.planFields.map((f) => [f.key, f]));
-    const fields = PLAN_FIELDS.map((def) => {
+    const layout = await loadLayout(tx, auth.user.tenantId, 'PLAN');
+    const designed = layout ? applyLayout([...PLAN_FIELDS], layout) : PLAN_FIELDS;
+    const fields = designed.map((def) => {
       const row = byKey.get(def.key);
       return {
         key: def.key,
         label: def.label,
+        rev: row?.rev ?? 0,
         value: row?.value ?? '',
         paragraphs: splitParagraphs(row?.value),
         source: (row?.source ?? 'AI') as string,

@@ -135,7 +135,7 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
         api(`/plans/${plan.id}/fields/${f.key}`, {
           method: 'PUT',
           csrf,
-          body: { value: draft, expectedVersion: plan.version },
+          body: { value: draft, expectedRev: f.rev ?? 0 },
         }),
       () => {
         setEditKey(null);

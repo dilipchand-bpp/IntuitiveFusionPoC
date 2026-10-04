@@ -23,6 +23,7 @@ import {
   tender,
 } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
+import { applyLayout, loadLayout } from '../collab/routes.js';
 import { REPORT_SECTIONS } from './report.js';
 import { blend, valueForMoney } from './commercial.js';
 import { gateRows, loadExtras, previousStages, routeApproval, type RankExtras } from './b3-service.js';
@@ -390,13 +391,17 @@ export class EvaluationService {
             routedTo: routedNames,
             approverLimit: route?.tierLimit ?? null,
             value: Number(l.req.estimatedValue ?? 0),
-            sections: REPORT_SECTIONS.map((s) => ({
-              key: s.key,
-              label: s.label,
-              paragraphs: (reportFields.find((f) => f.key === s.key)?.value ?? '')
-                .split(/\n{2,}/)
-                .filter(Boolean),
-            })),
+            // the organisation's own layout orders the report and leaves out what it has switched off (FR-0365)
+            sections: applyLayout(
+              REPORT_SECTIONS.map((s) => ({
+                key: s.key,
+                label: s.label,
+                paragraphs: (reportFields.find((f) => f.key === s.key)?.value ?? '')
+                  .split(/\n{2,}/)
+                  .filter(Boolean),
+              })),
+              await loadLayout(tx, a.user.tenantId, 'REPORT'),
+            ),
             ...(dec
               ? { decision: { decision: dec.decision, stamp: dec.stamp ?? '', comment: dec.comment ?? null } }
               : {}),

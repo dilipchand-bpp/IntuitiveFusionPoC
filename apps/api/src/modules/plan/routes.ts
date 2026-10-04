@@ -24,6 +24,7 @@ import {
   roleAssignment,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { fieldConflict } from '../collab/routes.js';
 import { loadSettings } from '../settings/settings.js';
 import { PLAN_FIELDS, PLAN_FIELD_BY_KEY, joinParagraphs, splitParagraphs } from './fields.js';
 import { PlanService, type Loaded } from './service.js';
@@ -54,9 +55,14 @@ const fieldBody = z
   .object({
     value: z.string().max(8000),
     paragraph: z.number().int().min(1).optional(),
-    expectedVersion: z.number().int(),
+    /** The whole plan as you loaded it, or only this section's revision so others can edit other sections meanwhile (FR-0735). */
+    expectedVersion: z.number().int().optional(),
+    expectedRev: z.number().int().min(0).optional(),
   })
-  .strict();
+  .strict()
+  .refine((b) => b.expectedVersion !== undefined || b.expectedRev !== undefined, {
+    message: 'Say which version or revision you edited from',
+  });
 const instructionBody = z
   .object({ text: z.string().trim().min(1).max(2000), channel: z.enum(['TEXT', 'VOICE']).default('TEXT') })
   .strict();
@@ -161,7 +167,10 @@ export function registerPlanRoutes(app: FastifyInstance, p: string, d: PlanDeps)
       const l = await visible(tx, a, id);
       if (!mayEdit(a, l)) throw new AppError(403, 'FORBIDDEN', 'You cannot edit this plan');
       svc.assertEditable(l.plan);
-      if (body.expectedVersion !== l.plan.version)
+      const cur = l.planFields.find((f) => f.key === key);
+      if (body.expectedRev !== undefined) {
+        if ((cur?.rev ?? 0) !== body.expectedRev) throw await fieldConflict(tx, key, cur);
+      } else if (body.expectedVersion !== l.plan.version)
         throw new AppError(
           409,
           'VERSION_CONFLICT',

@@ -66,6 +66,12 @@ const ALL_SCREENS = [
   '/app/contracts/invoices',
   '/app/contracts/disclosures',
   '/app/envelopes',
+  '/app/dashboards',
+  '/app/reports/schedule',
+  '/app/reports/performance',
+  '/app/reports/ask',
+  '/app/reports/capacity',
+  '/app/reports/supplier-risk',
   '/app/suppliers',
   '/app/reports',
   '/app/audit',
@@ -160,8 +166,8 @@ test('every navigation entry resolves to a screen and the roadmap and coming-soo
   await page.goto('/admin/migration');
   await expect(page.getByRole('heading', { name: 'Data migration', level: 1 })).toBeVisible(); // built in roadmap batch B1
   await signIn(page, 'PROCUREMENT');
-  await page.goto('/app/collaboration');
-  await expect(page.getByRole('heading', { name: /coming soon/i })).toBeVisible();
+  await page.goto('/app/collaboration'); // built in roadmap batch B6
+  await expect(page.getByRole('heading', { name: 'Collaboration', level: 1 })).toBeVisible();
   await page.goto('/app/roadmap');
   await expect(page.getByRole('heading', { name: 'Roadmap' })).toBeVisible();
   await expect(page.locator('body')).toContainText('FR-0010');

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
+import { InstructBox } from '@/components/collab/ai-panels';
 import { EvaluationWorkspace } from '@/components/evaluation/evaluation-workspace';
 import type { EvalView } from '@/components/evaluation/types';
 import { apiGetResult, getSessionUser } from '@/lib/session';
@@ -24,6 +25,17 @@ export default async function EvaluationPage({ params }: { params: Promise<{ id:
             {res.data.title}
           </h1>
           <EvaluationWorkspace initial={res.data} csrf={user.csrfToken} roles={user.roles} />
+          {user.roles.includes('PROCUREMENT') && ['COI_PENDING', 'SCORING'].includes(res.data.status) && (
+            <InstructBox
+              testId="committee-box"
+              title="Change the committee"
+              label="Say who to add or remove"
+              hint='For example "add Tomas" or "remove Mei Tanaka". If several people match you choose from a list.'
+              path={`/evaluations/${res.data.id}/committee/instruct`}
+              csrf={user.csrfToken}
+              button="Do it"
+            />
+          )}
         </>
       ) : (
         <EmptyState

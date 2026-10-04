@@ -195,6 +195,16 @@ export const SECTIONS = {
         .refine((a) => new Set(a.map((t) => t.kind)).size === a.length, 'One template of each kind'),
     })
     .strict(),
+  dashboards: z
+    .object({
+      /** HIERARCHY scopes a dashboard to the person's own unit and the units beneath; BROAD shows the whole organisation. */
+      visibility: z.enum(['HIERARCHY', 'BROAD']),
+      /** Active procurements one manager can carry before the workload view flags them (FR-0620). */
+      capacityPerManager: z.number().int().min(1).max(200),
+      /** Days between refreshes of the reference content corpus (FR-0765). */
+      referenceRefreshDays: z.number().int().min(1).max(365),
+    })
+    .strict(),
   security: z
     .object({
       requireMfa: z.boolean(),
@@ -338,6 +348,7 @@ export const DEFAULTS: Settings = {
     spendAlertPct: 70,
     planTemplates: [],
   },
+  dashboards: { visibility: 'BROAD', capacityPerManager: 6, referenceRefreshDays: 90 },
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },

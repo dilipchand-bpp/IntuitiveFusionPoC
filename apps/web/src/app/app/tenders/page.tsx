@@ -102,7 +102,9 @@ export default async function TendersPage() {
                     {t.requestNumber}
                   </Td>
                   <Td label="Title">
-                    <Link href={`/app/tenders/${t.id}`}>{t.title}</Link>
+                    <Link href={`/app/tenders/${t.id}`} className="underline">
+                      {t.title}
+                    </Link>
                     {t.status === 'STAGED' && !t.permissionGranted && (
                       <span className="ml-2 text-xs text-text-muted">awaiting permission</span>
                     )}

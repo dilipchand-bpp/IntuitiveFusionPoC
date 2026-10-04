@@ -131,5 +131,29 @@
       "FR-0580",
       "FR-0585"
     ]
+  },
+  "B6": {
+    "label": "B6 Reporting, dashboards and collaboration",
+    "evidence": "docs/B6-Evidence.md",
+    "ids": [
+      "FR-0085",
+      "FR-0115",
+      "FR-0365",
+      "FR-0595",
+      "FR-0600",
+      "FR-0605",
+      "FR-0610",
+      "FR-0620",
+      "FR-0625",
+      "FR-0645",
+      "FR-0735",
+      "FR-0740",
+      "FR-0750",
+      "FR-0755",
+      "FR-0760",
+      "FR-0765",
+      "FR-0770",
+      "FR-0775"
+    ]
   }
 }

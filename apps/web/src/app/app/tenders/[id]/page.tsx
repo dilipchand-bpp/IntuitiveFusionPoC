@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
+import { DocumentTools } from '@/components/collab/doc-tools';
+import { InstructBox, ResponseSummaries } from '@/components/collab/ai-panels';
 import type { TenderView } from '@/components/tender/types';
 import { TenderWorkspace } from '@/components/tender/tender-workspace';
 import { apiGetResult, getSessionUser } from '@/lib/session';
@@ -24,6 +26,25 @@ export default async function TenderPage({ params }: { params: Promise<{ id: str
             {res.data.title}
           </h1>
           <TenderWorkspace initial={res.data} csrf={user.csrfToken} roles={user.roles} />
+          {user.roles.includes('PROCUREMENT') && res.data.status === 'STAGED' && (
+            <InstructBox
+              testId="template-change"
+              title="Change the template"
+              label="Tell the platform which template to use"
+              hint='For example "use the request for quotation template". Sections you wrote yourself are kept; the rest are filled in again.'
+              path={`/tenders/${res.data.id}/template-change`}
+              csrf={user.csrfToken}
+              button="Change template"
+              onDone={undefined}
+            />
+          )}
+          {['CLOSED', 'EVALUATING', 'AWARDED'].includes(res.data.status) &&
+            user.roles.some((r) => ['PROCUREMENT', 'LEGAL', 'CHAIR', 'EVALUATOR'].includes(r)) && (
+              <ResponseSummaries tenderId={res.data.id} />
+            )}
+          {user.roles.some((r) => ['PROCUREMENT', 'LEGAL'].includes(r)) && (
+            <DocumentTools type="tender" id={res.data.id} csrf={user.csrfToken} />
+          )}
         </>
       ) : (
         <EmptyState

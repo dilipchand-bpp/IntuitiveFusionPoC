@@ -22,6 +22,7 @@ import {
 } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
 import { insuranceStatusFor } from './insurance.js';
+import { applyLayout, loadLayout } from '../collab/routes.js';
 import { TENDER_FIELDS } from './fields.js';
 import type { SealedStore } from './files.js';
 import { effectiveStatus, isOpenForBids, type TenderStatus } from './rules.js';
@@ -172,11 +173,14 @@ export class TenderService {
       .from(fieldValue)
       .where(and(eq(fieldValue.ownerType, 'TENDER'), eq(fieldValue.ownerId, tenderId)));
     const byKey = new Map(rows.map((r) => [r.key, r]));
-    return TENDER_FIELDS.map((def) => {
+    const [owner] = await tx.select({ t: tender.tenantId }).from(tender).where(eq(tender.id, tenderId));
+    const layout = owner ? await loadLayout(tx, owner.t, 'RFX') : null;
+    return (layout ? applyLayout([...TENDER_FIELDS], layout) : TENDER_FIELDS).map((def) => {
       const r = byKey.get(def.key);
       return {
         key: def.key,
         label: def.label,
+        rev: r?.rev ?? 0,
         value: r?.value ?? '',
         paragraphs: (r?.value ?? '').split(/\n{2,}/).filter(Boolean),
         source: (r?.source ?? 'SYSTEM') as string,

@@ -23,6 +23,7 @@ import {
 import { AppError, parse } from '../../http/errors.js';
 import { visibleRequests, stepsFor } from './scope.js';
 import { toCsv } from './csv.js';
+import { registerReportingB6 } from './b6-routes.js';
 
 export interface ReportingDeps extends GuardDeps {
   clock: Clock;
@@ -280,9 +281,11 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
         }
       >();
       for (const r of active) {
-        const o = owners.get(r.requesterId) ?? {
-          ownerId: r.requesterId,
-          ownerName: name(r.requesterId),
+        // the assigned procurement manager where there is one (FR-0620), else the person who raised the request
+        const who = r.managerId ?? r.requesterId;
+        const o = owners.get(who) ?? {
+          ownerId: who,
+          ownerName: name(who),
           procurements: 0,
           value: 0,
           byPhase: {},
@@ -290,7 +293,7 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
         o.procurements += 1;
         o.value += Number(r.estimatedValue ?? 0);
         o.byPhase[r.phase] = (o.byPhase[r.phase] ?? 0) + 1;
-        owners.set(r.requesterId, o);
+        owners.set(who, o);
       }
       const ids = active.map((r) => r.id);
       const tenders = ids.length ? await tx.select().from(tender).where(inArray(tender.requestId, ids)) : [];
@@ -501,6 +504,8 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
       .header('cache-control', 'no-store')
       .send(csv);
   });
+
+  registerReportingB6(app, p, d, reg);
 
   return done;
 }

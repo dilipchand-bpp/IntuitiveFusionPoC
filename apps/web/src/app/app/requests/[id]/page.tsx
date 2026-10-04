@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Button } from '@if/ui';
+import { InstructBox, RiskAssessmentPanel } from '@/components/collab/ai-panels';
 import { DraftPanel } from '@/components/requests/draft-panel';
 import { RequestActions } from '@/components/requests/request-actions';
 import { RequestExtras, type ExtendedView, type ExtrasData } from '@/components/requests/extras';
@@ -58,6 +59,20 @@ export default async function RequestDetail({ params }: { params: Promise<{ id: 
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           <RequestActions view={view} csrf={user.csrfToken} canEdit={canEdit} />
+          {view.status !== 'DRAFT' && canEdit && (
+            <InstructBox
+              testId="advance-box"
+              title="Move this procurement on"
+              label="Say where it should go"
+              hint='For example "go to the next phase" or "move to tender". It moves only when the work before it is finished.'
+              path={`/requests/${view.id}/advance`}
+              csrf={user.csrfToken}
+              button="Move on"
+            />
+          )}
+          {view.status !== 'DRAFT' && (
+            <RiskAssessmentPanel requestId={view.id} csrf={user.csrfToken} canEdit={canEdit} />
+          )}
           {suppliers && ecv && artefacts && delegates && variations && (
             <RequestExtras
               view={view}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
+import { DocumentTools } from '@/components/collab/doc-tools';
 import { EsgCard, type EsgData } from '@/components/plan/esg-card';
 import { PlanWorkspace } from '@/components/plan/plan-workspace';
 import type { PlanView } from '@/components/plan/types';
@@ -30,6 +31,7 @@ export default async function PlanPage({ params }: { params: Promise<{ requestId
             {res.data.title}
           </h1>
           <PlanWorkspace plan={res.data} csrf={user.csrfToken} userId={user.id} />
+          <DocumentTools type="plan" id={res.data.id} csrf={user.csrfToken} />
           {esg && (
             <EsgCard
               planId={res.data.id}

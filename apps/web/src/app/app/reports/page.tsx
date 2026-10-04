@@ -24,6 +24,33 @@ export default async function ReportsPage() {
           Where the money goes, who is carrying the work, and what is coming up. Figures come from synthetic
           demo data.
         </p>
+        <nav aria-label="More reports" className="mt-3 flex flex-wrap gap-2">
+          {[
+            [
+              '/app/reports/ask',
+              'Ask for a report',
+              ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR', 'DELEGATE', 'LEGAL', 'PROBITY'],
+            ],
+            ['/app/reports/performance', 'Spend and performance', ['EXEC', 'FINANCE', 'PROCUREMENT']],
+            ['/app/reports/schedule', 'Schedule', ['PROCUREMENT', 'EXEC', 'DELEGATE']],
+            ['/app/reports/capacity', 'Workload and capacity', ['PROCUREMENT', 'EXEC']],
+            [
+              '/app/reports/supplier-risk',
+              'Supplier risk map',
+              ['PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'],
+            ],
+          ]
+            .filter(([, , roles]) => has(...(roles as string[])))
+            .map(([href, label]) => (
+              <Link
+                key={href as string}
+                href={href as string}
+                className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+              >
+                {label as string}
+              </Link>
+            ))}
+        </nav>
         {has('CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC') && (
           <nav aria-label="Related reports" className="mt-3 flex flex-wrap gap-2">
             <Link

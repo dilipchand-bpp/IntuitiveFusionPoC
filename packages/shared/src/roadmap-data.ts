@@ -165,12 +165,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0085',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Procurement Plan',
     area: '/app/plans',
     priority: 'Should',
     title:
       'The procurement plan layout shall support configurable, drag-and-drop design, or a system-provided default template where the customer has none of its own',
+    batch: 'B6',
   }, // TODO(FR-0085)
   {
     id: 'FR-0090',
@@ -206,12 +207,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0115',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'RFx / Tender Collaboration',
     area: '/app/collaboration',
     priority: 'Should',
     title:
       'Users shall be able to drag-and-drop to design the RFx/tender template layout, or use a system-provided default template',
+    batch: 'B6',
   }, // TODO(FR-0115)
   {
     id: 'FR-0125',
@@ -597,12 +599,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0365',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Evaluation Report',
     area: '/app/evaluations',
     priority: 'Should',
     title:
       'The evaluation report layout shall support drag-and-drop configuration, or a system-provided default template where the customer has none',
+    batch: 'B6',
   }, // TODO(FR-0365)
   {
     id: 'FR-0370',
@@ -1011,72 +1014,79 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0595',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Must',
     title:
       'Provide a Gantt-chart style view for procurement-team-wide visibility of phase and status across all active procurements, with drag-and-drop schedule adjustment that...',
+    batch: 'B6',
   }, // TODO(FR-0595)
   {
     id: 'FR-0600',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Must',
     title:
       'Provide role- and hierarchy-based dashboard views (procurement, legal, delegate, executive, finance, risk/compliance, division/business unit), with access scoped...',
+    batch: 'B6',
   }, // TODO(FR-0600)
   {
     id: 'FR-0605',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Must',
     title:
       'Provide category spend, maverick-spend (invoices paid outside approved contracts) and captured-savings dashboards, alongside a procurement-velocity view tracking...',
+    batch: 'B6',
   }, // TODO(FR-0605)
   {
     id: 'FR-0610',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Should',
     title:
       'Provide a geospatial supplier risk view plotting primary supplier locations, overlaid with external risk feeds (weather, financial-distress scores, geopolitical...',
+    batch: 'B6',
   }, // TODO(FR-0610)
   {
     id: 'FR-0620',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Must',
     title:
       'Provide a workload/capacity view mapping active procurement volume and dollar exposure against assigned manager, to support team-lead workload balancing',
+    batch: 'B6',
   }, // TODO(FR-0620)
   {
     id: 'FR-0625',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Must',
     title:
       'Charts shall support drill-down interactivity, users shall be able to configure and save their own custom views, and the platform shall support natural-language,...',
+    batch: 'B6',
   }, // TODO(FR-0625)
   {
     id: 'FR-0645',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Reporting & Dashboards',
     area: '/app/reports',
     priority: 'Must',
     title:
       'Spend shall be reportable by supplier, by contract, by master agreement, by project, by business unit and by division',
+    batch: 'B6',
   }, // TODO(FR-0645)
   {
     id: 'FR-0655',
@@ -1224,82 +1234,90 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0735',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       'Approved users shall be able to work on the same document concurrently, including editing different fields within the platform at the same time, without overwriting...',
+    batch: 'B6',
   }, // TODO(FR-0735)
   {
     id: 'FR-0740',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       "Provide tracked changes, version comparison highlighting what has changed, or an AI summary of changes since the user's last view, across all documents and fields,...",
+    batch: 'B6',
   }, // TODO(FR-0740)
   {
     id: 'FR-0750',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       'Where the AI has selected an incorrect template, the user shall be able to instruct a change of template in plain language and the AI shall re-populate the newly...',
+    batch: 'B6',
   }, // TODO(FR-0750)
   {
     id: 'FR-0755',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Should',
     title:
       'The AI shall generate a draft risk assessment appropriate to the workflow, proposing candidate risks for the user to mark as applicable or not, prompting the user to...',
+    batch: 'B6',
   }, // TODO(FR-0755)
   {
     id: 'FR-0760',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       'The AI shall summarise supplier responses, covering description of pricing, dates, variations from the tender document, and a summary of pros and cons',
+    batch: 'B6',
   }, // TODO(FR-0760)
   {
     id: 'FR-0765',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Should',
     title:
       'Periodically regenerate and refresh standardised best-practice content — for example multiple variants of common role descriptions across categories, sectors,...',
+    batch: 'B6',
   }, // TODO(FR-0765)
   {
     id: 'FR-0770',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       'Users shall be able to advance a procurement from one phase to the next using plain language, and the AI shall also advance the tracker automatically on detecting...',
+    batch: 'B6',
   }, // TODO(FR-0770)
   {
     id: 'FR-0775',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Collaboration & AI Authoring',
     area: '/app/collaboration',
     priority: 'Should',
     title:
       'Adding or removing users from a procurement or evaluation committee shall be possible by instructing the AI or typing a name, with a disambiguating picker presented...',
+    batch: 'B6',
   }, // TODO(FR-0775)
   {
     id: 'FR-0790',

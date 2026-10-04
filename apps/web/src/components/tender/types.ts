@@ -1,4 +1,6 @@
 export interface TenderField {
+  /** Counts changes to this section, so a concurrent edit of it is noticed (FR-0735). */
+  rev?: number;
   key: string;
   label: string;
   value: string;

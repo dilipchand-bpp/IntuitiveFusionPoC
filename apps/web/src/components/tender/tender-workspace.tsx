@@ -246,7 +246,6 @@ export function TenderWorkspace({
                     key={f.key}
                     tenderId={t.id}
                     field={f}
-                    version={t.version}
                     canEdit={t.permissions.canEdit}
                     csrf={csrf}
                     onSaved={setT}
@@ -325,14 +324,12 @@ export function TenderWorkspace({
 function PackSection({
   tenderId,
   field,
-  version,
   canEdit,
   csrf,
   onSaved,
 }: {
   tenderId: string;
   field: TenderView['fields'][number];
-  version: number;
   canEdit: boolean;
   csrf: string;
   onSaved: (t: TenderView) => void;
@@ -349,7 +346,7 @@ function PackSection({
         await api<TenderView>(`/tenders/${tenderId}/fields/${field.key}`, {
           method: 'PUT',
           csrf,
-          body: { value: text, expectedVersion: version },
+          body: { value: text, expectedRev: field.rev ?? 0 },
         }),
       );
       setEditing(false);

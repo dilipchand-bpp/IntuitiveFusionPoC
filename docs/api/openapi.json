@@ -62,6 +62,9 @@
   },
   {
    "name": "Contract management"
+  },
+  {
+   "name": "Collaboration"
   }
  ],
  "security": [
@@ -16537,6 +16540,2184 @@
      }
     }
    }
+  },
+  "/reports/schedule": {
+   "get": {
+    "operationId": "getProcurementSchedule",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "A Gantt-style view of phase and status across every active procurement, with the delegate calendar worked out from it",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC",
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScheduleView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/schedule/{requestId}/move": {
+   "post": {
+    "operationId": "moveSchedulePhase",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Drag a phase earlier or later; every phase after it moves by the same, and the delegate calendar is recalculated and the delegates told",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScheduleMoved"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 SCHEDULE_CONFLICT",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScheduleMove"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/dashboards": {
+   "get": {
+    "operationId": "listDashboards",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "The dashboard views open to the caller by role, and the scope the organisation hierarchy gives them",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "CONTRACT_MGR",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/dashboards/{view}": {
+   "get": {
+    "operationId": "getDashboard",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "One dashboard (procurement, legal, delegate, executive, finance, risk, division) scoped by the organisational hierarchy unless the organisation chose broader visibility",
+    "parameters": [
+     {
+      "name": "view",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "CONTRACT_MGR",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Dashboard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/performance": {
+   "get": {
+    "operationId": "getPerformanceReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Category spend, maverick spend (invoices released outside the contract match and purchases with no contract), captured savings and procurement velocity with the bottleneck phase",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PerformanceReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/supplier-risk": {
+   "get": {
+    "operationId": "getSupplierRiskMap",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Supplier locations with simulated weather, financial-distress and geopolitical signals, and the single points of failure",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierRiskMap"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/location": {
+   "put": {
+    "operationId": "setSupplierLocation",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Record where a supplier operates from, for the risk map",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierLocation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierLocation"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/manager": {
+   "put": {
+    "operationId": "assignProcurementManager",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Assign a procurement to a manager in the procurement team",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ManagerAssigned"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 NOT_A_MANAGER",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ManagerAssign"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/reports/capacity": {
+   "get": {
+    "operationId": "getCapacityReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Active procurements and dollar exposure by assigned manager against capacity, with a rebalancing suggestion",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CapacityReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/spend-by": {
+   "get": {
+    "operationId": "getSpendBy",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Committed and invoiced spend by supplier, contract, master agreement, project, business unit or division",
+    "parameters": [
+     {
+      "name": "dimension",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SpendByReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/drill": {
+   "get": {
+    "operationId": "drillReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "The procurements behind a figure: by phase, category, manager, business unit or status",
+    "parameters": [
+     {
+      "name": "by",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "key",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DrillReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/report-views": {
+   "get": {
+    "operationId": "listReportViews",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "The caller's saved views and those shared by others",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ReportView"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "saveReportView",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Save a custom view of a report, for the caller or shared",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReportViewCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/report-views/{id}": {
+   "delete": {
+    "operationId": "deleteReportView",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Delete one of the caller's saved views",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/ask": {
+   "post": {
+    "operationId": "askReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Ask for a report in plain language, such as: all procurement risks in 2026 (rules-simulated interpretation, shown back)",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AskAnswer"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 QUESTION_NOT_UNDERSTOOD",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AskQuestion"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/layouts": {
+   "get": {
+    "operationId": "listLayouts",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "The layout of the plan, the tender pack and the evaluation report: the organisation's own, or the system default",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/LayoutView"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/layouts/{kind}": {
+   "put": {
+    "operationId": "saveLayout",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Design a layout by ordering sections and switching optional ones off; mandatory sections cannot be left out",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LayoutView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 LAYOUT_INVALID",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LayoutSave"
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "operationId": "resetLayout",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Go back to the system default layout",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LayoutView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/documents/{type}/{id}/presence": {
+   "post": {
+    "operationId": "documentPresence",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Say you are working on a document (and which section); returns who else is",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Presence"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PresenceBeat"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "getDocumentPresence",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Who else has been in the document in the last minute, and where",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Presence"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/documents/{type}/{id}/changes": {
+   "get": {
+    "operationId": "getDocumentChanges",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Tracked changes: every change to a section, who made it and when, with a word-by-word comparison",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "since",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocumentChanges"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/documents/{type}/{id}/summary": {
+   "get": {
+    "operationId": "summariseDocumentChanges",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "A digest of what changed since the caller last looked (rules-simulated); markSeen=true records the look",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "markSeen",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChangeDigest"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/documents/{type}/{id}/versions": {
+   "post": {
+    "operationId": "saveDocumentVersion",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Keep a named version of the document as it stands",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocumentVersion"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VersionSave"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listDocumentVersions",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "The saved versions of a document",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocumentVersions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/documents/{type}/{id}/versions/{number}": {
+   "get": {
+    "operationId": "getDocumentVersion",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "One saved version, section by section",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "number",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocumentVersion"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/documents/{type}/{id}/compare": {
+   "get": {
+    "operationId": "compareDocumentVersions",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Compare two saved versions, or a version with the current text, highlighting what changed",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "EXEC",
+     "PROBITY",
+     "FINANCE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VersionCompare"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/risk-assessment/generate": {
+   "post": {
+    "operationId": "generateRiskAssessment",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Draft a risk assessment for the procurement: candidate risks to mark applicable or not (rules-simulated)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskAssessment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 ASSESSMENT_EXISTS"
+   }
+  },
+  "/requests/{id}/risk-assessment": {
+   "get": {
+    "operationId": "getRiskAssessment",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "The risk assessment, with what still needs a decision, a rating or a treatment",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskAssessment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/risk-assessment/items/{key}": {
+   "patch": {
+    "operationId": "updateRiskItem",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Mark a risk applicable or not, rate its likelihood and impact, and choose or write a treatment",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskAssessment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RiskItemPatch"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/risk-assessment/complete": {
+   "post": {
+    "operationId": "completeRiskAssessment",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Complete the assessment once every risk has a decision, a rating where it applies, and a treatment for the medium and high ones",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskAssessment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 ASSESSMENT_INCOMPLETE"
+   }
+  },
+  "/tenders/{id}/response-summaries": {
+   "get": {
+    "operationId": "summariseResponses",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "A summary of each supplier response after close: pricing, dates, changes proposed to the tender, pros and cons (rules-simulated); anonymous for panel members",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CHAIR",
+     "EVALUATOR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseSummaries"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "409 TENDER_SEALED"
+   }
+  },
+  "/reference-content": {
+   "get": {
+    "operationId": "listReferenceContent",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "The in-house corpus of best-practice content (for example role descriptions); renewed by itself when older than the refresh period",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "category",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "level",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReferenceContent"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reference-content/refresh": {
+   "post": {
+    "operationId": "refreshReferenceContent",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Regenerate the corpus now as a new generation, entirely inside the platform",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReferenceRefreshed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/requests/{id}/advance": {
+   "post": {
+    "operationId": "advanceProcurement",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Move a procurement to a later phase from a plain-language instruction, only if the phases before it are finished",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdvanceResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 PHASE_NOT_COMPLETE",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlainInstruction"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/phase/sync": {
+   "post": {
+    "operationId": "syncProcurementPhase",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Detect that a phase is complete from the records and move the tracker on",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PhaseSync"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/requests/phase-sync": {
+   "post": {
+    "operationId": "syncAllProcurementPhases",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Catch every procurement's tracker up with its records",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PhaseSyncAll"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/template-change": {
+   "post": {
+    "operationId": "changeTenderTemplate",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Change a staged tender to another template in plain language and fill it in again, keeping sections a person wrote",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TemplateChanged"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlainInstruction"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/evaluations/{id}/committee/instruct": {
+   "post": {
+    "operationId": "instructCommittee",
+    "tags": [
+     "Collaboration"
+    ],
+    "summary": "Add or remove an evaluation committee member from an instruction or a name, with a picker where several people match",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CommitteeResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "status AMBIGUOUS lists candidates; 409 HAS_SCORES",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommitteeInstruction"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -17383,12 +19564,14 @@
      },
      "expectedVersion": {
       "type": "integer"
+     },
+     "expectedRev": {
+      "type": "integer"
      }
     },
     "additionalProperties": false,
     "required": [
-     "value",
-     "expectedVersion"
+     "value"
     ]
    },
    "Instruction": {
@@ -17954,12 +20137,14 @@
      },
      "expectedVersion": {
       "type": "integer"
+     },
+     "expectedRev": {
+      "type": "integer"
      }
     },
     "additionalProperties": false,
     "required": [
-     "value",
-     "expectedVersion"
+     "value"
     ]
    },
    "PermissionRequest": {
@@ -23710,6 +25895,331 @@
     ]
    },
    "EnvelopeCandidates": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ScheduleView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ScheduleMove": {
+    "type": "object",
+    "properties": {
+     "phase": {
+      "type": "string",
+      "enum": [
+       "INTAKE",
+       "PLAN",
+       "TENDER",
+       "EVALUATION",
+       "CONTRACT_AWARD"
+      ]
+     },
+     "deltaDays": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "phase",
+     "deltaDays"
+    ]
+   },
+   "ScheduleMoved": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DashboardList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Dashboard": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PerformanceReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierRiskMap": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierLocation": {
+    "type": "object",
+    "properties": {
+     "city": {
+      "type": "string"
+     },
+     "state": {
+      "type": "string"
+     },
+     "country": {
+      "type": "string"
+     },
+     "lat": {
+      "type": "number"
+     },
+     "lng": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "city",
+     "state",
+     "country",
+     "lat",
+     "lng"
+    ]
+   },
+   "ManagerAssign": {
+    "type": "object",
+    "properties": {
+     "managerId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "managerId"
+    ]
+   },
+   "ManagerAssigned": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CapacityReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SpendByReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DrillReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReportView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReportViewCreate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "report": {
+      "type": "string",
+      "enum": [
+       "procurements",
+       "spend-by",
+       "ask",
+       "schedule",
+       "workload"
+      ]
+     },
+     "filters": {
+      "type": "object",
+      "additionalProperties": true
+     },
+     "shared": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "report"
+    ]
+   },
+   "AskQuestion": {
+    "type": "object",
+    "properties": {
+     "question": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "question"
+    ]
+   },
+   "AskAnswer": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LayoutView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LayoutSave": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "sections": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "enabled": {
+         "type": "boolean"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "key",
+        "enabled"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "sections"
+    ]
+   },
+   "PresenceBeat": {
+    "type": "object",
+    "properties": {
+     "fieldKey": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "Presence": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DocumentChanges": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ChangeDigest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "VersionSave": {
+    "type": "object",
+    "properties": {
+     "label": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "label"
+    ]
+   },
+   "DocumentVersion": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DocumentVersions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "VersionCompare": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RiskAssessment": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RiskItemPatch": {
+    "type": "object",
+    "properties": {
+     "applicable": {
+      "type": "boolean"
+     },
+     "likelihood": {
+      "type": "integer"
+     },
+     "impact": {
+      "type": "integer"
+     },
+     "mitigation": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ResponseSummaries": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReferenceContent": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReferenceRefreshed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PlainInstruction": {
+    "type": "object",
+    "properties": {
+     "instruction": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "instruction"
+    ]
+   },
+   "AdvanceResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PhaseSync": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PhaseSyncAll": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "TemplateChanged": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CommitteeInstruction": {
+    "type": "object",
+    "properties": {
+     "instruction": {
+      "type": "string"
+     },
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "stream": {
+      "type": "string",
+      "enum": [
+       "TECHNICAL",
+       "COMMERCIAL",
+       "OTHER"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "instruction"
+    ]
+   },
+   "CommitteeResult": {
     "type": "object",
     "additionalProperties": true
    }

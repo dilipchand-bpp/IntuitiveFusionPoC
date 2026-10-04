@@ -1,0 +1,15 @@
+DROP TABLE IF EXISTS reference_content;
+DROP TABLE IF EXISTS edit_presence;
+DROP TABLE IF EXISTS document_view;
+DROP TABLE IF EXISTS document_version;
+DROP TRIGGER IF EXISTS field_value_track ON field_value;
+DROP FUNCTION IF EXISTS field_value_track();
+DROP TABLE IF EXISTS field_history;
+ALTER TABLE field_value DROP COLUMN IF EXISTS rev;
+DROP TABLE IF EXISTS risk_item;
+DROP TABLE IF EXISTS risk_assessment;
+DROP TABLE IF EXISTS saved_view;
+ALTER TABLE supplier DROP COLUMN IF EXISTS location;
+ALTER TABLE request DROP COLUMN IF EXISTS manager_id;
+DROP TABLE IF EXISTS schedule_item;
+DROP TABLE IF EXISTS layout_template;

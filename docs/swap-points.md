@@ -153,3 +153,12 @@ This page lists the swap points that exist **today**; later milestones append to
 | Insurance certificates | The supplier enters the certificate in its portal; the monitor (`modules/contract/compliance.ts`) reads `supplier.insurance_expires_on`. A real source would be a certificate-of-currency service |
 | Clause trigger extraction, next-step suggestions, plan risk tiers | Fixed rules in `b5-rules.ts`, labelled `rules-simulated-v1`; a model replaces the functions `extractTriggers`, `nextSteps`, `planTier` |
 | Public register | The disclosure task records the reference a person types; no register is called |
+
+## Reporting and collaboration models and feeds (B6)
+
+| | |
+| --- | --- |
+| External risk feeds | `supplierSignals` in `modules/reporting/b6-rules.ts` simulates weather (seasonal by state), financial distress (the vendor registry reading) and a geopolitical watchlist. A real adapter reads provider feeds and returns the same signals |
+| Language understanding | `parseQuestion`, `parseAdvance`, `parseCommittee`, `parseTemplateChange` are fixed grammars; a model replaces them and keeps the interpretation read-back |
+| Drafting help | `candidateRisks`, `summariseChanges`, the response summaries and `generateReference` are rules; a model replaces them (reference content stays inside the approved boundary) |
+| Concurrent editing | Section revisions and a heartbeat; a real-time channel would carry the same presence and conflict messages |

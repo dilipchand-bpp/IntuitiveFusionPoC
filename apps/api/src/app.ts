@@ -20,6 +20,7 @@ import { registerSettingsRoutes } from './modules/settings/routes.js';
 import { registerIntakeExtras } from './modules/intake/extras-routes.js';
 import { registerEsgRoutes } from './modules/plan/esg.js';
 import { registerMigrationRoutes } from './modules/migration/routes.js';
+import { registerCollabRoutes } from './modules/collab/routes.js';
 import { registerReportingRoutes } from './modules/reporting/routes.js';
 import { registerContractRoutes } from './modules/contract/routes.js';
 import { registerEvaluationRoutes } from './modules/evaluation/routes.js';
@@ -184,6 +185,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   }))
     implemented.add(k);
   for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerCollabRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerAdminRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerIntakeExtras(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerEsgRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);

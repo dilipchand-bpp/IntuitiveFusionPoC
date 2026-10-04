@@ -31,6 +31,7 @@ import {
   tender,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { matchPeople, parseCommittee } from '../reporting/b6-rules.js';
 import { loadSettings } from '../settings/settings.js';
 import type { SealedStore } from '../tender/files.js';
 import { evaluationCriteria } from '../tender/pack.js';
@@ -75,6 +76,13 @@ const openBody = z
   .strict();
 const addPanelBody = z
   .object({ userId: uuid, stream: z.enum(['TECHNICAL', 'COMMERCIAL', 'OTHER']) })
+  .strict();
+const committeeBody = z
+  .object({
+    instruction: z.string().trim().min(3).max(200),
+    userId: uuid.optional(),
+    stream: z.enum(['TECHNICAL', 'COMMERCIAL', 'OTHER']).optional(),
+  })
   .strict();
 const coiBody = z
   .object({
@@ -465,6 +473,57 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
     return reply.status(201).send(out);
   });
 
+  async function addPanelMember(
+    tx: Tx,
+    a: AuthContext,
+    l: Loaded,
+    userId: string,
+    stream: 'TECHNICAL' | 'COMMERCIAL' | 'OTHER',
+  ) {
+    const id = l.ev.id;
+    const roles = (
+      await tx
+        .select({ role: roleAssignment.role })
+        .from(roleAssignment)
+        .where(and(eq(roleAssignment.tenantId, a.user.tenantId), eq(roleAssignment.userId, userId)))
+    ).map((r) => r.role);
+    const ok = stream === 'OTHER' ? roles.includes('CHAIR') : roles.includes('EVALUATOR');
+    if (!ok)
+      throw new AppError(
+        400,
+        'PANEL_INVALID',
+        stream === 'OTHER' ? 'The chair seat needs a chair' : 'Panel members must be evaluators',
+      );
+    if (userId === l.req.requesterId)
+      throw new AppError(
+        400,
+        'PANEL_INVALID',
+        'The person who raised the request cannot evaluate the responses',
+      );
+    await assertSegregated(tx, a.user.tenantId, [userId]);
+    await tx.insert(panelMember).values({
+      tenantId: a.user.tenantId,
+      evaluationId: id,
+      userId: userId,
+      stream: stream,
+      coiState: 'NOT_DECLARED',
+    });
+    await d.audit.record(tx, a.ctx, {
+      action: 'evaluation.panel_add',
+      entityType: 'evaluation',
+      entityId: id,
+      after: { userId: userId, stream: stream },
+    });
+    await svc.notifyUsers(
+      tx,
+      a.user.tenantId,
+      [userId],
+      'You are on an evaluation panel',
+      `${l.req.number} ${l.req.title}: declare any conflict of interest first`,
+      `/app/evaluations/${id}`,
+    );
+  }
+
   reg('POST', '/evaluations/{id}/panel');
   app.post(`${p}/evaluations/:id/panel`, { preHandler: mguard(d, ['PROCUREMENT']) }, async (req, reply) => {
     const a = req.auth!;
@@ -476,51 +535,102 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
         throw new AppError(409, 'INVALID_STATE', 'The panel can only change before consensus');
       if (l.panel.some((m) => m.userId === body.userId))
         throw new AppError(409, 'ALREADY_MEMBER', 'This person is, or was, on the panel');
-      const roles = (
-        await tx
-          .select({ role: roleAssignment.role })
-          .from(roleAssignment)
-          .where(and(eq(roleAssignment.tenantId, a.user.tenantId), eq(roleAssignment.userId, body.userId)))
-      ).map((r) => r.role);
-      const ok = body.stream === 'OTHER' ? roles.includes('CHAIR') : roles.includes('EVALUATOR');
-      if (!ok)
-        throw new AppError(
-          400,
-          'PANEL_INVALID',
-          body.stream === 'OTHER' ? 'The chair seat needs a chair' : 'Panel members must be evaluators',
-        );
-      if (body.userId === l.req.requesterId)
-        throw new AppError(
-          400,
-          'PANEL_INVALID',
-          'The person who raised the request cannot evaluate the responses',
-        );
-      await assertSegregated(tx, a.user.tenantId, [body.userId]);
-      await tx.insert(panelMember).values({
-        tenantId: a.user.tenantId,
-        evaluationId: id,
-        userId: body.userId,
-        stream: body.stream,
-        coiState: 'NOT_DECLARED',
-      });
-      await d.audit.record(tx, a.ctx, {
-        action: 'evaluation.panel_add',
-        entityType: 'evaluation',
-        entityId: id,
-        after: { userId: body.userId, stream: body.stream },
-      });
-      await svc.notifyUsers(
-        tx,
-        a.user.tenantId,
-        [body.userId],
-        'You are on an evaluation panel',
-        `${l.req.number} ${l.req.title}: declare any conflict of interest first`,
-        `/app/evaluations/${id}`,
-      );
+      await addPanelMember(tx, a, l, body.userId, body.stream);
       return svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
     });
     return reply.status(201).send(out);
   });
+
+  // ---------------------------------------------------------------- committee by instruction or name (FR-0775)
+  reg('POST', '/evaluations/{id}/committee/instruct');
+  app.post(
+    `${p}/evaluations/:id/committee/instruct`,
+    { preHandler: mguard(d, ['PROCUREMENT']) },
+    async (req) => {
+      const a = req.auth!;
+      const id = eid(req);
+      const body = parse(committeeBody, req.body);
+      const parsed = parseCommittee(body.instruction);
+      if ('error' in parsed)
+        throw new AppError(422, 'INSTRUCTION_NOT_UNDERSTOOD', parsed.error, [
+          { field: 'instruction', message: parsed.error },
+        ]);
+      return withContext(d.database, a.ctx, async (tx) => {
+        const l = await visible(tx, a, id);
+        if (l.ev.status !== 'COI_PENDING' && l.ev.status !== 'SCORING')
+          throw new AppError(409, 'INVALID_STATE', 'The committee can only change before consensus');
+        const stream = body.stream ?? 'TECHNICAL';
+        let pool: Array<{ id: string; name: string; unit: string | null }>;
+        if (parsed.action === 'ADD') {
+          const want = stream === 'OTHER' ? 'CHAIR' : 'EVALUATOR';
+          const rows = await tx
+            .select({ id: appUser.id, name: appUser.name, roles: roleAssignment.role })
+            .from(appUser)
+            .innerJoin(roleAssignment, eq(roleAssignment.userId, appUser.id))
+            .where(
+              and(
+                eq(appUser.tenantId, a.user.tenantId),
+                eq(appUser.active, true),
+                eq(roleAssignment.role, want),
+              ),
+            );
+          pool = rows
+            .filter((r) => !l.panel.some((m) => m.userId === r.id) && r.id !== l.req.requesterId)
+            .map((r) => ({ id: r.id, name: r.name, unit: null }));
+        } else
+          pool = l.panel
+            .filter((m) => m.coiState !== 'REMOVED')
+            .map((m) => ({ id: m.userId, name: m.name, unit: null }));
+        const hits = matchPeople(parsed.name, pool);
+        const chosen = body.userId ? hits.filter((h) => h.id === body.userId) : hits;
+        if (chosen.length === 0)
+          throw new AppError(
+            422,
+            'NO_MATCH',
+            parsed.action === 'ADD'
+              ? `No available ${stream === 'OTHER' ? 'chair' : 'evaluator'} is called "${parsed.name}"`
+              : `No one on the committee is called "${parsed.name}"`,
+            [{ field: 'instruction', message: 'Check the spelling or pick from the list' }],
+          );
+        if (chosen.length > 1)
+          return {
+            status: 'AMBIGUOUS' as const,
+            action: parsed.action,
+            message: `More than one person matches "${parsed.name}". Choose one.`,
+            candidates: chosen.map((c) => ({ id: c.id, name: c.name })),
+          };
+        const person = chosen[0]!;
+        if (parsed.action === 'ADD') {
+          await addPanelMember(tx, a, l, person.id, stream);
+        } else {
+          const m = l.panel.find((x) => x.userId === person.id)!;
+          // scores are sealed from everyone else, so "has scored" is the member's own completion mark
+          if (m.scoredAt)
+            throw new AppError(
+              409,
+              'HAS_SCORES',
+              `${person.name} has already scored. Use the conflict process to substitute them so the record stays intact.`,
+            );
+          await tx
+            .update(panelMember)
+            .set({ coiState: 'REMOVED' })
+            .where(and(eq(panelMember.evaluationId, id), eq(panelMember.userId, person.id)));
+          await d.audit.record(tx, a.ctx, {
+            action: 'evaluation.panel_remove',
+            entityType: 'evaluation',
+            entityId: id,
+            after: { userId: person.id, stream: m.stream, instruction: body.instruction },
+          });
+        }
+        return {
+          status: 'DONE' as const,
+          action: parsed.action,
+          person: { id: person.id, name: person.name },
+          message: `${person.name} was ${parsed.action === 'ADD' ? 'added to' : 'removed from'} the committee.`,
+        };
+      });
+    },
+  );
 
   reg('GET', '/evaluations/{id}');
   app.get(
