@@ -79,6 +79,10 @@ Sign in as `exec@...` for the portfolio dashboard: key figures, spend by categor
 
 Every signed-in staff member has **Roadmap** (`/app/roadmap`) in the menu: every requirement the traceability matrix marks as stubbed ("coming soon", grouped by the screen it belongs to) or deferred (not in the proof of concept, grouped by category), each with its requirement id. `docs/todo-inventory.md` is the same list as a document. Screens that are not built (`/app/collaboration`, `/admin/migration`, `/supplier/profile`) say so and list their requirement ids; any other made-up address is a real 404. Suppliers now have a small menu (My tenders, Company profile). To regenerate after the matrix changes: `PYTHONIOENCODING=utf-8 python _work/gen_roadmap.py && npx prettier --write packages/shared/src/roadmap-data.ts`.
 
+## Evidence for Gate 5b
+
+`docs/M15-Skeleton-Evidence-Report.md` (results, the stitched journey, the updated traceability matrix `docs/RTM-Results.csv`, 90 screenshots and axe results in `docs/evidence/m15/`). The stitched journey is `e2e/skeleton.spec.ts`; to recapture the screenshots: `EVIDENCE=1 npx playwright test e2e/evidence.spec.ts`.
+
 ## Checks
 
 ```bash

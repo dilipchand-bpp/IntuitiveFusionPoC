@@ -180,7 +180,7 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     await expect(page.getByRole('combobox', { name: 'Search pages' })).toHaveCount(0);
   });
 
-  test('notification bell shows the unread count, lists items and marks one read (count goes down by one and stays down)', async ({
+  test('notification bell shows the unread count, lists items and marks one read (it stays read after a reload)', async ({
     page,
   }) => {
     await signIn(page, 'LEGAL');
@@ -192,11 +192,22 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     expect(start).toBeGreaterThanOrEqual(1);
     await bell.click();
     await expect(page.getByText('Draft contract ready for review').first()).toBeVisible();
+    // other tests (running in parallel) can add notifications for this user at any moment, so do not compare totals:
+    // follow the one notification that was marked and check, through the API, that it stays read
+    const marked = page.waitForResponse(
+      (r) => /\/api\/v1\/notifications\/[^/]+\/read$/.test(r.url()) && r.request().method() === 'POST',
+    );
     await page.getByRole('button', { name: 'Mark read' }).first().click();
+    const id = /notifications\/([^/]+)\/read/.exec((await marked).url())![1]!;
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: `Notifications, ${start - 1} unread` })).toBeVisible();
     await page.reload();
-    await expect(page.getByRole('button', { name: `Notifications, ${start - 1} unread` })).toBeVisible(); // persisted server-side
+    const list: Array<{ id: string; read: boolean }> = await page.evaluate(async () =>
+      (await fetch('/api/v1/notifications')).json(),
+    );
+    expect(list.find((n) => n.id === id)?.read, 'the marked notification stays read after a reload').toBe(
+      true,
+    );
+    await expect(page.getByRole('button', { name: /^Notifications, \d+ unread$/ })).toBeVisible();
   });
 
   test('profile menu shows who is signed in and signs out', async ({ page }) => {
