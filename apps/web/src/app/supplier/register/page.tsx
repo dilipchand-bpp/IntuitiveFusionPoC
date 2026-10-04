@@ -62,7 +62,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           )}
           <p className="flex items-start gap-2 text-sm text-text-muted">
             <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            Your company starts with sanctions screening marked as pending. Already registered?{' '}
+            Your company is screened against watchlists when you register. Already registered?{' '}
             <Link href="/login">Sign in</Link>.
           </p>
         </div>

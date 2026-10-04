@@ -33,8 +33,29 @@ export interface SettingsData {
     rules: Array<{ event: 'BUDGET_BREACH' | 'DELEGATE_ACTION' | 'APPROVAL_TIMEOUT'; enabled: boolean }>;
   };
   security: { requireMfa: boolean; enforceSso: boolean; stepUpApprovals: boolean };
+  onboardingQuestions: Array<{
+    id: string;
+    label: string;
+    type: 'YESNO' | 'TEXT';
+    mandatory: boolean;
+    flagIf?: 'YES' | 'NO';
+  }>;
+  publicRegisters: Array<{
+    register: 'AusTender' | 'SAM.gov' | 'TED';
+    jurisdiction: string;
+    minValueAud: number;
+    enabled: boolean;
+  }>;
   erpFieldMap: Array<{ erpName: string; platformKey: string }>;
   workflowRouting: { simpleBelow: number; intermediateBelow: number };
+}
+export interface EmailEntry {
+  id: string;
+  to: string;
+  subject: string;
+  kind: string;
+  status: string;
+  createdAt: string;
 }
 export interface LogEntry {
   id: string;
@@ -139,10 +160,12 @@ function Section({
 export function SettingsPanel({
   initial,
   log,
+  emails = [],
   csrf,
 }: {
   initial: SettingsData;
   log: LogEntry[];
+  emails?: EmailEntry[];
   csrf: string;
 }) {
   const router = useRouter();
@@ -626,6 +649,34 @@ export function SettingsPanel({
           Email, Slack and Teams are simulated in the proof of concept: the log below shows what would have
           been sent.
         </p>
+        {emails.length > 0 && (
+          <Table caption="Recent emails to suppliers (simulated)">
+            <thead>
+              <tr>
+                <Th>When</Th>
+                <Th>To</Th>
+                <Th>Subject</Th>
+                <Th>Kind</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {emails.slice(0, 10).map((m) => (
+                <tr key={m.id} data-testid="email-row">
+                  <Td label="When" className="whitespace-nowrap text-xs">
+                    {new Date(m.createdAt).toLocaleString('en-AU')}
+                  </Td>
+                  <Td label="To" className="break-all text-xs">
+                    {m.to}
+                  </Td>
+                  <Td label="Subject">{m.subject}</Td>
+                  <Td label="Kind">
+                    <Badge tone="info">{m.kind.replace(/_/g, ' ').toLowerCase()}</Badge>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
         {entries.length > 0 && (
           <Table caption="Recent deliveries">
             <thead>
@@ -654,6 +705,170 @@ export function SettingsPanel({
             </tbody>
           </Table>
         )}
+      </Section>
+
+      <Section
+        {...sec('onboardingQuestions')}
+        title="Supplier onboarding questions"
+        blurb="Questions every new supplier answers when they register, for example about modern slavery or sustainability. A yes or no answer can be flagged so procurement looks at it before the supplier bids."
+        onSave={() => void save('onboardingQuestions', s.onboardingQuestions)}
+      >
+        {s.onboardingQuestions.map((q, i) => (
+          <div key={i} className="flex flex-wrap items-end gap-2" data-testid="onboarding-question">
+            <Field label={`Key ${i + 1}`} hint="letters and digits">
+              <Input
+                value={q.id}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    onboardingQuestions: s.onboardingQuestions.map((x, j) =>
+                      j === i ? { ...x, id: e.target.value } : x,
+                    ),
+                  })
+                }
+              />
+            </Field>
+            <Field label={`Question ${i + 1}`}>
+              <Input
+                value={q.label}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    onboardingQuestions: s.onboardingQuestions.map((x, j) =>
+                      j === i ? { ...x, label: e.target.value } : x,
+                    ),
+                  })
+                }
+              />
+            </Field>
+            <Field label={`Answer type ${i + 1}`}>
+              <Select
+                value={q.type}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    onboardingQuestions: s.onboardingQuestions.map((x, j) =>
+                      j === i ? { ...x, type: e.target.value as 'YESNO' | 'TEXT' } : x,
+                    ),
+                  })
+                }
+              >
+                <option value="YESNO">Yes or no</option>
+                <option value="TEXT">Text</option>
+              </Select>
+            </Field>
+            {q.type === 'YESNO' && (
+              <Field label={`Flag when ${i + 1}`}>
+                <Select
+                  value={q.flagIf ?? ''}
+                  onChange={(e) =>
+                    setS({
+                      ...s,
+                      onboardingQuestions: s.onboardingQuestions.map((x, j) => {
+                        if (j !== i) return x;
+                        const { flagIf: _drop, ...rest } = x;
+                        void _drop;
+                        return e.target.value ? { ...rest, flagIf: e.target.value as 'YES' | 'NO' } : rest;
+                      }),
+                    })
+                  }
+                >
+                  <option value="">Never</option>
+                  <option value="NO">The answer is no</option>
+                  <option value="YES">The answer is yes</option>
+                </Select>
+              </Field>
+            )}
+            <label className="flex min-h-[44px] items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-5 accent-[var(--if-color-accent)]"
+                checked={q.mandatory}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    onboardingQuestions: s.onboardingQuestions.map((x, j) =>
+                      j === i ? { ...x, mandatory: e.target.checked } : x,
+                    ),
+                  })
+                }
+                aria-label={`Question ${i + 1} is required`}
+              />
+              Required
+            </label>
+            <Button
+              variant="ghost"
+              aria-label={`Remove question ${i + 1}`}
+              onClick={() =>
+                setS({ ...s, onboardingQuestions: s.onboardingQuestions.filter((_, j) => j !== i) })
+              }
+            >
+              Remove
+            </Button>
+          </div>
+        ))}
+        <div>
+          <Button
+            variant="secondary"
+            disabled={s.onboardingQuestions.length >= 15}
+            onClick={() =>
+              setS({
+                ...s,
+                onboardingQuestions: [
+                  ...s.onboardingQuestions,
+                  { id: '', label: '', type: 'YESNO', mandatory: true },
+                ],
+              })
+            }
+          >
+            Add a question
+          </Button>
+        </div>
+      </Section>
+
+      <Section
+        {...sec('publicRegisters')}
+        title="Public registers"
+        blurb="A public-sector tender at or above a register's value is sent to that register when it is published. Registers are simulated in the proof of concept."
+        onSave={() => void save('publicRegisters', s.publicRegisters)}
+      >
+        {s.publicRegisters.map((r, i) => (
+          <div key={r.register} className="flex flex-wrap items-end gap-3">
+            <label className="flex min-h-[44px] items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                className="size-5 accent-[var(--if-color-accent)]"
+                checked={r.enabled}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    publicRegisters: s.publicRegisters.map((x, j) =>
+                      j === i ? { ...x, enabled: e.target.checked } : x,
+                    ),
+                  })
+                }
+                aria-label={`Send to ${r.register}`}
+              />
+              {r.register}
+            </label>
+            <span className="text-sm text-text-muted">{r.jurisdiction}</span>
+            <Field label={`${r.register} from (AUD)`}>
+              <Input
+                type="number"
+                min={0}
+                value={r.minValueAud}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    publicRegisters: s.publicRegisters.map((x, j) =>
+                      j === i ? { ...x, minValueAud: Number(e.target.value) } : x,
+                    ),
+                  })
+                }
+              />
+            </Field>
+          </div>
+        ))}
       </Section>
 
       <Section

@@ -11,6 +11,8 @@ export const questionView = (q: typeof question.$inferSelect) => ({
   text: q.text,
   status: q.status,
   askedAt: q.askedAt.toISOString(),
+  /** SINGLE: the answer goes only to the supplier who asked (FR-0195). The asker is never named. */
+  audience: q.audience,
   ...(q.answer ? { answer: q.answer } : {}),
 });
 
@@ -31,5 +33,7 @@ export const fileView = (f: typeof fileObject.$inferSelect) => ({
   section: f.section,
   scan: f.scan,
   ...(f.sha256 ? { sha256: f.sha256 } : {}),
+  /** True when this file came from the supplier's earlier stage and was not replaced (FR-0230). */
+  ...(f.carriedFrom ? { carriedForward: true } : {}),
   uploadedAt: f.createdAt.toISOString(),
 });

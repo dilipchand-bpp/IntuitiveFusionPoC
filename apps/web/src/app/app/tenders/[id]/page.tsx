@@ -23,7 +23,7 @@ export default async function TenderPage({ params }: { params: Promise<{ id: str
             <span className="font-mono text-lg text-text-muted">{res.data.requestNumber}</span>{' '}
             {res.data.title}
           </h1>
-          <TenderWorkspace initial={res.data} csrf={user.csrfToken} />
+          <TenderWorkspace initial={res.data} csrf={user.csrfToken} roles={user.roles} />
         </>
       ) : (
         <EmptyState

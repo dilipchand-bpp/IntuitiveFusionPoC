@@ -111,3 +111,12 @@ This page lists the swap points that exist **today**; later milestones append to
 | ERP field names (FR-0700) | **Real mapping, no ERP behind it.** `mapRecord()` renames fields both ways from the configured table; the admin screen tries it on a sample record | Call `mapRecord` in the ERP adapter on every inbound and outbound record |
 | Classification, review rules, contract-text extraction (FR-0015, FR-0030, FR-0675) | **Deterministic rules standing in for a language model.** Same input, same answer; every result shows its reason | `AiProvider` (as for the assistant); the review step and audit stay |
 | Supplier ABN (migration, FR-0655) | A migrated supplier with no ABN gets 00000000000 and sanctions `PENDING` until someone checks | ABN lookup (as in supplier registration) |
+
+## Tender and supplier portal (B2)
+
+| Item | Today | Swap |
+| --- | --- | --- |
+| Tender and supplier email (FR-0195) | `modules/notify/email.ts` `sendEmail` writes `outbound_email` rows; nothing leaves the server; one-time links are never logged | Replace the write with a real mail sender; the kinds, recipients and audit stay |
+| Sanctions screening (FR-0180) | `adapters/sanctions.ts` `MockSanctionsScreening` matches a synthetic watchlist ("blocked holdings", "sanctioned trading", "embargo exports") | Implement `SanctionsScreening` against a screening provider; hold, review and audit stay |
+| Public registers (FR-0205) | Notices are recorded in `public_notice` with the thresholds in settings; nothing is posted | Post to AusTender, SAM.gov or TED and store the returned notice number |
+| Insurance (FR-0245) | Details only (insurer, policy, cover, expiry); no certificate file | Add a certificate upload and, optionally, an insurer verification call |

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Badge, Card, EmptyState } from '@if/ui';
 import { AddContact } from '@/components/supplier/add-contact';
 import { ContactActions } from '@/components/supplier/contact-actions';
+import { SanctionsReview } from '@/components/supplier/sanctions-review';
 import { StatusBadges } from '@/components/supplier/status-badges';
 import type { SupplierProfile } from '@/components/supplier/types';
 import { CONTRACT_STATUS, aud, formatDateTime } from '@/lib/labels';
@@ -33,6 +34,11 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
           Last checked {formatDateTime(s.lastCheckedAt)} (simulated screening)
         </p>
       </header>
+
+      {s.sanctionsStatus === 'MATCH' &&
+        (user.roles.includes('PROCUREMENT') || user.roles.includes('LEGAL')) && (
+          <SanctionsReview supplierId={s.id} csrf={user.csrfToken} />
+        )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card aria-labelledby="contacts-h" role="region">

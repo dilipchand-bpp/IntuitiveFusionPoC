@@ -9,6 +9,8 @@ export interface QuestionView {
   text: string;
   answer?: string;
   status: 'OPEN' | 'ANSWERED' | 'PUBLISHED';
+  /** SINGLE: the answer goes only to the supplier who asked (FR-0195). */
+  audience?: 'ALL' | 'SINGLE';
   askedAt: string;
 }
 export interface AddendumView {
@@ -31,10 +33,19 @@ export interface TenderView {
   opensAt: string | null;
   closesAt: string | null;
   version: number;
+  stage?: number;
+  parentTenderId?: string | null;
   planStatus: string | null;
   fields: TenderField[];
   permission: { granted: boolean; by?: string; at?: string };
-  invitations: Array<{ id: string; email: string; company: string; state: string; expiresAt: string }>;
+  invitations: Array<{
+    id: string;
+    email: string;
+    company: string;
+    supplierId?: string | null;
+    state: string;
+    expiresAt: string;
+  }>;
   questions: QuestionView[];
   addenda: AddendumView[];
   submissions: {
@@ -45,6 +56,8 @@ export interface TenderView {
       company: string;
       receipt: string | null;
       submittedAt: string | null;
+      sanctionsStatus?: string;
+      insuranceStatus?: string;
     }>;
   };
   permissions: {
@@ -74,6 +87,7 @@ export interface TenderSummary {
 }
 
 export interface BidFile {
+  carriedForward?: boolean;
   id: string;
   name: string;
   sizeBytes: number;
@@ -102,6 +116,9 @@ export interface SupplierTenderView {
     files: BidFile[];
   };
   canBid: boolean;
+  /** The buyer has given this supplier extra time after the closing time (FR-0205). */
+  lateAccess?: boolean;
+  stage?: number;
 }
 export interface SupplierTenderSummary {
   id: string;

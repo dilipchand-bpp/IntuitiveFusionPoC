@@ -12,6 +12,7 @@ import {
   TENDER_TYPE_LABEL,
   formatDateTime,
 } from '@/lib/labels';
+import { DeviationsCard } from './deviations-card';
 import type { BidFile, SupplierTenderView } from '@/components/tender/types';
 
 const SECTION_LABEL = { TECHNICAL: 'Technical', COMMERCIAL: 'Commercial', OTHER: 'Other' } as const;
@@ -69,14 +70,15 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
   // Countdown on the server's clock, not the phone's. At zero the form locks and the page is refreshed from the server.
   const closes = t.closesAt ? Date.parse(t.closesAt) : null;
   const left = closes === null ? null : closes - now;
-  const open = t.canBid && (left === null || left > 0);
+  // after the closing time a supplier with a late-submission permission can still bid until it runs out (FR-0205)
+  const open = t.canBid && (t.lateAccess === true || left === null || left > 0);
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now() + offset.current), 1000);
     return () => clearInterval(id);
   }, []);
   useEffect(() => {
-    if (t.canBid && left !== null && left <= 0) void reload().then(() => router.refresh());
-  }, [t.canBid, left, reload, router]);
+    if (t.canBid && !t.lateAccess && left !== null && left <= 0) void reload().then(() => router.refresh());
+  }, [t.canBid, t.lateAccess, left, reload, router]);
 
   async function run(name: string, fn: () => Promise<void>, ok?: string) {
     setBusy(name);
@@ -131,6 +133,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
           {TENDER_STATUS_LABEL[t.status] ?? t.status}
         </Badge>
         <Badge tone="info">{TENDER_TYPE_LABEL[t.type] ?? t.type}</Badge>
+        {(t.stage ?? 1) > 1 && <Badge tone="info">Stage {t.stage}</Badge>}
         <Badge tone={SUBMISSION_TONE[sub.status] ?? 'neutral'}>
           {SUBMISSION_LABEL[sub.status] ?? sub.status}
         </Badge>
@@ -147,11 +150,13 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
           ) : (
             <Lock className="size-5" aria-hidden="true" />
           )}
-          {open
-            ? `Open until ${formatDateTime(t.closesAt)}`
-            : 'This tender is closed. Nothing can be uploaded or submitted.'}
+          {open && t.lateAccess
+            ? 'The closing time has passed, but the buyer has given you extra time to submit.'
+            : open
+              ? `Open until ${formatDateTime(t.closesAt)}`
+              : 'This tender is closed. Nothing can be uploaded or submitted.'}
         </p>
-        {open && left !== null && (
+        {open && !t.lateAccess && left !== null && (
           <p className="font-mono text-lg font-bold" data-testid="countdown">
             {remaining(left)}
           </p>
@@ -174,6 +179,9 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
           {notice}
         </p>
       )}
+
+      {/* ------------------------------------------------------------ proposed contract changes */}
+      <DeviationsCard tenderId={t.id} open={open} csrf={csrf} />
 
       {/* ------------------------------------------------------------ your bid */}
       <Card role="region" aria-labelledby="bid-h">
@@ -211,6 +219,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
                 <span className="font-semibold break-all">{f.name}</span>{' '}
                 <span className="text-text-muted">
                   · {SECTION_LABEL[f.section]} · {size(f.sizeBytes)}
+                  {f.carriedForward ? ' · kept from your earlier stage' : ''}
                 </span>
               </span>
               {open && !submitted && (
@@ -390,7 +399,12 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
               data-testid="published-question"
             >
               <p className="font-semibold">Q: {q.text}</p>
-              <p>A: {q.answer}</p>
+              <p>
+                A: {q.answer}
+                {q.audience === 'SINGLE' && (
+                  <span className="ml-2 text-xs text-text-muted">(answered to you only)</span>
+                )}
+              </p>
             </li>
           ))}
         </ul>

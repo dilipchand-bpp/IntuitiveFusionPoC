@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Button, Field, Input } from '@if/ui';
+import { Button, Field, Input, Select } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export function RegisterForm({
@@ -23,18 +23,40 @@ export function RegisterForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<null | { held: boolean }>(null);
+  const [questions, setQuestions] = useState<
+    Array<{ id: string; label: string; type: 'YESNO' | 'TEXT'; mandatory: boolean }>
+  >([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [privacy, setPrivacy] = useState({ shareProfile: true, productUpdates: false });
+  // the organisation's own onboarding questions, if it has set any (FR-0215)
+  useEffect(() => {
+    void api<typeof questions>(
+      `/supplier/onboarding-questions${token ? `?token=${encodeURIComponent(token)}` : ''}`,
+    )
+      .then(setQuestions)
+      .catch(() => setQuestions([]));
+  }, [token]);
 
   async function submit() {
     setBusy(true);
     setError(null);
     setFields({});
     try {
-      await api('/supplier/register', {
+      const r = await api<{ sanctionsStatus?: string }>('/supplier/register', {
         method: 'POST',
-        body: { ...(token ? { token } : {}), name, email, company, abn, password },
+        body: {
+          ...(token ? { token } : {}),
+          name,
+          email,
+          company,
+          abn,
+          password,
+          answers: Object.fromEntries(Object.entries(answers).filter(([, v]) => v !== '')),
+          privacy,
+        },
       });
-      setDone(true);
+      setDone({ held: r.sanctionsStatus === 'MATCH' });
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);
@@ -53,9 +75,17 @@ export function RegisterForm({
         data-testid="registered"
       >
         <p className="font-bold">You are registered.</p>
+        {done.held && (
+          <p className="mt-1 text-sm" data-testid="held-notice">
+            Your account is on hold while a screening result is reviewed by the buyer. You will be told when
+            it is active.
+          </p>
+        )}
         <p className="mt-1 text-sm">
-          <Link href="/login">Sign in</Link> with your email and the password you just chose. You will land in
-          the supplier portal.
+          <Link href="/login" className="underline">
+            Sign in
+          </Link>{' '}
+          with your email and the password you just chose. You will land in the supplier portal.
         </p>
       </div>
     );
@@ -120,6 +150,50 @@ export function RegisterForm({
           minLength={12}
         />
       </Field>
+      {questions.map((q) => (
+        <Field key={q.id} label={q.label} required={q.mandatory} error={fields[`answers.${q.id}`] ?? ''}>
+          {q.type === 'YESNO' ? (
+            <Select
+              value={answers[q.id] ?? ''}
+              onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+            >
+              <option value="">Choose…</option>
+              <option value="YES">Yes</option>
+              <option value="NO">No</option>
+            </Select>
+          ) : (
+            <Input
+              value={answers[q.id] ?? ''}
+              onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+              maxLength={2000}
+            />
+          )}
+        </Field>
+      ))}
+      <fieldset className="rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-semibold">Your privacy choices</legend>
+        <label className="flex min-h-[44px] items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="size-5 accent-[var(--if-color-accent)]"
+            checked={privacy.shareProfile}
+            onChange={(e) => setPrivacy({ ...privacy, shareProfile: e.target.checked })}
+          />
+          Let buyers at this organisation see my company profile
+        </label>
+        <label className="flex min-h-[44px] items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="size-5 accent-[var(--if-color-accent)]"
+            checked={privacy.productUpdates}
+            onChange={(e) => setPrivacy({ ...privacy, productUpdates: e.target.checked })}
+          />
+          Send me product updates by email
+        </label>
+        <p className="mt-1 text-xs text-text-muted">
+          You can change these at any time on your company profile.
+        </p>
+      </fieldset>
       <Button type="submit" loading={busy} disabled={!ready}>
         Create account
       </Button>

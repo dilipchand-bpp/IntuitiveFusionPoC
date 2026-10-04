@@ -83,6 +83,33 @@ export const SECTIONS = {
       rules: z.array(z.object({ event: z.enum(EVENTS), enabled: z.boolean() }).strict()).max(10),
     })
     .strict(),
+  onboardingQuestions: z
+    .array(
+      z
+        .object({
+          id: keyName,
+          label: z.string().trim().min(3).max(200),
+          type: z.enum(['YESNO', 'TEXT']),
+          mandatory: z.boolean(),
+          /** For a yes/no question: the answer that flags the supplier for review (for example No to a modern slavery policy). */
+          flagIf: z.enum(['YES', 'NO']).optional(),
+        })
+        .strict(),
+    )
+    .max(15)
+    .refine((a) => new Set(a.map((q) => q.id)).size === a.length, 'Question keys must be unique'),
+  publicRegisters: z
+    .array(
+      z
+        .object({
+          register: z.enum(['AusTender', 'SAM.gov', 'TED']),
+          jurisdiction: z.string().trim().min(2).max(60),
+          minValueAud: z.number().min(0).max(1e10),
+          enabled: z.boolean(),
+        })
+        .strict(),
+    )
+    .max(6),
   security: z
     .object({
       requireMfa: z.boolean(),
@@ -169,6 +196,14 @@ export const DEFAULTS: Settings = {
       { event: 'APPROVAL_TIMEOUT', enabled: true },
     ],
   },
+  // none by default, so registration asks nothing extra until an organisation adds its own questions (FR-0215)
+  onboardingQuestions: [],
+  // public-sector tenders at or above the value go to the register for their jurisdiction (FR-0140)
+  publicRegisters: [
+    { register: 'AusTender', jurisdiction: 'Australia (Commonwealth)', minValueAud: 80_000, enabled: true },
+    { register: 'SAM.gov', jurisdiction: 'United States (federal)', minValueAud: 250_000, enabled: false },
+    { register: 'TED', jurisdiction: 'European Union', minValueAud: 215_000, enabled: false },
+  ],
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },

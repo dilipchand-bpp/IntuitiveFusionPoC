@@ -8312,6 +8312,1091 @@
      }
     }
    }
+  },
+  "/tenders/{id}/late-permissions": {
+   "post": {
+    "operationId": "grantLatePermission",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Let one supplier submit after the closing time, with a reason and a short expiry; audited and told by email",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LatePermission"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LatePermissionCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listLatePermissions",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Late-submission permissions granted on this tender",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/LatePermission"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/late-permissions/{permissionId}": {
+   "delete": {
+    "operationId": "revokeLatePermission",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Withdraw a late-submission permission",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "permissionId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/stages": {
+   "get": {
+    "operationId": "listTenderStages",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "The stages of this procurement and where each stands",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/TenderStage"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/shortlist": {
+   "post": {
+    "operationId": "shortlistSuppliers",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Shortlist suppliers after evaluation: creates the next stage's own pack, invites the shortlisted, tells the unsuccessful",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ShortlistResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ShortlistRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/deviations": {
+   "get": {
+    "operationId": "getDeviationRegister",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Contract changes suppliers proposed (sealed until the tender closes)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviationRegister"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tender-deviations/{id}": {
+   "put": {
+    "operationId": "assessDeviation",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Legal rates the risk, comments and sets the status of a proposed change",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Deviation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeviationAssess"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/deviations/export.xlsx": {
+   "get": {
+    "operationId": "exportDeviationsXlsx",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "The deviation register as an Excel workbook (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/deviations/export.docx": {
+   "get": {
+    "operationId": "exportDeviationsDocx",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "The deviation register as a Word document (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/notices": {
+   "get": {
+    "operationId": "listPublicNotices",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Notices routed to public registers (simulated)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/PublicNotice"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/sanctions-review": {
+   "post": {
+    "operationId": "reviewSanctionsMatch",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Release or confirm a screening match; a held supplier cannot see tender documents until released",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierSelfProfile"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SanctionsReview"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/email-log": {
+   "get": {
+    "operationId": "listEmailLog",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Email that would have been sent (simulated)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/EmailLogEntry"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/deviations": {
+   "post": {
+    "operationId": "proposeDeviation",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Propose a change to a contract clause as part of the response",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Deviation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeviationCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listMyDeviations",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The changes this supplier proposed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Deviation"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/deviations/{deviationId}": {
+   "delete": {
+    "operationId": "withdrawDeviation",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Withdraw a proposed change while the tender is open",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "deviationId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/onboarding-questions": {
+   "get": {
+    "operationId": "listOnboardingQuestions",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The organisation's own registration questions",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/OnboardingQuestion"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/supplier/profile": {
+   "get": {
+    "operationId": "getSupplierProfile",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The supplier's own profile: screening and insurance status, privacy choices, contacts",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierSelfProfile"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/supplier/profile/privacy": {
+   "put": {
+    "operationId": "setSupplierPrivacy",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Change the supplier's privacy choices",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierSelfProfile"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyChoices"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/profile/insurance": {
+   "put": {
+    "operationId": "setSupplierInsurance",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Record the current insurance certificate",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierSelfProfile"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InsuranceRecord"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/contacts": {
+   "post": {
+    "operationId": "addSupplierContact",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Add a colleague; they receive a one-time link through the person who added them",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContactCreated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierContactAdd"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/contacts/{userId}/deprovision": {
+   "post": {
+    "operationId": "removeSupplierContact",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "End a colleague's access; sessions end and they are told",
+    "parameters": [
+     {
+      "name": "userId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierContact"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContactDeprovision"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -13857,6 +14942,260 @@
    "ContactCreated": {
     "type": "object",
     "additionalProperties": true
+   },
+   "LatePermissionCreate": {
+    "type": "object",
+    "properties": {
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "reason": {
+      "type": "string"
+     },
+     "hours": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierId",
+     "reason"
+    ]
+   },
+   "LatePermission": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "TenderStage": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ShortlistRequest": {
+    "type": "object",
+    "properties": {
+     "supplierIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     "type": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierIds"
+    ]
+   },
+   "ShortlistResult": {
+    "type": "object",
+    "properties": {
+     "nextTenderId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "nextStage": {
+      "type": "integer"
+     },
+     "shortlisted": {
+      "type": "integer"
+     },
+     "unsuccessfulNotified": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "nextTenderId"
+    ]
+   },
+   "DeviationCreate": {
+    "type": "object",
+    "properties": {
+     "clauseRef": {
+      "type": "string"
+     },
+     "proposal": {
+      "type": "string"
+     },
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "clauseRef",
+     "proposal"
+    ]
+   },
+   "Deviation": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DeviationRegister": {
+    "type": "object",
+    "properties": {
+     "sealed": {
+      "type": "boolean"
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "sealed",
+     "items"
+    ]
+   },
+   "DeviationAssess": {
+    "type": "object",
+    "properties": {
+     "risk": {
+      "type": "string",
+      "enum": [
+       "LOW",
+       "MEDIUM",
+       "HIGH"
+      ]
+     },
+     "comment": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "PROPOSED",
+       "ACCEPTABLE",
+       "NEGOTIATE",
+       "REJECTED"
+      ]
+     }
+    },
+    "additionalProperties": false
+   },
+   "PublicNotice": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SanctionsReview": {
+    "type": "object",
+    "properties": {
+     "decision": {
+      "type": "string",
+      "enum": [
+       "RELEASE",
+       "CONFIRM"
+      ]
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "decision",
+     "note"
+    ]
+   },
+   "SupplierSelfProfile": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyChoices": {
+    "type": "object",
+    "properties": {
+     "shareProfile": {
+      "type": "boolean"
+     },
+     "productUpdates": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "shareProfile",
+     "productUpdates"
+    ]
+   },
+   "InsuranceRecord": {
+    "type": "object",
+    "properties": {
+     "insurer": {
+      "type": "string"
+     },
+     "policyNumber": {
+      "type": "string"
+     },
+     "coverAud": "Notifications",
+     "expiresOn": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "insurer",
+     "policyNumber",
+     "coverAud",
+     "expiresOn"
+    ]
+   },
+   "OnboardingQuestion": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "YESNO",
+       "TEXT"
+      ]
+     },
+     "mandatory": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "label",
+     "type"
+    ]
+   },
+   "EmailLogEntry": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierContactAdd": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "email"
+    ]
    }
   },
   "responses": {

@@ -1,14 +1,20 @@
 import { EmptyState } from '@if/ui';
-import { SettingsPanel, type LogEntry, type SettingsData } from '@/components/admin/settings-panel';
+import {
+  SettingsPanel,
+  type EmailEntry,
+  type LogEntry,
+  type SettingsData,
+} from '@/components/admin/settings-panel';
 import { apiGet, getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Settings – Intuitive Fusion' };
 
 export default async function SettingsPage() {
-  const [me, settings, log] = await Promise.all([
+  const [me, settings, log, emails] = await Promise.all([
     getSessionUser(),
     apiGet<SettingsData>('/admin/settings'),
     apiGet<LogEntry[]>('/admin/notification-log'),
+    apiGet<EmailEntry[]>('/admin/email-log'),
   ]);
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -22,7 +28,7 @@ export default async function SettingsPage() {
       {!settings || !me ? (
         <EmptyState title="Settings are unavailable" body="Please refresh the page." />
       ) : (
-        <SettingsPanel initial={settings} log={log ?? []} csrf={me.csrfToken} />
+        <SettingsPanel initial={settings} log={log ?? []} emails={emails ?? []} csrf={me.csrfToken} />
       )}
     </div>
   );

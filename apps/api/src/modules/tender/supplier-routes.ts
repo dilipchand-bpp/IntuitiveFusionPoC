@@ -24,7 +24,12 @@ import {
   tender,
   tenant,
 } from '../../db/schema.js';
+import { MockSanctionsScreening, type SanctionsScreening } from '../../adapters/sanctions.js';
 import { AppError, parse } from '../../http/errors.js';
+import { dispatch, usersWithRole } from '../notify/dispatch.js';
+import { sendEmail } from '../notify/email.js';
+import { loadSettings } from '../settings/settings.js';
+import { carryForward } from './carry-forward.js';
 import { checkUpload, MAX_FILES_PER_BID, scanBytes, sha256, type SealedStore } from './files.js';
 import { makeReceipt, validAbn } from './rules.js';
 import { fileView } from './serialisers.js';
@@ -38,6 +43,8 @@ export interface SupplierDeps extends GuardDeps {
   config: AppConfig;
   /** Attempts per 15 minutes per address on the public registration routes. */
   publicRateLimitMax?: number;
+  /** Sanctions and watchlist screening at onboarding (FR-0180). Defaults to the synthetic list. */
+  sanctions?: SanctionsScreening;
 }
 
 const uuid = z.string().uuid();
@@ -49,6 +56,10 @@ const registerBody = z
     company: z.string().trim().min(2).max(200),
     abn: z.string().trim().max(20),
     password: z.string().min(12).max(200),
+    /** Answers to the organisation's onboarding questions, by question key (FR-0215). */
+    answers: z.record(z.string().max(60), z.string().max(2000)).optional(),
+    /** The supplier's own privacy choices for their portal (FR-0240). */
+    privacy: z.object({ shareProfile: z.boolean(), productUpdates: z.boolean() }).strict().optional(),
   })
   .strict();
 const askBody = z.object({ text: z.string().trim().min(5).max(2000) }).strict();
@@ -67,11 +78,27 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
   const done = new Set<string>();
   const reg = (m: string, path: string) => done.add(`${m} ${path}`);
   const svc = new TenderService(d.clock, d.audit, d.store);
+  const screening = d.sanctions ?? new MockSanctionsScreening();
   const fresh = () => svc.closeDue(d.database);
   const tid = (req: { params: unknown }) => parse(z.object({ id: uuid }), req.params).id;
   const publicLimit = {
     config: { rateLimit: { max: d.publicRateLimitMax ?? 20, timeWindow: '15 minutes' } },
   };
+
+  /** A supplier whose screening matched a watchlist is held: no tender documents, no bidding, until procurement reviews (FR-0180). */
+  async function assertNotQuarantined(tx: Tx, a: AuthContext) {
+    if (!a.user.supplierId) return;
+    const [s] = await tx
+      .select({ st: supplier.sanctionsStatus })
+      .from(supplier)
+      .where(eq(supplier.id, a.user.supplierId));
+    if (s?.st === 'MATCH')
+      throw new AppError(
+        403,
+        'SUPPLIER_QUARANTINED',
+        'Your account is on hold while a screening result is reviewed. The buyer will contact you.',
+      );
+  }
 
   /** Runs `fn` as the signed-in supplier on a tender they may see; otherwise an audited 404 once the transaction is over. */
   async function asSupplier<T>(
@@ -80,6 +107,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
     fn: (tx: Tx, l: LoadedTender) => Promise<T>,
   ): Promise<T> {
     const r = await withContext(d.database, a.ctx, async (tx) => {
+      await assertNotQuarantined(tx, a);
       const l = await svc.supplierAccess(tx, a, id);
       return l ? { ok: true as const, value: await fn(tx, l) } : { ok: false as const };
     });
@@ -126,6 +154,39 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
     },
   );
 
+  // ---------------------------------------------------------------- onboarding questions (public, FR-0215)
+  reg('GET', '/supplier/onboarding-questions');
+  app.get(
+    `${p}/supplier/onboarding-questions`,
+    { preHandler: guard(d, 'public'), ...publicLimit },
+    async (req) => {
+      const { token } = parse(z.object({ token: z.string().min(20).max(100).optional() }), req.query);
+      return withSystem(d.database, async (tx) => {
+        let tenantId: string | undefined;
+        if (token) {
+          const [inv] = await tx
+            .select()
+            .from(invitation)
+            .where(eq(invitation.tokenHash, hashToken(token)));
+          tenantId = inv?.tenantId;
+        }
+        if (!tenantId) {
+          const [org] = await tx.select().from(tenant).where(eq(tenant.slug, d.config.DEFAULT_TENANT_SLUG));
+          tenantId = org?.id;
+        }
+        if (!tenantId) return [];
+        return (await loadSettings(tx, tenantId)).onboardingQuestions.map(
+          ({ id, label, type, mandatory }) => ({
+            id,
+            label,
+            type,
+            mandatory,
+          }),
+        );
+      });
+    },
+  );
+
   // ---------------------------------------------------------------- self-registration (public, US-SUP-01)
   reg('POST', '/supplier/register');
   app.post(
@@ -143,6 +204,8 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
         ]);
       const passwordHash = await argon2Hash(b.password);
       const abn = b.abn.replace(/\s+/g, '');
+      // screened before anything is stored; a match holds the account rather than refusing it (FR-0180)
+      const screen = await screening.screen({ company: b.company, abn });
       const out = await withSystem(d.database, async (tx) => {
         const now = d.clock.now();
         let tenantId: string;
@@ -190,14 +253,52 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
             'REGISTRATION_FAILED',
             'We could not register with these details. If you already have an account, sign in instead.',
           );
+        // the organisation's own onboarding questions: required ones must be answered, and a flagged answer is noted (FR-0215)
+        const settings = await loadSettings(tx, tenantId);
+        const answers = b.answers ?? {};
+        const missingAnswers = settings.onboardingQuestions.filter(
+          (q) => q.mandatory && !answers[q.id]?.trim(),
+        );
+        if (missingAnswers.length > 0)
+          throw new AppError(
+            400,
+            'VALIDATION_FAILED',
+            'Please answer the required questions',
+            missingAnswers.map((q) => ({ field: `answers.${q.id}`, message: `${q.label} is required` })),
+          );
+        const badYesNo = settings.onboardingQuestions.filter(
+          (q) => q.type === 'YESNO' && answers[q.id] !== undefined && !['YES', 'NO'].includes(answers[q.id]!),
+        );
+        if (badYesNo.length > 0)
+          throw new AppError(
+            400,
+            'VALIDATION_FAILED',
+            'Answer yes or no',
+            badYesNo.map((q) => ({ field: `answers.${q.id}`, message: 'Answer yes or no' })),
+          );
+        const flagged = settings.onboardingQuestions
+          .filter((q) => q.type === 'YESNO' && q.flagIf && answers[q.id] === q.flagIf)
+          .map((q) => q.id);
         const [sup] = await tx
           .insert(supplier)
           .values({
             tenantId,
             company: b.company,
             abn,
-            sanctionsStatus: 'PENDING',
+            sanctionsStatus: screen.status,
+            sanctionsNote: screen.reason ?? null,
             insuranceStatus: 'UNKNOWN',
+            onboarding: {
+              answers: Object.fromEntries(
+                settings.onboardingQuestions
+                  .filter((q) => answers[q.id] !== undefined)
+                  .map((q) => [q.id, answers[q.id]]),
+              ),
+              flagged,
+              answeredAt: now.toISOString(),
+            },
+            privacy: b.privacy ?? { shareProfile: true, productUpdates: false },
+            lastCheckedAt: now,
             createdAt: now,
           })
           .returning();
@@ -205,8 +306,42 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
           action: 'supplier.register',
           entityType: 'supplier',
           entityId: sup!.id,
-          after: { company: b.company, sanctionsStatus: 'PENDING' },
+          after: { company: b.company, sanctionsStatus: screen.status, flaggedAnswers: flagged },
         });
+        const team = await usersWithRole(tx, tenantId, ['PROCUREMENT']);
+        if (screen.status === 'MATCH') {
+          // quarantine: the account exists but cannot reach tender documents; procurement is alerted (FR-0180)
+          await d.audit.record(tx, sys, {
+            action: 'supplier.sanctions_match',
+            entityType: 'supplier',
+            entityId: sup!.id,
+            after: { list: screen.list ?? null, held: true },
+            result: 'DENIED',
+          });
+          await dispatch(
+            tx,
+            {
+              tenantId,
+              recipients: team,
+              title: 'Supplier on hold: screening match',
+              body: `${b.company} matched a watchlist at registration and is held until reviewed.`,
+              link: `/app/suppliers/${sup!.id}`,
+            },
+            settings,
+          );
+        } else if (flagged.length > 0) {
+          await dispatch(
+            tx,
+            {
+              tenantId,
+              recipients: team,
+              title: 'Supplier answered a screening question for review',
+              body: `${b.company} gave an answer that needs a look before they bid.`,
+              link: `/app/suppliers/${sup!.id}`,
+            },
+            settings,
+          );
+        }
         const [u] = await tx
           .insert(appUser)
           .values({
@@ -232,6 +367,19 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
           entityId: u!.id,
           after: { supplierId: sup!.id, viaInvitation: Boolean(inv) },
         });
+        await sendEmail(tx, {
+          tenantId,
+          to: b.email,
+          kind: screen.status === 'MATCH' ? 'SANCTIONS_HOLD' : 'WELCOME',
+          subject:
+            screen.status === 'MATCH' ? 'Your supplier account is on hold' : 'Your supplier portal is ready',
+          body:
+            screen.status === 'MATCH'
+              ? `Hello ${b.name}, your account for ${b.company} has been created but is on hold while a screening result is reviewed by the buyer.`
+              : `Hello ${b.name}, your supplier portal for ${b.company} is ready. Sign in to see the tenders you are invited to.`,
+          refType: 'supplier',
+          refId: sup!.id,
+        });
         return { registered: true, supplierId: sup!.id, sanctionsStatus: sup!.sanctionsStatus };
       });
       return reply.status(201).send(out);
@@ -244,6 +392,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
     const a = req.auth!;
     await fresh();
     return withContext(d.database, a.ctx, async (tx) => {
+      await assertNotQuarantined(tx, a);
       const list = await svc.visibleTo(tx, a.user.tenantId, a.user.supplierId);
       const out = [];
       for (const t of list) {
@@ -348,6 +497,9 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
         .insert(submission)
         .values({ tenantId, tenderId, supplierId, status: 'DRAFT', createdAt: d.clock.now() })
         .returning();
+    // a bid discarded as late is started afresh when the buyer has since permitted a late submission (FR-0205)
+    else if (s.status === 'REJECTED_LATE')
+      [s] = await tx.update(submission).set({ status: 'DRAFT' }).where(eq(submission.id, s.id)).returning();
     return s!;
   }
   const lateReply = (reply: { status(n: number): { send(b: unknown): unknown } }, req: { id: string }) =>
@@ -405,7 +557,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
       const chk = checkUpload(body.name, bytes);
       let late = false;
       const out = await asSupplier(a, id, async (tx, l) => {
-        if (!svc.isOpen(l.tender)) {
+        if (!(await svc.canBid(tx, l.tender, a.user.supplierId ?? null))) {
           late = true;
           return null;
         }
@@ -503,7 +655,8 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
       await fresh();
       let key: string | null = null;
       await asSupplier(a, id, async (tx, l) => {
-        if (!svc.isOpen(l.tender)) throw new AppError(409, 'BID_CLOSED', 'The tender is closed');
+        if (!(await svc.canBid(tx, l.tender, a.user.supplierId ?? null)))
+          throw new AppError(409, 'BID_CLOSED', 'The tender is closed');
         const [sub] = await tx
           .select()
           .from(submission)
@@ -549,11 +702,13 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
       const out = await asSupplier(a, id, async (tx, l) => {
         const now = d.clock.now();
         // Decided on the server clock at this instant, not on the stored status (which a scheduler may not have updated).
-        if (!svc.isOpen(l.tender)) {
+        if (!(await svc.canBid(tx, l.tender, a.user.supplierId ?? null))) {
           late = true;
           return null;
         }
         const sub = await ensureSubmission(tx, a.user.tenantId, id, a.user.supplierId!);
+        // a later stage keeps whatever the supplier did not replace from their earlier stage (FR-0230)
+        if (sub.status !== 'SUBMITTED') await carryForward(tx, d.store, l.tender, a.user.supplierId!, sub.id);
         if (sub.status === 'SUBMITTED')
           throw new AppError(
             409,
@@ -625,7 +780,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
       const id = tid(req);
       await fresh();
       return asSupplier(a, id, async (tx, l) => {
-        if (!svc.isOpen(l.tender))
+        if (!(await svc.canBid(tx, l.tender, a.user.supplierId ?? null)))
           throw new AppError(409, 'BID_CLOSED', 'The tender is closed, so a bid can no longer be changed');
         const [sub] = await tx
           .select()

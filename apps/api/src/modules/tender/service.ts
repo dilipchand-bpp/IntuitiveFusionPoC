@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lte } from 'drizzle-orm';
 import type { Clock, RoleName } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import type { AuthContext } from '../../auth/guard.js';
@@ -10,6 +10,7 @@ import {
   fieldValue,
   fileObject,
   invitation,
+  latePermission,
   notification,
   plan,
   question,
@@ -20,6 +21,7 @@ import {
   tender,
 } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
+import { insuranceStatusFor } from './insurance.js';
 import { TENDER_FIELDS } from './fields.js';
 import type { SealedStore } from './files.js';
 import { effectiveStatus, isOpenForBids, type TenderStatus } from './rules.js';
@@ -185,13 +187,44 @@ export class TenderService {
   }
 
   // ------------------------------------------------------------------ views
-  async questionRows(tx: Tx, tenderId: string, onlyPublished: boolean) {
+  /**
+   * Staff see every question. A supplier sees the answers published to everyone, and the answers given to them alone
+   * (FR-0195); never another supplier's single answer.
+   */
+  async questionRows(tx: Tx, tenderId: string, onlyPublished: boolean, forSupplierId?: string | null) {
     const rows = await tx
       .select()
       .from(question)
       .where(eq(question.tenderId, tenderId))
       .orderBy(asc(question.askedAt));
-    return rows.filter((q) => !onlyPublished || q.status === 'PUBLISHED').map(questionView);
+    return rows
+      .filter((q) => !onlyPublished || q.status === 'PUBLISHED')
+      .filter(
+        (q) =>
+          !onlyPublished || q.audience === 'ALL' || (forSupplierId && q.targetSupplierId === forSupplierId),
+      )
+      .map(questionView);
+  }
+
+  /**
+   * May this supplier still bid? Yes while the tender is open, and after it closed only while a late-submission
+   * permission granted to them (with a reason) is live, before evaluation has begun (FR-0205).
+   */
+  async canBid(tx: Tx, t: TenderRow, supplierId: string | null): Promise<boolean> {
+    if (this.isOpen(t)) return true;
+    if (!supplierId || this.status(t) !== 'CLOSED') return false;
+    const [p] = await tx
+      .select({ id: latePermission.id })
+      .from(latePermission)
+      .where(
+        and(
+          eq(latePermission.tenderId, t.id),
+          eq(latePermission.supplierId, supplierId),
+          isNull(latePermission.revokedAt),
+          gt(latePermission.expiresAt, this.clock.now()),
+        ),
+      );
+    return Boolean(p);
   }
 
   async addenda(tx: Tx, tenderId: string) {
@@ -219,7 +252,12 @@ export class TenderService {
       .orderBy(asc(invitation.company));
     const now = this.clock.now();
     const subs = await tx
-      .select({ s: submission, company: supplier.company })
+      .select({
+        s: submission,
+        company: supplier.company,
+        sanctions: supplier.sanctionsStatus,
+        insuranceOn: supplier.insuranceExpiresOn,
+      })
       .from(submission)
       .leftJoin(supplier, eq(supplier.id, submission.supplierId))
       .where(eq(submission.tenderId, t.id));
@@ -239,6 +277,9 @@ export class TenderService {
       opensAt: t.opensAt?.toISOString() ?? null,
       closesAt: t.closesAt?.toISOString() ?? null,
       version: t.version,
+      stage: t.stage,
+      parentTenderId: t.parentTenderId,
+      shortlisted: (t.shortlist as string[] | null) ?? null,
       planStatus: pl?.status ?? null,
       fields: await this.fields(tx, t.id),
       permission: perm
@@ -248,6 +289,7 @@ export class TenderService {
         id: i.id,
         email: i.email,
         company: i.company,
+        supplierId: i.supplierId,
         state: i.supplierId ? 'REGISTERED' : i.usedAt ? 'USED' : i.expiresAt <= now ? 'EXPIRED' : 'INVITED',
         expiresAt: i.expiresAt.toISOString(),
       })),
@@ -261,6 +303,9 @@ export class TenderService {
               items: submitted.map((x) => ({
                 supplierId: x.s.supplierId,
                 company: x.company ?? '',
+                // onboarding checks shared from the supplier's profile (FR-0250)
+                sanctionsStatus: x.sanctions ?? 'PENDING',
+                insuranceStatus: insuranceStatusFor(x.insuranceOn ?? null, now.toISOString().slice(0, 10)),
                 receipt: x.s.receipt,
                 submittedAt: x.s.submittedAt?.toISOString() ?? null,
               })),
@@ -307,15 +352,17 @@ export class TenderService {
       closesAt: t.closesAt?.toISOString() ?? null,
       serverTime: now.toISOString(),
       fields: await this.fields(tx, t.id),
-      questions: await this.questionRows(tx, t.id, true),
+      questions: await this.questionRows(tx, t.id, true, sid),
       addenda: await this.addenda(tx, t.id),
+      stage: t.stage,
       submission: {
         status: sub?.status ?? 'NOT_STARTED',
         receipt: sub?.receipt ?? null,
         submittedAt: sub?.submittedAt?.toISOString() ?? null,
         files: files.map(fileView),
       },
-      canBid: this.isOpen(t),
+      canBid: await this.canBid(tx, t, sid ?? null),
+      lateAccess: !this.isOpen(t) && (await this.canBid(tx, t, sid ?? null)),
     };
   }
 

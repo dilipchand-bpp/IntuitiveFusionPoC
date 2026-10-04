@@ -133,6 +133,11 @@ export const supplier = pgTable('supplier', {
     .default('UNKNOWN'),
   lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
   categories: jsonb('categories').notNull().default([]),
+  onboarding: jsonb('onboarding').notNull().default({}),
+  privacy: jsonb('privacy').notNull().default({ shareProfile: true, productUpdates: false }),
+  insurance: jsonb('insurance'),
+  insuranceExpiresOn: date('insurance_expires_on'),
+  sanctionsNote: text('sanctions_note'),
   createdAt: created(),
 });
 
@@ -286,6 +291,11 @@ export const tender = pgTable('tender', {
   opensAt: timestamp('opens_at', { withTimezone: true }),
   closesAt: timestamp('closes_at', { withTimezone: true }),
   publishPermissionId: uuid('publish_permission_id'),
+  /** Stage 1 is the first round; a later stage is a separate pack and round for shortlisted suppliers (FR-0220). */
+  stage: integer('stage').notNull().default(1),
+  parentTenderId: uuid('parent_tender_id'),
+  shortlist: jsonb('shortlist'),
+  shortlistedAt: timestamp('shortlisted_at', { withTimezone: true }),
   createdAt: created(),
   updatedAt: updated(),
   version: version(),
@@ -314,6 +324,11 @@ export const question = pgTable('question', {
     .default('OPEN'),
   // Restricted column: never selected by any API serialiser (anonymity, FR-0135).
   askedBySupplierId: uuid('asked_by_supplier_id'),
+  /** ALL: the answer is published to every supplier. SINGLE: only to the supplier who asked (FR-0195). */
+  audience: text('audience', { enum: ['ALL', 'SINGLE'] })
+    .notNull()
+    .default('ALL'),
+  targetSupplierId: uuid('target_supplier_id'),
   askedAt: timestamp('asked_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -360,6 +375,8 @@ export const fileObject = pgTable('file_object', {
   section: text('section', { enum: ['TECHNICAL', 'COMMERCIAL', 'OTHER'] })
     .notNull()
     .default('OTHER'),
+  /** Set when this file was carried forward from an earlier stage (FR-0230). */
+  carriedFrom: uuid('carried_from'),
   createdAt: created(),
 });
 
@@ -704,5 +721,62 @@ export const userMfa = pgTable('user_mfa', {
   secret: text('secret').notNull(),
   confirmed: boolean('confirmed').notNull().default(false),
   lastStep: bigint('last_step', { mode: 'number' }).notNull().default(0),
+  createdAt: created(),
+});
+
+export const outboundEmail = pgTable('outbound_email', {
+  id: id(),
+  tenantId: tenantId(),
+  toEmail: text('to_email').notNull(),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  kind: text('kind').notNull(),
+  refType: text('ref_type'),
+  refId: uuid('ref_id'),
+  status: text('status').notNull().default('SIMULATED'),
+  createdAt: created(),
+});
+
+export const latePermission = pgTable('late_permission', {
+  id: id(),
+  tenantId: tenantId(),
+  tenderId: uuid('tender_id').notNull(),
+  supplierId: uuid('supplier_id').notNull(),
+  reason: text('reason').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  grantedBy: uuid('granted_by').notNull(),
+  createdAt: created(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});
+
+export const publicNotice = pgTable(
+  'public_notice',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    tenderId: uuid('tender_id').notNull(),
+    register: text('register').notNull(),
+    reference: text('reference').notNull(),
+    status: text('status').notNull().default('SIMULATED'),
+    createdAt: created(),
+  },
+  (t) => [uniqueIndex('public_notice_once').on(t.tenderId, t.register)],
+);
+
+export const tenderDeviation = pgTable('tender_deviation', {
+  id: id(),
+  tenantId: tenantId(),
+  tenderId: uuid('tender_id').notNull(),
+  supplierId: uuid('supplier_id').notNull(),
+  clauseRef: text('clause_ref').notNull(),
+  proposal: text('proposal').notNull(),
+  reason: text('reason'),
+  risk: text('risk', { enum: ['LOW', 'MEDIUM', 'HIGH'] }),
+  legalComment: text('legal_comment'),
+  status: text('status', { enum: ['PROPOSED', 'ACCEPTABLE', 'NEGOTIATE', 'REJECTED'] })
+    .notNull()
+    .default('PROPOSED'),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
   createdAt: created(),
 });

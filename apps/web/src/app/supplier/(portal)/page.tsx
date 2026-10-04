@@ -9,12 +9,14 @@ import {
   TENDER_TYPE_LABEL,
   formatDateTime,
 } from '@/lib/labels';
-import { apiGet } from '@/lib/session';
+import { apiGetResult } from '@/lib/session';
 
 export const metadata = { title: 'My tenders – Intuitive Fusion' };
 
 export default async function SupplierHome() {
-  const rows = await apiGet<SupplierTenderSummary[]>('/supplier/tenders');
+  const res = await apiGetResult<SupplierTenderSummary[]>('/supplier/tenders');
+  const rows = res.data;
+  const onHold = res.code === 'SUPPLIER_QUARANTINED';
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -23,7 +25,12 @@ export default async function SupplierHome() {
           You can only see tenders you have been invited to, or that are open to every registered supplier.
         </p>
       </header>
-      {!rows ? (
+      {onHold ? (
+        <EmptyState
+          title="Your account is on hold"
+          body="A screening result is being reviewed by the buyer, so tenders are not available yet. You will be told when it is released."
+        />
+      ) : !rows ? (
         <EmptyState title="Your tenders are unavailable" body="Please refresh the page." />
       ) : rows.length === 0 ? (
         <EmptyState

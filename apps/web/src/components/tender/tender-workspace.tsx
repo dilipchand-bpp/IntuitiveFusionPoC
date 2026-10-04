@@ -2,7 +2,7 @@
 import { CheckCircle2, Copy, Lock, Send } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FileDown } from 'lucide-react';
-import { Badge, Button, Card, Field, Input, Stepper, Tabs, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Stepper, Tabs, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
   TENDER_STATUS_LABEL,
@@ -11,6 +11,7 @@ import {
   aud,
   formatDateTime,
 } from '@/lib/labels';
+import { TenderB2Panel } from './b2-panel';
 import type { TenderView } from './types';
 
 const STEPS = ['Staged', 'Permission to publish', 'Open for bids', 'Closed'];
@@ -32,7 +33,15 @@ const message = (e: unknown) =>
     : 'Something went wrong. Please try again.';
 
 /** Everything the buying team does with one tender: the pack, permission, publishing, invitations, Q&A, addenda, bids. */
-export function TenderWorkspace({ initial, csrf }: { initial: TenderView; csrf: string }) {
+export function TenderWorkspace({
+  initial,
+  csrf,
+  roles = [],
+}: {
+  initial: TenderView;
+  csrf: string;
+  roles?: string[];
+}) {
   const [t, setT] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -257,6 +266,12 @@ export function TenderWorkspace({ initial, csrf }: { initial: TenderView; csrf: 
             content: <QaPanel t={t} csrf={csrf} onDone={refresh} />,
           },
           {
+            value: 'stages',
+            label:
+              (t.stage ?? 1) > 1 ? `Stage ${t.stage}, register and notices` : 'Stages, register and notices',
+            content: <TenderB2Panel t={t} roles={roles} csrf={csrf} />,
+          },
+          {
             value: 'bids',
             label: `Bids (${t.submissions.count})`,
             content: (
@@ -284,6 +299,14 @@ export function TenderWorkspace({ initial, csrf }: { initial: TenderView; csrf: 
                         className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
                       >
                         <span className="font-semibold">{b.company}</span>
+                        <span className="flex gap-1">
+                          {b.sanctionsStatus === 'MATCH' && <Badge tone="error">Screening match</Badge>}
+                          {b.insuranceStatus && b.insuranceStatus !== 'CURRENT' && (
+                            <Badge tone={b.insuranceStatus === 'EXPIRED' ? 'error' : 'warning'}>
+                              Insurance {b.insuranceStatus.toLowerCase()}
+                            </Badge>
+                          )}
+                        </span>
                         <span className="font-mono text-xs">{b.receipt}</span>
                         <span className="text-text-muted">{formatDateTime(b.submittedAt)}</span>
                       </li>
@@ -503,6 +526,7 @@ function InvitePanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone:
 
 function QaPanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone: () => Promise<void> }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [audiences, setAudiences] = useState<Record<string, 'ALL' | 'SINGLE'>>({});
   const [picked, setPicked] = useState<string[]>([]);
   const [summary, setSummary] = useState('');
   const [newClose, setNewClose] = useState('');
@@ -556,7 +580,14 @@ function QaPanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone: () 
                     : 'Needs an answer'}
               </Badge>
             </div>
-            {q.status === 'PUBLISHED' && <p className="mt-2 text-sm">{q.answer}</p>}
+            {q.status === 'PUBLISHED' && (
+              <p className="mt-2 text-sm">
+                {q.answer}
+                {q.audience === 'SINGLE' && (
+                  <span className="ml-2 text-xs text-text-muted">(sent to the asker only)</span>
+                )}
+              </p>
+            )}
             {q.status !== 'PUBLISHED' && t.permissions.canAnswer && (
               <form
                 className="mt-2 flex flex-col gap-2"
@@ -567,7 +598,7 @@ function QaPanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone: () 
                     await api(`/tenders/${t.id}/questions/${q.id}/answer`, {
                       method: 'POST',
                       csrf,
-                      body: { answer: answers[q.id] ?? q.answer ?? '' },
+                      body: { answer: answers[q.id] ?? q.answer ?? '', audience: audiences[q.id] ?? 'ALL' },
                     });
                   });
                 }}
@@ -579,6 +610,17 @@ function QaPanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone: () 
                     onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
                     maxLength={4000}
                   />
+                </Field>
+                <Field label="Who should get this answer?">
+                  <Select
+                    value={audiences[q.id] ?? 'ALL'}
+                    onChange={(e) =>
+                      setAudiences((a) => ({ ...a, [q.id]: e.target.value as 'ALL' | 'SINGLE' }))
+                    }
+                  >
+                    <option value="ALL">Everyone, published with the next addendum</option>
+                    <option value="SINGLE">Only the supplier who asked, sent now</option>
+                  </Select>
                 </Field>
                 <div>
                   <Button type="submit" variant="secondary" loading={busy === `ans-${q.id}`}>

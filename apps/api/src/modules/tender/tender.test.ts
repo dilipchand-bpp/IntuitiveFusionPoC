@@ -373,7 +373,7 @@ describe('US-SUP-01 invitation and self-registration', () => {
       password: SUPPLIER_PW,
     });
     expect(reg.statusCode, reg.body).toBe(201);
-    expect(reg.json().sanctionsStatus).toBe('PENDING');
+    expect(reg.json().sanctionsStatus).toBe('CLEAR'); // screened at registration (FR-0180)
     expect((await anon('GET', `/supplier/invitations/${token}`)).statusCode).toBe(404);
     const again = await anon('POST', '/supplier/register', {
       token,
@@ -556,7 +556,14 @@ describe('US-SUP-02 a supplier sees only the tender they are invited to (IDOR)',
     expect(open).toBeTruthy();
     const view = (await call('supplier', 'GET', `/supplier/tenders/${open.id}`)).json();
     expect(view.questions).toHaveLength(1);
-    expect(Object.keys(view.questions[0]).sort()).toEqual(['answer', 'askedAt', 'id', 'status', 'text']);
+    expect(Object.keys(view.questions[0]).sort()).toEqual([
+      'answer',
+      'askedAt',
+      'audience',
+      'id',
+      'status',
+      'text',
+    ]);
     expect(view.fields).toHaveLength(9);
   });
 });
@@ -592,8 +599,9 @@ describe('US-TND-03 anonymised Q&A and addenda', () => {
       expect(body).not.toContain(asker.email);
       expect(body.toLowerCase()).not.toContain('askedbysupplier');
     }
-    // and nothing in the whole tender view links a supplier id to anything (the invitation list names every invitee equally)
-    expect(JSON.stringify(viewJson)).not.toContain(askerId);
+    // the invitation list names every invitee equally (needed for late permissions and shortlisting); no other part of the view carries a supplier id
+    const rest = { ...viewJson, invitations: undefined, bids: undefined };
+    expect(JSON.stringify(rest)).not.toContain(askerId);
     // unanswered and unpublished: invisible to the other supplier
     expect((await call(other.key, 'GET', `/tenders/${t.id}/questions`)).json()).toEqual([]);
 
@@ -638,7 +646,7 @@ describe('US-TND-03 anonymised Q&A and addenda', () => {
     expect(edit.json().code).toBe('ALREADY_PUBLISHED');
   });
 
-  it('an addendum may extend the closing time but never shorten it; the limit of 10 questions per supplier is enforced', async () => {
+  it('an addendum may move the closing time, but never to leave less than the statutory window (FR-0210); the limit of 10 questions per supplier is enforced', async () => {
     const t = await publishedTender();
     const sup = await invitedSupplier(t.id, 'extender');
     const closes = new Date(
@@ -646,9 +654,10 @@ describe('US-TND-03 anonymised Q&A and addenda', () => {
     ).getTime();
     const shorter = await call('procurement', 'POST', `/tenders/${t.id}/addenda`, {
       summary: 'Shorten it',
-      newClosesAt: new Date(closes - DAY).toISOString(),
+      newClosesAt: new Date(closes - 10 * DAY).toISOString(), // well under the 25-day minimum from publication
     });
     expect(shorter.statusCode).toBe(422);
+    expect(shorter.json().code).toBe('STATUTORY_WINDOW');
     const later = new Date(closes + 3 * DAY).toISOString();
     const ok = await call('procurement', 'POST', `/tenders/${t.id}/addenda`, {
       summary: 'Closing extended by three days.',
@@ -686,10 +695,12 @@ describe('US-TND-03 anonymised Q&A and addenda', () => {
       }
     };
     walk(root);
-    // schema (the column), seed (demo data) and the supplier route that stores it. Nothing else may mention it.
+    // schema (the column), seed (demo data), the supplier route that stores it, and the staff route that reads it only to
+    // choose who receives a single-supplier answer (FR-0195). No response ever includes it.
     expect(hits.sort()).toEqual([
       'db/schema.ts',
       'db/seed.ts',
+      'modules/tender/routes.ts',
       'modules/tender/serialisers.ts',
       'modules/tender/supplier-routes.ts',
     ]);

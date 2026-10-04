@@ -31,6 +31,7 @@ import { TenderService } from './modules/tender/service.js';
 import { registerTenderRoutes } from './modules/tender/routes.js';
 import { registerSupplierDirectory } from './modules/tender/supplier-directory.js';
 import { registerSupplierRoutes } from './modules/tender/supplier-routes.js';
+import { registerTenderB2 } from './modules/tender/b2-routes.js';
 import { registerSpecStubs } from './spec-routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -145,6 +146,13 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   }))
     implemented.add(k);
   for (const k of registerSupplierRoutes(app, API_PREFIX, {
+    ...guardDeps,
+    store,
+    config,
+    publicRateLimitMax: deps.loginRateLimitMax ?? 20,
+  }))
+    implemented.add(k);
+  for (const k of registerTenderB2(app, API_PREFIX, {
     ...guardDeps,
     store,
     config,

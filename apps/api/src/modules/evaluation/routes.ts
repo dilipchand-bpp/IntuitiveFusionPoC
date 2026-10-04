@@ -119,6 +119,27 @@ const decisionBody = z
   .object({ decision: z.enum(['APPROVE', 'REJECT']), comment: z.string().trim().max(2000).optional() })
   .strict();
 
+/**
+ * Tender administrators (procurement), probity officers and administrators cannot also hold evaluator access on the same
+ * project (FR-0190): the person who runs or oversees the process does not score it.
+ */
+async function assertSegregated(tx: Tx, tenantId: string, userIds: string[]): Promise<void> {
+  if (userIds.length === 0) return;
+  const rows = await tx
+    .select({ userId: roleAssignment.userId, role: roleAssignment.role })
+    .from(roleAssignment)
+    .where(and(eq(roleAssignment.tenantId, tenantId), inArray(roleAssignment.userId, userIds)));
+  const bad = rows.find((r) => ['PROCUREMENT', 'PROBITY', 'ADMIN'].includes(r.role));
+  if (bad) {
+    const res = checkSod('JOIN_EVALUATION_PANEL', {
+      roles: rows.filter((r) => r.userId === bad.userId).map((r) => r.role as RoleName),
+      isTenderAdministrator: bad.role === 'PROCUREMENT' || bad.role === 'PROBITY',
+    });
+    if (!res.ok)
+      throw new AppError(403, res.code, res.message, [{ field: 'userId', message: `Rule ${res.rule}` }]);
+  }
+}
+
 export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: EvaluationDeps): Set<string> {
   const done = new Set<string>();
   const reg = (m: string, path: string) => done.add(`${m} ${path}`);
@@ -279,6 +300,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           ),
         );
       const isEvaluator = new Set(roleRows.filter((r) => r.role === 'EVALUATOR').map((r) => r.userId));
+      const chairCandidate = roleRows.find((r) => r.role === 'CHAIR')?.userId;
       const bad = ids.filter((i) => !isEvaluator.has(i));
       if (bad.length)
         throw new AppError(400, 'PANEL_INVALID', 'Panel members must be users with the evaluator role');
@@ -288,6 +310,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           'PANEL_INVALID',
           'The person who raised the request cannot evaluate the responses',
         );
+      await assertSegregated(tx, a.user.tenantId, [...ids, ...(chairCandidate ? [chairCandidate] : [])]);
       for (const s of ['TECHNICAL', 'COMMERCIAL'] as const)
         if (template.some((c) => c.stream === s) && !body.panel.some((m) => m.stream === s))
           throw new AppError(
@@ -297,6 +320,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           );
       const chairId = roleRows.find((r) => r.role === 'CHAIR')?.userId;
       if (!chairId) throw new AppError(409, 'NO_CHAIR', 'There is no panel chair in the system');
+      void chairId;
 
       const now = d.clock.now();
       const [ev] = await tx
@@ -386,6 +410,7 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           'PANEL_INVALID',
           'The person who raised the request cannot evaluate the responses',
         );
+      await assertSegregated(tx, a.user.tenantId, [body.userId]);
       await tx.insert(panelMember).values({
         tenantId: a.user.tenantId,
         evaluationId: id,

@@ -149,3 +149,24 @@
 | POST | `/admin/grants/sweep` | sweepGrants | ADMIN | Remove ended grants, end their sessions and tell the people involved (also runs on a schedule) |  |
 | POST | `/suppliers/{id}/contacts/{userId}/deprovision` | deprovisionContact | PROCUREMENT | Switch a departed contact off: no sign-in, open links void, sessions ended |  |
 | POST | `/suppliers/{id}/contacts/{userId}/reassign` | reassignContact | PROCUREMENT | Replace a contact with someone else; the old access ends and the new person gets a one-time link |  |
+| POST | `/tenders/{id}/late-permissions` | grantLatePermission | PROCUREMENT | Let one supplier submit after the closing time, with a reason and a short expiry; audited and told by email |  |
+| GET | `/tenders/{id}/late-permissions` | listLatePermissions | PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC | Late-submission permissions granted on this tender |  |
+| DELETE | `/tenders/{id}/late-permissions/{permissionId}` | revokeLatePermission | PROCUREMENT | Withdraw a late-submission permission |  |
+| GET | `/tenders/{id}/stages` | listTenderStages | PROCUREMENT, LEGAL, DELEGATE, EXEC, PROBITY | The stages of this procurement and where each stands |  |
+| POST | `/tenders/{id}/shortlist` | shortlistSuppliers | PROCUREMENT | Shortlist suppliers after evaluation: creates the next stage's own pack, invites the shortlisted, tells the unsuccessful |  |
+| GET | `/tenders/{id}/deviations` | getDeviationRegister | LEGAL, PROCUREMENT | Contract changes suppliers proposed (sealed until the tender closes) |  |
+| PUT | `/tender-deviations/{id}` | assessDeviation | LEGAL | Legal rates the risk, comments and sets the status of a proposed change |  |
+| GET | `/tenders/{id}/deviations/export.xlsx` | exportDeviationsXlsx | LEGAL, PROCUREMENT | The deviation register as an Excel workbook (audited) |  |
+| GET | `/tenders/{id}/deviations/export.docx` | exportDeviationsDocx | LEGAL, PROCUREMENT | The deviation register as a Word document (audited) |  |
+| GET | `/tenders/{id}/notices` | listPublicNotices | PROCUREMENT, LEGAL, DELEGATE, EXEC, PROBITY | Notices routed to public registers (simulated) |  |
+| POST | `/suppliers/{id}/sanctions-review` | reviewSanctionsMatch | PROCUREMENT, LEGAL | Release or confirm a screening match; a held supplier cannot see tender documents until released |  |
+| GET | `/admin/email-log` | listEmailLog | ADMIN, PROCUREMENT | Email that would have been sent (simulated) |  |
+| POST | `/supplier/tenders/{id}/deviations` | proposeDeviation | SUPPLIER | Propose a change to a contract clause as part of the response |  |
+| GET | `/supplier/tenders/{id}/deviations` | listMyDeviations | SUPPLIER | The changes this supplier proposed |  |
+| DELETE | `/supplier/tenders/{id}/deviations/{deviationId}` | withdrawDeviation | SUPPLIER | Withdraw a proposed change while the tender is open |  |
+| GET | `/supplier/onboarding-questions` | listOnboardingQuestions | public | The organisation's own registration questions |  |
+| GET | `/supplier/profile` | getSupplierProfile | SUPPLIER | The supplier's own profile: screening and insurance status, privacy choices, contacts |  |
+| PUT | `/supplier/profile/privacy` | setSupplierPrivacy | SUPPLIER | Change the supplier's privacy choices |  |
+| PUT | `/supplier/profile/insurance` | setSupplierInsurance | SUPPLIER | Record the current insurance certificate |  |
+| POST | `/supplier/contacts` | addSupplierContact | SUPPLIER | Add a colleague; they receive a one-time link through the person who added them |  |
+| POST | `/supplier/contacts/{userId}/deprovision` | removeSupplierContact | SUPPLIER | End a colleague's access; sessions end and they are told |  |

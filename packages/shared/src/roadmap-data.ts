@@ -216,12 +216,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0125',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'RFx / Tender Collaboration',
     area: '/app/collaboration',
     priority: 'Should',
     title:
       'Support a structured legal deviation register, capturing supplier-proposed contract deviations as discrete fields, exportable to Word/Excel, with legal commentary...',
+    batch: 'B2',
   }, // TODO(FR-0125)
   {
     id: 'FR-0130',
@@ -236,22 +237,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0140',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'RFx / Tender Collaboration',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       'Route the finalised tender notice automatically to mandatory public registers (for example AusTender, SAM.gov, TED) for public-sector tenders based on jurisdiction,...',
+    batch: 'B2',
   }, // TODO(FR-0140)
   {
     id: 'FR-0145',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'RFx / Tender Collaboration',
     area: '/app/collaboration',
     priority: 'Must',
     title:
       'For public-sector tenders, the system shall validate that the gap between publication and closing dates meets applicable statutory minimums (for example a 25-day...',
+    batch: 'B2',
   }, // TODO(FR-0145)
   {
     id: 'FR-0175',
@@ -266,12 +269,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0180',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Perform automated sanctions/watchlist screening (for example OFAC, EU Sanctions, INTERPOL) during supplier onboarding, and shall quarantine document access and alert...',
+    batch: 'B2',
   }, // TODO(FR-0180)
   {
     id: 'FR-0185',
@@ -286,122 +290,134 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0190',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Enforce segregation of duties, blocking users holding Tender Administrator or Probity Officer roles from also holding Evaluator access on the same project',
+    batch: 'B2',
   }, // TODO(FR-0190)
   {
     id: 'FR-0195',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Questions and answers raised through the portal shall be captured and publishable either to a single supplier or broadcast to all suppliers on the tender',
+    batch: 'B2',
   }, // TODO(FR-0195)
   {
     id: 'FR-0200',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Automatically send email invitations to suppliers invited to a specific tender, and shall automatically generate and release the tender pack from the completed RFx...',
+    batch: 'B2',
   }, // TODO(FR-0200)
   {
     id: 'FR-0205',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Should',
     title:
       'Procurement or administrator roles shall be able to grant permission for a nominated supplier to submit after the closing time where there is a justified reason,...',
+    batch: 'B2',
   }, // TODO(FR-0205)
   {
     id: 'FR-0210',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Procurement or administrator roles shall be able to issue addenda and change tender dates and times, with automatic notification to all registered bidders',
+    batch: 'B2',
   }, // TODO(FR-0210)
   {
     id: 'FR-0215',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Should',
     title:
       'Enterprises shall be able to configure additional supplier onboarding questions (for example modern slavery and sustainability questions) and, where a question set is...',
+    batch: 'B2',
   }, // TODO(FR-0215)
   {
     id: 'FR-0220',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Should',
     title:
       'Multi-stage tendering shall support a separate document set, submission round and report per stage, including second and third stage submissions from shortlisted...',
+    batch: 'B2',
   }, // TODO(FR-0220)
   {
     id: 'FR-0225',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Suppliers who are not shortlisted shall be sent an automated unsuccessful notification once the procurement team or administrator confirms the shortlist outcome',
+    batch: 'B2',
   }, // TODO(FR-0225)
   {
     id: 'FR-0230',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: '/app/tenders',
     priority: 'Must',
     title:
       'Where a supplier submits across multiple stages, the AI shall treat the latest submission version as authoritative while capturing content from earlier versions that...',
+    batch: 'B2',
   }, // TODO(FR-0230)
   {
     id: 'FR-0240',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Supplier Portal',
     area: '/supplier',
     priority: 'Must',
     title:
       "Send an invitation email to prospective suppliers containing a unique link for the supplier's contact to set up their own portal instance, including privacy settings...",
+    batch: 'B2',
   }, // TODO(FR-0240)
   {
     id: 'FR-0245',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Supplier Portal',
     area: '/supplier',
     priority: 'Must',
     title:
       'Suppliers shall be able to manage and change their registered contacts, including reassigning access when a contact leaves the organisation, with a notification email...',
+    batch: 'B2',
   }, // TODO(FR-0245)
   {
     id: 'FR-0250',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Supplier Portal',
     area: '/supplier',
     priority: 'Must',
     title:
       'The supplier profile shall carry current insurance certificate and sanctions-screening status, shared with the Tender Portal onboarding checks',
+    batch: 'B2',
   }, // TODO(FR-0250)
   {
     id: 'FR-0265',
