@@ -16,137 +16,151 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0010',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Should',
     title:
       'A single intake conversation shall be capable of auto-populating multiple downstream artefacts, including the procurement plan, RFx/tender documents, evaluation...',
+    batch: 'B1',
   }, // TODO(FR-0010)
   {
     id: 'FR-0015',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title:
       'Cross-reference request details against a system defined configurable industry classification taxonomies (UNSPSC, CPV or NAICS) and entity specific classifications...',
+    batch: 'B1',
   }, // TODO(FR-0015)
   {
     id: 'FR-0020',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Should',
     title:
       'Infer likely suppliers / quote sets for a request based on category of spend, using existing in-house supplier data including known market suppliers and their contact...',
+    batch: 'B1',
   }, // TODO(FR-0020)
   {
     id: 'FR-X02',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Unprioritised',
     title: 'Have the ability to configure muiltiple procurement workflows based on their procurement policy',
+    batch: 'B1',
   }, // TODO(FR-X02)
   {
     id: 'FR-0030',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title:
       'Automatically identify and flag any approvals or engagements required (for example IT approval, legal review, cyber assessment, finance, risk & compliance) based on...',
+    batch: 'B1',
   }, // TODO(FR-0030)
   {
     id: 'FR-0040',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title:
       'Support a configurable choice between procurement-team-led intake (higher value/risk) and self-service intake (lower value/risk), per organisational policy',
+    batch: 'B1',
   }, // TODO(FR-0040)
   {
     id: 'FR-0045',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Should',
     title:
       'Offer configurable Dashboard layouts — a dense analytical workspace for high-volume category managers — selectable by user role',
+    batch: 'B1',
   }, // TODO(FR-0045)
   {
     id: 'FR-X03',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Should',
     title: 'Offer users the ability to select from mulitple layouts',
+    batch: 'B1',
   }, // TODO(FR-X03)
   {
     id: 'FR-X04',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Should',
     title: 'Offer configurable forms',
+    batch: 'B1',
   }, // TODO(FR-X04)
   {
     id: 'FR-0050',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title:
       "Where a customer's ERP is integrated, the system shall perform a real-time pre-commitment budget check (active budget lines, available funds) before a request can be...",
+    batch: 'B1',
   }, // TODO(FR-0050)
   {
     id: 'FR-0055',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title: 'If budget is flagged as exceeded - what is next step??',
+    batch: 'B1',
   }, // TODO(FR-0055)
   {
     id: 'FR-X05',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Unprioritised',
     title:
       "CLIENT QUERY: This row (private-sector 'soft cap' model) has no Requirement ID — recommend assigning one (for example FR-0056) for traceability",
+    batch: 'B1',
   }, // TODO(FR-X05)
   {
     id: 'FR-0065',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title: 'Dispatch predefined automated notifications (in-platform, email, Slack, MS Teams)',
+    batch: 'B1',
   }, // TODO(FR-0065)
   {
     id: 'FR-0066',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Must',
     title:
       "Allow the customer to define notifications rules such as budget breaches, delegate action requests, and approval-timeout escalation, escalating to the delegate's...",
+    batch: 'B1',
   }, // TODO(FR-0066)
   {
     id: 'FR-0085',
@@ -161,30 +175,33 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0090',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Procurement Plan',
     area: '/app/plans',
     priority: 'Must',
     title: 'No description in the requirements register',
+    batch: 'B1',
   }, // TODO(FR-0090)
   {
     id: 'FR-0095',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Procurement Plan',
     area: '/app/plans',
     priority: 'Should',
     title:
       'Provide capabilities to tag and categorise records for example ESG / socio-economic planning capability, carbon offset ceilings, domestic/regional labour content...',
+    batch: 'B1',
   }, // TODO(FR-0095)
   {
     id: 'FR-X06',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: '/app/requests',
     priority: 'Unprioritised',
     title: 'Delegated approval setup and actioned. This is a customer configurable parameter',
+    batch: 'B1',
   }, // TODO(FR-X06)
   {
     id: 'FR-0115',
@@ -648,7 +665,7 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0435',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'PARTIAL',
     category: 'Contract Award & Legal',
     area: '/app/contracts',
     priority: 'Should',
@@ -996,132 +1013,145 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0655',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Data Migration',
     area: '/admin/migration',
     priority: 'Must',
     title:
       "Support ingestion of a customer's existing procurement and contract records from prior systems — structured exports, database extracts or document repositories — as...",
+    batch: 'B1',
   }, // TODO(FR-0655)
   {
     id: 'FR-0660',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Data Migration',
     area: '/admin/migration',
     priority: 'Must',
     title:
       "Migrated records shall be automatically linked into the platform's native record structures — for example a migrated contract linked to its migrated originating...",
+    batch: 'B1',
   }, // TODO(FR-0660)
   {
     id: 'FR-0665',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Data Migration',
     area: '/admin/migration',
     priority: 'Must',
     title:
       'Run a data validation and profiling pass on migrated records prior to cutover, producing an exceptions report covering missing mandatory fields, unparseable dates or...',
+    batch: 'B1',
   }, // TODO(FR-0665)
   {
     id: 'FR-0670',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Data Migration',
     area: '/admin/migration',
     priority: 'Must',
     title:
       'Migrated historical records shall be distinguishable from natively created records via a source-system flag, while remaining fully searchable, reportable and subject...',
+    batch: 'B1',
   }, // TODO(FR-0670)
   {
     id: 'FR-0675',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Data Migration',
     area: '/admin/migration',
     priority: 'Must',
     title:
       'Migration shall include AI extraction from legacy contracts of obligations, KPIs, deliverables, SLAs and optional extensions, with contract management records and...',
+    batch: 'B1',
   }, // TODO(FR-0675)
   {
     id: 'FR-0690',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       "Changes made within the administrative configuration interface shall be captured in the platform's audit trail, recording the administrator, the setting changed, and...",
+    batch: 'B1',
   }, // TODO(FR-0690)
   {
     id: 'FR-0695',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       'Auto-generate sequential procurement numbers in a format configurable by the customer, with the procurement number defaulting to the contract number unless the...',
+    batch: 'B1',
   }, // TODO(FR-0695)
   {
     id: 'FR-0700',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       "Field labels shall be configurable so that platform fields can be aligned to each customer's existing system naming conventions for both push and pull, and inbound...",
+    batch: 'B1',
   }, // TODO(FR-0700)
   {
     id: 'FR-0705',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       'Provide a library of end-to-end workflows (for example simple, intermediate, complex, and a high-risk/high-value workflow with added governance such as board...',
+    batch: 'B1',
   }, // TODO(FR-0705)
   {
     id: 'FR-0710',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       'Offer two workflow design modes: a configurable out-of-the-box workflow set in which predefined fields can be included or excluded and administrators can define...',
+    batch: 'B1',
   }, // TODO(FR-0710)
   {
     id: 'FR-0720',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       'Support configurable mandatory checkpoints that an enterprise may choose to enforce or relax — for example requiring all conflict-of-interest declarations to be...',
+    batch: 'B1',
   }, // TODO(FR-0720)
   {
     id: 'FR-0725',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Must',
     title:
       "Delegates shall be auto-populated for every workflow and every stage, with automatic re-nomination where a stage's value exceeds the current delegate's authority and...",
+    batch: 'B1',
   }, // TODO(FR-0725)
   {
     id: 'FR-0730',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Admin & Configuration',
     area: '/admin',
     priority: 'Should',
     title:
       'Users shall be able to add or remove workflow steps for a specific procurement where the delegate has approved that variation to the standard process',
+    batch: 'B1',
   }, // TODO(FR-0730)
   {
     id: 'FR-0735',
@@ -1826,22 +1856,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-A01',
     tier: 'S',
-    status: 'PARTIAL',
+    status: 'BUILT',
     category: 'Authentication & Identity',
     area: '/admin/users',
     priority: 'Must',
     title:
       'Multi-factor authentication shall be enforced for platform user accounts, supporting TOTP and SMS one-time codes',
+    batch: 'B1',
   }, // TODO(SEC-A01)
   {
     id: 'SEC-A02',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Authentication & Identity',
     area: '/admin/users',
     priority: 'Must',
     title:
       'Single sign-on shall be supported via enterprise identity providers using SAML or OIDC federation, with identity management capabilities for enterprise customers',
+    batch: 'B1',
   }, // TODO(SEC-A02)
   {
     id: 'SEC-A03',
@@ -1856,32 +1888,35 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-A04',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Authentication & Identity',
     area: '/admin/users',
     priority: 'Must',
     title:
       'Where an organisation requires it, the platform shall enforce SSO or mobile-device-based authentication for all actions, disabling any link-based approval path that...',
+    batch: 'B1',
   }, // TODO(SEC-A04)
   {
     id: 'SEC-A05',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Authentication & Identity',
     area: '/admin/users',
     priority: 'Should',
     title:
       'Identity grants for evaluation committee members, auditors, advisors and probity officers shall be time-bound, expiring automatically at a configured date or on a...',
+    batch: 'B1',
   }, // TODO(SEC-A05)
   {
     id: 'SEC-A06',
     tier: 'S',
-    status: 'PLANNED',
+    status: 'BUILT',
     category: 'Authentication & Identity',
     area: '/admin/users',
     priority: 'Must',
     title:
       'Supplier contact access shall be reassignable and de-provisioned when a contact leaves the supplier organisation, so that departed personnel retain no access',
+    batch: 'B1',
   }, // TODO(SEC-A06)
   {
     id: 'SEC-AC09',

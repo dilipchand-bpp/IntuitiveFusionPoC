@@ -5,6 +5,7 @@
  */
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   bigserial,
   boolean,
   index,
@@ -99,6 +100,9 @@ export const roleAssignment = pgTable(
     userId: uuid('user_id').notNull(),
     role: text('role', { enum: ROLES }).notNull(),
     division: text('division'),
+    /** A time-bound grant ends here; the role then stops applying (SEC-A05). Null means it does not expire. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    grantedBy: uuid('granted_by'),
   },
   (t) => [uniqueIndex('role_assignment_uq').on(t.userId, t.role)],
 );
@@ -128,6 +132,7 @@ export const supplier = pgTable('supplier', {
     .notNull()
     .default('UNKNOWN'),
   lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+  categories: jsonb('categories').notNull().default([]),
   createdAt: created(),
 });
 
@@ -156,6 +161,17 @@ export const request = pgTable(
     budgetCheck: text('budget_check', { enum: ['NOT_RUN', 'CLEARED', 'EXCEEDED', 'UNAVAILABLE'] })
       .notNull()
       .default('NOT_RUN'),
+    taxonomyScheme: text('taxonomy_scheme'),
+    taxonomyCode: text('taxonomy_code'),
+    taxonomyConfirmed: boolean('taxonomy_confirmed').notNull().default(false),
+    workflowId: text('workflow_id'),
+    subWorkflow: text('sub_workflow'),
+    processSteps: jsonb('process_steps').notNull().default([]),
+    processVariations: jsonb('process_variations').notNull().default([]),
+    engagements: jsonb('engagements').notNull().default([]),
+    nominatedDelegates: jsonb('nominated_delegates').notNull().default({}),
+    ecv: jsonb('ecv'),
+    sourceSystem: text('source_system'),
     createdAt: created(),
     updatedAt: updated(),
     version: version(),
@@ -448,6 +464,7 @@ export const contract = pgTable('contract', {
   noticeDays: integer('notice_days').notNull().default(90),
   locked: boolean('locked').notNull().default(false),
   ownerId: uuid('owner_id'),
+  sourceSystem: text('source_system'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }), // logical delete only (NFR-CA02)
   createdAt: created(),
   updatedAt: updated(),
@@ -528,9 +545,34 @@ export const notification = pgTable('notification', {
   title: text('title').notNull(),
   body: text('body'),
   link: text('link'),
+  event: text('event'),
   read: boolean('read').notNull().default(false),
   createdAt: created(),
 });
+
+export const notificationDelivery = pgTable('notification_delivery', {
+  id: id(),
+  tenantId: tenantId(),
+  notificationId: uuid('notification_id').notNull(),
+  channel: text('channel').notNull(),
+  status: text('status').notNull().default('SENT'),
+  detail: text('detail'),
+  createdAt: created(),
+});
+
+export const escalation = pgTable(
+  'escalation',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    entityType: text('entity_type').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    level: integer('level').notNull().default(1),
+    notifiedUserId: uuid('notified_user_id').notNull(),
+    createdAt: created(),
+  },
+  (t) => [uniqueIndex('escalation_once').on(t.entityType, t.entityId, t.level)],
+);
 
 export const template = pgTable('template', {
   id: text('id').primaryKey(),
@@ -548,6 +590,7 @@ export const workflow = pgTable('workflow', {
   name: text('name').notNull(),
   tier: text('tier', { enum: ['SIMPLE', 'INTERMEDIATE', 'COMPLEX'] }).notNull(),
   steps: jsonb('steps').notNull().default([]),
+  subWorkflows: jsonb('sub_workflows').notNull().default([]),
   editable: boolean('editable').notNull().default(false),
 });
 
@@ -608,6 +651,58 @@ export const session = pgTable(
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
     ip: text('ip'),
     userAgent: text('user_agent'),
+    mfaState: text('mfa_state', { enum: ['NOT_REQUIRED', 'VERIFIED', 'ENROLMENT_REQUIRED'] })
+      .notNull()
+      .default('NOT_REQUIRED'),
+    authMethod: text('auth_method', { enum: ['PASSWORD', 'SSO'] })
+      .notNull()
+      .default('PASSWORD'),
   },
   (t) => [index('session_user_idx').on(t.userId)],
 );
+
+export const migrationBatch = pgTable('migration_batch', {
+  id: id(),
+  tenantId: tenantId(),
+  filename: text('filename').notNull(),
+  sourceSystem: text('source_system').notNull(),
+  status: text('status', { enum: ['VALIDATED', 'CUTOVER', 'CANCELLED'] })
+    .notNull()
+    .default('VALIDATED'),
+  total: integer('total').notNull().default(0),
+  uploadedBy: uuid('uploaded_by').notNull(),
+  createdAt: created(),
+  cutoverAt: timestamp('cutover_at', { withTimezone: true }),
+  cutoverBy: uuid('cutover_by'),
+});
+
+export const migrationRecord = pgTable(
+  'migration_record',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    batchId: uuid('batch_id').notNull(),
+    rowNo: integer('row_no').notNull(),
+    raw: jsonb('raw').notNull(),
+    status: text('status', { enum: ['VALID', 'EXCEPTION', 'SKIPPED', 'LOADED'] })
+      .notNull()
+      .default('VALID'),
+    issues: jsonb('issues').notNull().default([]),
+    warnings: jsonb('warnings').notNull().default([]),
+    reviewedBy: uuid('reviewed_by'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
+    requestId: uuid('request_id'),
+    contractId: uuid('contract_id'),
+  },
+  (t) => [uniqueIndex('migration_row_uq').on(t.batchId, t.rowNo)],
+);
+
+export const userMfa = pgTable('user_mfa', {
+  userId: uuid('user_id').primaryKey(),
+  tenantId: tenantId(),
+  secret: text('secret').notNull(),
+  confirmed: boolean('confirmed').notNull().default(false),
+  lastStep: bigint('last_step', { mode: 'number' }).notNull().default(0),
+  createdAt: created(),
+});

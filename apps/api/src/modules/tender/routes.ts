@@ -27,6 +27,8 @@ import {
   tenant,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { SUB_WORKFLOWS } from '../intake/classify.js';
+import { esgFrom, esgText } from '../plan/esg.js';
 import { valuesOf } from '../intake/service.js';
 import { TENDER_FIELD_BY_KEY, TENDER_FIELDS, TENDER_TYPES } from './fields.js';
 import type { SealedStore } from './files.js';
@@ -243,6 +245,11 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
         plan: Object.fromEntries(planFields.map((f) => [f.key, f.value ?? undefined])),
         request: values,
         contactEmail: d.contactEmail,
+        categoryRequirements:
+          SUB_WORKFLOWS.find((x) => x.key === r.subWorkflow)
+            ?.planSections.map((x) => `${x.title}. ${x.text}`)
+            .join(String.fromCharCode(10, 10)) || undefined,
+        esg: esgText(esgFrom(planFields)) || undefined,
         ...(org?.sector === 'PUBLIC' && cfg.statutoryMinDays
           ? { statutoryMinDays: cfg.statutoryMinDays }
           : {}),

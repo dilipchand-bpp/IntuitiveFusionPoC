@@ -12,6 +12,8 @@ export interface AdminUser {
   orgUnitId: string | null;
   active: boolean;
   roles: string[];
+  /** Roles that end on a date (SEC-A05). */
+  grants?: Array<{ role: string; expiresAt: string; ended: boolean }>;
   awaitingActivation: boolean;
 }
 export interface OrgUnit {
@@ -107,6 +109,8 @@ export function UsersPanel({
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [dates, setDates] = useState<AdminUser | null>(null);
+  const [until, setUntil] = useState<Record<string, string>>({});
 
   const reload = async () => setUsers(await api<AdminUser[]>('/admin/users'));
   const fullLink = (path: string) => `${window.location.origin}${path}`;
@@ -192,7 +196,14 @@ export function UsersPanel({
               <Td label="Email" className="break-all text-xs">
                 {u.email}
               </Td>
-              <Td label="Roles">{u.roles.map((r) => LABEL[r] ?? r).join(', ')}</Td>
+              <Td label="Roles">
+                {u.roles
+                  .map((r) => {
+                    const g = u.grants?.find((x) => x.role === r);
+                    return `${LABEL[r] ?? r}${g ? ` (until ${new Date(g.expiresAt).toLocaleDateString('en-AU')})` : ''}`;
+                  })
+                  .join(', ')}
+              </Td>
               <Td label="Unit">{u.orgUnit ?? '–'}</Td>
               <Td label="Status">
                 {!u.active ? (
@@ -223,11 +234,76 @@ export function UsersPanel({
                 >
                   Edit
                 </Button>
+                {u.id !== meId && !u.roles.includes('ADMIN') && (
+                  <Button
+                    variant="ghost"
+                    aria-label={`Access dates for ${u.name}`}
+                    onClick={() => {
+                      setDates(u);
+                      setError(null);
+                    }}
+                  >
+                    Access dates
+                  </Button>
+                )}
               </Td>
             </tr>
           ))}
         </tbody>
       </Table>
+
+      <Dialog
+        open={dates !== null}
+        onOpenChange={(o) => !o && setDates(null)}
+        title={`Access dates for ${dates?.name ?? ''}`}
+        description="Make a role time-bound. Access ends on the date without anyone doing anything, and the person is told. Leave a date empty for access with no end."
+        footer={<Button onClick={() => setDates(null)}>Done</Button>}
+      >
+        <div className="flex flex-col gap-3">
+          {dates?.roles.map((r) => {
+            const g = dates.grants?.find((x) => x.role === r);
+            return (
+              <div key={r} className="flex flex-wrap items-end gap-2">
+                <Field label={`${LABEL[r] ?? r} ends on`}>
+                  <Input
+                    type="date"
+                    value={until[r] ?? (g ? g.expiresAt.slice(0, 10) : '')}
+                    onChange={(e) => setUntil({ ...until, [r]: e.target.value })}
+                  />
+                </Field>
+                <Button
+                  variant="secondary"
+                  loading={busy === `date-${r}`}
+                  aria-label={`Save end date for ${LABEL[r] ?? r}`}
+                  onClick={() =>
+                    void run(`date-${r}`, async () => {
+                      const v = until[r] ?? (g ? g.expiresAt.slice(0, 10) : '');
+                      const updated = await api<AdminUser>(`/admin/users/${dates.id}/role-expiry`, {
+                        method: 'PUT',
+                        csrf,
+                        body: { role: r, expiresAt: v ? `${v}T23:59:59.000Z` : null },
+                      });
+                      setDates(updated);
+                      setNote(
+                        v
+                          ? `${LABEL[r] ?? r} access for ${dates.name} ends on ${v}.`
+                          : `${LABEL[r] ?? r} access for ${dates.name} no longer ends.`,
+                      );
+                    })
+                  }
+                >
+                  Save
+                </Button>
+              </div>
+            );
+          })}
+          {error && dates && (
+            <p role="alert" className="text-sm font-medium text-error">
+              {error}
+            </p>
+          )}
+        </div>
+      </Dialog>
 
       <Dialog
         open={dialog === 'add'}

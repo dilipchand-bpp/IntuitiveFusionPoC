@@ -1,7 +1,11 @@
 import { Badge } from '@if/ui';
 import type { RoadmapItem } from '@if/shared';
 
-const STATUS: Record<RoadmapItem['status'], { label: string; tone: 'info' | 'warning' | 'neutral' }> = {
+const STATUS: Record<
+  RoadmapItem['status'],
+  { label: string; tone: 'success' | 'info' | 'warning' | 'neutral' }
+> = {
+  BUILT: { label: 'Built', tone: 'success' },
   PARTIAL: { label: 'Partly built', tone: 'info' },
   PLANNED: { label: 'Coming soon', tone: 'warning' },
   DEFERRED: { label: 'Not in the proof of concept', tone: 'neutral' },

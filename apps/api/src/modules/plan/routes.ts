@@ -24,6 +24,7 @@ import {
   roleAssignment,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { loadSettings } from '../settings/settings.js';
 import { PLAN_FIELDS, PLAN_FIELD_BY_KEY, joinParagraphs, splitParagraphs } from './fields.js';
 import { PlanService, type Loaded } from './service.js';
 
@@ -413,6 +414,19 @@ export function registerPlanRoutes(app: FastifyInstance, p: string, d: PlanDeps)
             .update(request)
             .set({ status: 'IN_PROGRESS', updatedAt: now })
             .where(eq(request.id, l.req.id));
+          if (
+            !(await loadSettings(tx, a.user.tenantId)).checkpoints.coiBeforeApproval &&
+            !(await svc.coiSatisfied(tx, l))
+          )
+            await d.audit.record(tx, a.ctx, {
+              action: 'checkpoint.relaxed',
+              entityType: 'plan',
+              entityId: id,
+              after: {
+                checkpoint: 'coiBeforeApproval',
+                note: 'Approved without all conflict declarations because the checkpoint is switched off',
+              },
+            });
           await d.audit.record(tx, a.ctx, {
             action: 'plan.approve',
             entityType: 'plan',

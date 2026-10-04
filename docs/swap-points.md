@@ -98,3 +98,16 @@ This page lists the swap points that exist **today**; later milestones append to
 | --- | --- |
 | Today | "Include my manager" resolves to the nearest delegate or executive in the person's organisation unit, else any delegate: the proof of concept has no reporting lines |
 | Swap | Replace `resolveManager` in `modules/contract/record.ts` with a lookup against the identity provider or HR system, keeping the rule that it is resolved when the alert fires |
+
+
+## Roadmap batch B1: what is real and what is simulated
+
+| Capability | Status | Swap point |
+|---|---|---|
+| Authenticator-app codes (SEC-A01) | **Real.** RFC 6238 time-based codes (SHA-1, 30 s, 6 digits) checked against the published test vectors; secrets stored encrypted (AES-256-GCM, key derived from the server secret); a code works once; the password-then-code step issues no session until the code is right | None needed. When an enterprise identity provider performs MFA itself, single sign-on sessions already skip the second step (`authMethod = SSO`) |
+| Single sign-on (SEC-A02) | **Simulated provider, real validation.** `POST /auth/sso/simulate` plays the identity provider and issues an HS256 ID token for a demo person (refused when `NODE_ENV=production`). `POST /auth/sso/callback` checks signature, issuer, audience, expiry and nonce, then requires an existing active account (it never creates accounts) | Replace `simulate` with a redirect to the organisation's OIDC authorisation endpoint (state and nonce kept in a short-lived cookie); replace the HS256 check in `verifyIdToken` with the provider's published keys (JWKS, RS256) and discovery; keep every other check and the callback route as they are |
+| Step-up for approvals (SEC-A04) | **Real.** When `security.stepUpApprovals` is on, plan approval, report approval, contract signing, permission to publish and process-change approval need a fresh authenticator code in `x-step-up-code`; the web client asks for it with a browser prompt | Replace the prompt with a proper modal; a push-approval provider could replace the code check |
+| Notification channels (FR-0065) | **In-app is real; email, Slack and Teams are simulated.** `dispatch()` writes the in-app notification and one `notification_delivery` row per other channel saying what would have been sent | Replace the delivery step in `modules/notify/dispatch.ts` with the real senders; the rules, escalation and audit stay |
+| ERP field names (FR-0700) | **Real mapping, no ERP behind it.** `mapRecord()` renames fields both ways from the configured table; the admin screen tries it on a sample record | Call `mapRecord` in the ERP adapter on every inbound and outbound record |
+| Classification, review rules, contract-text extraction (FR-0015, FR-0030, FR-0675) | **Deterministic rules standing in for a language model.** Same input, same answer; every result shows its reason | `AiProvider` (as for the assistant); the review step and audit stay |
+| Supplier ABN (migration, FR-0655) | A migrated supplier with no ABN gets 00000000000 and sanctions `PENDING` until someone checks | ABN lookup (as in supplier registration) |

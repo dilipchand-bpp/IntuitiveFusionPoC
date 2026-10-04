@@ -21,21 +21,22 @@ export default async function RoadmapPage() {
       <header>
         <h1 className="text-3xl font-extrabold tracking-tight">Roadmap</h1>
         <p className="mt-1 max-w-prose text-text-muted">
-          What this proof of concept does not do yet. Each item carries the requirement id from the
-          traceability matrix. &quot;Coming soon&quot; items are designed and have a place in the product; the
-          second list is out of scope for the proof of concept.
+          Every requirement that began as a stub, with its id from the traceability matrix and where it
+          stands: built in a roadmap batch, partly built, or coming soon. The second list is out of scope for
+          the proof of concept.
         </p>
       </header>
 
-      <section aria-label="Totals" className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label="Coming soon" value={String(stubs.filter((i) => i.status === 'PLANNED').length)} />
+      <section aria-label="Totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Built" value={String(stubs.filter((i) => i.status === 'BUILT').length)} />
         <KpiCard label="Partly built" value={String(stubs.filter((i) => i.status === 'PARTIAL').length)} />
+        <KpiCard label="Coming soon" value={String(stubs.filter((i) => i.status === 'PLANNED').length)} />
         <KpiCard label="Not in the proof of concept" value={String(deferred.length)} />
       </section>
 
       <section aria-labelledby="soon" className="flex flex-col gap-6">
         <h2 id="soon" className="font-heading text-2xl font-bold">
-          Coming soon, by area
+          Stubbed requirements, by area
         </h2>
         {areas.map(([area, items]) => {
           const nav = resolveNav(area);
@@ -52,7 +53,7 @@ export default async function RoadmapPage() {
                 )}{' '}
                 <span className="text-sm font-normal text-text-muted">({items.length})</span>
               </h3>
-              <RoadmapList items={items} label={`${name}: coming soon`} />
+              <RoadmapList items={items} label={`${name}: requirements`} />
             </section>
           );
         })}

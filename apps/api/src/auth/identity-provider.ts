@@ -1,5 +1,5 @@
 import { hash as argon2Hash, verify as argon2Verify } from '@node-rs/argon2';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt, isNull, or } from 'drizzle-orm';
 import type { Clock, RoleName } from '@if/shared';
 import { primaryRole } from '@if/shared';
 import { withSystem, type Database } from '../db/client.js';
@@ -90,7 +90,10 @@ export class MockIdentityProvider implements IdentityProvider {
     await withSystem(this.database, (tx) =>
       tx.update(appUser).set({ failedAttempts: 0, lockedUntil: null }).where(eq(appUser.id, u.id)),
     );
-    return { ok: true, user: (await this.loadUser(u.id))! };
+    const user = await this.loadUser(u.id);
+    // every role has ended (a time-bound grant ran out): same answer as a wrong password, no account hints
+    if (!user) return { ok: false, reason: 'INVALID', tenantId: u.tenantId, userId: u.id };
+    return { ok: true, user };
   }
 
   async requestPasswordReset(email: string): Promise<{ tenantId: string | null }> {
@@ -111,16 +114,23 @@ export class MockIdentityProvider implements IdentityProvider {
   }
 
   async loadUser(userId: string): Promise<AuthenticatedUser | null> {
+    const now = this.clock.now();
     const rows = await withSystem(this.database, async (tx) => {
       const [u] = await tx.select().from(appUser).where(eq(appUser.id, userId));
       if (!u || !u.active) return null;
+      // a time-bound grant simply stops applying when it ends (SEC-A05); no job has to run for access to go
       const roles = await tx
         .select({ role: roleAssignment.role })
         .from(roleAssignment)
-        .where(eq(roleAssignment.userId, userId));
+        .where(
+          and(
+            eq(roleAssignment.userId, userId),
+            or(isNull(roleAssignment.expiresAt), gt(roleAssignment.expiresAt, now)),
+          ),
+        );
       return { u, roles: roles.map((r) => r.role as RoleName) };
     });
-    if (!rows) return null;
+    if (!rows || rows.roles.length === 0) return null; // every role has ended: nothing left to sign in as
     const { u, roles } = rows;
     return {
       id: u.id,

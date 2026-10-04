@@ -1,5 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import { withSystem, type Database } from '../db/client.js';
 import { session } from '../db/schema.js';
@@ -10,8 +10,17 @@ export const ABSOLUTE_TIMEOUT_MS = 8 * 3_600_000;
 /** Separate cookie per identity pool (SEC-A03): a supplier session can never be presented as a staff session. */
 export const COOKIE_NAMES = { STAFF: 'if_session', SUPPLIER: 'if_supplier_session' } as const;
 
+export type MfaState = 'NOT_REQUIRED' | 'VERIFIED' | 'ENROLMENT_REQUIRED';
+
 export type Resolved =
-  | { ok: true; sessionId: string; user: AuthenticatedUser; expiresAt: Date }
+  | {
+      ok: true;
+      sessionId: string;
+      user: AuthenticatedUser;
+      expiresAt: Date;
+      mfaState: MfaState;
+      authMethod: 'PASSWORD' | 'SSO';
+    }
   | {
       ok: false;
       reason:
@@ -51,7 +60,11 @@ export class SessionService {
     return a.length === b.length && timingSafeEqual(a, b);
   }
 
-  async create(user: AuthenticatedUser, meta: { ip?: string; userAgent?: string }) {
+  async create(
+    user: AuthenticatedUser,
+    meta: { ip?: string; userAgent?: string },
+    how: { mfaState?: MfaState; authMethod?: 'PASSWORD' | 'SSO' } = {},
+  ) {
     const id = randomUUID();
     const now = this.clock.now();
     const expiresAt = new Date(now.getTime() + ABSOLUTE_TIMEOUT_MS);
@@ -66,6 +79,8 @@ export class SessionService {
         expiresAt,
         ip: meta.ip,
         userAgent: meta.userAgent?.slice(0, 200),
+        mfaState: how.mfaState ?? 'NOT_REQUIRED',
+        authMethod: how.authMethod ?? 'PASSWORD',
       }),
     );
     return { id, cookieValue: this.sign(id), expiresAt };
@@ -96,7 +111,31 @@ export class SessionService {
     await withSystem(this.database, (tx) =>
       tx.update(session).set({ lastSeenAt: now }).where(eq(session.id, id)),
     );
-    return { ok: true, sessionId: id, user, expiresAt: row.expiresAt };
+    return {
+      ok: true,
+      sessionId: id,
+      user,
+      expiresAt: row.expiresAt,
+      mfaState: row.mfaState,
+      authMethod: row.authMethod,
+    };
+  }
+
+  /** The person finished enrolling in MFA: this session is no longer restricted. */
+  async markMfaVerified(sessionId: string) {
+    await withSystem(this.database, (tx) =>
+      tx.update(session).set({ mfaState: 'VERIFIED' }).where(eq(session.id, sessionId)),
+    );
+  }
+
+  /** Ends every live session of a person (a role change, a switch-off, a departed contact). */
+  async revokeAllFor(userId: string) {
+    await withSystem(this.database, (tx) =>
+      tx
+        .update(session)
+        .set({ revokedAt: this.clock.now() })
+        .where(and(eq(session.userId, userId), isNull(session.revokedAt))),
+    );
   }
 
   async revoke(sessionId: string) {

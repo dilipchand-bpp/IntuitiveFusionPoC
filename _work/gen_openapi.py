@@ -22,7 +22,7 @@ schemas = {
  "Page": obj({"total": I, "limit": I, "offset": I}, ["total", "limit", "offset"], True),
  "User": obj({"id": UUID, "name": S, "email": {"type": "string", "format": "email"}, "role": enum(*ROLES), "roles": arr(enum(*ROLES)), "orgUnit": S, "delegationLimit": N, "homePath": S, "csrfToken": S}, ["id", "name", "email", "role"]),
  "LoginRequest": obj({"email": {"type": "string", "format": "email"}, "password": {"type": "string", "minLength": 8, "maxLength": 128}}, ["email", "password"]),
- "Session": obj({"user": ref("User"), "expiresAt": DT, "mfaRequired": B, "csrfToken": S}, ["user", "expiresAt", "csrfToken"]),
+ "Session": obj({"user": ref("User"), "expiresAt": DT, "mfaRequired": B, "mfaToken": S, "mfaEnrolmentRequired": B, "csrfToken": S}, ["mfaRequired"]),
  "AccessDenied": obj({"path": {"type": "string", "maxLength": 200, "pattern": "^/"}}, ["path"]),
  "ForgotPassword": obj({"email": {"type": "string", "format": "email"}}, ["email"]),
  "Message": obj({"message": S}, ["message"]),
@@ -299,15 +299,17 @@ ep("PUT", "/admin/workflows/{id}", "updateWorkflow", AD, "Edit the simple workfl
 ep("GET", "/admin/workflows", "listWorkflows", AD, "Workflow library", ["ADMIN", "PROCUREMENT"], None, "Workflow", arrayResp=True)
 ep("GET", "/admin/templates", "listTemplates", AD, "Template library (read-only in POC)", ["ADMIN", "PROCUREMENT", "LEGAL"], None, "Template", arrayResp=True)
 M = "Migration"
-ep("POST", "/migration/uploads", "uploadMigration", M, "Validate legacy contract CSV (profiling only in POC)", ["ADMIN", "CONTRACT_MGR"], None, "MigrationUpload", 201, note="multipart/form-data")
 ep("GET", "/features/{key}", "getFeatureStatus", M, "Feature availability for Coming-soon screens", "*", None, "ComingSoon")
+
+# operations added after M13 (roadmap batches B1..B6) live in _work/openapi_ext.py and run in this namespace
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'openapi_ext.py'), encoding='utf8').read())
 
 ERR = {"400": "Validation error", "401": "Not authenticated", "403": "Forbidden", "404": "Not found", "409": "Conflict / rule violated", "422": "Business rule failed", "423": "Locked", "429": "Rate limited"}
 paths = {}
 for e in E:
     params = []
     for seg in [s for s in e["p"].split("/") if s.startswith("{")]:
-        params.append({"name": seg.strip("{}"), "in": "path", "required": True, "schema": S if seg.strip("{}") in ("key", "clauseId") else UUID})
+        params.append({"name": seg.strip("{}"), "in": "path", "required": True, "schema": S if seg.strip("{}") in ("key", "clauseId", "stage") else UUID})
     for q in e["query"]:
         params.append({"name": q, "in": "query", "required": False, "schema": I if q in ("limit", "offset", "days") else S})
     op = {"operationId": e["op"], "tags": [e["tag"]], "summary": e["summ"], "parameters": params,

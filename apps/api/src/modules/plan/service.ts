@@ -18,6 +18,7 @@ import {
 } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
 import { toView as requestView, valuesOf } from '../intake/service.js';
+import { loadSettings } from '../settings/settings.js';
 import { PLAN_FIELDS, PLAN_FIELD_BY_KEY, splitParagraphs } from './fields.js';
 import { summarisePlan } from './summary.js';
 
@@ -135,14 +136,8 @@ export class PlanService {
   }
 
   // ------------------------------------------------------------------ gates
-  /** Which plan gates apply, whether each is met, and keeps the request's gate rows in step. */
-  async evaluateGates(
-    tx: Tx,
-    l: Loaded,
-  ): Promise<Array<{ key: string; label: string; reason: string; status: 'REQUIRED' | 'SATISFIED' }>> {
-    const rv = requestView(l.req, l.reqFields);
-    const required = rv.gates.filter((g) => (PLAN_GATES as readonly string[]).includes(g.key));
-    if (required.length === 0) return [];
+  /** True when the plan's conflict declarations are in and the lead has declared no blocking conflict. */
+  async coiSatisfied(tx: Tx, l: Loaded): Promise<boolean> {
     const cois = await tx
       .select()
       .from(coiDeclaration)
@@ -162,11 +157,24 @@ export class PlanService {
           )
       : [];
     const leadIds = new Set(leads.map((x) => x.userId));
-    const coiOk =
+    return (
       !cois.some((c) => c.disposition === 'PENDING') &&
       cois.some(
         (c) => leadIds.has(c.userId) && (c.disposition === 'IMMATERIAL' || c.disposition === 'MANAGEABLE'),
-      );
+      )
+    );
+  }
+
+  /** Which plan gates apply, whether each is met, and keeps the request's gate rows in step. */
+  async evaluateGates(
+    tx: Tx,
+    l: Loaded,
+  ): Promise<Array<{ key: string; label: string; reason: string; status: 'REQUIRED' | 'SATISFIED' }>> {
+    const rv = requestView(l.req, l.reqFields);
+    const required = rv.gates.filter((g) => (PLAN_GATES as readonly string[]).includes(g.key));
+    if (required.length === 0) return [];
+    const coiOk = await this.coiSatisfied(tx, l);
+    const settings = await loadSettings(tx, l.plan.tenantId);
     const [risk] = await tx
       .select()
       .from(approval)
@@ -177,7 +185,11 @@ export class PlanService {
           eq(approval.decision, 'APPROVED'),
         ),
       );
-    const met: Record<string, boolean> = { UPFRONT_COI: coiOk, RISK_SIGNOFF: Boolean(risk) };
+    // an enterprise may relax the declarations-before-approval checkpoint (FR-0720); the relaxation is audited at approval
+    const met: Record<string, boolean> = {
+      UPFRONT_COI: coiOk || !settings.checkpoints.coiBeforeApproval,
+      RISK_SIGNOFF: Boolean(risk),
+    };
     const out = required.map((g) => ({
       ...g,
       status: met[g.key] ? ('SATISFIED' as const) : ('REQUIRED' as const),

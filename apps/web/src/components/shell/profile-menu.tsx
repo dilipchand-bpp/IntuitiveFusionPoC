@@ -1,5 +1,5 @@
 'use client';
-import { ChevronDown, LogOut } from 'lucide-react';
+import { ChevronDown, LogOut, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Avatar, Button, Menu } from '@if/ui';
 
@@ -32,6 +32,15 @@ export function ProfileMenu({
         </>
       }
       actions={[
+        ...(role === 'SUPPLIER'
+          ? []
+          : [
+              {
+                label: 'Security',
+                onSelect: () => router.push('/app/security'),
+                icon: <ShieldCheck className="size-4" aria-hidden="true" />,
+              },
+            ]),
         {
           label: 'Sign out',
           onSelect: () => void signOut(),

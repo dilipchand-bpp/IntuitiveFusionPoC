@@ -31,6 +31,7 @@ import {
   tender,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { loadSettings } from '../settings/settings.js';
 import type { SealedStore } from '../tender/files.js';
 import { evaluationCriteria } from '../tender/pack.js';
 import { TenderService } from '../tender/service.js';
@@ -983,9 +984,25 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       const l = await visible(tx, a, id);
       const [existing] = await tx.select().from(evalReport).where(eq(evalReport.evaluationId, id));
       const regenerate = l.ev.status === 'REPORTED' && existing?.status === 'DRAFT';
-      if (l.ev.status !== 'LOCKED' && !regenerate)
-        throw new AppError(409, 'INVALID_STATE', 'A report can be generated once consensus is locked');
       const items = await tx.select().from(consensusItem).where(eq(consensusItem.evaluationId, id));
+      // an enterprise may relax "evaluation complete before the report" (FR-0720): consensus must still be fully scored
+      const relaxable =
+        !(await loadSettings(tx, a.user.tenantId)).checkpoints.evaluationBeforeReport &&
+        l.ev.status === 'CONSENSUS' &&
+        items.length > 0 &&
+        items.every((i) => i.consensusScore !== null);
+      if (l.ev.status !== 'LOCKED' && !regenerate && !relaxable)
+        throw new AppError(409, 'INVALID_STATE', 'A report can be generated once consensus is locked');
+      if (relaxable && l.ev.status !== 'LOCKED')
+        await d.audit.record(tx, a.ctx, {
+          action: 'checkpoint.relaxed',
+          entityType: 'evaluation',
+          entityId: id,
+          after: {
+            checkpoint: 'evaluationBeforeReport',
+            note: 'Report generated before consensus was locked',
+          },
+        });
       const decl = await tx
         .select()
         .from(coiDeclaration)

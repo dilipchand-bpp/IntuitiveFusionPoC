@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Landmark, ShieldCheck, Users, Workflow, FileText } from 'lucide-react';
+import { Landmark, Settings, ShieldCheck, Users, Workflow, FileText } from 'lucide-react';
 import { EmptyState, KpiCard } from '@if/ui';
 import type { AdminUser } from '@/components/admin/users-panel';
 import type { DelegationRow } from '@/components/admin/delegations-panel';
@@ -31,9 +31,15 @@ export default async function AdminHome() {
       icon: Landmark,
     },
     {
+      href: '/admin/settings',
+      label: 'Settings',
+      body: 'Numbering, labels, custom fields, checkpoints, intake rules, notifications and routing.',
+      icon: Settings,
+    },
+    {
       href: '/admin/workflows',
       label: 'Workflows',
-      body: `${workflows.length} workflows; the simple one is editable.`,
+      body: `${workflows.length} workflows route new requests; the simple one is editable.`,
       icon: Workflow,
     },
     {

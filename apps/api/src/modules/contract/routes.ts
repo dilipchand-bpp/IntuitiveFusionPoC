@@ -33,6 +33,7 @@ import {
   tenant,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { loadSettings } from '../settings/settings.js';
 import { addDays, addMonths, daysBetween, iso, termBars } from './dates.js';
 import { deviationBlockers, proposeRisk, type Risk } from './deviation.js';
 import { registerContractExtras } from './extras.js';
@@ -276,6 +277,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       noticeDays: c.noticeDays,
       locked: c.locked,
       tenderId: c.tenderId,
+      sourceSystem: c.sourceSystem,
       version: c.version,
       signed: sigs.length,
       parentId: c.parentId,
@@ -697,12 +699,26 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     const out = await withContext(d.database, a.ctx, async (tx) => {
       const l = await evals.load(tx, a.user.tenantId, body.evaluationId);
       if (!l) throw new AppError(404, 'NOT_FOUND', 'Evaluation not found');
-      if (l.ev.status !== 'APPROVED')
+      // an enterprise may relax "report signed off before the contract" (FR-0720); the relaxation is audited
+      const relaxed =
+        l.ev.status === 'REPORTED' &&
+        !(await loadSettings(tx, a.user.tenantId)).checkpoints.reportSignoffBeforeContract;
+      if (l.ev.status !== 'APPROVED' && !relaxed)
         throw new AppError(
           409,
           'INVALID_STATE',
           'The evaluation report must be approved before a contract is drafted',
         );
+      if (relaxed)
+        await d.audit.record(tx, a.ctx, {
+          action: 'checkpoint.relaxed',
+          entityType: 'evaluation',
+          entityId: l.ev.id,
+          after: {
+            checkpoint: 'reportSignoffBeforeContract',
+            note: 'Contract drafted before the report was approved',
+          },
+        });
       const items = await tx.select().from(consensusItem).where(eq(consensusItem.evaluationId, l.ev.id));
       const ranking = await evals.ranking(l, items);
       const winner = ranking.find((r) => r.supplierId === body.supplierId);

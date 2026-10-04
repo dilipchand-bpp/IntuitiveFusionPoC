@@ -11,9 +11,9 @@ export default async function WorkflowsPage() {
       <header>
         <h1 className="text-3xl font-extrabold tracking-tight">Workflows</h1>
         <p className="mt-1 max-w-prose text-text-muted">
-          The steps each kind of procurement follows, and which of them are mandatory checkpoints. The simple
-          workflow can be edited now; the intermediate and complex ones are coming soon. In this proof of
-          concept the library is configuration: it does not yet route live requests.
+          The steps each kind of procurement follows, and which of them are mandatory checkpoints. A new
+          request is routed to one of these by its value and risk (set the limits in Settings), and each
+          request shows its steps. The simple workflow can be edited now; the others are coming soon.
         </p>
       </header>
       {!list || !me ? (

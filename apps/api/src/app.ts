@@ -15,6 +15,11 @@ import type { Database } from './db/client.js';
 import { registerIdempotency } from './http/idempotency.js';
 import { registerIntakeRoutes } from './modules/intake/routes.js';
 import { registerAdminRoutes } from './modules/admin/routes.js';
+import { registerSecurityRoutes } from './auth/security-routes.js';
+import { registerSettingsRoutes } from './modules/settings/routes.js';
+import { registerIntakeExtras } from './modules/intake/extras-routes.js';
+import { registerEsgRoutes } from './modules/plan/esg.js';
+import { registerMigrationRoutes } from './modules/migration/routes.js';
 import { registerReportingRoutes } from './modules/reporting/routes.js';
 import { registerContractRoutes } from './modules/contract/routes.js';
 import { registerEvaluationRoutes } from './modules/evaluation/routes.js';
@@ -118,12 +123,14 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     simulatedAi: config.AI_PROVIDER === 'mock',
   }));
 
-  const implemented = registerAuthRoutes(app, API_PREFIX, {
+  const authDeps = {
     ...guardDeps,
     config,
     idp,
     loginRateLimitMax: deps.loginRateLimitMax ?? 10,
-  });
+  };
+  const implemented = registerAuthRoutes(app, API_PREFIX, authDeps);
+  for (const k of registerSecurityRoutes(app, API_PREFIX, authDeps)) implemented.add(k);
   implemented.add('GET /health');
   for (const k of registerShellRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   const ai = deps.ai ?? new MockAiProvider();
@@ -169,6 +176,14 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     implemented.add(k);
   for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerAdminRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerIntakeExtras(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerEsgRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerMigrationRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerSettingsRoutes(app, API_PREFIX, {
+    ...guardDeps,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+  }))
+    implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

@@ -14,6 +14,9 @@ import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext, type Tx } from '../../db/client.js';
 import { chatMessage, conversation, request, tenant } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { dispatch, usersWithRole } from '../notify/dispatch.js';
+import { FUNCTION_ROLES, requiredEngagements } from './classify.js';
+import { loadSettings } from '../settings/settings.js';
 import { IntakeService, loadRequest, toView, valuesOf, type RequestView } from './service.js';
 import { FIELD_BY_KEY, missingMandatory, nextQuestions } from './fields.js';
 
@@ -143,6 +146,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           intakeMode: r.intakeMode,
           complexity: r.complexity ?? undefined,
           budgetCheck: r.budgetCheck,
+          sourceSystem: r.sourceSystem ?? undefined,
           createdAt: r.createdAt.toISOString(),
           updatedAt: r.updatedAt.toISOString(),
         })),
@@ -160,7 +164,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
       const changes = toChanges(body);
       if (changes.length === 0) {
         const l = (await loadRequest(tx, a.user.tenantId, row.id))!;
-        return toView(l.row, l.fields);
+        return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
       }
       return svc.applyChanges(tx, a.ctx, row.id, changes, 'USER', await tenantConfig(tx, a.user.tenantId));
     });
@@ -173,7 +177,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
     const { id } = parse(z.object({ id: uuid }), req.params);
     return withContext(d.database, a.ctx, async (tx) => {
       const l = await visible(tx, a, id);
-      return toView(l.row, l.fields);
+      return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
     });
   });
 
@@ -193,7 +197,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           'The request was changed by someone else; reload and try again',
         );
       const changes = toChanges(body);
-      if (changes.length === 0) return toView(l.row, l.fields);
+      if (changes.length === 0) return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
       return svc.applyChanges(tx, a.ctx, id, changes, 'USER', await tenantConfig(tx, a.user.tenantId));
     });
   });
@@ -209,13 +213,22 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
       if (l.row.status !== 'DRAFT')
         throw new AppError(409, 'REQUEST_NOT_EDITABLE', 'This request has already been submitted');
       const values = valuesOf(l.row, l.fields);
-      const missing = missingMandatory(values);
+      const settings = await loadSettings(tx, a.user.tenantId);
+      const labelOf = (k: string) =>
+        settings.customFields.find((c) => c.key === k)?.label ??
+        settings.fieldLabels[k] ??
+        FIELD_BY_KEY.get(k)?.label ??
+        k;
+      const missing = [
+        ...missingMandatory(values),
+        ...settings.customFields.filter((c) => c.mandatory && !values[c.key]?.trim()).map((c) => c.key),
+      ];
       if (missing.length > 0) {
         throw new AppError(
           409,
           'REQUEST_INCOMPLETE',
           'Some required information is missing',
-          missing.map((k) => ({ field: k, message: `${FIELD_BY_KEY.get(k)!.label} is required` })),
+          missing.map((k) => ({ field: k, message: `${labelOf(k)} is required` })),
         );
       }
       const cfg = await tenantConfig(tx, a.user.tenantId);
@@ -226,7 +239,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
         amount,
         settings: cfg,
       });
-      const cap = cfg.budgetCap ?? 'HARD';
+      const cap = settings.intake.budgetCap;
       if (budget.status === 'EXCEEDED' && cap === 'HARD') {
         // Persist the outcome and audit the refusal, then report it after commit.
         await tx.update(request).set({ budgetCheck: 'EXCEEDED' }).where(eq(request.id, id));
@@ -236,6 +249,25 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           entityId: id,
           after: { reason: 'BUDGET_EXCEEDED', available: budget.available, requested: amount },
           result: 'DENIED',
+        });
+        // a budget amendment task goes to finance, and the breach rule decides who else hears about it (FR-0055, FR-0066)
+        await dispatch(
+          tx,
+          {
+            tenantId: a.user.tenantId,
+            recipients: await usersWithRole(tx, a.user.tenantId, ['FINANCE', 'PROCUREMENT']),
+            event: 'BUDGET_BREACH',
+            title: `Budget amendment needed for ${l.row.number}`,
+            body: `${l.row.title}: requested AUD ${amount.toLocaleString('en-AU')}, available AUD ${(budget.available ?? 0).toLocaleString('en-AU')}. Submission is blocked until the budget is amended.`,
+            link: `/app/requests/${id}`,
+          },
+          settings,
+        );
+        await d.audit.record(tx, a.ctx, {
+          action: 'request.budget_amendment_task',
+          entityType: 'request',
+          entityId: id,
+          after: { requested: amount, available: budget.available ?? null, cap },
         });
         return { kind: 'blocked' as const, available: budget.available, requested: amount };
       }
@@ -258,8 +290,59 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
         after: { status: 'SUBMITTED', phase: 'PLAN', budgetCheck: budget.status },
       });
       await svc.notifyProcurement(tx, a.ctx, l.row.number, l.row.title);
+      // soft cap: the request goes ahead but the variance is escalated to the executive (FR-0055, FR-X05)
+      if (budget.status === 'EXCEEDED' && cap === 'SOFT') {
+        await dispatch(
+          tx,
+          {
+            tenantId: a.user.tenantId,
+            recipients: await usersWithRole(tx, a.user.tenantId, ['EXEC']),
+            event: 'BUDGET_BREACH',
+            title: `Budget exceeded on ${l.row.number} (soft cap)`,
+            body: `${l.row.title}: requested AUD ${amount.toLocaleString('en-AU')}, available AUD ${(budget.available ?? 0).toLocaleString('en-AU')}. Escalated for an executive decision.`,
+            link: `/app/requests/${id}`,
+          },
+          settings,
+        );
+        await d.audit.record(tx, a.ctx, {
+          action: 'request.budget_variance',
+          entityType: 'request',
+          entityId: id,
+          after: { requested: amount, available: budget.available ?? null, cap },
+        });
+      }
+      // required engagements are worked out again from the rules as they are now, stored, and the functions are told (FR-0030)
+      const eng = requiredEngagements(settings.intake.engagementRules, {
+        title: values.title,
+        category: values.category,
+        background: values.background,
+        dataSensitivity: values.dataSensitivity,
+        estimatedValue: amount,
+        complexity: l.row.complexity ?? 'LOW',
+      });
+      await tx.update(request).set({ engagements: eng }).where(eq(request.id, id));
+      for (const e of eng) {
+        await dispatch(
+          tx,
+          {
+            tenantId: a.user.tenantId,
+            recipients: await usersWithRole(tx, a.user.tenantId, [...FUNCTION_ROLES[e.function]]),
+            title: `${e.label}: ${l.row.number}`,
+            body: `${l.row.title}. ${e.reason}`,
+            link: `/app/requests/${id}`,
+          },
+          settings,
+        );
+      }
+      if (eng.length > 0)
+        await d.audit.record(tx, a.ctx, {
+          action: 'request.engagements',
+          entityType: 'request',
+          entityId: id,
+          after: { required: eng.map((e) => e.function) },
+        });
       const r = (await loadRequest(tx, a.user.tenantId, id))!;
-      return { kind: 'ok' as const, view: toView(r.row, r.fields) };
+      return { kind: 'ok' as const, view: toView(r.row, r.fields, await loadSettings(tx, a.user.tenantId)) };
     });
     if (outcome.kind === 'blocked') {
       throw new AppError(
@@ -413,7 +496,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           view = await svc.applyChanges(tx, a.ctx, requestId, draft.changes, 'AI', cfg, 'ai.apply');
         } else {
           const l = (await loadRequest(tx, a.user.tenantId, requestId))!;
-          view = toView(l.row, l.fields);
+          view = toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
         }
         await d.audit.record(tx, a.ctx, {
           action: 'ai.propose',

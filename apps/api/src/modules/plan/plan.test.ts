@@ -7,7 +7,7 @@ import type { Database } from '../../db/client.js';
 import * as s from '../../db/schema.js';
 import { emailFor, seedDatabase, uid } from '../../db/seed.js';
 import { freshDb, newClock } from '../../test-helpers.js';
-import { splitParagraphs } from './fields.js';
+import { PLAN_FIELDS, splitParagraphs } from './fields.js';
 
 const PASSWORD = 'unit-test-password-123';
 let app: FastifyInstance;
@@ -93,7 +93,7 @@ describe('US-PLN-01 auto-populated plan', () => {
     const rid = await submittedRequest(1_200_000);
     const p = await openPlan('procurement', rid);
     expect(p.status).toBe('DRAFT');
-    expect(p.fields).toHaveLength(12);
+    expect(p.fields).toHaveLength(PLAN_FIELDS.length);
     for (const f of p.fields) expect(f.value.length, f.key).toBeGreaterThan(5);
     expect(field(p, 'background').aiDrafted).toBe(true);
     expect(splitParagraphs(field(p, 'background').value)[0]).toBe('Existing arrangements end in six months.');
@@ -122,7 +122,7 @@ describe('US-PLN-01 auto-populated plan', () => {
     const p = await openPlan('procurement', rid);
     const ev = await database.db.select().from(s.auditEvent).where(eq(s.auditEvent.entityId, p.id));
     const pop = ev.find((e) => e.action === 'plan.populate');
-    expect(pop?.after).toMatchObject({ fields: 12, simulated: true });
+    expect(pop?.after).toMatchObject({ fields: PLAN_FIELDS.length, simulated: true });
   });
 
   it('visibility: a requester sees only their own; suppliers and admins cannot read plans; unknown ids are 404', async () => {

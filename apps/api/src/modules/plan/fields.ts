@@ -60,6 +60,18 @@ export const PLAN_FIELDS: readonly PlanFieldDef[] = [
     mandatory: true,
   },
   { key: 'timeline', label: 'Timeline', aliases: ['timeline', 'timeframe', 'schedule'], mandatory: false },
+  {
+    key: 'subWorkflow',
+    label: 'Category-specific requirements',
+    aliases: ['category requirements', 'category-specific', 'sub-workflow'],
+    mandatory: false,
+  },
+  {
+    key: 'esg',
+    label: 'Sustainability and social goals',
+    aliases: ['esg', 'social objectives', 'sustainability'],
+    mandatory: false,
+  },
 ] as const;
 
 export const PLAN_FIELD_BY_KEY = new Map(PLAN_FIELDS.map((f) => [f.key, f]));

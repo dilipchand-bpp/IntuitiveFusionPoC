@@ -23,6 +23,7 @@ import {
 import { AppError, parse } from '../../http/errors.js';
 import { hashToken } from '../tender/routes.js';
 import type { AdminDeps } from './routes.js';
+import { sweepGrants } from './grants.js';
 
 const uuid = z.string().uuid();
 const STAFF_ROLES = ROLE_NAMES.filter((r) => r !== 'SUPPLIER') as [RoleName, ...RoleName[]];
@@ -104,7 +105,11 @@ export function registerAdminDirectory(
       orgUnit: unit,
       orgUnitId: u.orgUnitId,
       active: u.active,
-      roles: roles.filter((r) => r.userId === u.id).map((r) => r.role),
+      roles: roles.filter((r) => r.userId === u.id && (!r.expiresAt || r.expiresAt > now)).map((r) => r.role),
+      // roles that end on a date, shown so an administrator can see when access stops (SEC-A05)
+      grants: roles
+        .filter((r) => r.userId === u.id && r.expiresAt)
+        .map((r) => ({ role: r.role, expiresAt: r.expiresAt!.toISOString(), ended: r.expiresAt! <= now })),
       awaitingActivation: pending.some((x) => x.userId === u.id && !x.usedAt && x.expiresAt > now),
     }));
   }
@@ -204,6 +209,61 @@ export function registerAdminDirectory(
     });
     return reply.status(201).send(out);
   });
+
+  reg('PUT', '/admin/users/{id}/role-expiry');
+  app.put(`${p}/admin/users/:id/role-expiry`, { preHandler: guard(d, ['ADMIN']) }, async (req) => {
+    const a = req.auth!;
+    const id = uid(req);
+    const body = parse(
+      z.object({ role: z.enum(STAFF_ROLES), expiresAt: z.string().datetime().nullable() }).strict(),
+      req.body,
+    );
+    return withContext(d.database, a.ctx, async (tx) => {
+      if (id === a.user.id) throw new AppError(403, 'FORBIDDEN', 'You cannot change your own access');
+      const [g] = await tx
+        .select()
+        .from(roleAssignment)
+        .where(
+          and(
+            eq(roleAssignment.userId, id),
+            eq(roleAssignment.role, body.role),
+            eq(roleAssignment.tenantId, a.user.tenantId),
+          ),
+        );
+      if (!g) throw new AppError(404, 'NOT_FOUND', 'That person does not hold that role');
+      if (body.role === 'ADMIN')
+        throw new AppError(422, 'VALIDATION_FAILED', 'The administrator role cannot be time-bound', [
+          { field: 'role', message: 'An administrator grant must not lapse on its own' },
+        ]);
+      const when = body.expiresAt ? new Date(body.expiresAt) : null;
+      const now = d.clock.now();
+      if (when && when <= now)
+        throw new AppError(422, 'VALIDATION_FAILED', 'The end date must be in the future', [
+          { field: 'expiresAt', message: 'Choose a later date' },
+        ]);
+      if (when && when.getTime() - now.getTime() > 2 * 365 * DAY)
+        throw new AppError(422, 'VALIDATION_FAILED', 'At most two years ahead', [
+          { field: 'expiresAt', message: 'A time-bound grant lasts at most two years' },
+        ]);
+      await tx
+        .update(roleAssignment)
+        .set({ expiresAt: when, grantedBy: a.user.id })
+        .where(eq(roleAssignment.id, g.id));
+      await d.audit.record(tx, a.ctx, {
+        action: 'grant.expiry_set',
+        entityType: 'app_user',
+        entityId: id,
+        before: { role: body.role, expiresAt: g.expiresAt?.toISOString() ?? null },
+        after: { role: body.role, expiresAt: when?.toISOString() ?? null },
+      });
+      return (await userRows(tx, a.user.tenantId, id))[0]!;
+    });
+  });
+
+  reg('POST', '/admin/grants/sweep');
+  app.post(`${p}/admin/grants/sweep`, { preHandler: guard(d, ['ADMIN']) }, async () => ({
+    ended: await sweepGrants(d.database, d.clock, d.audit, d.sessions),
+  }));
 
   reg('PUT', '/admin/users/{id}');
   app.put(`${p}/admin/users/:id`, { preHandler: guard(d, ['ADMIN']) }, async (req) => {

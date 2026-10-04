@@ -3,6 +3,13 @@
  * Deterministic ids (uuid derived from a name) so tests, e2e and docs can refer to fixed records.
  * Idempotent: running it twice leaves one tenant and the same counts.
  */
+import {
+  SUB_WORKFLOWS,
+  classifyCategory,
+  routeWorkflow,
+  selectSubWorkflow,
+} from '../modules/intake/classify.js';
+import { DEFAULTS } from '../modules/settings/settings.js';
 import { createHash } from 'node:crypto';
 import { hash as argon2 } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
@@ -72,6 +79,7 @@ const SUPPLIERS = [
     abn: '51824753556',
     sanctions: 'CLEAR',
     insurance: 'CURRENT',
+    categories: ['Building cleaning', 'Facilities'],
   },
   {
     key: 'evergreen',
@@ -79,6 +87,7 @@ const SUPPLIERS = [
     abn: '33102034591',
     sanctions: 'CLEAR',
     insurance: 'EXPIRING',
+    categories: ['Building cleaning', 'Landscaping'],
   },
   {
     key: 'northstar',
@@ -86,6 +95,7 @@ const SUPPLIERS = [
     abn: '12005357522',
     sanctions: 'CLEAR',
     insurance: 'CURRENT',
+    categories: ['Landscaping', 'Construction'],
   },
   {
     key: 'summit',
@@ -93,6 +103,47 @@ const SUPPLIERS = [
     abn: '98765432109',
     sanctions: 'PENDING',
     insurance: 'UNKNOWN',
+    categories: ['IT managed services', 'Security services'],
+  },
+] as const;
+
+const WORKFLOW_SEED = [
+  {
+    id: 'wf-simple',
+    name: 'Simple purchase',
+    tier: 'SIMPLE',
+    editable: true,
+    steps: ['Request', 'Approve', 'Order'],
+  },
+  {
+    id: 'wf-intermediate',
+    name: 'Intermediate sourcing',
+    tier: 'INTERMEDIATE',
+    editable: false,
+    steps: ['Request', 'Plan', 'Quotes', 'Approve', 'Contract'],
+  },
+  {
+    id: 'wf-complex',
+    name: 'Complex tender',
+    tier: 'COMPLEX',
+    editable: false,
+    steps: ['Request', 'Plan', 'Tender', 'Evaluate', 'Award', 'Contract'],
+  },
+  {
+    id: 'wf-board',
+    name: 'High-value or high-risk governance',
+    tier: 'COMPLEX',
+    editable: false,
+    steps: [
+      'Request',
+      'Plan',
+      'Board endorsement',
+      'Tender',
+      'External probity',
+      'Evaluate',
+      'Award',
+      'Contract',
+    ],
   },
 ] as const;
 
@@ -177,6 +228,7 @@ export async function seedDatabase(
         abn: sp.abn,
         sanctionsStatus: sp.sanctions,
         insuranceStatus: sp.insurance,
+        categories: [...sp.categories],
         lastCheckedAt: day(-3),
       });
       await log('supplier.register', 'supplier', uid(`supplier:${sp.key}`), { company: sp.company });
@@ -349,6 +401,15 @@ export async function seedDatabase(
         requester: 'requester',
       },
     ];
+    const workflowSteps: Record<
+      string,
+      Array<{ key: string; label: string; mandatory: boolean }>
+    > = Object.fromEntries(
+      WORKFLOW_SEED.map((w) => [
+        w.id,
+        w.steps.map((k) => ({ key: k.toLowerCase().replace(/\s+/g, '-'), label: k, mandatory: true })),
+      ]),
+    );
     for (const r of reqs) {
       const id = uid(`request:${r.key}`);
       await tx.insert(s.request).values({
@@ -366,6 +427,13 @@ export async function seedDatabase(
         intakeMode: r.mode,
         complexity: r.cx,
         budgetCheck: r.status === 'DRAFT' ? 'NOT_RUN' : 'CLEARED',
+        // the same routing and classification a new request gets (FR-0705, FR-0015), so seeded work shows its process too
+        workflowId: routeWorkflow(DEFAULTS.workflowRouting, Number(r.value), r.cx).workflowId,
+        subWorkflow: selectSubWorkflow(r.category, r.title).key,
+        processSteps:
+          workflowSteps[routeWorkflow(DEFAULTS.workflowRouting, Number(r.value), r.cx).workflowId],
+        taxonomyScheme: DEFAULTS.intake.taxonomy,
+        taxonomyCode: classifyCategory(r.category, DEFAULTS.intake.taxonomy)?.code ?? null,
         createdAt: day(-60),
         updatedAt: day(-2),
       });
@@ -800,36 +868,19 @@ export async function seedDatabase(
     ] as const)
       await tx.insert(s.notification).values({ tenantId: TENANT_ID, userId: userId(k), title, body });
 
-    for (const w of [
-      {
-        id: 'wf-simple',
-        name: 'Simple purchase',
-        tier: 'SIMPLE',
-        editable: true,
-        steps: ['Request', 'Approve', 'Order'],
-      },
-      {
-        id: 'wf-intermediate',
-        name: 'Intermediate sourcing',
-        tier: 'INTERMEDIATE',
-        editable: false,
-        steps: ['Request', 'Plan', 'Quotes', 'Approve', 'Contract'],
-      },
-      {
-        id: 'wf-complex',
-        name: 'Complex tender',
-        tier: 'COMPLEX',
-        editable: false,
-        steps: ['Request', 'Plan', 'Tender', 'Evaluate', 'Award', 'Contract'],
-      },
-    ] as const)
+    for (const w of WORKFLOW_SEED)
       await tx.insert(s.workflow).values({
         id: w.id,
         tenantId: TENANT_ID,
         name: w.name,
         tier: w.tier,
         editable: w.editable,
-        steps: w.steps.map((k) => ({ key: k.toLowerCase(), label: k, mandatory: true })),
+        steps: w.steps.map((k) => ({ key: k.toLowerCase().replace(/\s+/g, '-'), label: k, mandatory: true })),
+        subWorkflows: SUB_WORKFLOWS.map((x) => ({
+          key: x.key,
+          label: x.label,
+          planSections: x.planSections,
+        })),
       });
     for (const [id, type, name, body] of [
       ['tpl-services-std', 'CONTRACT', 'Services agreement (standard)', SERVICES_TEMPLATE],

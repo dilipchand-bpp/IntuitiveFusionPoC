@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Card, EmptyState } from '@if/ui';
 import { AddContact } from '@/components/supplier/add-contact';
+import { ContactActions } from '@/components/supplier/contact-actions';
 import { StatusBadges } from '@/components/supplier/status-badges';
 import type { SupplierProfile } from '@/components/supplier/types';
 import { CONTRACT_STATUS, aud, formatDateTime } from '@/lib/labels';
@@ -46,6 +47,14 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
                   <span className="block text-text-muted">{c.email}</span>
                 </span>
                 {c.awaitingActivation && <Badge tone="warning">Waiting to activate</Badge>}
+                {!c.active && <Badge tone="neutral">No access</Badge>}
+                {c.active && s.canAddContact && (
+                  <ContactActions
+                    supplierId={s.id}
+                    contact={{ id: c.id, name: c.name }}
+                    csrf={user.csrfToken}
+                  />
+                )}
               </li>
             ))}
           </ul>

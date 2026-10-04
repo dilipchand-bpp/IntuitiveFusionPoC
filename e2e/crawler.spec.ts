@@ -72,6 +72,8 @@ const ALL_SCREENS = [
   '/admin/workflows',
   '/admin/templates',
   '/admin/migration',
+  '/admin/settings',
+  '/app/security',
   '/supplier',
   '/supplier/profile',
 ];
@@ -147,9 +149,7 @@ test('every navigation entry resolves to a screen and the roadmap and coming-soo
 }) => {
   await signIn(page, 'ADMIN');
   await page.goto('/admin/migration');
-  await expect(page.getByRole('heading', { name: /coming soon/i })).toBeVisible();
-  await expect(page.locator('body')).toContainText('FR-0655');
-  await expect(page.getByTestId('roadmap-item').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Data migration', level: 1 })).toBeVisible(); // built in roadmap batch B1
   await signIn(page, 'PROCUREMENT');
   await page.goto('/app/collaboration');
   await expect(page.getByRole('heading', { name: /coming soon/i })).toBeVisible();

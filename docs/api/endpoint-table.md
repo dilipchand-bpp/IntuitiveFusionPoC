@@ -110,5 +110,42 @@
 | PUT | `/admin/workflows/{id}` | updateWorkflow | ADMIN | Edit the simple workflow (steps, order, optional); a mandatory approval checkpoint must stay. Other workflows answer 409 NOT_EDITABLE (coming soon) | 422 CHECKPOINT_REQUIRED, DUPLICATE_STEP |
 | GET | `/admin/workflows` | listWorkflows | ADMIN, PROCUREMENT | Workflow library |  |
 | GET | `/admin/templates` | listTemplates | ADMIN, PROCUREMENT, LEGAL | Template library (read-only in POC) |  |
-| POST | `/migration/uploads` | uploadMigration | ADMIN, CONTRACT_MGR | Validate legacy contract CSV (profiling only in POC) | multipart/form-data |
 | GET | `/features/{key}` | getFeatureStatus | any signed-in | Feature availability for Coming-soon screens |  |
+| GET | `/admin/settings` | getSettings | ADMIN | All tenant settings: numbering, labels, custom fields, checkpoints, intake rules, notification rules, workflow routing |  |
+| PUT | `/admin/settings` | updateSettings | ADMIN | Replace one or more settings sections; every change is audited with the old and new values |  |
+| GET | `/settings` | getPublicSettings | any signed-in | The settings every screen needs: field labels, custom fields and the caller's layout |  |
+| POST | `/admin/notifications/run-escalations` | runEscalations | ADMIN | Escalate approvals that have waited longer than the configured period (also runs on a schedule) |  |
+| GET | `/admin/notification-log` | listNotificationLog | ADMIN | Recent notification deliveries by channel (simulated in the proof of concept) |  |
+| POST | `/admin/erp-mapping/preview` | previewErpMapping | ADMIN | Try the ERP field-name mapping on a sample record, inbound or outbound |  |
+| POST | `/requests/{id}/taxonomy` | confirmTaxonomy | REQUESTER, PROCUREMENT | Confirm (or replace with your own) the preliminary classification code |  |
+| GET | `/requests/{id}/suggested-suppliers` | listSuggestedSuppliers | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | Suppliers from the in-house directory that fit the request's category, with contacts |  |
+| PUT | `/requests/{id}/suggested-suppliers` | amendSuggestedSuppliers | REQUESTER, PROCUREMENT | Choose which of the suggested suppliers to keep |  |
+| GET | `/requests/{id}/ecv` | getEcv | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | Estimated contract value calculator: the saved inputs, or the request value as a start |  |
+| PUT | `/requests/{id}/ecv` | calculateEcv | REQUESTER, PROCUREMENT | Calculate the estimated contract value; with apply=true it becomes the request value and drives routing |  |
+| GET | `/requests/{id}/artefacts` | listArtefacts | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | What the request has filled in downstream: plan, tender, scoring sheet, report, contract |  |
+| GET | `/requests/{id}/delegates` | listStageDelegates | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | The delegate for each approval stage, by value, and who actually signed |  |
+| PUT | `/requests/{id}/delegates/{stage}` | redirectStageDelegate | PROCUREMENT | Procurement redirects a stage to another person who holds enough authority; history is not rewritten |  |
+| GET | `/requests/{id}/process-variations` | listProcessVariations | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | Changes to this procurement's workflow steps and their approval |  |
+| POST | `/requests/{id}/process-variations` | requestProcessVariation | REQUESTER, PROCUREMENT | Ask to add or remove a workflow step for this procurement only; a delegate must approve |  |
+| POST | `/requests/{id}/process-variations/{variationId}/decision` | decideProcessVariation | DELEGATE, EXEC | A delegate approves or rejects a change to the process; the approval basis is recorded |  |
+| GET | `/plans/{id}/esg` | getPlanEsg | REQUESTER, PROCUREMENT, DELEGATE, LEGAL, PROBITY, EXEC | ESG and social objectives set on the plan |  |
+| PUT | `/plans/{id}/esg` | setPlanEsg | PROCUREMENT, REQUESTER | Set carbon, local labour, diversity and socio-economic objectives; they carry into the tender pack | 423 if the plan is locked |
+| POST | `/migration/uploads` | uploadMigration | ADMIN, CONTRACT_MGR | Upload a legacy contract extract (CSV text); it is profiled for missing fields, unparseable dates and values and duplicates |  |
+| GET | `/migration/batches` | listMigrationBatches | ADMIN, CONTRACT_MGR | Migration batches and their counts |  |
+| GET | `/migration/batches/{id}` | getMigrationBatch | ADMIN, CONTRACT_MGR | One batch with every record, its issues and what the contract text yielded |  |
+| GET | `/migration/batches/{id}/exceptions.csv` | exportMigrationExceptions | ADMIN, CONTRACT_MGR | The exceptions report as CSV (audited) |  |
+| PUT | `/migration/records/{id}` | fixMigrationRecord | ADMIN, CONTRACT_MGR | Correct a record; it is checked again |  |
+| POST | `/migration/records/{id}/skip` | skipMigrationRecord | ADMIN, CONTRACT_MGR | Set a record aside with a reason |  |
+| POST | `/migration/batches/{id}/cutover` | cutoverMigrationBatch | ADMIN | Load the batch; refused while any exception is unreviewed |  |
+| GET | `/auth/mfa` | getMfaStatus | any signed-in | Is an authenticator app set up for this account |  |
+| POST | `/auth/mfa/enroll` | enrollMfa | any signed-in | Start setting up an authenticator app; the secret is shown once |  |
+| POST | `/auth/mfa/confirm` | confirmMfa | any signed-in | Finish set-up with a code from the app |  |
+| DELETE | `/auth/mfa` | removeMfa | any signed-in | Remove the authenticator app (refused when the organisation requires it) |  |
+| POST | `/auth/mfa/verify` | verifyMfa | public | Complete a password sign-in with the one-time code |  |
+| GET | `/auth/sso/config` | getSsoConfig | public | Whether single sign-on is available and whether it is the only way in |  |
+| POST | `/auth/sso/simulate` | simulateSso | public | Simulated identity provider: issues an ID token for a demo person (not available in production) |  |
+| POST | `/auth/sso/callback` | ssoCallback | public | Complete single sign-on from an ID token; checks signature, issuer, audience, expiry and nonce |  |
+| PUT | `/admin/users/{id}/role-expiry` | setRoleExpiry | ADMIN | Make a role time-bound: access ends on the date (or clear the date) |  |
+| POST | `/admin/grants/sweep` | sweepGrants | ADMIN | Remove ended grants, end their sessions and tell the people involved (also runs on a schedule) |  |
+| POST | `/suppliers/{id}/contacts/{userId}/deprovision` | deprovisionContact | PROCUREMENT | Switch a departed contact off: no sign-in, open links void, sessions ended |  |
+| POST | `/suppliers/{id}/contacts/{userId}/reassign` | reassignContact | PROCUREMENT | Replace a contact with someone else; the old access ends and the new person gets a one-time link |  |

@@ -20,6 +20,8 @@ export async function api<T>(
     body?: unknown;
     csrf?: string;
     idempotencyKey?: string;
+    /** A one-time code from the authenticator app, when the organisation requires one for approvals. */
+    stepUpCode?: string;
   } = {},
 ): Promise<T> {
   const method = opts.method ?? 'GET';
@@ -27,6 +29,7 @@ export async function api<T>(
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (method !== 'GET' && opts.csrf) headers['x-csrf-token'] = opts.csrf;
   if (opts.idempotencyKey) headers['idempotency-key'] = opts.idempotencyKey;
+  if (opts.stepUpCode) headers['x-step-up-code'] = opts.stepUpCode;
   let res: Response;
   try {
     res = await fetch(`/api/v1${path}`, {
@@ -44,6 +47,16 @@ export async function api<T>(
   }
   if (res.status === 204) return undefined as T;
   const data = (await res.json().catch(() => null)) as (T & Partial<ApiProblem>) | null;
+  if (
+    res.status === 401 &&
+    data?.code === 'STEP_UP_REQUIRED' &&
+    !opts.stepUpCode &&
+    typeof window !== 'undefined'
+  ) {
+    // an approval needs a fresh code from the authenticator app (SEC-A04): ask for it and try once more
+    const code = window.prompt('Enter the 6-digit code from your authenticator app to approve');
+    if (code && /^\d{6}$/.test(code.trim())) return api<T>(path, { ...opts, stepUpCode: code.trim() });
+  }
   if (!res.ok) {
     throw new ApiError({
       status: res.status,

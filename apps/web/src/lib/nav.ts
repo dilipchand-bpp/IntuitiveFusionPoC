@@ -16,6 +16,7 @@ export type NavIcon =
   | 'workflows'
   | 'templates'
   | 'migration'
+  | 'settings'
   | 'admin'
   | 'profile';
 
@@ -214,6 +215,16 @@ export const NAV: readonly NavItem[] = [
     module: 'Delegations of authority',
     requirements: ['FR-0715', 'FR-0725', 'SEC-AC04'],
     blurb: 'Set sourcing and signing limits. Changes take effect immediately and are audited.',
+  },
+  {
+    href: '/admin/settings',
+    label: 'Settings',
+    icon: 'settings',
+    roles: ['ADMIN'],
+    section: 'Administration',
+    module: 'Settings',
+    requirements: ['FR-0690', 'FR-0695', 'FR-0700', 'FR-0710', 'FR-0720', 'FR-0066'],
+    blurb: 'Numbering, labels, custom fields, checkpoints, intake rules, notifications and routing.',
   },
   {
     href: '/admin/workflows',

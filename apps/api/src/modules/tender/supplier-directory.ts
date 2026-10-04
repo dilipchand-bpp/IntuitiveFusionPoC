@@ -6,8 +6,8 @@
  */
 import { randomBytes } from 'node:crypto';
 import { hash as argon2Hash } from '@node-rs/argon2';
-import { and, asc, eq, inArray } from 'drizzle-orm';
-import type { FastifyInstance } from 'fastify';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { guard } from '../../auth/guard.js';
 import { withContext, withSystem, type RequestContext } from '../../db/client.js';
@@ -23,6 +23,7 @@ import {
   tenant,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { loadSettings } from '../settings/settings.js';
 import { hashToken } from './routes.js';
 import type { SupplierDeps } from './supplier-routes.js';
 
@@ -155,6 +156,63 @@ export function registerSupplierDirectory(app: FastifyInstance, p: string, d: Su
     });
   });
 
+  /** Adds a contact (an inactive-until-activated account for the supplier's own pool) and returns the one-time link. */
+  async function addContact(
+    tx: Parameters<Parameters<typeof withContext>[2]>[0],
+    a: NonNullable<FastifyRequest['auth']>,
+    id: string,
+    body: z.infer<typeof contactBody>,
+    token: string,
+    placeholder: string,
+  ) {
+    const [s] = await tx
+      .select()
+      .from(supplier)
+      .where(and(eq(supplier.id, id), eq(supplier.tenantId, a.user.tenantId)));
+    if (!s) throw new AppError(404, 'NOT_FOUND', 'Supplier not found');
+    const [taken] = await tx
+      .select({ id: appUser.id })
+      .from(appUser)
+      .where(and(eq(appUser.tenantId, a.user.tenantId), eq(appUser.email, body.email)));
+    if (taken)
+      throw new AppError(409, 'EMAIL_IN_USE', 'That email address already has an account', [
+        { field: 'email', message: 'Use a different email address' },
+      ]);
+    const now = d.clock.now();
+    const [u] = await tx
+      .insert(appUser)
+      .values({
+        tenantId: a.user.tenantId,
+        email: body.email,
+        name: body.name,
+        passwordHash: placeholder,
+        supplierId: id,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    await tx.insert(roleAssignment).values({ tenantId: a.user.tenantId, userId: u!.id, role: 'SUPPLIER' });
+    const expiresAt = new Date(now.getTime() + ACTIVATION_DAYS * DAY);
+    await tx.insert(supplierActivation).values({
+      tenantId: a.user.tenantId,
+      userId: u!.id,
+      tokenHash: hashToken(token),
+      expiresAt,
+      createdBy: a.user.id,
+    });
+    await d.audit.record(tx, a.ctx, {
+      action: 'supplier.contact_add',
+      entityType: 'supplier',
+      entityId: id,
+      after: { userId: u!.id, email: body.email, expiresAt: expiresAt.toISOString() },
+    });
+    return {
+      contact: { id: u!.id, name: u!.name, email: u!.email, active: true, awaitingActivation: true },
+      activationPath: `/supplier/activate?token=${token}`,
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
   reg('POST', '/suppliers/{id}/contacts');
   app.post(`${p}/suppliers/:id/contacts`, { preHandler: guard(d, ['PROCUREMENT']) }, async (req, reply) => {
     const a = req.auth!;
@@ -163,56 +221,82 @@ export function registerSupplierDirectory(app: FastifyInstance, p: string, d: Su
     const token = randomBytes(32).toString('base64url');
     // an unusable password until the contact sets one through the link
     const placeholder = await argon2Hash(randomBytes(32).toString('hex'));
-    const out = await withContext(d.database, a.ctx, async (tx) => {
-      const [s] = await tx
-        .select()
-        .from(supplier)
-        .where(and(eq(supplier.id, id), eq(supplier.tenantId, a.user.tenantId)));
-      if (!s) throw new AppError(404, 'NOT_FOUND', 'Supplier not found');
-      const [taken] = await tx
-        .select({ id: appUser.id })
-        .from(appUser)
-        .where(and(eq(appUser.tenantId, a.user.tenantId), eq(appUser.email, body.email)));
-      if (taken)
-        throw new AppError(409, 'EMAIL_IN_USE', 'That email address already has an account', [
-          { field: 'email', message: 'Use a different email address' },
-        ]);
-      const now = d.clock.now();
-      const [u] = await tx
-        .insert(appUser)
-        .values({
-          tenantId: a.user.tenantId,
-          email: body.email,
-          name: body.name,
-          passwordHash: placeholder,
-          supplierId: id,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      await tx.insert(roleAssignment).values({ tenantId: a.user.tenantId, userId: u!.id, role: 'SUPPLIER' });
-      const expiresAt = new Date(now.getTime() + ACTIVATION_DAYS * DAY);
-      await tx.insert(supplierActivation).values({
-        tenantId: a.user.tenantId,
-        userId: u!.id,
-        tokenHash: hashToken(token),
-        expiresAt,
-        createdBy: a.user.id,
-      });
-      await d.audit.record(tx, a.ctx, {
-        action: 'supplier.contact_add',
-        entityType: 'supplier',
-        entityId: id,
-        after: { userId: u!.id, email: body.email, expiresAt: expiresAt.toISOString() },
-      });
-      return {
-        contact: { id: u!.id, name: u!.name, email: u!.email, active: true, awaitingActivation: true },
-        activationPath: `/supplier/activate?token=${token}`,
-        expiresAt: expiresAt.toISOString(),
-      };
-    });
+    const out = await withContext(d.database, a.ctx, (tx) => addContact(tx, a, id, body, token, placeholder));
     return reply.status(201).send(out);
   });
+
+  /** Switches a contact off for good: no sign-in, no open link, every live session ended (SEC-A06). */
+  async function deprovision(
+    tx: Parameters<Parameters<typeof withContext>[2]>[0],
+    a: NonNullable<FastifyRequest['auth']>,
+    supplierId: string,
+    userId: string,
+    reason: string,
+  ) {
+    const [u] = await tx
+      .select()
+      .from(appUser)
+      .where(
+        and(
+          eq(appUser.id, userId),
+          eq(appUser.supplierId, supplierId),
+          eq(appUser.tenantId, a.user.tenantId),
+        ),
+      );
+    if (!u) throw new AppError(404, 'NOT_FOUND', 'Contact not found');
+    if (!u.active) throw new AppError(409, 'ALREADY_INACTIVE', 'This contact already has no access');
+    await tx.update(appUser).set({ active: false, updatedAt: d.clock.now() }).where(eq(appUser.id, userId));
+    await tx
+      .update(supplierActivation)
+      .set({ usedAt: d.clock.now() })
+      .where(and(eq(supplierActivation.userId, userId), isNull(supplierActivation.usedAt)));
+    await d.audit.record(tx, a.ctx, {
+      action: 'supplier.contact_deprovision',
+      entityType: 'supplier',
+      entityId: supplierId,
+      before: { userId, email: u.email, active: true },
+      after: { active: false, reason },
+    });
+    return u;
+  }
+
+  const reasonBody = z.object({ reason: z.string().trim().min(3).max(300) }).strict();
+  const reassignBody = contactBody.extend({ reason: z.string().trim().min(3).max(300) }).strict();
+
+  reg('POST', '/suppliers/{id}/contacts/{userId}/deprovision');
+  app.post(
+    `${p}/suppliers/:id/contacts/:userId/deprovision`,
+    { preHandler: guard(d, ['PROCUREMENT']) },
+    async (req) => {
+      const a = req.auth!;
+      const { id, userId } = parse(z.object({ id: uuid, userId: uuid }), req.params);
+      const body = parse(reasonBody, req.body);
+      const u = await withContext(d.database, a.ctx, (tx) => deprovision(tx, a, id, userId, body.reason));
+      await d.sessions.revokeAllFor(userId);
+      return { id: u.id, name: u.name, email: u.email, active: false };
+    },
+  );
+
+  // a contact leaves and someone else takes over: the old access ends and the new person gets their own link
+  reg('POST', '/suppliers/{id}/contacts/{userId}/reassign');
+  app.post(
+    `${p}/suppliers/:id/contacts/:userId/reassign`,
+    { preHandler: guard(d, ['PROCUREMENT']) },
+    async (req, reply) => {
+      const a = req.auth!;
+      const { id, userId } = parse(z.object({ id: uuid, userId: uuid }), req.params);
+      const { reason, ...person } = parse(reassignBody, req.body);
+      const token = randomBytes(32).toString('base64url');
+      const placeholder = await argon2Hash(randomBytes(32).toString('hex'));
+      const out = await withContext(d.database, a.ctx, async (tx) => {
+        const left = await deprovision(tx, a, id, userId, `Reassigned: ${reason}`);
+        const added = await addContact(tx, a, id, person, token, placeholder);
+        return { ...added, replaced: { id: left.id, name: left.name } };
+      });
+      await d.sessions.revokeAllFor(userId);
+      return reply.status(201).send(out);
+    },
+  );
 
   // ------------------------------------------------------------ one-time activation (public)
   reg('GET', '/supplier/activate/{token}');
@@ -267,6 +351,14 @@ export function registerSupplierDirectory(app: FastifyInstance, p: string, d: Su
           404,
           'ACTIVATION_INVALID',
           'This link is not valid any more. Ask the buyer for a new one.',
+        );
+      // staff accounts cannot be opened with a link when single sign-on is required (SEC-A04); suppliers are a separate pool
+      const [person] = await tx.select().from(appUser).where(eq(appUser.id, act.userId));
+      if (person && !person.supplierId && (await loadSettings(tx, act.tenantId)).security.enforceSso)
+        throw new AppError(
+          403,
+          'SSO_REQUIRED',
+          'Your organisation requires single sign-on, so a password cannot be set from a link.',
         );
       // single use: the first request to flip the row wins
       const won = await tx

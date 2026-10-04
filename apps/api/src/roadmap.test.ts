@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ROADMAP, roadmapForArea } from '@if/shared';
@@ -85,5 +85,39 @@ describe('roadmap register vs the requirements traceability matrix (TODO <-> RTM
       expect.arrayContaining(['FR-0655', 'FR-0660', 'FR-0665', 'FR-0670', 'FR-0675']),
     );
     expect(roadmapForArea('/app/collaboration').length).toBeGreaterThan(0);
+  });
+});
+
+describe('delivered requirements (roadmap batches)', () => {
+  const root = fileURLToPath(new URL('../../../', import.meta.url));
+  const testFiles = (dir: string): string[] =>
+    (readdirSync(`${root}${dir}`, { recursive: true }) as string[])
+      .filter((f) => /\.(test|spec)\.tsx?$/.test(f) && !f.includes('node_modules'))
+      .map((f) => readFileSync(`${root}${dir}/${f}`, 'utf8'));
+  const allTests = [...testFiles('apps'), ...testFiles('e2e'), ...testFiles('packages')].join('\n');
+  const built = ROADMAP.filter((i) => i.status === 'BUILT');
+
+  it('every requirement marked built names the batch that delivered it and is cited by an automated test', () => {
+    expect(built.length).toBeGreaterThan(0);
+    for (const i of built) {
+      expect(i.tier, i.id).toBe('S');
+      expect(i.batch, i.id).toMatch(/^B\d+$/);
+      expect(
+        new RegExp(`(?<![A-Za-z0-9-])${i.id}(?![0-9A-Za-z])`).test(allTests),
+        `${i.id} is built but no test cites it`,
+      ).toBe(true);
+    }
+  });
+
+  it('nothing deferred is marked built, and the built list matches delivered.json', () => {
+    expect(ROADMAP.filter((i) => i.tier === 'D' && i.status !== 'DEFERRED')).toEqual([]);
+    const file = JSON.parse(readFileSync(`${root}_work/delivered.json`, 'utf8')) as Record<
+      string,
+      { ids: string[] }
+    >;
+    const listed = Object.values(file)
+      .flatMap((b) => b.ids)
+      .sort();
+    expect(built.map((i) => i.id).sort()).toEqual(listed);
   });
 });

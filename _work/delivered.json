@@ -1,0 +1,13 @@
+{
+  "B1": {
+    "label": "B1 Intake, notifications, admin configuration, data migration and identity",
+    "evidence": "docs/B1-Evidence.md",
+    "ids": [
+      "FR-0010", "FR-0015", "FR-0020", "FR-X02", "FR-0030", "FR-0040", "FR-0045", "FR-X03", "FR-X04",
+      "FR-0050", "FR-0055", "FR-X05", "FR-0065", "FR-0066", "FR-X06", "FR-0090", "FR-0095",
+      "FR-0690", "FR-0695", "FR-0700", "FR-0705", "FR-0710", "FR-0720", "FR-0725", "FR-0730",
+      "FR-0655", "FR-0660", "FR-0665", "FR-0670", "FR-0675",
+      "SEC-A01", "SEC-A02", "SEC-A04", "SEC-A05", "SEC-A06"
+    ]
+  }
+}

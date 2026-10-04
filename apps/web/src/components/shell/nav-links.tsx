@@ -15,6 +15,7 @@ import {
   Users,
   Workflow,
   Landmark,
+  Settings,
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -38,6 +39,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   workflows: Workflow,
   templates: FileText,
   migration: UploadCloud,
+  settings: Settings,
   admin: UserCog,
   profile: Building2,
 };

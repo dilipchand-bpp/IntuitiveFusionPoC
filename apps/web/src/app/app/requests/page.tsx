@@ -23,13 +23,25 @@ interface Page {
 
 const when = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium' });
 
+const LAYOUTS = [
+  ['LIST', 'List'],
+  ['DENSE', 'Dense'],
+  ['KANBAN', 'Board'],
+  ['CALENDAR', 'Calendar'],
+] as const;
+type Layout = (typeof LAYOUTS)[number][0];
+const PHASE_ORDER = ['INTAKE', 'PLAN', 'TENDER', 'EVALUATION', 'CONTRACT'];
+const month = new Intl.DateTimeFormat('en-AU', { month: 'long', year: 'numeric' });
+
 export default async function RequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; layout?: string }>;
 }) {
-  const { q, status } = await searchParams;
-  const user = await getSessionUser();
+  const { q, status, layout: asked } = await searchParams;
+  const [user, mine] = await Promise.all([getSessionUser(), apiGet<{ layout: Layout }>('/settings')]);
+  // the administrator sets each role's starting layout; anyone can switch for themselves with the links below
+  const layout: Layout = LAYOUTS.some(([k]) => k === asked) ? (asked as Layout) : (mine?.layout ?? 'LIST');
   const qs = new URLSearchParams({ limit: '50' });
   if (q) qs.set('q', q);
   if (status) qs.set('status', status);
@@ -90,6 +102,26 @@ export default async function RequestsPage({
         </Button>
       </form>
 
+      <nav aria-label="Layout" className="flex flex-wrap gap-2">
+        {LAYOUTS.map(([k, name]) => {
+          const params = new URLSearchParams({
+            ...(q ? { q } : {}),
+            ...(status ? { status } : {}),
+            layout: k,
+          });
+          return (
+            <Link
+              key={k}
+              href={`/app/requests?${params}`}
+              aria-current={layout === k ? 'true' : undefined}
+              className={`flex min-h-[44px] items-center rounded-md border px-3 text-sm font-semibold no-underline ${layout === k ? 'border-accent bg-accent/10 text-accent' : 'border-border text-text'}`}
+            >
+              {name}
+            </Link>
+          );
+        })}
+      </nav>
+
       {!data ? (
         <EmptyState
           title="Requests unavailable"
@@ -115,52 +147,115 @@ export default async function RequestsPage({
         />
       ) : (
         <>
-          <Table caption="Requests">
-            <thead>
-              <tr>
-                <Th>Number</Th>
-                <Th>Title</Th>
-                <Th>Phase</Th>
-                <Th>Status</Th>
-                <Th>Complexity</Th>
-                <Th className="text-right">Value</Th>
-                <Th className="md:max-lg:hidden">Updated</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((r) => (
-                <tr key={r.id}>
-                  <Td label="Number" className="whitespace-nowrap font-mono text-xs">
-                    {r.number}
-                  </Td>
-                  <Td label="Title">
-                    <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
-                  </Td>
-                  <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
-                  <Td label="Status">
-                    <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>
-                      {STATUS_LABEL[r.status] ?? r.status}
-                    </Badge>
-                  </Td>
-                  <Td label="Complexity">
-                    {r.complexity ? (
-                      <Badge tone={COMPLEXITY_TONE[r.complexity] ?? 'neutral'}>
-                        {COMPLEXITY_LABEL[r.complexity]}
-                      </Badge>
-                    ) : (
-                      '–'
-                    )}
-                  </Td>
-                  <Td label="Value" className="text-right">
-                    {aud.format(r.estimatedValue)}
-                  </Td>
-                  <Td label="Updated" className="whitespace-nowrap md:max-lg:hidden">
-                    {when.format(new Date(r.updatedAt))}
-                  </Td>
-                </tr>
+          {layout === 'KANBAN' ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5" data-testid="board">
+              {PHASE_ORDER.map((ph) => (
+                <section
+                  key={ph}
+                  aria-label={PHASE_LABEL[ph] ?? ph}
+                  className="min-w-0 rounded-lg border border-border bg-surface-alt/50 p-3"
+                >
+                  <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-text-muted">
+                    {PHASE_LABEL[ph] ?? ph} ({data.items.filter((r) => r.phase === ph).length})
+                  </h2>
+                  <ul className="mt-2 flex flex-col gap-2">
+                    {data.items
+                      .filter((r) => r.phase === ph)
+                      .map((r) => (
+                        <li
+                          key={r.id}
+                          className="rounded-md border border-border bg-surface p-3 text-sm shadow-sm"
+                        >
+                          <span className="block font-mono text-xs text-text-muted">{r.number}</span>
+                          <Link href={`/app/requests/${r.id}`} className="font-semibold">
+                            {r.title}
+                          </Link>
+                          <span className="mt-1 block text-xs text-text-muted">
+                            {aud.format(r.estimatedValue)}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                </section>
               ))}
-            </tbody>
-          </Table>
+            </div>
+          ) : layout === 'CALENDAR' ? (
+            <div className="flex flex-col gap-4" data-testid="calendar">
+              {[...new Set(data.items.map((r) => month.format(new Date(r.updatedAt))))].map((m) => (
+                <section key={m} aria-label={m}>
+                  <h2 className="font-heading text-lg font-bold">{m}</h2>
+                  <ul className="mt-2 flex flex-col divide-y divide-border rounded-md border border-border">
+                    {data.items
+                      .filter((r) => month.format(new Date(r.updatedAt)) === m)
+                      .map((r) => (
+                        <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
+                          <span className="w-28 text-text-muted">{when.format(new Date(r.updatedAt))}</span>
+                          <span className="font-mono text-xs text-text-muted">{r.number}</span>
+                          <Link href={`/app/requests/${r.id}`} className="font-semibold">
+                            {r.title}
+                          </Link>
+                          <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>
+                            {STATUS_LABEL[r.status] ?? r.status}
+                          </Badge>
+                        </li>
+                      ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={layout === 'DENSE' ? 'text-xs [&_td]:py-1 [&_th]:py-1' : ''}
+              data-testid={layout === 'DENSE' ? 'dense' : 'list'}
+            >
+              <Table caption="Requests">
+                <thead>
+                  <tr>
+                    <Th>Number</Th>
+                    <Th>Title</Th>
+                    <Th>Phase</Th>
+                    <Th>Status</Th>
+                    <Th>Complexity</Th>
+                    <Th className="text-right">Value</Th>
+                    <Th className="md:max-lg:hidden">Updated</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.map((r) => (
+                    <tr key={r.id}>
+                      <Td label="Number" className="whitespace-nowrap font-mono text-xs">
+                        {r.number}
+                      </Td>
+                      <Td label="Title">
+                        <Link href={`/app/requests/${r.id}`}>{r.title}</Link>
+                      </Td>
+                      <Td label="Phase">{PHASE_LABEL[r.phase] ?? r.phase}</Td>
+                      <Td label="Status">
+                        <Badge tone={STATUS_TONE[r.status] ?? 'neutral'}>
+                          {STATUS_LABEL[r.status] ?? r.status}
+                        </Badge>
+                      </Td>
+                      <Td label="Complexity">
+                        {r.complexity ? (
+                          <Badge tone={COMPLEXITY_TONE[r.complexity] ?? 'neutral'}>
+                            {COMPLEXITY_LABEL[r.complexity]}
+                          </Badge>
+                        ) : (
+                          '–'
+                        )}
+                      </Td>
+                      <Td label="Value" className="text-right">
+                        {aud.format(r.estimatedValue)}
+                      </Td>
+                      <Td label="Updated" className="whitespace-nowrap md:max-lg:hidden">
+                        {when.format(new Date(r.updatedAt))}
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
           <p className="text-sm text-text-muted">
             Showing {data.items.length} of {data.page.total}.
           </p>

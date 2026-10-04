@@ -1,12 +1,15 @@
 import { createHash } from 'node:crypto';
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { ROLE_HOME, type AppConfig } from '@if/shared';
 import type { RequestContext } from '../db/client.js';
 import { AppError, parse } from '../http/errors.js';
 import { guard, type GuardDeps } from './guard.js';
 import type { AuthenticatedUser, IdentityProvider } from './identity-provider.js';
-import { COOKIE_NAMES } from './session-service.js';
+import { withSystem } from '../db/client.js';
+import { loadSettings } from '../modules/settings/settings.js';
+import { mfaState, signMfaToken } from './mfa.js';
+import { COOKIE_NAMES, type MfaState } from './session-service.js';
 
 export interface AuthRouteDeps extends GuardDeps {
   config: AppConfig;
@@ -37,6 +40,36 @@ const cookieOpts = (config: AppConfig, expires?: Date) => ({
   path: '/',
   ...(expires ? { expires } : {}),
 });
+
+/** Creates the session, sets the right cookie and returns the body every successful sign-in returns. */
+export async function startSession(
+  d: AuthRouteDeps,
+  req: FastifyRequest,
+  reply: FastifyReply,
+  user: AuthenticatedUser,
+  how: { mfaState: MfaState; authMethod: 'PASSWORD' | 'SSO' },
+) {
+  const { config, audit, database, sessions } = d;
+  const created = await sessions.create(user, { ip: req.ip, userAgent: req.headers['user-agent'] }, how);
+  await audit.recordOutsideTx(
+    database,
+    { tenantId: user.tenantId, userId: user.id, role: user.role, correlationId: req.id },
+    {
+      action: 'auth.login',
+      entityType: 'session',
+      entityId: created.id,
+      after: { pool: user.pool, method: how.authMethod, mfa: how.mfaState },
+    },
+  );
+  void reply.setCookie(COOKIE_NAMES[user.pool], created.cookieValue, cookieOpts(config));
+  return {
+    user: publicUser(user),
+    expiresAt: created.expiresAt.toISOString(),
+    mfaRequired: false,
+    mfaEnrolmentRequired: how.mfaState === 'ENROLMENT_REQUIRED',
+    csrfToken: sessions.csrfFor(created.id),
+  };
+}
 
 export function registerAuthRoutes(app: FastifyInstance, p: string, d: AuthRouteDeps): Set<string> {
   const { config, idp, audit, database, sessions } = d;
@@ -86,19 +119,35 @@ export function registerAuthRoutes(app: FastifyInstance, p: string, d: AuthRoute
         );
       }
       const { user } = result;
-      const created = await sessions.create(user, { ip: req.ip, userAgent: req.headers['user-agent'] });
-      await audit.recordOutsideTx(
-        database,
-        { tenantId: user.tenantId, userId: user.id, role: user.role, correlationId: req.id },
-        { action: 'auth.login', entityType: 'session', entityId: created.id, after: { pool: user.pool } },
-      );
-      void reply.setCookie(COOKIE_NAMES[user.pool], created.cookieValue, cookieOpts(config));
-      return {
-        user: publicUser(user),
-        expiresAt: created.expiresAt.toISOString(),
-        mfaRequired: await idp.mfaRequired(user),
-        csrfToken: sessions.csrfFor(created.id),
-      };
+      const settings = await withSystem(database, (tx) => loadSettings(tx, user.tenantId));
+      // an organisation that has switched on single sign-on does not accept passwords from its staff (SEC-A04)
+      if (settings.security.enforceSso && user.pool === 'STAFF') {
+        await audit.recordOutsideTx(
+          database,
+          { tenantId: user.tenantId, userId: user.id, role: user.role, correlationId: req.id },
+          {
+            action: 'auth.password_refused_sso_required',
+            entityType: 'app_user',
+            entityId: user.id,
+            result: 'DENIED',
+          },
+        );
+        throw new AppError(
+          403,
+          'SSO_REQUIRED',
+          'Your organisation requires single sign-on. Use the single sign-on button.',
+        );
+      }
+      const mfa = await mfaState(database, user.id);
+      if (mfa?.confirmed) {
+        // password is right, but a one-time code from the authenticator app is still needed before any session exists
+        return { mfaRequired: true, mfaToken: signMfaToken(config.SESSION_SECRET, user.id, d.clock.now()) };
+      }
+      const enrolmentRequired = settings.security.requireMfa && user.pool === 'STAFF';
+      return startSession(d, req, reply, user, {
+        mfaState: enrolmentRequired ? 'ENROLMENT_REQUIRED' : 'NOT_REQUIRED',
+        authMethod: 'PASSWORD',
+      });
     },
   );
 

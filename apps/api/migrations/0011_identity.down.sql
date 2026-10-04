@@ -1,0 +1,3 @@
+ALTER TABLE role_assignment DROP COLUMN IF EXISTS granted_by, DROP COLUMN IF EXISTS expires_at;
+ALTER TABLE session DROP COLUMN IF EXISTS auth_method, DROP COLUMN IF EXISTS mfa_state;
+DROP TABLE IF EXISTS user_mfa;

@@ -136,6 +136,7 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
             status: r.status,
             estimatedValue: Number(r.estimatedValue ?? 0),
             steps: steps.get(r.id)!,
+            sourceSystem: r.sourceSystem,
             evaluationId: evalOf(r.id),
             updatedAt: r.updatedAt.toISOString(),
           }));

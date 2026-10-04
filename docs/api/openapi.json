@@ -47,6 +47,12 @@
   },
   {
    "name": "Migration"
+  },
+  {
+   "name": "Settings"
+  },
+  {
+   "name": "Suppliers"
   }
  ],
  "security": [
@@ -6261,51 +6267,6 @@
     }
    }
   },
-  "/migration/uploads": {
-   "post": {
-    "operationId": "uploadMigration",
-    "tags": [
-     "Migration"
-    ],
-    "summary": "Validate legacy contract CSV (profiling only in POC)",
-    "parameters": [],
-    "x-roles": [
-     "ADMIN",
-     "CONTRACT_MGR"
-    ],
-    "responses": {
-     "201": {
-      "description": "Success",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/MigrationUpload"
-        }
-       }
-      }
-     },
-     "400": {
-      "$ref": "#/components/responses/E400"
-     },
-     "401": {
-      "$ref": "#/components/responses/E401"
-     },
-     "403": {
-      "$ref": "#/components/responses/E403"
-     },
-     "404": {
-      "$ref": "#/components/responses/E404"
-     },
-     "409": {
-      "$ref": "#/components/responses/E409"
-     },
-     "422": {
-      "$ref": "#/components/responses/E422"
-     }
-    },
-    "description": "multipart/form-data"
-   }
-  },
   "/features/{key}": {
    "get": {
     "operationId": "getFeatureStatus",
@@ -6346,6 +6307,2008 @@
      },
      "404": {
       "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/settings": {
+   "get": {
+    "operationId": "getSettings",
+    "tags": [
+     "Settings"
+    ],
+    "summary": "All tenant settings: numbering, labels, custom fields, checkpoints, intake rules, notification rules, workflow routing",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Settings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "updateSettings",
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Replace one or more settings sections; every change is audited with the old and new values",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Settings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SettingsUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/settings": {
+   "get": {
+    "operationId": "getPublicSettings",
+    "tags": [
+     "Settings"
+    ],
+    "summary": "The settings every screen needs: field labels, custom fields and the caller's layout",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PublicSettings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/notifications/run-escalations": {
+   "post": {
+    "operationId": "runEscalations",
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Escalate approvals that have waited longer than the configured period (also runs on a schedule)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EscalationRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/admin/notification-log": {
+   "get": {
+    "operationId": "listNotificationLog",
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Recent notification deliveries by channel (simulated in the proof of concept)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/NotificationLogEntry"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/erp-mapping/preview": {
+   "post": {
+    "operationId": "previewErpMapping",
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Try the ERP field-name mapping on a sample record, inbound or outbound",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErpPreview"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ErpPreview"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/taxonomy": {
+   "post": {
+    "operationId": "confirmTaxonomy",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Confirm (or replace with your own) the preliminary classification code",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TaxonomyResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TaxonomyConfirm"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/suggested-suppliers": {
+   "get": {
+    "operationId": "listSuggestedSuppliers",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Suppliers from the in-house directory that fit the request's category, with contacts",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SuggestedSupplier"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "amendSuggestedSuppliers",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Choose which of the suggested suppliers to keep",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SuggestedSupplier"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SuppliersSelect"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/ecv": {
+   "get": {
+    "operationId": "getEcv",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Estimated contract value calculator: the saved inputs, or the request value as a start",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ecv"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "calculateEcv",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Calculate the estimated contract value; with apply=true it becomes the request value and drives routing",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ecv"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EcvInput"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/artefacts": {
+   "get": {
+    "operationId": "listArtefacts",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "What the request has filled in downstream: plan, tender, scoring sheet, report, contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Artefact"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/delegates": {
+   "get": {
+    "operationId": "listStageDelegates",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "The delegate for each approval stage, by value, and who actually signed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/StageDelegate"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/delegates/{stage}": {
+   "put": {
+    "operationId": "redirectStageDelegate",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Procurement redirects a stage to another person who holds enough authority; history is not rewritten",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "stage",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StageDelegate"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Nominate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/process-variations": {
+   "get": {
+    "operationId": "listProcessVariations",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Changes to this procurement's workflow steps and their approval",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ProcessVariation"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "requestProcessVariation",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "Ask to add or remove a workflow step for this procurement only; a delegate must approve",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcessVariation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProcessVariationRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/process-variations/{variationId}/decision": {
+   "post": {
+    "operationId": "decideProcessVariation",
+    "tags": [
+     "Requests"
+    ],
+    "summary": "A delegate approves or rejects a change to the process; the approval basis is recorded",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "variationId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProcessVariation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/esg": {
+   "get": {
+    "operationId": "getPlanEsg",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "ESG and social objectives set on the plan",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Esg"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setPlanEsg",
+    "tags": [
+     "Plans"
+    ],
+    "summary": "Set carbon, local labour, diversity and socio-economic objectives; they carry into the tender pack",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Esg"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "423 if the plan is locked",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Esg"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/migration/uploads": {
+   "post": {
+    "operationId": "uploadMigration",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Upload a legacy contract extract (CSV text); it is profiled for missing fields, unparseable dates and values and duplicates",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MigrationBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MigrationUploadRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/migration/batches": {
+   "get": {
+    "operationId": "listMigrationBatches",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Migration batches and their counts",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/MigrationBatch"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/migration/batches/{id}": {
+   "get": {
+    "operationId": "getMigrationBatch",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "One batch with every record, its issues and what the contract text yielded",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MigrationBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/migration/batches/{id}/exceptions.csv": {
+   "get": {
+    "operationId": "exportMigrationExceptions",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "The exceptions report as CSV (audited)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/migration/records/{id}": {
+   "put": {
+    "operationId": "fixMigrationRecord",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Correct a record; it is checked again",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MigrationRecord"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MigrationFix"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/migration/records/{id}/skip": {
+   "post": {
+    "operationId": "skipMigrationRecord",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Set a record aside with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MigrationRecord"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MigrationSkip"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/migration/batches/{id}/cutover": {
+   "post": {
+    "operationId": "cutoverMigrationBatch",
+    "tags": [
+     "Migration"
+    ],
+    "summary": "Load the batch; refused while any exception is unreviewed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MigrationBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/auth/mfa": {
+   "get": {
+    "operationId": "getMfaStatus",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Is an authenticator app set up for this account",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MfaStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "delete": {
+    "operationId": "removeMfa",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Remove the authenticator app (refused when the organisation requires it)",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MfaCode"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/mfa/enroll": {
+   "post": {
+    "operationId": "enrollMfa",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Start setting up an authenticator app; the secret is shown once",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MfaEnrol"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/auth/mfa/confirm": {
+   "post": {
+    "operationId": "confirmMfa",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Finish set-up with a code from the app",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Message"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MfaCode"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/mfa/verify": {
+   "post": {
+    "operationId": "verifyMfa",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Complete a password sign-in with the one-time code",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Session"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MfaVerify"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/sso/config": {
+   "get": {
+    "operationId": "getSsoConfig",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Whether single sign-on is available and whether it is the only way in",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SsoConfig"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/auth/sso/simulate": {
+   "post": {
+    "operationId": "simulateSso",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Simulated identity provider: issues an ID token for a demo person (not available in production)",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SsoToken"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SsoSimulate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/sso/callback": {
+   "post": {
+    "operationId": "ssoCallback",
+    "tags": [
+     "Auth"
+    ],
+    "summary": "Complete single sign-on from an ID token; checks signature, issuer, audience, expiry and nonce",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Session"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SsoCallback"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/users/{id}/role-expiry": {
+   "put": {
+    "operationId": "setRoleExpiry",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Make a role time-bound: access ends on the date (or clear the date)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminUser"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RoleExpiry"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/grants/sweep": {
+   "post": {
+    "operationId": "sweepGrants",
+    "tags": [
+     "Admin"
+    ],
+    "summary": "Remove ended grants, end their sessions and tell the people involved (also runs on a schedule)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrantSweep"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/contacts/{userId}/deprovision": {
+   "post": {
+    "operationId": "deprovisionContact",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Switch a departed contact off: no sign-in, open links void, sessions ended",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "userId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierContact"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContactDeprovision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/contacts/{userId}/reassign": {
+   "post": {
+    "operationId": "reassignContact",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Replace a contact with someone else; the old access ends and the new person gets a one-time link",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "userId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContactCreated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContactReassign"
+       }
+      }
      }
     }
    }
@@ -6534,15 +8497,19 @@
      "mfaRequired": {
       "type": "boolean"
      },
+     "mfaToken": {
+      "type": "string"
+     },
+     "mfaEnrolmentRequired": {
+      "type": "boolean"
+     },
      "csrfToken": {
       "type": "string"
      }
     },
     "additionalProperties": false,
     "required": [
-     "user",
-     "expiresAt",
-     "csrfToken"
+     "mfaRequired"
     ]
    },
    "AccessDenied": {
@@ -11451,6 +13418,445 @@
      "rowsRead",
      "rowsAccepted"
     ]
+   },
+   "Settings": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SettingsUpdate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PublicSettings": {
+    "type": "object",
+    "properties": {
+     "fieldLabels": {
+      "type": "object",
+      "additionalProperties": true
+     },
+     "customFields": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     },
+     "layout": {
+      "type": "string"
+     },
+     "layouts": {
+      "type": "object",
+      "additionalProperties": true
+     },
+     "taxonomy": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "fieldLabels",
+     "customFields",
+     "layout"
+    ]
+   },
+   "EscalationRun": {
+    "type": "object",
+    "properties": {
+     "escalated": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "escalated"
+    ]
+   },
+   "NotificationLogEntry": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "channel": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "detail": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "recipient": {
+      "type": "string"
+     },
+     "createdAt": {
+      "type": "string",
+      "format": "date-time"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "channel",
+     "status"
+    ]
+   },
+   "ErpPreview": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "TaxonomyConfirm": {
+    "type": "object",
+    "properties": {
+     "code": {
+      "type": "string"
+     },
+     "confirm": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "confirm"
+    ]
+   },
+   "TaxonomyResult": {
+    "type": "object",
+    "properties": {
+     "scheme": {
+      "type": "string"
+     },
+     "code": {
+      "type": "string"
+     },
+     "confirmed": {
+      "type": "boolean"
+     },
+     "label": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "scheme",
+     "code",
+     "confirmed"
+    ]
+   },
+   "SuggestedSupplier": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SuppliersSelect": {
+    "type": "object",
+    "properties": {
+     "supplierIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierIds"
+    ]
+   },
+   "EcvInput": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Ecv": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Artefact": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "StageDelegate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Nominate": {
+    "type": "object",
+    "properties": {
+     "userId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "userId"
+    ]
+   },
+   "ProcessVariation": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProcessVariationRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Esg": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MigrationUploadRequest": {
+    "type": "object",
+    "properties": {
+     "filename": {
+      "type": "string"
+     },
+     "sourceSystem": {
+      "type": "string"
+     },
+     "csv": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "filename",
+     "sourceSystem",
+     "csv"
+    ]
+   },
+   "MigrationBatch": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MigrationRecord": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MigrationFix": {
+    "type": "object",
+    "properties": {
+     "fields": {
+      "type": "object",
+      "additionalProperties": true
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "fields"
+    ]
+   },
+   "MigrationSkip": {
+    "type": "object",
+    "properties": {
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "note"
+    ]
+   },
+   "MfaStatus": {
+    "type": "object",
+    "properties": {
+     "enrolled": {
+      "type": "boolean"
+     },
+     "pending": {
+      "type": "boolean"
+     },
+     "required": {
+      "type": "boolean"
+     },
+     "method": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "enrolled",
+     "pending",
+     "required"
+    ]
+   },
+   "MfaEnrol": {
+    "type": "object",
+    "properties": {
+     "secret": {
+      "type": "string"
+     },
+     "otpauthUrl": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "secret",
+     "otpauthUrl"
+    ]
+   },
+   "MfaCode": {
+    "type": "object",
+    "properties": {
+     "code": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "code"
+    ]
+   },
+   "MfaVerify": {
+    "type": "object",
+    "properties": {
+     "mfaToken": {
+      "type": "string"
+     },
+     "code": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "mfaToken",
+     "code"
+    ]
+   },
+   "SsoConfig": {
+    "type": "object",
+    "properties": {
+     "available": {
+      "type": "boolean"
+     },
+     "simulated": {
+      "type": "boolean"
+     },
+     "issuer": {
+      "type": "string"
+     },
+     "enforced": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "available",
+     "enforced"
+    ]
+   },
+   "SsoSimulate": {
+    "type": "object",
+    "properties": {
+     "email": {
+      "type": "string"
+     },
+     "nonce": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "email",
+     "nonce"
+    ]
+   },
+   "SsoToken": {
+    "type": "object",
+    "properties": {
+     "idToken": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "idToken"
+    ]
+   },
+   "SsoCallback": {
+    "type": "object",
+    "properties": {
+     "idToken": {
+      "type": "string"
+     },
+     "nonce": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "idToken",
+     "nonce"
+    ]
+   },
+   "RoleExpiry": {
+    "type": "object",
+    "properties": {
+     "role": {
+      "type": "string",
+      "enum": [
+       "REQUESTER",
+       "PROCUREMENT",
+       "DELEGATE",
+       "EVALUATOR",
+       "CHAIR",
+       "LEGAL",
+       "CONTRACT_MGR",
+       "PROBITY",
+       "FINANCE",
+       "ADMIN",
+       "EXEC",
+       "SUPPLIER"
+      ]
+     },
+     "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "role",
+     "expiresAt"
+    ]
+   },
+   "GrantSweep": {
+    "type": "object",
+    "properties": {
+     "ended": {
+      "type": "integer"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "ended"
+    ]
+   },
+   "ContactDeprovision": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "ContactReassign": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContactCreated": {
+    "type": "object",
+    "additionalProperties": true
    }
   },
   "responses": {

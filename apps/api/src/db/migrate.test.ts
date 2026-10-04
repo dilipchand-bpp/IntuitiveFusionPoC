@@ -1,18 +1,24 @@
+import { readdirSync } from 'node:fs';
 import { is } from 'drizzle-orm';
 import { PgTable, getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 import { freshDb } from '../test-helpers.js';
-import { migrateDownLast, migrateUp, resetDatabase } from './migrate.js';
+import { MIGRATIONS_DIR, migrateDownLast, migrateUp, resetDatabase } from './migrate.js';
 import * as schema from './schema.js';
 
 const tables = (): PgTable[] => Object.values(schema).filter((v) => is(v, PgTable)) as unknown as PgTable[];
+
+const migrationNames = () =>
+  readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql') && !f.endsWith('.down.sql'))
+    .sort();
 
 describe('migrations', () => {
   it('applies on an empty database and is a no-op the second time', async () => {
     const db = await freshDb();
     expect(await migrateUp(db)).toEqual([]);
     const r = await db.pg.query<{ n: number }>(`select count(*)::int n from __migrations`);
-    expect(r.rows[0]!.n).toBe(9);
+    expect(r.rows[0]!.n).toBe(migrationNames().length);
     await db.close();
   });
 
@@ -46,14 +52,9 @@ describe('migrations', () => {
 
   it('down migration removes FKs, RLS, triggers and grants; up re-applies cleanly', async () => {
     const db = await freshDb();
-    expect(await migrateDownLast(db)).toBe('0008_supplier_activation.sql');
-    expect(await migrateDownLast(db)).toBe('0007_contract_extras.sql');
-    expect(await migrateDownLast(db)).toBe('0006_contract_management.sql');
-    expect(await migrateDownLast(db)).toBe('0005_contracts.sql');
-    expect(await migrateDownLast(db)).toBe('0004_evaluation.sql');
-    expect(await migrateDownLast(db)).toBe('0003_tender_portal.sql');
-    expect(await migrateDownLast(db)).toBe('0002_session.sql');
-    expect(await migrateDownLast(db)).toBe('0001_integrity_security.sql');
+    const names = migrationNames();
+    // roll back everything, newest first, down to the first migration (the schema itself)
+    for (const name of [...names].reverse().slice(0, -1)) expect(await migrateDownLast(db)).toBe(name);
     const fks = await db.pg.query<{ n: number }>(
       `select count(*)::int n from pg_constraint where contype='f' and connamespace='public'::regnamespace`,
     );
@@ -66,16 +67,7 @@ describe('migrations', () => {
       `select rowsecurity from pg_tables where tablename='score'`,
     );
     expect(rls.rows[0]!.rowsecurity).toBe(false);
-    expect(await migrateUp(db)).toEqual([
-      '0001_integrity_security.sql',
-      '0002_session.sql',
-      '0003_tender_portal.sql',
-      '0004_evaluation.sql',
-      '0005_contracts.sql',
-      '0006_contract_management.sql',
-      '0007_contract_extras.sql',
-      '0008_supplier_activation.sql',
-    ]);
+    expect(await migrateUp(db)).toEqual(names.slice(1));
     const fks2 = await db.pg.query<{ n: number }>(
       `select count(*)::int n from pg_constraint where contype='f' and connamespace='public'::regnamespace`,
     );
@@ -89,7 +81,7 @@ describe('migrations', () => {
     const r = await db.pg.query<{ n: number }>(
       `select count(*)::int n from information_schema.tables where table_schema='public'`,
     );
-    expect(r.rows[0]!.n).toBe(39);
+    expect(r.rows[0]!.n).toBe(tables().length + 1); // every table in the schema, plus __migrations
     await db.close();
   });
 });

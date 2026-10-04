@@ -2,6 +2,7 @@
  * Deterministic plan drafting for the SIMULATED assistant (FR-0075). Everything is derived from what the requester
  * already said; nothing is invented that the request does not support. A real model replaces this behind AiProvider.
  */
+import { selectSubWorkflow } from '../intake/classify.js';
 import { CATEGORIES } from '../intake/extract.js';
 import type { FieldMap } from '../intake/fields.js';
 import { joinParagraphs } from './fields.js';
@@ -130,6 +131,14 @@ export function draftPlan(i: PlanDraftInput): Record<string, string> {
       'Reference checks with at least two comparable clients.',
       'Sanctions screening and verification of current insurance certificates.',
     ]),
+    // the same process, different outputs: what the plan must also say depends on the kind of procurement (FR-0705)
+    subWorkflow: (() => {
+      const sub = selectSubWorkflow(v.category, v.title);
+      return sub.planSections.length
+        ? joinParagraphs(sub.planSections.map((x) => `${x.title}. ${x.text}`))
+        : 'No category-specific requirements apply to this procurement.';
+    })(),
+    esg: 'No ESG or social objectives have been set yet. Set carbon, local labour and diversity objectives here; they carry into the tender pack.',
     timeline: `Approval ${fmt(addDays(t0, 7))}; market release ${fmt(addDays(t0, 14))}; award ${fmt(addDays(t0, 63))}; contract start ${fmt(addDays(t0, 90))}. Dates move together if any one changes.`,
   };
 }

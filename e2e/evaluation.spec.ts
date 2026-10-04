@@ -669,6 +669,7 @@ test.describe('contract award: legal drafts and edits, the delegate signs, the c
   test('legal drafts from the approved report, edits a clause and releases; the delegate signs and the contract locks', async ({
     page,
   }) => {
+    test.setTimeout(120_000); // a long journey: draft, edit, release, three sign-ins
     const title = `Contract fixture ${rand()}`;
     await approvedAward(title);
 

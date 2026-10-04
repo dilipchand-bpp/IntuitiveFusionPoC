@@ -2,9 +2,29 @@ import { and, eq, like, desc, inArray, sql } from 'drizzle-orm';
 import type { Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import type { RequestContext, Tx } from '../../db/client.js';
-import { fieldValue, notification, request, roleAssignment, tenant } from '../../db/schema.js';
+import { fieldValue, notification, request, roleAssignment, tenant, workflow } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
+import {
+  WORKFLOW_NAMES,
+  classifyCategory,
+  requiredEngagements,
+  routeWorkflow,
+  selectSubWorkflow,
+  stepStates,
+  type Engagement,
+  type ProcessStep,
+  type ProcessStepView,
+} from './classify.js';
 import { gatesFor, intakeModeFor, scoreComplexity, type Complexity } from './complexity.js';
+import {
+  DEFAULTS,
+  formatNumber,
+  labelFor,
+  loadSettings,
+  numberStem,
+  sequenceOf,
+  type Settings,
+} from '../settings/settings.js';
 import { FIELDS, FIELD_BY_KEY, missingMandatory, type FieldMap } from './fields.js';
 
 type RequestRow = typeof request.$inferSelect;
@@ -18,6 +38,9 @@ export interface FieldView {
   source: Source | 'MIGRATED';
   aiDrafted: boolean;
   missing: boolean;
+  /** An administrator-defined field (FR-0710) rather than a built-in one. */
+  custom?: boolean;
+  type?: 'TEXT' | 'FLAG' | 'NUMBER';
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -43,6 +66,14 @@ export interface RequestView {
   complexity?: Complexity;
   complexityReasons: string[];
   budgetCheck: RequestRow['budgetCheck'];
+  /** The system a migrated record came from; absent for records created here (FR-0670). */
+  sourceSystem?: string;
+  /** Preliminary classification in the tenant's scheme, confirmed or amended by a person (FR-0015). */
+  taxonomy?: { scheme: string; code: string; confirmed: boolean };
+  /** The workflow this request follows and where it stands (FR-0705). */
+  workflow?: { id: string; name: string; subWorkflow: string; steps: ProcessStepView[] };
+  /** Secondary reviews the request needs, with the reason for each (FR-0030). */
+  engagements: Engagement[];
   fields: FieldView[];
   gates: GateView[];
   missingFields: string[];
@@ -66,7 +97,7 @@ export function valuesOf(r: RequestRow, rows: FieldRow[]): FieldMap {
   return out;
 }
 
-export function toView(r: RequestRow, rows: FieldRow[]): RequestView {
+export function toView(r: RequestRow, rows: FieldRow[], settings: Settings = DEFAULTS): RequestView {
   const values = valuesOf(r, rows);
   const byKey = new Map(rows.map((f) => [f.key, f]));
   const value = Number(values.estimatedValue ?? 0);
@@ -80,13 +111,16 @@ export function toView(r: RequestRow, rows: FieldRow[]): RequestView {
     ...g,
     status: byKey.get(`gate.${g.key}`)?.value === 'SATISFIED' ? 'SATISFIED' : 'REQUIRED',
   }));
-  const missing = missingMandatory(values);
+  const missing = [
+    ...missingMandatory(values),
+    ...settings.customFields.filter((c) => c.mandatory && !values[c.key]?.trim()).map((c) => c.key),
+  ];
   const fields: FieldView[] = FIELDS.map((def) => {
     const row = byKey.get(def.key);
     const v = values[def.key];
     return {
       key: def.key,
-      label: def.label,
+      label: labelFor(settings, def.key, def.label),
       ...(v !== undefined && v !== '' ? { value: v } : {}),
       source: (row?.source as FieldView['source']) ?? 'USER',
       aiDrafted: row?.aiDrafted ?? false,
@@ -96,6 +130,21 @@ export function toView(r: RequestRow, rows: FieldRow[]): RequestView {
         : {}),
     };
   });
+  for (const c of settings.customFields) {
+    const row = byKey.get(c.key);
+    const v = values[c.key];
+    fields.push({
+      key: c.key,
+      label: c.label,
+      ...(v !== undefined && v !== '' ? { value: v } : {}),
+      source: (row?.source as FieldView['source']) ?? 'USER',
+      aiDrafted: false,
+      missing: c.mandatory && missing.includes(c.key),
+      custom: true,
+      type: c.type,
+      ...(row ? { updatedAt: row.updatedAt.toISOString() } : {}),
+    });
+  }
   return {
     id: r.id,
     number: r.number,
@@ -112,6 +161,21 @@ export function toView(r: RequestRow, rows: FieldRow[]): RequestView {
     complexity: score.level,
     complexityReasons: score.reasons,
     budgetCheck: r.budgetCheck,
+    ...(r.sourceSystem ? { sourceSystem: r.sourceSystem } : {}),
+    ...(r.taxonomyCode
+      ? { taxonomy: { scheme: r.taxonomyScheme ?? '', code: r.taxonomyCode, confirmed: r.taxonomyConfirmed } }
+      : {}),
+    ...(r.workflowId
+      ? {
+          workflow: {
+            id: r.workflowId,
+            name: WORKFLOW_NAMES[r.workflowId] ?? r.workflowId,
+            subWorkflow: r.subWorkflow ?? 'general',
+            steps: stepStates(r.processSteps as ProcessStep[], r.phase, r.status === 'COMPLETE'),
+          },
+        }
+      : {}),
+    engagements: (r.engagements as Engagement[]) ?? [],
     fields,
     gates,
     missingFields: missing,
@@ -144,18 +208,25 @@ export class IntakeService {
     private readonly audit: AuditService,
   ) {}
 
-  /** PR-YYYY-NNNN, sequential per tenant. The tenant row lock (taken by the audit service too) serialises numbering. */
+  /**
+   * Next procurement number in the tenant's configured format (FR-0695), sequential per tenant and period. The tenant
+   * row lock (taken by the audit service too) serialises numbering. Default format: PR-YYYY-NNNN.
+   */
   private async nextNumber(tx: Tx, tenantId: string): Promise<string> {
     await tx.execute(sql`select 1 from ${tenant} where ${tenant.id} = ${tenantId} for update`);
-    const year = this.clock.now().getUTCFullYear();
-    const [last] = await tx
+    const cfg = (await loadSettings(tx, tenantId)).numbering;
+    const now = this.clock.now();
+    const stem = numberStem(cfg, now);
+    const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, (ch) => `\\${ch}`);
+    const exact = new RegExp(`^${escaped}\\d+$`);
+    const rows = await tx
       .select({ number: request.number })
       .from(request)
-      .where(and(eq(request.tenantId, tenantId), like(request.number, `PR-${year}-%`)))
+      .where(and(eq(request.tenantId, tenantId), like(request.number, `${stem}%`)))
       .orderBy(desc(request.number))
-      .limit(1);
-    const n = last ? Number(last.number.split('-')[2]) + 1 : 1;
-    return `PR-${year}-${String(n).padStart(4, '0')}`;
+      .limit(200);
+    const last = Math.max(0, ...rows.filter((r) => exact.test(r.number)).map((r) => sequenceOf(r.number)));
+    return formatNumber(cfg, now, last + 1);
   }
 
   async createDraft(tx: Tx, ctx: RequestContext): Promise<RequestRow> {
@@ -198,6 +269,8 @@ export class IntakeService {
   ): Promise<RequestView> {
     const loaded = await loadRequest(tx, ctx.tenantId, requestId);
     if (!loaded) throw new AppError(404, 'NOT_FOUND', 'Request not found');
+    const settings = await loadSettings(tx, ctx.tenantId);
+    const customByKey = new Map(settings.customFields.map((c) => [c.key, c]));
     const { row, fields } = loaded;
     if (row.status !== 'DRAFT')
       throw new AppError(409, 'REQUEST_NOT_EDITABLE', 'A submitted request can no longer be edited here');
@@ -206,12 +279,23 @@ export class IntakeService {
     const now = this.clock.now();
     const cols: Partial<typeof request.$inferInsert> = { updatedAt: now, version: row.version + 1 };
     for (const c of changes) {
-      const def = FIELD_BY_KEY.get(c.key);
+      const custom = customByKey.get(c.key);
+      const def =
+        FIELD_BY_KEY.get(c.key) ??
+        (custom ? { key: c.key, label: custom.label, column: undefined } : undefined);
       if (!def)
         throw new AppError(400, 'VALIDATION_FAILED', 'Unknown field', [
           { field: c.key, message: 'Not a request field' },
         ]);
       const value = c.value.trim();
+      if (custom?.type === 'NUMBER' && value !== '' && !Number.isFinite(Number(value)))
+        throw new AppError(400, 'VALIDATION_FAILED', 'Invalid value', [
+          { field: c.key, message: `${custom.label} must be a number` },
+        ]);
+      if (custom?.type === 'FLAG' && !['true', 'false'].includes(value))
+        throw new AppError(400, 'VALIDATION_FAILED', 'Invalid value', [
+          { field: c.key, message: `${custom.label} must be yes or no` },
+        ]);
       if (value.length > 4000)
         throw new AppError(400, 'VALIDATION_FAILED', 'Value too long', [
           { field: c.key, message: 'Maximum 4000 characters' },
@@ -262,7 +346,34 @@ export class IntakeService {
       supplyLocation: merged.supplyLocation,
       dataSensitivity: merged.dataSensitivity,
     }).level;
-    cols.intakeMode = intakeModeFor(value, tenantConfig.selfServiceThresholdAud ?? 50_000);
+    cols.intakeMode = intakeModeFor(value, settings.intake.selfServiceThresholdAud);
+    // classification, workflow routing and required engagements follow whatever the request now says (FR-0015, FR-0705, FR-0030)
+    const taxonomy = classifyCategory(merged.category, settings.intake.taxonomy);
+    if (taxonomy && !row.taxonomyConfirmed) {
+      cols.taxonomyScheme = taxonomy.scheme;
+      cols.taxonomyCode = taxonomy.code;
+    }
+    const sub = selectSubWorkflow(merged.category, merged.title);
+    cols.subWorkflow = sub.key;
+    const varied = (row.processVariations as unknown[]).length > 0;
+    if (!varied) {
+      const routed = routeWorkflow(settings.workflowRouting, value, cols.complexity);
+      cols.workflowId = routed.workflowId;
+      const [wf] = await tx.select().from(workflow).where(eq(workflow.id, routed.workflowId));
+      cols.processSteps = ((wf?.steps ?? []) as ProcessStep[]).map((x) => ({
+        key: x.key,
+        label: x.label,
+        mandatory: x.mandatory,
+      }));
+    }
+    cols.engagements = requiredEngagements(settings.intake.engagementRules, {
+      title: merged.title,
+      category: merged.category,
+      background: merged.background,
+      dataSensitivity: merged.dataSensitivity,
+      estimatedValue: value,
+      complexity: cols.complexity,
+    });
     await tx.update(request).set(cols).where(eq(request.id, requestId));
 
     await this.audit.record(tx, ctx, {
@@ -273,7 +384,7 @@ export class IntakeService {
       after: { ...Object.fromEntries(changes.map((c) => [c.key, c.value.trim()])), _source: source },
     });
     const reloaded = (await loadRequest(tx, ctx.tenantId, requestId))!;
-    return toView(reloaded.row, reloaded.fields);
+    return toView(reloaded.row, reloaded.fields, settings);
   }
 
   /** Tell every procurement-team member a request is waiting for them. */

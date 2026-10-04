@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Badge, Button } from '@if/ui';
 import { DraftPanel } from '@/components/requests/draft-panel';
 import { RequestActions } from '@/components/requests/request-actions';
+import { RequestExtras, type ExtendedView, type ExtrasData } from '@/components/requests/extras';
 import type { RequestView } from '@/components/requests/types';
 import { STATUS_LABEL, STATUS_TONE } from '@/lib/labels';
 import { apiGet, getSessionUser } from '@/lib/session';
@@ -13,9 +14,14 @@ export const metadata = { title: 'Request – Intuitive Fusion' };
 export default async function RequestDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const [user, view] = await Promise.all([
+  const [user, view, suppliers, ecv, artefacts, delegates, variations] = await Promise.all([
     getSessionUser(),
-    apiGet<RequestView & { requesterId: string }>(`/requests/${id}`),
+    apiGet<ExtendedView & RequestView & { requesterId: string }>(`/requests/${id}`),
+    apiGet<ExtrasData['suppliers']>(`/requests/${id}/suggested-suppliers`),
+    apiGet<ExtrasData['ecv']>(`/requests/${id}/ecv`),
+    apiGet<ExtrasData['artefacts']>(`/requests/${id}/artefacts`),
+    apiGet<ExtrasData['delegates']>(`/requests/${id}/delegates`),
+    apiGet<ExtrasData['variations']>(`/requests/${id}/process-variations`),
   ]);
   if (!user || !view) notFound(); // a request you cannot see looks exactly like one that does not exist
   const canEdit =
@@ -50,8 +56,18 @@ export default async function RequestDetail({ params }: { params: Promise<{ id: 
         <div className="min-w-0 rounded-lg border border-border bg-surface p-5 shadow-sm">
           <DraftPanel view={view} hideHeader />
         </div>
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-4">
           <RequestActions view={view} csrf={user.csrfToken} canEdit={canEdit} />
+          {suppliers && ecv && artefacts && delegates && variations && (
+            <RequestExtras
+              view={view}
+              data={{ suppliers, ecv, artefacts, delegates, variations }}
+              csrf={user.csrfToken}
+              canEdit={canEdit}
+              isDelegate={user.roles.includes('DELEGATE') || user.roles.includes('EXEC')}
+              canRedirect={user.roles.includes('PROCUREMENT')}
+            />
+          )}
         </div>
       </div>
     </div>

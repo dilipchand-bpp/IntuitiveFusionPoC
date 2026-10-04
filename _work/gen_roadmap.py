@@ -81,6 +81,12 @@ def mentioned(rid: str) -> bool:
     return re.search(r"(?<![A-Za-z0-9-])" + re.escape(rid) + r"(?![0-9A-Za-z])", built_text) is not None
 
 
+# requirements delivered by a roadmap batch (maintained by hand, checked by a test)
+delivered = {}
+for batch, info in json.load(open(os.path.join(ROOT, '_work', 'delivered.json'), encoding='utf8')).items():
+    for rid in info['ids']:
+        delivered[rid] = batch
+
 items = []
 for r in rows:
     tier = r["POC tier"]
@@ -89,14 +95,14 @@ for r in rows:
     rid = r["Req ID"]
     cat = r["Category"]
     if tier == "S":
-        status = "PARTIAL" if mentioned(rid) else "PLANNED"
+        status = "BUILT" if rid in delivered else ("PARTIAL" if mentioned(rid) else "PLANNED")
         area = AREA.get(cat)
         assert area, f"no area for stub category {cat!r} ({rid})"
     else:
         status = "DEFERRED"
         area = None
     items.append(
-        dict(id=rid, tier=tier, status=status, category=cat, area=area, priority=r["Priority"], title=title(desc.get(rid, "")))
+        dict(id=rid, tier=tier, status=status, category=cat, area=area, priority=r["Priority"], title=title(desc.get(rid, "")), batch=delivered.get(rid))
     )
 
 
@@ -116,7 +122,7 @@ for it in items:
     area = ts(it["area"]) if it["area"] else "null"
     lines.append(
         f"  {{ id: {ts(it['id'])}, tier: {ts(it['tier'])}, status: {ts(it['status'])}, category: {ts(it['category'])}, "
-        f"area: {area}, priority: {ts(it['priority'])}, title: {ts(it['title'])} }}, // {marker}"
+        f"area: {area}, priority: {ts(it['priority'])}, title: {ts(it['title'])}{', batch: ' + ts(it['batch']) if it['batch'] else ''} }}, // {marker}"
     )
 lines.append("];")
 lines.append("")
@@ -139,7 +145,8 @@ md = [
     "| | Count |",
     "|---|---|",
     f"| Tier S (stubbed, shows \"coming soon\") | {len(S)} |",
-    f"| of which referenced by built work (partly or fully delivered, see the milestone evidence) | {sum(1 for i in S if i['status'] == 'PARTIAL')} |",
+    f"| of which built in a roadmap batch (each cited by an automated test) | {sum(1 for i in S if i['status'] == 'BUILT')} |",
+    f"| of which referenced by earlier built work (partly or fully delivered, see the milestone evidence) | {sum(1 for i in S if i['status'] == 'PARTIAL')} |",
     f"| of which not built yet | {sum(1 for i in S if i['status'] == 'PLANNED')} |",
     f"| Tier D (deferred, not in the proof of concept) | {len(D)} |",
     "",
@@ -156,7 +163,7 @@ for i in S:
 for area in sorted(by_area):
     md += [f"### `{area}`", "", "| ID | Category | Status | What it will do |", "|---|---|---|---|"]
     for i in by_area[area]:
-        md.append(f"| {i['id']} | {i['category']} | {'Partly built' if i['status'] == 'PARTIAL' else 'Coming soon'} | {i['title'].replace('|', '/')} |")
+        md.append(f"| {i['id']} | {i['category']} | { {'BUILT': 'Built', 'PARTIAL': 'Partly built', 'PLANNED': 'Coming soon'}[i['status']] } | {i['title'].replace('|', '/')} |")
     md.append("")
 md += ["## Tier D by category (not in the proof of concept)", ""]
 by_cat = {}

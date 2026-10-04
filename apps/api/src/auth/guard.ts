@@ -4,13 +4,15 @@ import type { AuditService } from '../audit/audit-service.js';
 import type { Database, RequestContext } from '../db/client.js';
 import { AppError, forbidden } from '../http/errors.js';
 import type { AuthenticatedUser } from './identity-provider.js';
-import { COOKIE_NAMES, type SessionService } from './session-service.js';
+import { COOKIE_NAMES, type MfaState, type SessionService } from './session-service.js';
 
 export interface AuthContext {
   user: AuthenticatedUser;
   sessionId: string;
   csrfToken: string;
   ctx: RequestContext;
+  mfaState: MfaState;
+  authMethod: 'PASSWORD' | 'SSO';
 }
 declare module 'fastify' {
   interface FastifyRequest {
@@ -45,6 +47,8 @@ export function installAuth(app: FastifyInstance, deps: GuardDeps): void {
           user: r.user,
           sessionId: r.sessionId,
           csrfToken: deps.sessions.csrfFor(r.sessionId),
+          mfaState: r.mfaState,
+          authMethod: r.authMethod,
           ctx: { tenantId: r.user.tenantId, userId: r.user.id, role: r.user.role, correlationId: req.id },
         };
         return;
@@ -77,6 +81,9 @@ export function guard(deps: GuardDeps, access: Access) {
       });
       throw new AppError(403, 'CSRF_INVALID', 'Missing or invalid CSRF token');
     }
+    // a person who must enrol in MFA can do nothing else until they have (SEC-A01)
+    if (req.auth.mfaState === 'ENROLMENT_REQUIRED' && !req.routeOptions.url?.includes('/auth/'))
+      throw new AppError(403, 'MFA_ENROLMENT_REQUIRED', 'Set up your authenticator app to continue');
     if (access === 'any') return;
     if (!req.auth.user.roles.some((r) => access.includes(r))) {
       await deps.audit.recordOutsideTx(deps.database, req.auth.ctx, {

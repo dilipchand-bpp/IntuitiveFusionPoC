@@ -13,6 +13,10 @@ export interface PackInput {
   request: Record<string, string | undefined>;
   contactEmail: string;
   statutoryMinDays?: number | undefined;
+  /** Curated, supplier-safe wording for the kind of procurement (FR-0705): the same pack shape, different content. */
+  categoryRequirements?: string | undefined;
+  /** Social and environmental objectives set on the plan (FR-0095), in the plan's own wording. */
+  esg?: string | undefined;
 }
 
 const clean = (s: string | undefined) => (s ?? '').trim();
@@ -113,7 +117,7 @@ export function buildTenderPack(i: PackInput): Record<string, string> {
       paras(publicText(i.plan.objectives)) ||
       `The scope is ${i.title}${i.category ? ` (${i.category})` : ''}${i.businessUnit ? ` for ${i.businessUnit}` : ''}. See Requirements and Deliverables for detail.`,
     requirements:
-      paras(publicText(i.plan.requirements)) ||
+      paras(publicText(i.plan.requirements), i.categoryRequirements, i.esg) ||
       'The detailed requirements will be confirmed by the procurement lead.',
     deliverables:
       paras(publicText(i.plan.deliverables), publicText(i.request.deliverables)) ||

@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
+import { EsgCard, type EsgData } from '@/components/plan/esg-card';
 import { PlanWorkspace } from '@/components/plan/plan-workspace';
 import type { PlanView } from '@/components/plan/types';
-import { apiGetResult, getSessionUser } from '@/lib/session';
+import { apiGet, apiGetResult, getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Procurement plan – Intuitive Fusion' };
 
@@ -16,6 +17,7 @@ export default async function PlanPage({ params }: { params: Promise<{ requestId
   ]);
   if (!user) notFound();
   if (res.status === 404 || res.status === 403) notFound(); // not visible = not there
+  const esg = res.data ? await apiGet<EsgData>(`/plans/${res.data.id}/esg`) : null;
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm">
@@ -28,6 +30,14 @@ export default async function PlanPage({ params }: { params: Promise<{ requestId
             {res.data.title}
           </h1>
           <PlanWorkspace plan={res.data} csrf={user.csrfToken} userId={user.id} />
+          {esg && (
+            <EsgCard
+              planId={res.data.id}
+              initial={esg}
+              csrf={user.csrfToken}
+              canEdit={user.roles.includes('PROCUREMENT') || user.roles.includes('REQUESTER')}
+            />
+          )}
         </>
       ) : res.code === 'REQUEST_NOT_SUBMITTED' ? (
         <EmptyState
