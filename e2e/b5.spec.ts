@@ -247,7 +247,7 @@ test.describe('managing an executed contract', () => {
     await expect(page.getByRole('heading', { name: 'My contracts' })).toBeVisible();
     await expect(page.getByRole('table', { name: 'Your contracts' })).toContainText(c.number);
     await expect(page.getByText('stand-in for an AI model')).toBeVisible();
-    await page.getByLabel('Search by number, title or supplier').fill(c.number);
+    await page.getByLabel('Search', { exact: true }).fill(c.number);
     await page.getByRole('button', { name: 'Search' }).click();
     await expect(page.getByRole('table', { name: 'Your contracts' })).toContainText(c.number);
     await scan(page);

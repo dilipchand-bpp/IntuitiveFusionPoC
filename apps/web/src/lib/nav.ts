@@ -26,7 +26,15 @@ export interface NavItem {
   icon: NavIcon;
   /** Roles shown this item. MUST be a subset of the roles the route guard allows for `href` (tested). */
   roles: readonly RoleName[];
-  section: 'Work' | 'Oversight' | 'Administration' | 'Supplier';
+  section:
+    | 'Overview'
+    | 'Procure'
+    | 'Contracts'
+    | 'Insight'
+    | 'Collaborate'
+    | 'Oversight'
+    | 'Administration'
+    | 'Supplier';
   /** Module name and requirement IDs shown on the "coming soon" panel until the module is built. */
   module: string;
   requirements: readonly string[];
@@ -54,7 +62,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Dashboard',
     icon: 'dashboard',
     roles: STAFF_ALL,
-    section: 'Work',
+    section: 'Overview',
     module: 'Dashboard',
     requirements: ['FR-0590', 'FR-0650'],
     blurb: 'Portfolio overview.',
@@ -64,7 +72,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Requests',
     icon: 'requests',
     roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'PROBITY', 'FINANCE', 'EXEC'],
-    section: 'Work',
+    section: 'Procure',
     module: 'Request intake & AI assistant',
     requirements: ['FR-0005', 'FR-0006', 'FR-0035', 'FR-0060'],
     blurb:
@@ -75,7 +83,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Procurement plans',
     icon: 'plans',
     roles: ['PROCUREMENT', 'REQUESTER', 'DELEGATE', 'EXEC', 'PROBITY'],
-    section: 'Work',
+    section: 'Procure',
     module: 'Procurement plan',
     requirements: ['FR-0075', 'FR-0080', 'FR-0100', 'FR-0105'],
     blurb:
@@ -86,7 +94,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Approvals',
     icon: 'approvals',
     roles: ['DELEGATE', 'EXEC'],
-    section: 'Work',
+    section: 'Procure',
     module: 'Approvals',
     requirements: ['FR-0080', 'FR-0150', 'FR-0375', 'FR-0785'],
     blurb: 'One-screen summaries and one-tap approval within your delegation limit.',
@@ -96,7 +104,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Tenders',
     icon: 'tenders',
     roles: ['PROCUREMENT', 'LEGAL', 'DELEGATE', 'EXEC', 'PROBITY'],
-    section: 'Work',
+    section: 'Procure',
     module: 'Tender pack & supplier portal',
     requirements: ['FR-0110', 'FR-0120', 'FR-0135', 'FR-0150', 'FR-0165'],
     blurb: 'Generate the tender pack, hold it staged until permission to publish, run anonymised Q&A.',
@@ -106,18 +114,28 @@ export const NAV: readonly NavItem[] = [
     label: 'Evaluations',
     icon: 'evaluations',
     roles: ['EVALUATOR', 'CHAIR', 'PROCUREMENT', 'DELEGATE', 'PROBITY', 'LEGAL', 'EXEC'],
-    section: 'Work',
+    section: 'Procure',
     module: 'Evaluation',
     requirements: ['FR-0255', 'FR-0260', 'FR-0270', 'FR-0275', 'FR-0300', 'FR-0345'],
     blurb:
       'Conflict declaration, independent hidden scoring, consensus with variance flags, evaluation report.',
   },
   {
+    href: '/app/suppliers',
+    label: 'Suppliers',
+    icon: 'suppliers',
+    roles: ['PROCUREMENT', 'LEGAL', 'FINANCE'],
+    section: 'Procure',
+    module: 'Supplier directory',
+    requirements: ['FR-0180', 'FR-0185', 'FR-0245', 'FR-0250'],
+    blurb: 'Supplier profiles with sanctions and insurance status, and their contacts.',
+  },
+  {
     href: '/app/contracts',
     label: 'Contracts',
     icon: 'contracts',
     roles: ['LEGAL', 'CONTRACT_MGR', 'PROCUREMENT', 'DELEGATE', 'EXEC', 'FINANCE', 'PROBITY'],
-    section: 'Work',
+    section: 'Contracts',
     module: 'Contract award & management',
     requirements: ['FR-0380', 'FR-0395', 'FR-0455', 'FR-0490', 'FR-0505', 'FR-0640'],
     blurb: 'Draft from template, sign with separate signing authority, then manage obligations and alerts.',
@@ -127,49 +145,28 @@ export const NAV: readonly NavItem[] = [
     label: 'Funding envelopes',
     icon: 'delegations',
     roles: ['DELEGATE', 'EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR', 'REQUESTER', 'LEGAL'],
-    section: 'Work',
+    section: 'Contracts',
     module: 'Funding envelopes',
     requirements: ['FR-0585'],
     blurb:
       'An allocated envelope a delegate approves once, against which nominated people approve commitments, with a warning as it runs out.',
   },
   {
-    href: '/app/dashboards',
-    label: 'Dashboards',
-    icon: 'dashboard',
-    roles: ['PROCUREMENT', 'LEGAL', 'DELEGATE', 'EXEC', 'FINANCE', 'PROBITY', 'CONTRACT_MGR', 'ADMIN'],
-    section: 'Work',
-    module: 'Role dashboards',
-    requirements: ['FR-0600'],
-    blurb: 'A dashboard for your role, scoped by the organisation hierarchy.',
-  },
-  {
-    href: '/app/collaboration',
-    label: 'Collaboration',
-    icon: 'plans',
-    roles: STAFF_ALL,
-    section: 'Work',
-    module: 'Collaboration & AI authoring',
-    requirements: ['FR-0115', 'FR-0125', 'FR-0140', 'FR-0145'],
-    blurb:
-      'Design document layouts, find the tools for working together on a document, and the best-practice reference content.',
-  },
-  {
-    href: '/app/suppliers',
-    label: 'Suppliers',
-    icon: 'suppliers',
-    roles: ['PROCUREMENT', 'LEGAL', 'FINANCE'],
-    section: 'Work',
-    module: 'Supplier directory',
-    requirements: ['FR-0180', 'FR-0185', 'FR-0245', 'FR-0250'],
-    blurb: 'Supplier profiles with sanctions and insurance status, and their contacts.',
+    href: '/app/legal',
+    label: 'Legal desk',
+    icon: 'contracts',
+    roles: ['LEGAL', 'PROCUREMENT'],
+    section: 'Contracts',
+    module: 'Legal matter management',
+    requirements: ['FR-0385', 'FR-0470'],
+    blurb: 'A board of legal matters, review hours, and the knowledge base legal keeps for the platform.',
   },
   {
     href: '/app/reports',
     label: 'Reports',
     icon: 'reports',
     roles: ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR'],
-    section: 'Oversight',
+    section: 'Insight',
     module: 'Reporting',
     requirements: ['FR-0595', 'FR-0605', 'FR-0620', 'FR-0625'],
     blurb: 'Spend, maverick spend, workload and contract expiry views.',
@@ -179,7 +176,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Ask for a report',
     icon: 'reports',
     roles: ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR', 'DELEGATE', 'LEGAL', 'PROBITY'],
-    section: 'Oversight',
+    section: 'Insight',
     module: 'Reporting',
     requirements: ['FR-0625'],
     blurb: 'Ask for a report in plain language and keep the views you use.',
@@ -189,7 +186,7 @@ export const NAV: readonly NavItem[] = [
     label: 'Schedule',
     icon: 'reports',
     roles: ['PROCUREMENT', 'EXEC', 'DELEGATE'],
-    section: 'Oversight',
+    section: 'Insight',
     module: 'Reporting',
     requirements: ['FR-0595'],
     blurb: 'A chart of every active procurement by phase, with the delegate calendar.',
@@ -199,10 +196,31 @@ export const NAV: readonly NavItem[] = [
     label: 'Supplier risk map',
     icon: 'reports',
     roles: ['PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'],
-    section: 'Oversight',
+    section: 'Insight',
     module: 'Reporting',
     requirements: ['FR-0610'],
     blurb: 'Where suppliers are, and the risk signals around them.',
+  },
+  {
+    href: '/app/collaboration',
+    label: 'Collaboration',
+    icon: 'plans',
+    roles: STAFF_ALL,
+    section: 'Collaborate',
+    module: 'Collaboration & AI authoring',
+    requirements: ['FR-0115', 'FR-0125', 'FR-0140', 'FR-0145'],
+    blurb:
+      'Design document layouts, find the tools for working together on a document, and the best-practice reference content.',
+  },
+  {
+    href: '/app/shared',
+    label: 'Shared documents',
+    icon: 'reports',
+    roles: STAFF_ALL,
+    section: 'Collaborate',
+    module: 'Time-bound access',
+    requirements: ['FR-0435'],
+    blurb: 'Projects whose documents you have been given access to, and when that access ends.',
   },
   {
     href: '/app/probity',
@@ -214,26 +232,6 @@ export const NAV: readonly NavItem[] = [
     requirements: ['FR-0310', 'FR-0340'],
     blurb:
       'Read-only oversight of the procurements you are allocated to, with a system hold and the probity documents.',
-  },
-  {
-    href: '/app/legal',
-    label: 'Legal desk',
-    icon: 'contracts',
-    roles: ['LEGAL', 'PROCUREMENT'],
-    section: 'Work',
-    module: 'Legal matter management',
-    requirements: ['FR-0385', 'FR-0470'],
-    blurb: 'A board of legal matters, review hours, and the knowledge base legal keeps for the platform.',
-  },
-  {
-    href: '/app/shared',
-    label: 'Shared documents',
-    icon: 'reports',
-    roles: STAFF_ALL,
-    section: 'Oversight',
-    module: 'Time-bound access',
-    requirements: ['FR-0435'],
-    blurb: 'Projects whose documents you have been given access to, and when that access ends.',
   },
   {
     href: '/app/audit',

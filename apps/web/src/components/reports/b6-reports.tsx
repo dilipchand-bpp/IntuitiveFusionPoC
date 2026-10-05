@@ -73,77 +73,131 @@ export function ScheduleGantt({ csrf }: { csrf: string }) {
       `Moved by ${delta} day(s); the phases after it and the delegate calendar were recalculated.`,
     );
   const dragDays = (dx: number) => {
-    const w = box.current?.getBoundingClientRect().width ?? 1;
+    const w = (box.current?.getBoundingClientRect().width ?? 1) - 240;
     return Math.round((dx / w) * ((hi - lo) / DAY));
   };
+  const months: Array<{ label: string; at: number }> = [];
+  for (let t = new Date(lo); t.getTime() < hi;) {
+    const first = Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 1);
+    months.push({
+      label: new Date(first).toLocaleDateString('en-AU', {
+        month: 'short',
+        year: '2-digit',
+        timeZone: 'UTC',
+      }),
+      at: first,
+    });
+    t = new Date(first);
+  }
+  const todayAt = pct(ms(data.today));
   return (
     <div className="flex flex-col gap-6" data-testid="schedule">
+      <ul className="flex flex-wrap gap-3 text-xs" aria-label="Phases">
+        {data.items[0]!.slots.map((s, k) => (
+          <li key={s.phase} className="flex items-center gap-1">
+            <span
+              className={`inline-block size-3 rounded-sm ${PHASE_FILL[k % PHASE_FILL.length]}`}
+              aria-hidden="true"
+            />
+            {PHASE_NAME[s.phase]}
+          </li>
+        ))}
+        <li className="flex items-center gap-1">
+          <span className="inline-block h-3 w-0.5 bg-error" aria-hidden="true" />
+          Today ({data.today})
+        </li>
+      </ul>
       <div
-        ref={box}
-        className="relative rounded-lg border border-border bg-surface p-3"
+        className="overflow-x-auto rounded-lg border border-border bg-surface"
         role="group"
         aria-label="Procurement schedule"
       >
-        <div
-          className="absolute inset-y-0 w-px bg-error"
-          style={{ left: `calc(${pct(ms(data.today))}% * 0.94 + 3%)` }}
-          aria-hidden="true"
-        />
-        <ul className="flex flex-col gap-3">
-          {data.items.map((i) => (
-            <li key={i.requestId} data-testid="schedule-row">
-              <p className="text-sm">
-                <span className="font-mono text-xs text-text-muted">{i.number}</span>{' '}
-                <strong>{i.title}</strong>{' '}
-                <span className="text-text-muted">{PHASE_NAME[i.phase] ?? i.phase}</span>{' '}
-                {i.late && <Badge tone="error">Behind</Badge>}
-              </p>
-              <div className="relative mt-1 h-7 rounded bg-surface-alt" style={{ touchAction: 'none' }}>
-                {i.slots.map((s, k) => {
-                  const dx =
-                    drag &&
-                    drag.id === i.requestId &&
-                    (drag.phase === s.phase || i.slots.findIndex((q) => q.phase === drag.phase) < k)
-                      ? drag.dx
-                      : 0;
-                  return (
-                    <div
-                      key={s.phase}
-                      role="img"
-                      aria-label={`${PHASE_NAME[s.phase]}: ${s.startDate} to ${s.endDate}`}
-                      title={`${PHASE_NAME[s.phase]} ${s.startDate} to ${s.endDate}${data.canMove ? ' (drag to move)' : ''}`}
-                      className={`absolute top-0 h-7 rounded-sm border border-surface text-[10px] font-semibold text-white ${PHASE_FILL[k % PHASE_FILL.length]} ${data.canMove ? 'cursor-grab' : ''}`}
-                      style={{
-                        left: `${pct(ms(s.startDate))}%`,
-                        width: `${Math.max(1, pct(ms(s.endDate)) - pct(ms(s.startDate)))}%`,
-                        transform: `translateX(${dx}px)`,
-                      }}
-                      onPointerDown={(e) => {
-                        if (!data.canMove) return;
-                        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                        setDrag({ id: i.requestId, phase: s.phase, x: e.clientX, dx: 0 });
-                      }}
-                      onPointerMove={(e) => drag && setDrag({ ...drag, dx: e.clientX - drag.x })}
-                      onPointerUp={() => {
-                        if (!drag) return;
-                        const days = dragDays(drag.dx);
-                        setDrag(null);
-                        if (days !== 0) void move(drag.id, drag.phase, days);
-                      }}
-                    >
-                      <span className="px-1">{PHASE_NAME[s.phase]}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 text-xs text-text-muted">
-          The red line is today.
-          {data.canMove ? ' Drag a bar to move that phase and everything after it.' : ''}
-        </p>
+        <div className="min-w-[56rem]">
+          <div className="grid grid-cols-[15rem_1fr] border-b border-border bg-surface-alt text-xs font-semibold text-text-muted">
+            <div className="px-3 py-2">Procurement</div>
+            <div className="relative h-8">
+              {months
+                .filter((m) => pct(m.at) < 100)
+                .map((m) => (
+                  <span
+                    key={m.at}
+                    className="absolute top-2 -translate-x-0 border-l border-border pl-1"
+                    style={{ left: `${pct(m.at)}%` }}
+                  >
+                    {m.label}
+                  </span>
+                ))}
+            </div>
+          </div>
+          <div ref={box} className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-[15rem] right-0" aria-hidden="true">
+              <div className="absolute inset-y-0 w-px bg-error" style={{ left: `${todayAt}%` }} />
+            </div>
+            <ul>
+              {data.items.map((i) => (
+                <li
+                  key={i.requestId}
+                  data-testid="schedule-row"
+                  className="grid grid-cols-[15rem_1fr] items-center border-b border-border last:border-b-0"
+                >
+                  <div className="min-w-0 px-3 py-2">
+                    <p className="truncate text-sm font-semibold" title={i.title}>
+                      {i.title}
+                    </p>
+                    <p className="flex flex-wrap items-center gap-1 text-xs text-text-muted">
+                      <span className="font-mono">{i.number}</span> · {PHASE_NAME[i.phase] ?? i.phase}
+                      {i.late && <Badge tone="error">Behind</Badge>}
+                    </p>
+                  </div>
+                  <div className="relative my-2 h-8" style={{ touchAction: 'none' }}>
+                    {i.slots.map((s, k) => {
+                      const dx =
+                        drag &&
+                        drag.id === i.requestId &&
+                        (drag.phase === s.phase || i.slots.findIndex((q) => q.phase === drag.phase) < k)
+                          ? drag.dx
+                          : 0;
+                      return (
+                        <div
+                          key={s.phase}
+                          role="img"
+                          aria-label={`${PHASE_NAME[s.phase]}: ${s.startDate} to ${s.endDate}`}
+                          title={`${PHASE_NAME[s.phase]} ${s.startDate} to ${s.endDate}${data.canMove ? ' (drag to move)' : ''}`}
+                          className={`absolute top-0 flex h-8 items-center overflow-hidden rounded-sm border border-surface text-[10px] font-semibold text-white ${PHASE_FILL[k % PHASE_FILL.length]} ${data.canMove ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          style={{
+                            left: `${pct(ms(s.startDate))}%`,
+                            width: `${Math.max(1, pct(ms(s.endDate)) - pct(ms(s.startDate)))}%`,
+                            transform: `translateX(${dx}px)`,
+                          }}
+                          onPointerDown={(e) => {
+                            if (!data.canMove) return;
+                            (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                            setDrag({ id: i.requestId, phase: s.phase, x: e.clientX, dx: 0 });
+                          }}
+                          onPointerMove={(e) => drag && setDrag({ ...drag, dx: e.clientX - drag.x })}
+                          onPointerUp={() => {
+                            if (!drag) return;
+                            const days = dragDays(drag.dx);
+                            setDrag(null);
+                            if (days !== 0) void move(drag.id, drag.phase, days);
+                          }}
+                        >
+                          <span className="truncate px-1">{PHASE_NAME[s.phase]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
+      <p className="text-xs text-text-muted">
+        {data.canMove
+          ? 'Drag a bar to move that phase and everything after it.'
+          : 'Read only: procurement moves phases.'}
+      </p>
       {r.messages}
 
       {data.canMove && (

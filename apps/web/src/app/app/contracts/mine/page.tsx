@@ -51,37 +51,42 @@ export default async function MyContractsPage({
           do next.
         </p>
       </header>
-      <form role="search" aria-label="Search contracts" className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          Search by number, title or supplier
+      <form
+        role="search"
+        aria-label="Search contracts"
+        className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4"
+      >
+        <label className="flex min-w-64 flex-1 flex-col gap-1 text-sm font-semibold">
+          Search
           <input
             name="q"
             defaultValue={q}
-            className="min-h-[44px] w-72 rounded-md border border-border-strong bg-surface px-3 text-base"
+            placeholder="Number, title or supplier"
+            className="min-h-[44px] rounded-md border border-border-strong bg-surface px-3 text-base font-normal"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          Ending within
-          <select
-            name="within"
-            defaultValue={within ?? ''}
-            className="min-h-[44px] rounded-md border border-border-strong bg-surface px-3 text-base"
-          >
-            <option value="">Any time</option>
-            {WINDOWS.map((w) => (
-              <option key={w} value={w}>
-                {w} days
-              </option>
-            ))}
-          </select>
-        </label>
+        {within && <input type="hidden" name="within" value={within} />}
         <button
           type="submit"
           className="min-h-[44px] rounded-md bg-brand-gradient px-5 text-sm font-semibold text-white"
         >
           Search
         </button>
+        <nav aria-label="Ending within" className="flex basis-full flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold">Ending within</span>
+          {[['', 'Any time'], ...WINDOWS.map((w) => [String(w), `${w} days`])].map(([k, l]) => (
+            <Link
+              key={k}
+              href={`/app/contracts/mine?${new URLSearchParams({ ...(q ? { q } : {}), ...(k ? { within: k } : {}) })}`}
+              aria-current={(within ?? '') === k ? 'true' : undefined}
+              className={`rounded-full border px-3 py-1 text-sm font-semibold no-underline ${(within ?? '') === k ? 'border-accent bg-accent/10 text-accent' : 'border-border-strong text-text'}`}
+            >
+              {l}
+            </Link>
+          ))}
+        </nav>
       </form>
+      {res && <p className="text-sm text-text-muted">{res.items.length} contract(s).</p>}
       {!res ? (
         <EmptyState title="Contracts unavailable" body="The search could not be run. Please refresh." />
       ) : res.items.length === 0 ? (
@@ -103,14 +108,14 @@ export default async function MyContractsPage({
             {res.items.map((c) => (
               <tr key={c.id}>
                 <Td label="Contract">
-                  <Link href={`/app/contracts/${c.id}`}>{c.title ?? c.number}</Link>
+                  <Link href={`/app/contracts/${c.id}`}>{c.title ?? c.supplier}</Link>
                   <div className="font-mono text-xs text-text-muted">{c.number}</div>
                   <Badge tone={CONTRACT_STATUS[c.status]?.[1] ?? 'neutral'}>
                     {CONTRACT_STATUS[c.status]?.[0] ?? c.status}
                   </Badge>
                 </Td>
                 <Td label="Supplier">{c.supplier}</Td>
-                <Td label="Owner">{c.owner ?? '–'}</Td>
+                <Td label="Owner">{c.owner ?? 'Not assigned'}</Td>
                 <Td label="Value" className="text-right">
                   {aud.format(c.value)}
                 </Td>

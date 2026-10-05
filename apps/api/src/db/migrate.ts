@@ -1,7 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { is } from 'drizzle-orm';
+import { PgTable, getTableConfig } from 'drizzle-orm/pg-core';
 import type { Database } from './client.js';
+import * as schema from './schema.js';
 
 export const MIGRATIONS_DIR = fileURLToPath(new URL('../../migrations', import.meta.url));
 const BREAKPOINT = '--> statement-breakpoint';
@@ -63,4 +66,22 @@ export async function migrateDownLast(database: Database): Promise<string | null
 export async function resetDatabase(database: Database): Promise<void> {
   await database.pg.exec('drop schema public cascade; create schema public;');
   await migrateUp(database);
+}
+
+/**
+ * Columns the code expects that the database does not have, as "table.column". A database created before a migration
+ * file was edited in place (or by hand) looks migrated but fails on the first query that touches the missing column.
+ */
+export async function schemaDrift(database: Database): Promise<string[]> {
+  const actual = await database.pg.query<{ t: string; c: string }>(
+    `select table_name t, column_name c from information_schema.columns where table_schema = 'public'`,
+  );
+  const have = new Set(actual.rows.map((r) => `${r.t}.${r.c}`));
+  const missing: string[] = [];
+  for (const t of Object.values(schema).filter((v) => is(v, PgTable)) as unknown as PgTable[]) {
+    const cfg = getTableConfig(t);
+    for (const col of cfg.columns)
+      if (!have.has(`${cfg.name}.${col.name}`)) missing.push(`${cfg.name}.${col.name}`);
+  }
+  return missing;
 }

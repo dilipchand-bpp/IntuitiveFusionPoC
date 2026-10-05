@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Activity, AlarmClock, Banknote, Check, Hourglass, ListChecks, Minus } from 'lucide-react';
 import { Badge, EmptyState, KpiCard, Table, Td, Th, type BadgeTone } from '@if/ui';
+import { Dashboards } from '@/components/reports/b6-reports';
 import { SpendChart } from '@/components/reports/spend-chart';
 import type { ProcurementTable, SpendReport } from '@/components/reports/types';
 import { PHASE_LABEL, aud } from '@/lib/labels';
@@ -269,6 +270,18 @@ export default async function Dashboard({
           </Table>
         )}
       </section>
+      {user?.roles.some((r) =>
+        ['PROCUREMENT', 'LEGAL', 'DELEGATE', 'EXEC', 'FINANCE', 'PROBITY', 'CONTRACT_MGR', 'ADMIN'].includes(
+          r,
+        ),
+      ) && (
+        <section aria-labelledby="role-views-h" className="flex flex-col gap-3">
+          <h2 id="role-views-h" className="font-heading text-xl font-bold">
+            Your role&apos;s view
+          </h2>
+          <Dashboards />
+        </section>
+      )}
     </div>
   );
 }

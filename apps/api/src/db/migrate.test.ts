@@ -3,7 +3,7 @@ import { is } from 'drizzle-orm';
 import { PgTable, getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 import { freshDb } from '../test-helpers.js';
-import { MIGRATIONS_DIR, migrateDownLast, migrateUp, resetDatabase } from './migrate.js';
+import { MIGRATIONS_DIR, migrateDownLast, migrateUp, resetDatabase, schemaDrift } from './migrate.js';
 import * as schema from './schema.js';
 
 const tables = (): PgTable[] => Object.values(schema).filter((v) => is(v, PgTable)) as unknown as PgTable[];
@@ -36,6 +36,14 @@ describe('migrations', () => {
     expect(want.size).toBeGreaterThan(200);
     expect([...want].filter((x) => !have.has(x))).toEqual([]);
     expect([...have].filter((x) => !want.has(x))).toEqual([]);
+    await db.close();
+  });
+
+  it('notices a database that is missing a column the code expects', async () => {
+    const db = await freshDb();
+    expect(await schemaDrift(db)).toEqual([]);
+    await db.pg.exec('alter table supplier drop column categories');
+    expect(await schemaDrift(db)).toEqual(['supplier.categories']);
     await db.close();
   });
 
