@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intuitive Fusion – Demo guide</title>
+<style>
+  :root{--bg:#fff;--fg:#14171f;--muted:#586075;--line:#d9dde7;--accent:#4254c5;--soft:#eef0fb;--warn:#8a5a00;--warnbg:#fff6df;--ok:#17653a;--okbg:#e6f6ec}
+  @media (prefers-color-scheme:dark){:root{--bg:#12141b;--fg:#eceef5;--muted:#a3abc0;--line:#2c3142;--accent:#8e9cff;--soft:#1b1f2c;--warn:#ffcf66;--warnbg:#2b2411;--ok:#7fe0a3;--okbg:#14261b}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 "Inter","Segoe UI",system-ui,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 80px}
+  h1{font-size:2rem;margin:.2em 0}
+  h2{font-size:1.45rem;margin:2.2em 0 .5em;padding-top:.6em;border-top:2px solid var(--line)}
+  h3{font-size:1.1rem;margin:1.6em 0 .4em}
+  p,li{max-width:80ch}
+  a{color:var(--accent)}
+  nav.toc{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:16px 0}
+  nav.toc ol{columns:2;margin:6px 0;padding-left:20px}
+  table{border-collapse:collapse;width:100%;margin:10px 0 18px;font-size:.93rem}
+  th,td{border:1px solid var(--line);padding:7px 9px;vertical-align:top;text-align:left}
+  th{background:var(--soft)}
+  code,kbd{font:.88em ui-monospace,Consolas,monospace;background:var(--soft);padding:1px 5px;border-radius:4px}
+  .box{border-radius:10px;padding:10px 14px;margin:12px 0;border:1px solid var(--line)}
+  .warn{background:var(--warnbg);border-color:var(--warn)}
+  .ok{background:var(--okbg);border-color:var(--ok)}
+  .say{border-left:4px solid var(--accent);padding:4px 12px;margin:6px 0;color:var(--muted);font-style:italic}
+  .time{float:right;font-size:.85rem;color:var(--muted)}
+  ul.check{list-style:none;padding-left:0}
+  ul.check li:before{content:"☐ ";}
+  .step td:first-child{white-space:nowrap;font-weight:600}
+  @media print{.toc{display:none}h2{break-before:page}body{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Intuitive Fusion – Procurement Portal<br><small style="font-size:.6em;color:var(--muted)">Proof of concept: summary and stakeholder demo guide (demo day: 6 October 2026)</small></h1>
+<p>Everything in the demo runs on <strong>synthetic data</strong> on your own machine. Sign-in, email, SMS, Slack, the "AI", the vendor register, banking checks and the ERP feed are <strong>simulated behind swap points</strong> (see <code>docs/swap-points.md</code>). The banner at the top of every screen says so, and you should say so too.</p>
+
+<nav class="toc"><strong>Contents</strong>
+<ol>
+<li><a href="#what">What the app is</a></li>
+<li><a href="#built">What has been built</a></li>
+<li><a href="#honest">What is simulated or not built</a></li>
+<li><a href="#before">Before the demo (do this tonight / first thing)</a></li>
+<li><a href="#people">People and logins</a></li>
+<li><a href="#run">Run of show (about 75 minutes)</a></li>
+<li><a href="#acts">The demo, act by act</a></li>
+<li><a href="#short">The 20-minute version</a></li>
+<li><a href="#qa">Questions stakeholders ask</a></li>
+<li><a href="#trouble">If something goes wrong</a></li>
+<li><a href="#ref">Reference: seeded data, files, evidence</a></li>
+</ol></nav>
+
+<h2 id="what">1. What the app is</h2>
+<p><strong>Intuitive Fusion</strong> is a source-to-contract procurement portal. A person describes what they need in plain language; the platform drafts the request, builds the procurement plan, runs a sealed tender with a supplier portal, supports a fair and auditable evaluation, drafts and signs the contract, then manages the contract for its life: spend, price control, alerts, variations and renewals. Every step is permissioned by role and delegation of authority, and every change is written to a tamper-evident audit trail.</p>
+<div class="box ok"><strong>The one-sentence pitch:</strong> "From the first sentence of a request to the last invoice against the contract, one platform, one audit trail, with approvals, probity and price control built in rather than bolted on."</div>
+<ul>
+<li><strong>Who uses it:</strong> 13 staff roles plus an external supplier portal (separate sign-in pool).</li>
+<li><strong>How it is built:</strong> Next.js 16 web app, Fastify API, PostgreSQL (PGlite locally, AWS-targeted), TypeScript throughout, one theme file, WCAG 2.1 AA checked on every screen with automated accessibility scans.</li>
+<li><strong>Proof it works:</strong> 771 automated API and unit tests, about 255 browser tests (each new screen has an accessibility scan), a 335-operation authorisation matrix that proves each operation is allowed for exactly the roles that should have it, and a delivery evidence document per milestone in <code>docs/</code>.</li>
+</ul>
+
+<h2 id="built">2. What has been built</h2>
+<table>
+<tr><th>Stage</th><th>What stakeholders can see</th></tr>
+<tr><td><strong>Request intake</strong></td><td>Conversational request (typed or dictated), AI-drafted fields marked as such, classification (UNSPSC), complexity, self-service vs team-led, budget check against the ERP (mock), required secondary reviews (IT, cyber, legal, finance, risk), suggested suppliers, estimated contract value, workflow and approvers shown on the request, process variations needing approval.</td></tr>
+<tr><td><strong>Procurement plan</strong></td><td>Auto-populated plan, edit by hand or by plain-language instruction ("change paragraph 3 of the background") with undo, ESG objectives, conflict-of-interest declarations, send for approval, delegate approval with a stamp that locks the plan, reopen with reason.</td></tr>
+<tr><td><strong>Tender and supplier portal</strong></td><td>Tender pack built from the plan, staged until a delegate gives permission to publish, statutory minimum days for public sector, invitations (simulated email), supplier self-registration with ABN checksum, anonymised Q&amp;A, addenda, sealed bids until close, receipts, multi-stage tenders and shortlisting, supplier profile, insurance, banking, contacts.</td></tr>
+<tr><td><strong>Evaluation</strong></td><td>Panel selection with segregation rules, conflict declarations (twice), hidden independent scoring (technical evaluators never see price), consensus with variance flags that need a reason, compliance gates, total cost of ownership, clarifications and best-and-final offers, probity hold and sign-off, evaluation report as PDF with approval stamp.</td></tr>
+<tr><td><strong>Contract award and legal</strong></td><td>Contract drafted from the right template, clause editing with deviations from the template, risk ratings and delegate decisions, tender cross-check and vendor pre-flight (name, tax, bank), non-negotiable clauses, endorsements, signing modes (standard, blind, staged), separate signing authority, lock on execution, NDAs and master agreements, legal desk (matters board and knowledge base), time-bound access for auditors and committee.</td></tr>
+<tr><td><strong>Contract management</strong></td><td>Owner, milestones, optional extensions and Gantt chart, fixed and custom alerts, rate card with price escalation, purchase orders with a spend-ceiling guard, invoices with a three-way match that blocks unapproved price increases, rebates, insurance compliance hold, live spend and term progress, variations with business case and public-register disclosure, management and risk plans, linked renewals/extensions, master agreements with work orders, funding envelopes.</td></tr>
+<tr><td><strong>Reporting and dashboards</strong></td><td>Role dashboards, spend by category/supplier/contract/master/project/business unit/division, maverick spend, savings, velocity and bottlenecks, workload against capacity, schedule with drag-and-drop and delegate calendar, supplier risk map, ask-in-plain-language reports, saved views, audit search and CSV export.</td></tr>
+<tr><td><strong>Collaboration and AI authoring</strong></td><td>Layout designers for plan, tender pack and report, concurrent editing by section with presence, tracked changes, saved versions and comparison, "since you last looked" digest, draft risk assessment, supplier response summaries, template change by instruction, committee changes by instruction, phase moves by instruction, reference content corpus.</td></tr>
+<tr><td><strong>Administration</strong></td><td>Users and roles, delegations of authority (sourcing, signing, publish), workflows and templates, settings (numbering, custom fields, checkpoints, notification rules, public registers, criteria library, contract rules, contract management, dashboards), data migration from legacy files with field mapping and rollback, single sign-on and MFA (simulated provider), security page.</td></tr>
+<tr><td><strong>Roadmap page</strong></td><td>Every requirement with its tier and status, which batch delivered it and where the evidence is; the 108 tier-D items are explicitly "not in the proof of concept".</td></tr>
+</table>
+
+<h2 id="honest">3. What is simulated or not built (say this before you are asked)</h2>
+<ul>
+<li><strong>Simulated:</strong> AI (deterministic rules labelled <code>rules-simulated-v1</code>), email/SMS/Slack (recorded, not sent), single sign-on, ABN/vendor register, bank check, sanctions screening, ERP (purchase orders and invoices are entered in the platform), weather/financial/geopolitical feeds, public register submission.</li>
+<li><strong>Not in the proof of concept:</strong> items marked tier D in the requirements (for example multi-tenant SaaS operations, real e-signature provider, full ERP integration).</li>
+<li><strong>Still to do:</strong> M16 (documentation, runbook, demo script) and M17 (hardening: real-PostgreSQL tests, performance, Lighthouse).</li>
+<li><strong>Limits to know:</strong> a live tender cannot be closed in the room because the closing time is at least 25 days out; the demo therefore uses the seeded closed tender and the seeded evaluation (see Act 4).</li>
+</ul>
+
+<h2 id="before">4. Before the demo</h2>
+<div class="box warn"><strong>Do this once, the evening before and again the morning of:</strong> a fresh database gives you the same clean story every time. Seed dates are relative to the day you seed, so seed on 6 Oct for the demo.</div>
+<ul class="check">
+<li>Stop any running dev servers. In the project folder run: <code>npm run db:reset</code> then <code>npm run db:seed</code></li>
+<li>Start the servers: <code>npm run dev</code>. Check that <strong>both</strong> http://localhost:3000 and port 4000 are listening (if sign-in says "Invalid email or password" for a correct password, the API is not running; restart <code>npm run dev</code>).</li>
+<li>Use Edge or Chrome (voice dictation works there). Open <strong>two windows</strong>: a normal one for staff and a <strong>private window</strong> for the supplier so the two sessions never mix.</li>
+<li>Pre-open tabs: sign-in page, <code>/app/roadmap</code>, <code>docs/B6-Evidence.md</code> (for questions).</li>
+<li>Set the browser zoom to 110–125% so the room can read it. Check light and dark theme (sun/moon icon, top right).</li>
+<li>Rehearse Acts 1–3 once end to end so you know where the buttons are, then <strong>reset and seed again</strong> so the stakeholders see the original seeded data.</li>
+<li>Keep this page open on a second screen. Have the printed one-page run of show (section 6).</li>
+<li>Do not run the browser test suite on the same machine just before: it uses ports 3100/4100 and its own database, but it is heavy.</li>
+</ul>
+
+<h2 id="people">5. People and logins</h2>
+<p>All 13 demo users share one demo-only password: <code>Demo-Only-Passw0rd!2026</code>. Sign out from the profile menu (top right) to switch.</p>
+<table>
+<tr><th>Role</th><th>Name</th><th>Email</th><th>Used in</th></tr>
+<tr><td>Requester</td><td>Riley Chen</td><td>requester@meridian-demo.example</td><td>Act 1</td></tr>
+<tr><td>Procurement lead</td><td>Priya Nair</td><td>procurement@meridian-demo.example</td><td>Acts 2–7</td></tr>
+<tr><td>Delegate (approver)</td><td>Dana Okafor</td><td>delegate@meridian-demo.example</td><td>Acts 2–5</td></tr>
+<tr><td>Evaluators</td><td>Tomas Silva (technical), Mei Tanaka (commercial)</td><td>evaluator-tech@… / evaluator-comm@…</td><td>Act 4 (optional)</td></tr>
+<tr><td>Panel chair</td><td>Grace Mwangi</td><td>chair@meridian-demo.example</td><td>Act 4</td></tr>
+<tr><td>Legal</td><td>Henry Albright</td><td>legal@meridian-demo.example</td><td>Act 5</td></tr>
+<tr><td>Contract manager</td><td>Sofia Rossi</td><td>contract-mgr@meridian-demo.example</td><td>Act 6</td></tr>
+<tr><td>Probity advisor</td><td>Jonas Becker</td><td>probity@meridian-demo.example</td><td>Acts 4, 7</td></tr>
+<tr><td>Finance</td><td>Aisha Rahman</td><td>finance@meridian-demo.example</td><td>Act 6</td></tr>
+<tr><td>Executive</td><td>Elena Petrova</td><td>exec@meridian-demo.example</td><td>Act 7</td></tr>
+<tr><td>Administrator</td><td>Noah Kim</td><td>admin@meridian-demo.example</td><td>Act 8</td></tr>
+<tr><td>Supplier</td><td>Sam Brightwave</td><td>supplier@meridian-demo.example</td><td>Act 3 (seeded supplier), or register a new one</td></tr>
+</table>
+
+<h2 id="run">6. Run of show</h2>
+<table>
+<tr><th>Act</th><th>Topic</th><th>Minutes</th><th>Key message</th></tr>
+<tr><td>0</td><td>Opening</td><td>4</td><td>One platform, many roles, proof of concept on synthetic data</td></tr>
+<tr><td>1</td><td>Request intake</td><td>8</td><td>Plain language in, structured request out; AI is labelled</td></tr>
+<tr><td>2</td><td>Plan and approval</td><td>8</td><td>Delegation of authority and a locked, stamped plan</td></tr>
+<tr><td>3</td><td>Tender and supplier portal</td><td>10</td><td>Sealed, fair, auditable market approach</td></tr>
+<tr><td>4</td><td>Evaluation and report</td><td>10</td><td>Independence, probity, evidence</td></tr>
+<tr><td>5</td><td>Contract award and signing</td><td>10</td><td>Checks before signature; signing authority is separate from approval</td></tr>
+<tr><td>6</td><td>Contract management</td><td>12</td><td>Price control and spend control after signature</td></tr>
+<tr><td>7</td><td>Insight and oversight</td><td>8</td><td>Dashboards, plain-language reports, audit trail</td></tr>
+<tr><td>8</td><td>Administration, roadmap, close</td><td>5</td><td>Configurable, honest about scope, clear next steps</td></tr>
+</table>
+<p><strong>Total about 75 minutes</strong> without questions. Leave 15 for questions.</p>
+
+<h2 id="acts">7. The demo, act by act</h2>
+<div class="box warn"><strong>Note:</strong> button names below are from the screens as built; if a label differs slightly on the day, trust the screen. Rehearse Acts 1–6 once before the audience arrives.</div>
+
+<h3>Act 0 – Opening <span class="time">4 min</span></h3>
+<div class="say">"This is a proof of concept running on synthetic data. Nothing here sends real email or calls real systems, and the screens say so."</div>
+<table class="step">
+<tr><td>Show</td><td>Sign-in page: email and password, "Continue with single sign-on" (simulated provider), forgot password. Point at the banner "Proof of concept · synthetic data".</td></tr>
+<tr><td>Show</td><td>Sign in as the <strong>procurement lead</strong>. Note the left navigation grouped as Overview / Procure / Contracts / Insight / Collaborate / Oversight, the <em>Jump to…</em> search (<kbd>Ctrl</kbd>+<kbd>K</kbd>), the notification bell, the light/dark toggle and <em>Preview on phone or tablet</em>.</td></tr>
+<tr><td>Say</td><td>"Each person sees only what their role allows. An administrator does not even see the requests menu. Access is enforced on the server, not only hidden in the menu; there is a 335-operation test proving it."</td></tr>
+</table>
+
+<h3>Act 1 – Request intake <span class="time">8 min</span></h3>
+<p><strong>Sign in as the Requester (Riley Chen).</strong> Requests → <em>New request</em>.</p>
+<table class="step">
+<tr><td>1</td><td>Type (or dictate with the microphone button in Chrome/Edge): <em>"We need commercial cleaning for head office for two years. Around ninety thousand dollars. It's for Facilities."</em></td></tr>
+<tr><td>2</td><td>Watch the assistant fill the fields. Point out the <strong>"AI-drafted"</strong> marks and the "Simulated AI" label; answer its follow-up question for anything missing (contract owner, background).</td></tr>
+<tr><td>3</td><td>Edit one field by hand: it is saved and no longer marked AI-drafted.</td></tr>
+<tr><td>4</td><td>Submit. Open the request: the cards for <strong>process</strong> (workflow chosen by value), <strong>classification</strong> (UNSPSC), <strong>reviews</strong> needed with the reason for each, <strong>suggested suppliers</strong>, <strong>estimated contract value</strong>, and <strong>approvers</strong>.</td></tr>
+<tr><td>5</td><td>Optional: try a very large value to show the budget cap refusing it, or the "Move this procurement on" box: type <em>"go to the next phase"</em> and show it refuses because the plan is not yet approved.</td></tr>
+</table>
+<div class="say">"The assistant proposes, a person decides. Every AI-drafted value is marked, and it is rules-based in this proof of concept so results are predictable."</div>
+<p>Keep this request: you will use it in Act 2 and 3. Choose about $90,000 so approvals stay simple.</p>
+
+<h3>Act 2 – Plan and approval <span class="time">8 min</span></h3>
+<p><strong>Sign in as Procurement (Priya Nair).</strong> Procurement plans → open the new plan.</p>
+<table class="step">
+<tr><td>1</td><td>Show the plan: every section is pre-filled and marked AI-drafted. Edit a section directly.</td></tr>
+<tr><td>2</td><td>In the instruction box type <em>"change paragraph 2 of the background to say the contract ends in June"</em>. Show the change, then <strong>Undo</strong>.</td></tr>
+<tr><td>3</td><td>Scroll to <strong>Working together</strong>: tracked changes, "since you last looked" digest, save a named version ("First draft"), later compare versions with additions and deletions highlighted.</td></tr>
+<tr><td>4</td><td>Open the request page: <strong>Risk assessment</strong> → <em>Draft a risk assessment</em>. Decide which risks apply, rate one, choose a treatment; <em>Complete</em> is refused until every risk has a decision.</td></tr>
+<tr><td>5</td><td>Back on the plan: declare conflicts of interest, then <strong>send for approval</strong>.</td></tr>
+<tr><td>6</td><td><strong>Switch to the Delegate (Dana Okafor).</strong> Approvals → open the plan, read the key points, <strong>Approve</strong>. The plan locks with a stamp showing who, when and under which authority. Mention that on a phone this works too (use Preview on phone).</td></tr>
+</table>
+<div class="say">"Sourcing approval and contract signing are separate grants of authority. Holding one never implies the other."</div>
+<p><strong>Collaboration extras (1–2 minutes, optional):</strong> sign in as Administrator or Procurement → <em>Collaboration</em>: drag a section in the plan layout designer, save, show a new plan follows it, then <em>Use the system default</em>.</p>
+
+<h3>Act 3 – Tender and supplier portal <span class="time">10 min</span></h3>
+<p><strong>Procurement:</strong> Tenders → create the tender pack for your request (type RFP). It is <strong>staged</strong>: invisible to suppliers.</p>
+<table class="step">
+<tr><td>1</td><td>Show the pack built from the plan (internal budget and risk wording is filtered out). Edit a section. Try the box <em>Change the template</em>: <em>"use the request for quotation template"</em>; sections you wrote are kept.</td></tr>
+<tr><td>2</td><td><strong>Delegate:</strong> Approvals → give <strong>permission to publish</strong>.</td></tr>
+<tr><td>3</td><td><strong>Procurement:</strong> publish with a closing time at least <strong>25 days</strong> ahead (public-sector minimum), invite a supplier by email address. Email is simulated: <strong>copy the registration link</strong> shown on screen.</td></tr>
+<tr><td>4</td><td>In the <strong>private window</strong> open the link and register (ABN must pass the real checksum, for example <code>65 000 000 101</code>), sign in, read the pack, <strong>ask a question</strong>, upload a technical and a commercial file and submit. Show the <strong>receipt</strong>.</td></tr>
+<tr><td>5</td><td>Back as Procurement: answer the question (the asker is never shown to others) and issue an <strong>addendum</strong>. Show that bids are <strong>sealed</strong>: files cannot be opened before close.</td></tr>
+<tr><td>6</td><td>Alternative if short of time: sign in as <code>supplier@…</code> who already has an open tender and a closed, submitted one; show their profile, insurance, banking details (only the last three digits echo back) and contacts.</td></tr>
+</table>
+<div class="say">"Nothing a supplier can see contains budget, risk ratings or who asked what. After the closing time uploads are refused by the server."</div>
+
+<h3>Act 4 – Evaluation and report <span class="time">10 min</span></h3>
+<div class="box warn">A live tender cannot close in the room. Use the <strong>seeded “Facilities cleaning services”</strong> evaluation (PR-2026-0001), which is already at the consensus stage. Running this act <em>uses up</em> the seeded evaluation; reset and seed again afterwards.</div>
+<table class="step">
+<tr><td>1</td><td><strong>Panel chair (Grace Mwangi)</strong> → Evaluations → open the cleaning evaluation. Show consensus per criterion and the <strong>one flagged score</strong> (37.5% apart): the chair cannot lock without a written reason.</td></tr>
+<tr><td>2</td><td>Show who sees what: sign in as <strong>Tomas Silva (technical evaluator)</strong> briefly: no pricing visible. As <strong>Probity (Jonas Becker)</strong>: read-only view with the documents and a system hold control.</td></tr>
+<tr><td>3</td><td>Chair: enter the reason and <strong>lock consensus</strong> (the chair can reopen later with a reason).</td></tr>
+<tr><td>4</td><td><strong>Procurement:</strong> open the evaluation → generate the <strong>evaluation report</strong> (sections: summary, compliance, ranking, scoring distribution, total cost, commentary, recommendation). Download the PDF. Show the <strong>supplier response summaries</strong> on the tender (pricing, dates, proposed changes, pros and cons; anonymous to panel members).</td></tr>
+<tr><td>5</td><td><strong>Delegate:</strong> approve the report; it is stamped.</td></tr>
+<tr><td>6</td><td>Optional: <em>Change the committee</em> box on an evaluation that has not reached consensus: <em>"add Nia"</em>, or a name that matches two people to show the picker.</td></tr>
+</table>
+<div class="say">"Scores are hidden from everyone but their author until the chair opens consensus; the database itself enforces it, not just the screen."</div>
+
+<h3>Act 5 – Contract award and signing <span class="time">10 min</span></h3>
+<table class="step">
+<tr><td>1</td><td><strong>Legal (Henry Albright)</strong> → Contracts. Under <em>Awards ready for a contract</em> the approved award appears. Click <strong>Draft contract</strong>: the template for the tender route (works vs services) is filled with the winner, value, dates and service levels.</td></tr>
+<tr><td>2</td><td>Edit a clause: it is marked <em>Changed from template</em> and listed under <strong>Deviations</strong> with a risk rating. Use <em>explain this deviation</em> (plain language with the corporate fallback), rate it in words, and show the negotiation strategy and risk summary.</td></tr>
+<tr><td>3</td><td><strong>Run the checks</strong>: tender cross-check (price against what was tendered) and vendor pre-flight (legal name, tax, bank). A failed check blocks release until reviewed with a reason.</td></tr>
+<tr><td>4</td><td>Choose how signatures are collected (standard, blind, staged) and <strong>Release for signing</strong>. Show invited signatories, supplier reading and asking a question (supplier portal → Contracts).</td></tr>
+<tr><td>5</td><td><strong>Delegate:</strong> open the contract, <strong>Sign contract</strong>. It becomes <em>Executed and locked</em>: no edit buttons, signature stamp shown. Above $1,000,000 an executive must also sign, and the demo executive holds no signing delegation, so keep the value under that.</td></tr>
+<tr><td>6</td><td>Show the two seeded executed contracts (CT-2026-0001, CT-2026-0002) as proof that locked is locked.</td></tr>
+<tr><td>7</td><td>Optional: <em>Legal desk</em> (matters board with review hours and the knowledge base) and, as Procurement, <strong>time-bound access</strong> for an auditor to one project's contract and report; <em>Shared documents</em> shows it ends by itself.</td></tr>
+</table>
+
+<h3>Act 6 – Contract management <span class="time">12 min</span></h3>
+<p><strong>Sign in as the Contract manager (Sofia Rossi)</strong> → Contracts → open CT-2026-0001 (Northstar Property Care, ends in about 70 days, with a 12-month extension option). Scroll to <strong>Managing this contract</strong>.</p>
+<table class="step">
+<tr><td>1 Overview</td><td>"What to do next" suggestions (decide the extension, start a renewal), variation count, extensions used, cumulative value, versions. Start a <strong>renewal procurement</strong> (<em>Start linked procurement</em>): it gets its own number, is linked to the contract and appears in the pipeline, not as a new tender.</td></tr>
+<tr><td>2 Rates</td><td>Open <em>Rates, escalation and rebates</em>: add a rate "Cleaning hour, $50"; add a scheduled escalation (4% from next 1 July); add a rebate term.</td></tr>
+<tr><td>3 Spend</td><td><strong>Finance (Aisha Rahman)</strong> opens the same contract → <em>Spend and invoices</em>: raise a purchase order (100 hours at $50); try a purchase order larger than the contract value to show the <strong>spend-ceiling guard</strong> blocking it (and keeping a record). Record an invoice at $50 (matched) and one at $55 (<strong>blocked: unapproved price increase</strong>).</td></tr>
+<tr><td>4 Release</td><td>Finance → Contracts → <em>Invoices</em>: filter Blocked, enter a reason, <em>Release as exception</em>, then <em>Record payment</em>. Back on the contract: progress bars for spend, term, paid and committed; the 70% and fixed 80/90/100% notices.</td></tr>
+<tr><td>5 Alerts</td><td>Contract manager → <em>Alerts</em>: the <strong>fixed alerts</strong> (180/90/60-day countdown, insurance lapse, spend ceiling) cannot be muted; try muting one. Add a custom alert in plain language ("alert me 3 months before expiry and include whoever is my manager") by SMS and Slack (simulated). <em>Alerts from the wording</em> finds notice periods in the clauses.</td></tr>
+<tr><td>6 Plans</td><td><em>Plans and activities</em> → Generate: contract management plan and risk plan, tier and reasons, scheduled activities; upload your own template.</td></tr>
+<tr><td>7 Variation</td><td>As Legal, create a <strong>variation</strong> with a business case; show variance %, who must now sign (tier change), and — if you switch the public-sector setting on in Admin — the register disclosure task (Contracts → Register disclosures).</td></tr>
+<tr><td>8 Others</td><td><em>Funding envelopes</em>: the Delegate approves an envelope and nominates Procurement; Procurement commits against it and sees the warning near exhaustion. <em>Master agreements</em>: work orders under a master, reported at both levels.</td></tr>
+</table>
+<div class="say">"A supplier that raises its price, or applies an escalation outside the contract formula, is stopped at the invoice, before the money leaves."</div>
+
+<h3>Act 7 – Insight and oversight <span class="time">8 min</span></h3>
+<table class="step">
+<tr><td>1</td><td><strong>Executive (Elena Petrova)</strong> → Dashboard: KPIs, procurement table, spend by category; then <em>Your role's view</em>. Switch roles to show finance's blocked invoices and the delegate's pending approvals.</td></tr>
+<tr><td>2</td><td>Reports → <em>Spend and performance</em>: category spend, maverick spend, captured savings, velocity with the bottleneck; use the <em>Spend by dimension</em> selector (supplier, contract, master, project, business unit, division); click a phase to drill down.</td></tr>
+<tr><td>3</td><td><em>Ask for a report</em>: type <em>"all procurement risks in 2026"</em> (complete the risk assessment in Act 2 first), then <em>"contracts expiring in 90 days"</em>. Note the read-back of how it was understood. Save a view and share it.</td></tr>
+<tr><td>4</td><td><em>Schedule</em> (Procurement): drag a phase bar; the later phases move and the delegate calendar is recalculated. Use the "Move without dragging" buttons for keyboard users. <em>Workload and capacity</em> and <em>Supplier risk map</em> (record a supplier location first, then show the cyclone-season signal).</td></tr>
+<tr><td>5</td><td><strong>Probity (Jonas Becker)</strong> → Audit trail: filter by procurement, show before/after values, search, export CSV (the export is itself audited). Mention the audit chain can be verified for tampering.</td></tr>
+</table>
+
+<h3>Act 8 – Administration, roadmap and close <span class="time">5 min</span></h3>
+<table class="step">
+<tr><td>1</td><td><strong>Administrator (Noah Kim)</strong> → Settings: numbering format, custom fields, checkpoints, notification rules, public registers, criteria library, contract rules, contract management, dashboards. Change something small, save, show that it is audited (Audit trail shows <code>settings.*</code>).</td></tr>
+<tr><td>2</td><td>Users, Delegations (limit changes apply at once), Workflows, Templates, <strong>Data migration</strong> (upload legacy file, map fields, preview, import, roll back).</td></tr>
+<tr><td>3</td><td><strong>Roadmap</strong> page: every requirement, tier and status, which batch delivered it, link to evidence. Say what is simulated and what is next (M16 documentation and demo pack, M17 hardening and performance).</td></tr>
+<tr><td>4</td><td>Close with the asks: confirm scope for the next phase, nominate users for a pilot, agree the integration priorities (identity provider, ERP, e-signature).</td></tr>
+</table>
+
+<h2 id="short">8. The 20-minute version</h2>
+<p>For executives with limited time, do only: <strong>Act 0</strong> (2) → <strong>Act 1</strong> steps 1–4 (4) → <strong>Act 2</strong> steps 1, 5–6 (3) → <strong>Act 5</strong> steps 1, 3, 5 on the seeded award, or just open a seeded executed contract (3) → <strong>Act 6</strong> steps 3–4: the blocked invoice (5) → <strong>Act 7</strong> steps 1 and 3 (3). End on the roadmap page (1).</p>
+
+<h2 id="qa">9. Questions stakeholders ask</h2>
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>Is the AI real?</td><td>No. It is deterministic rules behind an adapter (<code>AiProvider</code>), labelled "Simulated AI". The swap point is documented; the target is a model hosted inside the approved region (Amazon Bedrock is the candidate). Every AI result is marked and a person decides.</td></tr>
+<tr><td>Where does the data live?</td><td>Locally in PGlite for the proof of concept; the target is PostgreSQL on AWS. All data in the demo is synthetic.</td></tr>
+<tr><td>How is sign-in secured?</td><td>Passwords hashed with argon2id, lockout, MFA and step-up approvals configurable, session cookies with CSRF protection. The identity provider is a mock behind a swap point; Cognito, Entra ID or Okta are the candidates, with a separate pool for suppliers.</td></tr>
+<tr><td>Can a user see something they should not?</td><td>Authorisation is checked on the server for every operation, tested for every role by a matrix, and sensitive data is protected in the database too (sealed bid files, hidden scores). Refused attempts are audited.</td></tr>
+<tr><td>Can the audit trail be altered?</td><td>It is append-only and hash-chained; a verify command detects any change.</td></tr>
+<tr><td>Does it integrate with our ERP, e-signature or email?</td><td>Not in the proof of concept; each has a defined swap point (<code>docs/swap-points.md</code>). Purchase orders and invoices are entered in the platform to stand in for the ERP feed.</td></tr>
+<tr><td>Is it accessible?</td><td>Built to WCAG 2.1 AA with automated scans on every new screen, keyboard alternatives to drag and drop, and responsive layouts including phone approval.</td></tr>
+<tr><td>How much is built?</td><td>Everything in tiers W and S that can work in a proof of concept is built and traceable on the Roadmap page; tier-D items are explicitly out of scope.</td></tr>
+<tr><td>What is left?</td><td>M16 (documentation, runbook, demo script) and M17 (real-PostgreSQL tests, performance and Lighthouse hardening), then the integration decisions above.</td></tr>
+</table>
+
+<h2 id="trouble">10. If something goes wrong</h2>
+<table>
+<tr><th>Symptom</th><th>Cause and fix</th></tr>
+<tr><td>Sign-in says "Invalid email or password" with the right password</td><td>The API on port 4000 is not running. In the terminal stop and run <code>npm run dev</code>.</td></tr>
+<tr><td>API will not start and prints "database is out of step"</td><td>Old database. Stop everything, then <code>npm run db:reset</code> and <code>npm run db:seed</code>, then <code>npm run dev</code>.</td></tr>
+<tr><td>Pages say "Internal error", "unavailable" or "could not be loaded"</td><td>Same as above (stale database) or the API stopped. Check the terminal.</td></tr>
+<tr><td>A seeded story is "used up" (for example the evaluation)</td><td>Reset and seed again: data is synthetic, nothing is lost that matters.</td></tr>
+<tr><td>Supplier and staff sessions mix</td><td>Use a private window for the supplier; sign out first.</td></tr>
+<tr><td>Voice dictation does not work</td><td>Use Chrome or Edge, allow the microphone; otherwise type. The button says when the browser has no support.</td></tr>
+<tr><td>Session suddenly ends</td><td>Sessions expire after inactivity; sign in again.</td></tr>
+<tr><td>Port 3000 or 4000 already in use</td><td>Another dev server is running; close it or restart the machine's node processes.</td></tr>
+</table>
+
+<h2 id="ref">11. Reference</h2>
+<h3>Seeded data worth knowing</h3>
+<ul>
+<li>Requests PR-2026-0001 to 0007, including "Facilities cleaning services" (evaluation at consensus with one flagged score), "Managed IT services", "Security guard services" and "Conference catering (bought without a contract)" which appears as maverick spend.</li>
+<li>Four suppliers: Brightwave (the supplier login), Evergreen, Northstar, Summit. Two executed, locked contracts: CT-2026-0001 (Northstar, ends in about 70 days) and CT-2026-0002 (Evergreen).</li>
+<li>Delegate signing limit 5,000,000; sourcing approval limit 250,000 for the delegate (executive 10,000,000); the executive holds no signing delegation.</li>
+</ul>
+<h3>Where the proof is</h3>
+<ul>
+<li><code>docs/B1-Evidence.md</code> … <code>docs/B6-Evidence.md</code>: what each roadmap batch delivered and how it was verified.</li>
+<li><code>docs/M*-Evidence.md</code>: the earlier milestones.</li>
+<li><code>docs/swap-points.md</code>: every simulated service and what replaces it.</li>
+<li><code>docs/api/openapi.json</code> and <code>endpoint-table.md</code>: the 335 API operations and the roles allowed for each.</li>
+<li>The in-app <strong>Roadmap</strong> page.</li>
+</ul>
+<p style="color:var(--muted);margin-top:40px">Prepared 5 October 2026 for the 6 October stakeholder demonstration. Rehearse once before the day; the steps above were written from the screens and tests as built.</p>
+</div>
+</body>
+</html>
