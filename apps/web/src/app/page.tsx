@@ -334,8 +334,12 @@ export default function Home() {
         </div>
 
         <Section id="faq" eyebrow="FAQ" title="Frequently asked questions">
-          <div className="max-w-3xl">
-            <Accordion items={faqs.map((f) => ({ q: f.q, a: <p>{f.a}</p> }))} />
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            {[faqs.slice(0, Math.ceil(faqs.length / 2)), faqs.slice(Math.ceil(faqs.length / 2))].map(
+              (half, i) => (
+                <Accordion key={i} items={half.map((f) => ({ q: f.q, a: <p>{f.a}</p> }))} />
+              ),
+            )}
           </div>
         </Section>
 
