@@ -6,6 +6,7 @@ import { Button, Drawer, Logo, ThemeToggle } from '@if/ui';
 import type { NavItem } from '@/lib/nav';
 import { CommandPalette } from './command-palette';
 import { PreviewLink } from '@/components/preview/preview-link';
+import { BrowserNotice } from '@/components/b10/browser-notice';
 import { AskAi } from './ask-ai';
 import { NavLinks } from './nav-links';
 import { NotificationBell } from './notification-bell';
@@ -87,6 +88,7 @@ export function ShellFrame({
           </div>
         </Drawer>
         <main id="main" tabIndex={-1} className="reveal min-w-0 flex-1 p-4 outline-none sm:p-6 lg:p-8">
+          <BrowserNotice csrf={user.csrfToken} />
           {children}
         </main>
       </div>

@@ -50,6 +50,11 @@ interface Proposal {
   withinLimit: boolean | null;
   limit: number;
   model: string;
+  modelLabel?: string;
+  modelSimulated?: boolean;
+  /** Written by the tenant's active AI model (NFR-C01). */
+  summary?: string;
+  summaryNote?: string;
   createdAt: string;
 }
 
@@ -542,8 +547,9 @@ function DescribePanel({ csrf }: { csrf: string }) {
           </Button>
         </form>
         <p className="mt-3 text-xs text-text-muted">
-          Options are shortlisted and scored by simple rules ({shown?.model ?? 'rules-simulated-v1'},
-          simulated, no AI model): price 50%, supplier standing 30%, delivery 20%.
+          Options are shortlisted and scored by fixed rules: price 50%, supplier standing 30%, delivery 20%.
+          The recommendation wording comes from the organisation's active AI model
+          {shown ? ` (${shown.model}, simulated)` : ''}, which an administrator can change.
         </p>
         {r.messages}
       </Card>
@@ -566,6 +572,19 @@ function DescribePanel({ csrf }: { csrf: string }) {
               </Badge>
             )}
           </div>
+          {shown.summary && (
+            <p
+              className="rounded-lg border border-border bg-surface-alt p-3 text-sm"
+              data-testid="proposal-summary"
+            >
+              {shown.summary}
+              {shown.summaryNote && <span className="mt-1 block text-text-muted">{shown.summaryNote}</span>}
+              <span className="mt-1 block text-xs text-text-muted">
+                Written by <strong data-testid="proposal-model">{shown.model}</strong>
+                {shown.modelSimulated !== false ? ' (simulated model)' : ''}. A person still decides.
+              </span>
+            </p>
+          )}
           {shown.shortlist.length === 0 ? (
             <EmptyState
               title="Nothing in the catalogue matches"

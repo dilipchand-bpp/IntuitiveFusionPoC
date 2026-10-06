@@ -12,6 +12,10 @@ interface Reply {
   actions: Array<{ label: string; href: string }>;
   followUps: string[];
   model: string;
+  modelLabel?: string;
+  modelSimulated?: boolean;
+  footer?: string;
+  footerNote?: string;
 }
 interface Turn {
   from: 'you' | 'ai';
@@ -152,6 +156,19 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
                         <li key={j}>{b}</li>
                       ))}
                     </ul>
+                  )}
+                  {t.reply?.footer && (
+                    <p
+                      className="mt-2 border-t border-border pt-2 text-xs text-text-muted"
+                      data-testid="ai-footer"
+                    >
+                      {t.reply.footer}
+                      {t.reply.footerNote && <span className="block">{t.reply.footerNote}</span>}
+                      <span className="block">
+                        Model: <strong data-testid="ai-model">{t.reply.model}</strong>
+                        {t.reply.modelSimulated !== false ? ' (simulated)' : ''}
+                      </span>
+                    </p>
                   )}
                   {t.reply && t.reply.actions.length > 0 && (
                     <p className="mt-2 flex flex-wrap gap-2">

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Badge, Button, Card, Checkbox, EmptyState, Field, Input, Table, Td, Th } from '@if/ui';
 import { aud, formatDateTime } from '@/lib/labels';
 import { Bar, has, send, useData, useRun } from './b5-shared';
+import { InvoicePayments, usePayments } from '../b10/payments';
 
 // ------------------------------------------------------------------ blocked invoices and payment (FR-0500)
 interface InvoiceRow {
@@ -17,6 +18,7 @@ interface InvoiceRow {
   poNumber: string | null;
   workOrderNumber: string | null;
   overrideReason: string | null;
+  paidAmount: number;
 }
 const TONE = { MATCHED: 'success', BLOCKED: 'error', EXCEPTION: 'warning', PAID: 'info' } as const;
 const LABEL = {
@@ -33,6 +35,7 @@ export function InvoiceQueue({ csrf, roles }: { csrf: string; roles: string[] })
   const r = useRun();
   const canRelease = has(roles, 'FINANCE', 'EXEC');
   const canPay = has(roles, 'FINANCE');
+  const pays = usePayments();
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label="Filter invoices" className="flex flex-wrap gap-2">
@@ -122,10 +125,25 @@ export function InvoiceQueue({ csrf, roles }: { csrf: string; roles: string[] })
                 </Button>
               </div>
             )}
+            <InvoicePayments
+              invoice={{
+                id: i.id,
+                number: i.number,
+                amount: i.amount,
+                status: i.status,
+                paidAmount: i.paidAmount,
+              }}
+              csrf={csrf}
+              roles={roles}
+              data={pays.data}
+              reload={pays.reload}
+              onPaid={reload}
+            />
             {(i.status === 'MATCHED' || i.status === 'EXCEPTION') && canPay && (
               <div className="mt-3">
                 <Button
-                  aria-label={`Pay ${i.number}`}
+                  aria-label={`Record payment of ${i.number}`}
+                  variant="secondary"
                   loading={r.busy === `pay-${i.id}`}
                   onClick={() =>
                     void r.run(
@@ -138,7 +156,7 @@ export function InvoiceQueue({ csrf, roles }: { csrf: string; roles: string[] })
                     )
                   }
                 >
-                  Record payment
+                  Record payment made outside the run
                 </Button>
               </div>
             )}

@@ -1,6 +1,8 @@
 'use client';
 import { has } from './b5-shared';
 import { LegalToolsCard } from './b8-legal';
+import { LegalSyncCard } from '../b10/legal-sync';
+import { EnvelopeCard } from './envelope-card';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -400,6 +402,9 @@ export function ContractWorkspace({
       {has(roles, 'LEGAL', 'PROCUREMENT', 'DELEGATE', 'EXEC') && (
         <LegalToolsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
       )}
+      {has(roles, 'LEGAL', 'PROCUREMENT', 'DELEGATE', 'EXEC') && (
+        <LegalSyncCard contractId={c.id} csrf={csrf} roles={roles} />
+      )}
     </>
   );
   // the main column follows the organisation's layout for this page: which panels, and in what order (NFR-U04)
@@ -642,6 +647,7 @@ export function ContractWorkspace({
             </div>
           </Card>
           <SigningCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          <EnvelopeCard contractId={c.id} status={c.status} csrf={csrf} roles={roles} />
           <RiskSummaryCard c={c} csrf={csrf} roles={roles} onChange={setC} />
           <QuestionsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
         </aside>
