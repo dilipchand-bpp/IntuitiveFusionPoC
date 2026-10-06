@@ -49,6 +49,7 @@ test.describe('device preview: check the app as a phone or tablet from a desktop
     await expect(frame(page).getByRole('button', { name: 'Open menu' })).toBeVisible(); // phone header, not the desktop sidebar
     await expect(frame(page).getByRole('navigation', { name: 'Main' })).toBeHidden();
     await frame(page).getByRole('button', { name: 'Open menu' }).click();
+    await frame(page).getByRole('button', { name: 'Procure' }).click();
     await frame(page).getByRole('link', { name: 'Requests' }).click();
     await expect(frame(page).getByRole('heading', { name: 'Requests', level: 1 })).toBeVisible();
     await page.getByRole('button', { name: /Tablet/ }).click();

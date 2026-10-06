@@ -128,7 +128,8 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
       const frame = role === 'SUPPLIER' ? 'supplier-shell' : 'shell';
       if (role !== 'SUPPLIER') {
         const nav = page.getByRole('navigation', { name: 'Main' });
-        const links = await nav.getByRole('link').allInnerTexts();
+        // every page is in the document, including the ones under a collapsed heading
+        const links = await nav.locator('a[href]').evaluateAll((as) => as.map((a) => a.textContent ?? ''));
         expect(links.map((l) => l.trim()).sort()).toEqual(expected.map((n) => n.label).sort());
       }
       for (const item of expected) {
@@ -272,9 +273,31 @@ test.describe('US-PLT-05 responsive and themes', () => {
     await page.getByRole('button', { name: 'Open menu' }).click();
     const nav = page.getByRole('navigation', { name: 'Main' });
     await expect(nav).toBeVisible();
+    // the headings start closed except the first and the current page's, so open the one holding Tenders
+    await nav.getByRole('button', { name: 'Procure' }).click();
     await nav.getByRole('link', { name: 'Tenders' }).click();
     await expect(page).toHaveURL(/\/app\/tenders$/);
     await expect(nav).toBeHidden(); // drawer closed after navigating
+  });
+
+  test('menu headings collapse and expand, hide their pages, and the choice is remembered', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1400, height: 1000 });
+    await signIn(page, 'PROCUREMENT');
+    const nav = page.getByRole('navigation', { name: 'Main' });
+    const insight = nav.getByRole('button', { name: 'Insight' });
+    await expect(insight).toHaveAttribute('aria-expanded', 'false');
+    await expect(nav.getByRole('link', { name: 'Reports' })).toBeHidden();
+    await insight.click();
+    await expect(insight).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav.getByRole('link', { name: 'Reports' })).toBeVisible();
+    await page.reload();
+    await expect(nav.getByRole('button', { name: 'Insight' })).toHaveAttribute('aria-expanded', 'true');
+    await nav.getByRole('button', { name: 'Collapse all' }).click();
+    await expect(nav.getByRole('link', { name: 'Reports' })).toBeHidden();
+    await nav.getByRole('button', { name: 'Expand all' }).click();
+    await expect(nav.getByRole('link', { name: 'Reports' })).toBeVisible();
   });
 
   for (const vp of VIEWPORTS) {

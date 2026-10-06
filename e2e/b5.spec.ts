@@ -135,7 +135,7 @@ test.describe('managing an executed contract', () => {
     await expect(page.getByRole('status').first()).toContainText('recorded exception');
     await page.getByRole('button', { name: 'All', exact: true }).click();
     const released = page.getByTestId('invoice-queue').locator('[data-invoice-status="EXCEPTION"]').first();
-    await released.getByRole('button', { name: /^Pay / }).click();
+    await released.getByRole('button', { name: /^Record payment of / }).click();
     await expect(page.getByTestId('invoice-queue').locator('[data-invoice-status="PAID"]')).toHaveCount(1);
     await scan(page);
   });
