@@ -299,10 +299,13 @@ export class TenderService {
       })),
       questions: await this.questionRows(tx, t.id, false),
       addenda: await this.addenda(tx, t.id),
+      dualWitness: t.dualWitness,
+      bidsOpenedAt: t.openedAt?.toISOString() ?? null,
+      requiredCover: t.requiredCover === null ? null : Number(t.requiredCover),
       submissions: {
         count: submitted.length,
-        sealed: !closed,
-        ...(closed
+        sealed: !closed || (t.dualWitness && !t.openedAt),
+        ...(closed && (!t.dualWitness || t.openedAt)
           ? {
               items: submitted.map((x) => ({
                 supplierId: x.s.supplierId,

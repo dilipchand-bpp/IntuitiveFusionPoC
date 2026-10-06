@@ -162,5 +162,27 @@
     "ids": [
       "FR-X01"
     ]
+  },
+  "B8": {
+    "label": "B8 Tender, contract and supplier intelligence",
+    "evidence": "docs/B8-Evidence.md",
+    "ids": [
+      "FR-0130",
+      "FR-0175",
+      "FR-0185",
+      "FR-0390",
+      "FR-0790",
+      "FR-0795",
+      "FR-0800",
+      "FR-0805",
+      "FR-0830",
+      "SEC-TP02",
+      "SEC-TP03",
+      "NFR-L01",
+      "NFR-L02",
+      "NFR-L04",
+      "NFR-U05",
+      "NFR-U08"
+    ]
   }
 }

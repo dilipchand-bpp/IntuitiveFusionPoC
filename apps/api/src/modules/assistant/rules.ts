@@ -182,6 +182,26 @@ const GLOSSARY: Array<{ re: RegExp; term: string; text: string }> = [
     text: 'Every AI feature here is a fixed set of rules standing in for a model, and is labelled so. Real model providers plug in at the documented swap points.',
   },
   {
+    re: /dual.?witness|two witnesses|sealed bids?|bid opening/,
+    term: 'Dual-witness opening',
+    text: 'A high-value tender stays sealed after it closes until two different, independent people confirm with their password within a short window. Neither may have raised the request or sit on the evaluation panel.',
+  },
+  {
+    re: /response (form|schedule)/,
+    term: 'Response form',
+    text: 'Instead of attaching documents, a supplier answers structured questions in the portal. Each answer is checked as it is entered, and a bid with a required question blank cannot be submitted.',
+  },
+  {
+    re: /redact|redline|counsel link/,
+    term: 'Redaction and redlines',
+    text: "Legal can redact a clause, which withholds its wording from everyone else and from exports, and can propose a redline, which changes nothing until Legal accepts it. Outside counsel and a supplier's legal team can propose wording through a one-time link.",
+  },
+  {
+    re: /approval link|approve from (a|the|an emailed) link|without signing in/,
+    term: 'Approval link',
+    text: 'An approver is sent a one-time link to a checklist for one procurement. They can approve or send it back without signing in, and the same authority limits and checks apply. Dollar values are withheld unless the organisation chooses to show them.',
+  },
+  {
     re: /envelope/,
     term: 'Funding envelope',
     text: 'A pool of money that procurements and contracts draw down, so you can see what remains.',

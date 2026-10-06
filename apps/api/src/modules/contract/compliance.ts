@@ -12,6 +12,7 @@ import {
   contract,
   contractHold,
   contractRebate,
+  disclosureTask,
   invoice,
   notification,
   roleAssignment,
@@ -165,6 +166,7 @@ export async function runComplianceSweep(tx: Tx, audit: AuditService, now: Date)
     changed += x.placed + x.released;
   }
   changed += await sweepRebates(tx, audit, now);
+  changed += await sweepDisclosures(tx, audit, now);
   return changed;
 }
 
@@ -233,4 +235,46 @@ export async function sweepRebates(tx: Tx, audit: AuditService, now: Date) {
     flagged += 1;
   }
   return flagged;
+}
+
+/**
+ * A public register disclosure that is past due is escalated once, to the executive and procurement. While it stays open the
+ * contract cannot be varied again (NFR-L02).
+ */
+export async function sweepDisclosures(tx: Tx, audit: AuditService, now: Date) {
+  const today = now.toISOString().slice(0, 10);
+  const rows = await tx
+    .select({ t: disclosureTask, c: contract })
+    .from(disclosureTask)
+    .innerJoin(contract, eq(contract.id, disclosureTask.contractId))
+    .where(
+      and(
+        eq(disclosureTask.status, 'OPEN'),
+        isNull(disclosureTask.escalatedAt),
+        lt(disclosureTask.dueOn, today),
+        isNull(contract.deletedAt),
+      ),
+    );
+  for (const { t, c } of rows) {
+    await tx.update(disclosureTask).set({ escalatedAt: now }).where(eq(disclosureTask.id, t.id));
+    await audit.record(
+      tx,
+      { tenantId: c.tenantId, userId: null, role: 'SYSTEM' },
+      {
+        action: 'contract.disclosure_overdue',
+        entityType: 'contract',
+        entityId: c.id,
+        result: 'FAILED',
+        after: { register: t.register, dueOn: t.dueOn },
+      },
+    );
+    await tell(
+      tx,
+      c,
+      ['EXEC', 'PROCUREMENT', 'LEGAL'],
+      'Statutory disclosure overdue',
+      `${c.number}: the disclosure on ${t.register} was due ${t.dueOn} and is not recorded. Further changes to this contract are stopped until it is.`,
+    );
+  }
+  return rows.length;
 }

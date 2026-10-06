@@ -43,6 +43,9 @@ export interface ContractView extends ContractSummary {
     text: string;
     mandatory: boolean;
     changedFromTemplate: boolean;
+    /** Redacted wording is shown to Legal alone (FR-0830). */
+    redacted?: boolean;
+    inserted?: boolean;
   }>;
   deviations: Array<{
     clauseId: string;

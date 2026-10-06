@@ -1,4 +1,5 @@
 import { SupplierRisk } from '@/components/reports/b6-reports';
+import { DiversityCard, SupplierScores } from '@/components/supplier/b8-staff';
 import { getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Supplier risk – Intuitive Fusion' };
@@ -18,6 +19,10 @@ export default async function Page() {
         csrf={user!.csrfToken}
         canEdit={user!.roles.some((r) => r === 'PROCUREMENT' || r === 'ADMIN')}
       />
+      <SupplierScores
+        canOpen={user!.roles.some((r) => ['PROCUREMENT', 'LEGAL', 'FINANCE', 'ADMIN'].includes(r))}
+      />
+      {user!.roles.some((r) => ['PROCUREMENT', 'EXEC', 'FINANCE'].includes(r)) && <DiversityCard />}
     </div>
   );
 }

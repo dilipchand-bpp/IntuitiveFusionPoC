@@ -598,9 +598,14 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
             : `Closing is ${w.days} day(s) after publication; this organisation requires at least ${w.minDays}`,
           [{ field: 'closesAt', message: `Choose a closing time at least ${w.minDays} days from now` }],
         );
+      // a high-value tender is sealed until two independent witnesses open it, unless the pack already asked for that (FR-0175)
+      const rules = (await loadSettings(tx, a.user.tenantId)).tenderRules;
+      const witnessed =
+        l.tender.dualWitness || Number(l.req.estimatedValue ?? 0) >= rules.dualWitnessThresholdAud;
       await tx
         .update(tender)
         .set({
+          dualWitness: witnessed,
           status: 'PUBLISHED',
           opensAt: now,
           closesAt: closes,
@@ -619,6 +624,7 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
           opensAt: now.toISOString(),
           closesAt: closes.toISOString(),
           windowDays: w.days,
+          dualWitness: witnessed,
         },
       });
       // The pack is generated from the completed document and released to every invitee; a fingerprint of exactly what

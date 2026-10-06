@@ -1,4 +1,5 @@
 'use client';
+import { AmendmentFallback } from './amendment-fallback';
 import {
   Banknote,
   CheckCircle2,
@@ -465,6 +466,26 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
                 <p role="status" className="mt-2 text-sm text-warning" data-testid="instruction-hint">
                   {hint}
                 </p>
+              )}
+              {hint && (
+                <AmendmentFallback
+                  planId={plan.id}
+                  csrf={csrf}
+                  fields={plan.fields}
+                  instruction={instruction}
+                  onSaved={() => {
+                    setHint(null);
+                    setInstruction('');
+                    setNotice('Your amended text was saved.');
+                    router.refresh();
+                  }}
+                  onEdit={(k) => {
+                    const f = plan.fields.find((x) => x.key === k);
+                    setEditKey(k);
+                    setDraft(f?.value ?? '');
+                    setHint(null);
+                  }}
+                />
               )}
             </Panel>
           )}

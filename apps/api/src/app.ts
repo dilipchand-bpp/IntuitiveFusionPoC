@@ -20,6 +20,9 @@ import { registerSettingsRoutes } from './modules/settings/routes.js';
 import { registerIntakeExtras } from './modules/intake/extras-routes.js';
 import { registerEsgRoutes } from './modules/plan/esg.js';
 import { registerMigrationRoutes } from './modules/migration/routes.js';
+import { registerTenderB8 } from './modules/b8/tender-b8.js';
+import { registerApprovalLinks } from './modules/b8/approval-links.js';
+import { registerSupplierB8Routes } from './modules/b8/supplier-b8.js';
 import { registerAssistantRoutes } from './modules/assistant/routes.js';
 import { registerCollabRoutes } from './modules/collab/routes.js';
 import { registerReportingRoutes } from './modules/reporting/routes.js';
@@ -188,6 +191,14 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerCollabRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerAssistantRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerTenderB8(app, API_PREFIX, {
+    ...guardDeps,
+    store,
+    witnessRateLimitMax: deps.loginRateLimitMax ?? 10,
+  }))
+    implemented.add(k);
+  for (const k of registerSupplierB8Routes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerApprovalLinks(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerAdminRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerIntakeExtras(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerEsgRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);

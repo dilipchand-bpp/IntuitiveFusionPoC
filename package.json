@@ -25,6 +25,7 @@
     "prepare": "husky",
     "db:reset": "node scripts/ensure-env.mjs && npm run db:reset -w @if/api && npm run db:seed -w @if/api",
     "db:seed": "node scripts/ensure-env.mjs && npm run db:seed -w @if/api",
+    "demo:start": "node scripts/demo-start.mjs",
     "predev": "node scripts/ensure-env.mjs"
   },
   "lint-staged": {

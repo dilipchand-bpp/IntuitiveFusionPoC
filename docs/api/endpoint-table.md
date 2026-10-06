@@ -336,3 +336,43 @@
 | POST | `/tenders/{id}/template-change` | changeTenderTemplate | PROCUREMENT | Change a staged tender to another template in plain language and fill it in again, keeping sections a person wrote |  |
 | POST | `/evaluations/{id}/committee/instruct` | instructCommittee | PROCUREMENT | Add or remove an evaluation committee member from an instruction or a name, with a picker where several people match | status AMBIGUOUS lists candidates; 409 HAS_SCORES |
 | POST | `/assistant/chat` | assistantChat | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC, SUPPLIER | Ask the assistant about the workflow, roles and approvals, what needs attention or what to fix, or give a simple instruction (rules-simulated) |  |
+| GET | `/tenders/{id}/response-schedule` | getResponseSchedule | PROCUREMENT, LEGAL, DELEGATE, EXEC, PROBITY, EVALUATOR, CHAIR | The structured response schedule: the questions a supplier answers instead of attaching documents |  |
+| PUT | `/tenders/{id}/response-schedule` | setResponseSchedule | PROCUREMENT | Define the response schedule (staged tender only) | 409 once published; 422 duplicate key or a choice with under two options |
+| PUT | `/tenders/{id}/requirements` | setTenderRequirements | PROCUREMENT | Set the insurance cover a bid must hold and whether opening needs two witnesses (staged tender only) |  |
+| GET | `/tenders/{id}/response-answers` | getResponseAnswers | PROCUREMENT, LEGAL, DELEGATE, EXEC, PROBITY, EVALUATOR, CHAIR | Every submitted answer side by side, after the tender closes (and opens, for a dual-witness tender) | 409 TENDER_SEALED before close; 409 BIDS_SEALED before witnesses open it |
+| GET | `/tenders/{id}/opening` | getOpening | PROBITY, LEGAL, DELEGATE, EXEC, PROCUREMENT | Where the dual-witness opening stands: who has witnessed and until when |  |
+| POST | `/tenders/{id}/opening/witness` | witnessOpening | PROBITY, LEGAL, DELEGATE, EXEC, PROCUREMENT | Confirm, by password, that you witness the opening; the second different person within the window opens the bids | 401 password not confirmed; 403 not independent; 409 already witnessed, already opened or not required |
+| GET | `/supplier/tenders/{id}/response` | getSupplierResponse | SUPPLIER | The response schedule with the supplier's answers, what is missing and whether their cover meets the tender |  |
+| PUT | `/supplier/tenders/{id}/response` | saveSupplierResponse | SUPPLIER | Save answers to the response schedule; each is checked against its question | 422 with a message per answer; 409 once submitted or closed |
+| PUT | `/supplier/profile/insurance-certificate` | uploadInsuranceCertificate | SUPPLIER | Upload an insurance certificate; the limit and expiry are read from it (rules-simulated reading) | 422 for a rejected or infected file; readable=false asks for the details by hand |
+| GET | `/supplier/profile/esg` | getSupplierEsg | SUPPLIER | ESG data the supplier has declared |  |
+| PUT | `/supplier/profile/esg` | updateSupplierEsg | SUPPLIER | Declare carbon data, renewable share, diversity ownership and a modern slavery statement |  |
+| GET | `/supplier/ratings` | getSupplierRatings | SUPPLIER | Contracts the supplier can rate, and ratings received if the organisation shows them |  |
+| POST | `/supplier/ratings` | rateEnterprise | SUPPLIER | The supplier rates the enterprise on a signed contract | 409 already rated; 422 wrong dimensions |
+| POST | `/suppliers/{id}/ratings` | rateSupplier | CONTRACT_MGR, PROCUREMENT, EXEC | The enterprise rates a supplier on a signed contract | 409 already rated or contract not signed; 422 wrong dimensions |
+| GET | `/suppliers/{id}/ratings` | getSupplierRatingsStaff | PROCUREMENT, LEGAL, FINANCE, EXEC, ADMIN, CONTRACT_MGR | Ratings of a supplier; what suppliers said is shown only if the organisation allows it |  |
+| GET | `/suppliers/duplicates` | listDuplicateSuppliers | PROCUREMENT, LEGAL, FINANCE, EXEC, ADMIN | Pairs of suppliers that look like the same business (same ABN or bank account, similar name) |  |
+| POST | `/suppliers/duplicates/dismiss` | dismissDuplicate | PROCUREMENT, LEGAL | Say two suppliers are not the same business |  |
+| GET | `/suppliers/{id}/risk` | getSupplierRisk | PROCUREMENT, LEGAL, FINANCE, EXEC, PROBITY | Risk, resilience and ESG score with its factors, recommendations and alternative suppliers (rules-simulated) |  |
+| POST | `/suppliers/{id}/modern-slavery-check` | checkModernSlavery | PROCUREMENT, LEGAL | Run the modern slavery screen for a supplier and record the result |  |
+| GET | `/reports/supplier-scores` | getSupplierScores | PROCUREMENT, EXEC, FINANCE, PROBITY | Every supplier's score, lowest first |  |
+| GET | `/reports/diversity` | getDiversityReport | PROCUREMENT, EXEC, FINANCE | Committed spend by diversity ownership, and carbon data reported |  |
+| GET | `/requests/{id}/lessons` | listLessons | PROCUREMENT, REQUESTER, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY, EVALUATOR, CHAIR | Lessons learned on a procurement |  |
+| POST | `/requests/{id}/lessons` | addLesson | PROCUREMENT, REQUESTER, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY, EVALUATOR, CHAIR | Capture a lesson learned |  |
+| GET | `/requests/{id}/lessons/recall` | recallLessons | PROCUREMENT, REQUESTER, LEGAL, CONTRACT_MGR, DELEGATE, EXEC, FINANCE, PROBITY, EVALUATOR, CHAIR | Lessons from comparable procurements, by category, size and wording, with why each was chosen (rules-simulated) |  |
+| POST | `/requests/{id}/close` | closeRequest | PROCUREMENT, EXEC | Close or cancel a procurement; a lesson learned (or a reason for none) is needed | 409 LESSONS_REQUIRED; 409 if not yet in contract management (cancel instead) |
+| POST | `/contracts/{id}/legal-edit` | legalEdit | LEGAL | Redact a clause, propose a redline or insert a clause at a nominated place, in plain language | apply=false previews; 409 once released for signature |
+| GET | `/contracts/{id}/redlines` | listRedlines | LEGAL, PROCUREMENT, DELEGATE, EXEC | Proposed changes to clauses, from Legal, the legal platform, outside counsel or the supplier |  |
+| POST | `/contracts/{id}/redlines/{redlineId}/decision` | decideRedline | LEGAL | Accept (applies the wording) or reject a proposed change | 409 already decided or the wording is final |
+| POST | `/contracts/{id}/counsel-links` | createCounselLink | LEGAL | Issue a one-time link for an outside law firm or the supplier's legal team to mark up this contract |  |
+| GET | `/contracts/{id}/counsel-links` | listCounselLinks | LEGAL | Links issued for this contract (never the link itself) |  |
+| DELETE | `/contracts/{id}/counsel-links/{linkId}` | revokeCounselLink | LEGAL | Withdraw a counsel link |  |
+| GET | `/counsel/{token}` | getCounselPage | public | The clauses an outside party may mark up, with their own redlines; read-only once the version is final |  |
+| POST | `/counsel/{token}/redlines` | proposeCounselRedline | public | An outside party proposes new wording for a clause | 423 once the version is final |
+| GET | `/contracts/deleted` | listDeletedContracts | LEGAL, EXEC, PROBITY | Contracts that were logically deleted, with the reason |  |
+| POST | `/contracts/{id}/restore` | restoreContract | LEGAL, EXEC | Bring a logically deleted contract back, with a reason |  |
+| GET | `/integration-events` | listIntegrationEvents | ADMIN, PROCUREMENT, LEGAL | Events sent to other systems and whether they were delivered |  |
+| POST | `/integration-events/retry` | retryIntegrationEvents | ADMIN, PROCUREMENT, LEGAL | Try again every event that has not been delivered |  |
+| POST | `/integrations/legal/webhook` | legalPlatformWebhook | public | The customer's legal platform reports a matter stage and redlines; signed with the shared secret, safe to send twice | 401 for a bad signature or unknown matter; duplicate=true when seen before |
+| GET | `/approval-links/{token}` | getApprovalLink | public | The summary checklist behind a one-time approval link (commercial information withheld by default) |  |
+| POST | `/approval-links/{token}/decision` | decideViaApprovalLink | public | Approve or reject from the link without a full sign-in; the same limits and checks apply | 403 above the approver's authority; step-up code required if the organisation asks for one |

@@ -71,6 +71,14 @@ export default async function ContractsPage() {
             >
               Register disclosures
             </Link>
+            {user?.roles.some((r) => ['LEGAL', 'EXEC', 'PROBITY'].includes(r)) && (
+              <Link
+                href="/app/contracts/deleted"
+                className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+              >
+                Deleted contracts
+              </Link>
+            )}
           </nav>
         )}
       </header>

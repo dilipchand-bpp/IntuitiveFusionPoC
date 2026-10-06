@@ -1,4 +1,5 @@
 'use client';
+import { PlatformSync } from './platform-sync';
 import { useCallback, useState } from 'react';
 import { Badge, Button, Card, Field, Input, Select, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
@@ -11,6 +12,9 @@ export interface Matter {
   dueOn: string | null;
   assignee: string | null;
   contractNumber: string | null;
+  /** Where the customer's own legal platform holds this matter, and the stage it last reported (FR-0390). */
+  externalRef?: string | null;
+  externalStage?: string | null;
   hours: number;
 }
 export interface Board {
@@ -81,6 +85,7 @@ export function LegalDesk({
   const lanes = ['NEW', 'IN_REVIEW', 'WAITING', 'DONE'] as const;
   return (
     <div className="flex flex-col gap-8" data-testid="legal-desk">
+      <PlatformSync csrf={csrf} />
       {error && (
         <p
           role="alert"
@@ -157,6 +162,15 @@ export function LegalDesk({
                       h{m.assignee ? ` · ${m.assignee}` : ''}
                       {m.dueOn ? ` · due ${m.dueOn}` : ''}
                     </p>
+                    {m.externalRef && (
+                      <p className="mt-1 text-xs" data-testid="matter-external">
+                        <span className="rounded-sm bg-surface-alt px-1.5 py-0.5 font-mono">
+                          {m.externalRef}
+                        </span>{' '}
+                        on the legal platform
+                        {m.externalStage ? `, stage: ${m.externalStage}` : ''}
+                      </p>
+                    )}
                     {canEdit && (
                       <div className="mt-2 flex flex-col gap-2">
                         <Field label={`Move ${m.title}`}>

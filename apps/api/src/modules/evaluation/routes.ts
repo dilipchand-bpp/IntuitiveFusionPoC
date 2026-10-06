@@ -50,6 +50,7 @@ import {
   variancePct,
   type Stream,
 } from './scoring.js';
+import { issueApprovalLinks } from '../b8/approval-links.js';
 import type { TenderType } from '../tender/fields.js';
 
 export interface EvaluationDeps extends GuardDeps {
@@ -328,6 +329,12 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
       if (!t) throw new AppError(404, 'NOT_FOUND', 'Tender not found');
       if (t.status !== 'CLOSED')
         throw new AppError(409, 'INVALID_STATE', 'Evaluation opens once the tender has closed');
+      if (t.dualWitness && !t.openedAt)
+        throw new AppError(
+          409,
+          'BIDS_SEALED',
+          'This tender needs two independent witnesses to open its bids before evaluation can start',
+        );
       const template = evaluationCriteria(t.type as TenderType);
       if (!template)
         throw new AppError(409, 'NOT_EVALUABLE', 'This type of document is not scored for award');
@@ -1288,6 +1295,13 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
           requiredAuthority: value,
         },
       });
+      await issueApprovalLinks(
+        tx,
+        d.clock,
+        a.user.tenantId,
+        { type: 'EVAL_REPORT', id: rep.id, label: `${l2.req.number} ${l2.req.title}` },
+        routing.userIds,
+      );
       if (routing.userIds.length)
         await svc.notifyUsers(
           tx,

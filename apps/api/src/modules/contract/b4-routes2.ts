@@ -10,6 +10,7 @@ import type { RoleName } from '@if/shared';
 import type { SanctionsScreening } from '../../adapters/sanctions.js';
 import type { VendorRegistry } from '../../adapters/vendor-registry.js';
 import { guard, type AuthContext } from '../../auth/guard.js';
+import { raiseMatterEvent } from '../b8/integration.js';
 import { withContext, type Tx } from '../../db/client.js';
 import {
   accessGrant,
@@ -506,6 +507,8 @@ export function registerContractB4Part2(
     assignee: extra.assignee,
     contractId: m.contractId,
     contractNumber: extra.contract,
+    externalRef: m.externalRef,
+    externalStage: m.externalStage,
     hours: extra.hours,
     updatedAt: m.updatedAt.toISOString(),
   });
@@ -586,7 +589,16 @@ export function registerContractB4Part2(
         entityId: m!.id,
         after: { title: body.title, contractId: body.contractId ?? null },
       });
-      return { id: m!.id };
+      // the customer's own legal platform is told, when there is one (FR-0390)
+      const sent = await raiseMatterEvent(tx, { clock: d.clock, audit: d.audit }, a.ctx, m!);
+      return {
+        id: m!.id,
+        externalRef:
+          sent?.status === 'DELIVERED'
+            ? ((sent.payload as { externalRef?: string }).externalRef ?? null)
+            : null,
+        integration: sent ? sent.status : null,
+      };
     });
     return reply.status(201).send(out);
   });

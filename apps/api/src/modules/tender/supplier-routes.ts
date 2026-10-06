@@ -35,6 +35,8 @@ import { makeReceipt, validAbn } from './rules.js';
 import { fileView } from './serialisers.js';
 import { TenderService, type LoadedTender } from './service.js';
 import { hashToken } from './routes.js';
+import { flagDuplicates } from '../b8/supplier-b8.js';
+import { registerSupplierB8, submitBlockers } from '../b8/tender-b8.js';
 
 export interface SupplierDeps extends GuardDeps {
   clock: Clock;
@@ -309,6 +311,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
           after: { company: b.company, sanctionsStatus: screen.status, flaggedAnswers: flagged },
         });
         const team = await usersWithRole(tx, tenantId, ['PROCUREMENT']);
+        await flagDuplicates(tx, tenantId, sup!.id); // looks like a supplier already on file? (FR-0795)
         if (screen.status === 'MATCH') {
           // quarantine: the account exists but cannot reach tender documents; procurement is alerted (FR-0180)
           await d.audit.record(tx, sys, {
@@ -728,6 +731,9 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
             missing.map((m) => ({ field: m.toLowerCase(), message: `Add a ${m.toLowerCase()} file` })),
           );
         const [sup] = await tx.select().from(supplier).where(eq(supplier.id, a.user.supplierId!));
+        // the response schedule is complete and the insurance meets what this tender requires (FR-0130, FR-0185)
+        const blocked = await submitBlockers(tx, l.tender, sub.id, sup, now.toISOString().slice(0, 10));
+        if (blocked[0]) throw new AppError(409, blocked[0].code, blocked[0].message, blocked[0].errors);
         const receipt = makeReceipt(sup?.abn ?? '0000', now, sub.id);
         await tx
           .update(submission)
@@ -810,5 +816,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
     },
   );
 
+  for (const k of registerSupplierB8(app, p, d, { asSupplier, svc, fresh, tid, ensureSubmission }))
+    done.add(k);
   return done;
 }

@@ -1,4 +1,5 @@
 'use client';
+import { OpeningPanel, ResponseFormPanel } from './b8-panels';
 import { CheckCircle2, Copy, Lock, Send } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FileDown } from 'lucide-react';
@@ -271,48 +272,56 @@ export function TenderWorkspace({
             content: <TenderB2Panel t={t} roles={roles} csrf={csrf} />,
           },
           {
+            value: 'response',
+            label: 'Response form',
+            content: <ResponseFormPanel t={t} csrf={csrf} roles={roles} />,
+          },
+          {
             value: 'bids',
             label: `Bids (${t.submissions.count})`,
             content: (
-              <Card role="region" aria-labelledby="bids-h">
-                <h2 id="bids-h" className="font-heading text-xl font-bold">
-                  Bids
-                </h2>
-                {t.submissions.sealed ? (
-                  <p
-                    className="mt-2 flex items-start gap-2 text-sm text-text-muted"
-                    data-testid="bids-sealed"
-                  >
-                    <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    {t.submissions.count} bid(s) received. Who bid, and what they sent, stays sealed until the
-                    tender closes. Nobody, including administrators, can open it before then.
-                  </p>
-                ) : (
-                  <ul className="mt-3 flex flex-col gap-2" aria-label="Bids received">
-                    {(t.submissions.items ?? []).length === 0 && (
-                      <li className="text-sm text-text-muted">No bids were received.</li>
-                    )}
-                    {(t.submissions.items ?? []).map((b) => (
-                      <li
-                        key={b.supplierId}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
-                      >
-                        <span className="font-semibold">{b.company}</span>
-                        <span className="flex gap-1">
-                          {b.sanctionsStatus === 'MATCH' && <Badge tone="error">Screening match</Badge>}
-                          {b.insuranceStatus && b.insuranceStatus !== 'CURRENT' && (
-                            <Badge tone={b.insuranceStatus === 'EXPIRED' ? 'error' : 'warning'}>
-                              Insurance {b.insuranceStatus.toLowerCase()}
-                            </Badge>
-                          )}
-                        </span>
-                        <span className="font-mono text-xs">{b.receipt}</span>
-                        <span className="text-text-muted">{formatDateTime(b.submittedAt)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
+              <>
+                <OpeningPanel t={t} csrf={csrf} roles={roles} onDone={refresh} />
+                <Card role="region" aria-labelledby="bids-h">
+                  <h2 id="bids-h" className="font-heading text-xl font-bold">
+                    Bids
+                  </h2>
+                  {t.submissions.sealed ? (
+                    <p
+                      className="mt-2 flex items-start gap-2 text-sm text-text-muted"
+                      data-testid="bids-sealed"
+                    >
+                      <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                      {t.submissions.count} bid(s) received. Who bid, and what they sent, stays sealed until
+                      the tender closes. Nobody, including administrators, can open it before then.
+                    </p>
+                  ) : (
+                    <ul className="mt-3 flex flex-col gap-2" aria-label="Bids received">
+                      {(t.submissions.items ?? []).length === 0 && (
+                        <li className="text-sm text-text-muted">No bids were received.</li>
+                      )}
+                      {(t.submissions.items ?? []).map((b) => (
+                        <li
+                          key={b.supplierId}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
+                        >
+                          <span className="font-semibold">{b.company}</span>
+                          <span className="flex gap-1">
+                            {b.sanctionsStatus === 'MATCH' && <Badge tone="error">Screening match</Badge>}
+                            {b.insuranceStatus && b.insuranceStatus !== 'CURRENT' && (
+                              <Badge tone={b.insuranceStatus === 'EXPIRED' ? 'error' : 'warning'}>
+                                Insurance {b.insuranceStatus.toLowerCase()}
+                              </Badge>
+                            )}
+                          </span>
+                          <span className="font-mono text-xs">{b.receipt}</span>
+                          <span className="text-text-muted">{formatDateTime(b.submittedAt)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              </>
             ),
           },
         ]}

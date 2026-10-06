@@ -133,7 +133,7 @@ test.describe('layouts, dashboards and reports', () => {
     test.setTimeout(120_000);
     await signIn(page, 'procurement');
     await page.goto('/app/reports/supplier-risk');
-    await expect(page.getByRole('img', { name: /Map of/ })).toBeVisible();
+    await expect(page.getByTestId('supplier-map')).toBeVisible();
     await expect(page.getByTestId('single-points')).toBeVisible();
     await scan(page);
     await page.goto('/app/reports/capacity');

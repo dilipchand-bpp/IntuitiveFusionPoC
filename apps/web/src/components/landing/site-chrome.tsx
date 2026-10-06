@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { Button, Logo, ThemeToggle } from '@if/ui';
 import { PreviewLink } from '@/components/preview/preview-link';
+import { getSessionUser } from '@/lib/session';
 
 export const CONTACT_EMAIL = 'hello@intuitivefusion.example';
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const user = await getSessionUser();
   return (
     <header className="glass sticky top-0 z-30 border-b border-border/60">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2">
@@ -31,9 +33,15 @@ export function SiteHeader() {
           <PreviewLink />
           <ThemeToggle />
           <Button asChild variant="accent">
-            <Link href="/login" className="text-gradient-fg no-underline">
-              Log in
-            </Link>
+            {user ? (
+              <Link href={user.homePath} className="text-gradient-fg no-underline">
+                Back to my portal
+              </Link>
+            ) : (
+              <Link href="/login" className="text-gradient-fg no-underline">
+                Log in
+              </Link>
+            )}
           </Button>
         </div>
       </div>

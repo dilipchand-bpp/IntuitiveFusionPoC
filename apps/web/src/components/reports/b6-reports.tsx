@@ -4,6 +4,7 @@ import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th } 
 import { api } from '@/lib/api-client';
 import { aud } from '@/lib/labels';
 import { Bar, send, useData, useRun } from '@/components/contract/b5-shared';
+import { SupplierMap } from './supplier-map';
 
 const DAY = 86_400_000;
 const ms = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
@@ -604,44 +605,23 @@ export function SupplierRisk({ csrf, canEdit }: { csrf: string; canEdit: boolean
     );
   if (!data) return <p className="text-sm text-text-muted">Loading…</p>;
   const placed = data.items.filter((i) => i.location);
-  const lats = placed.map((i) => i.location!.lat);
-  const lngs = placed.map((i) => i.location!.lng);
-  const minLat = Math.min(...lats, -44) - 3;
-  const maxLat = Math.max(...lats, -10) + 3;
-  const minLng = Math.min(...lngs, 112) - 3;
-  const maxLng = Math.max(...lngs, 154) + 3;
-  const x = (lng: number) => ((lng - minLng) / (maxLng - minLng)) * 100;
-  const y = (lat: number) => ((maxLat - lat) / (maxLat - minLat)) * 60;
   return (
     <div className="flex flex-col gap-6" data-testid="supplier-risk">
-      <svg
-        viewBox="0 0 100 60"
-        role="img"
-        aria-label={`Map of ${placed.length} supplier location(s)`}
-        className="w-full rounded-lg border border-border bg-surface-alt"
-      >
-        {placed.map((i) => (
-          <g key={i.supplierId} transform={`translate(${x(i.location!.lng)} ${y(i.location!.lat)})`}>
-            <text
-              fontSize="3"
-              textAnchor="middle"
-              className={
-                i.level === 'HIGH' ? 'fill-error' : i.level === 'MEDIUM' ? 'fill-warning' : 'fill-success'
-              }
-            >
-              {SHAPE[i.level as keyof typeof SHAPE] ?? '○'}
-            </text>
-            <text y="4" fontSize="2" textAnchor="middle" className="fill-current">
-              {i.company}
-            </text>
-          </g>
-        ))}
-        {placed.length === 0 && (
-          <text x="50" y="30" textAnchor="middle" fontSize="3" className="fill-current">
-            No supplier locations recorded yet
-          </text>
-        )}
-      </svg>
+      <SupplierMap
+        pins={placed.map((i) => ({
+          supplierId: i.supplierId,
+          company: i.company,
+          level: i.level,
+          committed: i.committed,
+          location: i.location!,
+          signals: i.signals,
+        }))}
+      />
+      {placed.length === 0 && (
+        <p className="text-sm text-text-muted">
+          No supplier locations are recorded yet. Add one below and it will appear on the map.
+        </p>
+      )}
       <Table caption="Suppliers and their risk signals" data-testid="risk-table">
         <thead>
           <tr>

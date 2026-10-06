@@ -49,9 +49,9 @@ export function ShellFrame({
           <MenuIcon className="size-5" aria-hidden="true" />
         </Button>
         <Link
-          href={user.homePath}
+          href="/"
           className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text no-underline"
-          aria-label="Intuitive Fusion home"
+          aria-label="Intuitive Fusion home page"
         >
           <Logo withName compact size={36} />
         </Link>

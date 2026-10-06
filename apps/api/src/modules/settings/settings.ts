@@ -205,6 +205,42 @@ export const SECTIONS = {
       referenceRefreshDays: z.number().int().min(1).max(365),
     })
     .strict(),
+  tenderRules: z
+    .object({
+      /** Tenders at or above this value need two independent witnesses to open the sealed bids (FR-0175). */
+      dualWitnessThresholdAud: z.number().min(0).max(1e11),
+      /** Both witnesses must sign in within this many minutes of each other (FR-0175). */
+      witnessWindowMinutes: z.number().int().min(1).max(240),
+    })
+    .strict(),
+  ratings: z
+    .object({
+      /** Whether a supplier can see how the enterprise rated them (FR-0790). */
+      supplierSeesRatings: z.boolean(),
+      /** Whether the buying team can read what suppliers said about the enterprise (FR-0790). */
+      staffSeeSupplierRatings: z.boolean(),
+    })
+    .strict(),
+  legalPlatform: z
+    .object({
+      /** The customer runs an enterprise legal platform and wants matters raised there (FR-0390). */
+      enabled: z.boolean(),
+      name: z.string().trim().min(1).max(60),
+      /** Shared secret that signs what the legal platform sends back. Replace with a secret store in production. */
+      webhookSecret: z.string().max(200),
+      /** Demonstrates the fallback: deliveries fail until this is switched off (NFR-AV03, NFR-AV04). */
+      simulateOutage: z.boolean(),
+    })
+    .strict(),
+  approvalLinks: z
+    .object({
+      /** Approvers are sent a one-time link that lets them decide without a full sign-in (NFR-U05). */
+      enabled: z.boolean(),
+      validHours: z.number().int().min(1).max(336),
+      /** Show the dollar value on the link page; off by default so commercial information is withheld. */
+      showCommercial: z.boolean(),
+    })
+    .strict(),
   security: z
     .object({
       requireMfa: z.boolean(),
@@ -349,6 +385,10 @@ export const DEFAULTS: Settings = {
     planTemplates: [],
   },
   dashboards: { visibility: 'BROAD', capacityPerManager: 6, referenceRefreshDays: 90 },
+  tenderRules: { dualWitnessThresholdAud: 5_000_000, witnessWindowMinutes: 30 },
+  ratings: { supplierSeesRatings: false, staffSeeSupplierRatings: true },
+  legalPlatform: { enabled: false, name: 'Legal platform', webhookSecret: '', simulateOutage: false },
+  approvalLinks: { enabled: true, validHours: 48, showCommercial: false },
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },

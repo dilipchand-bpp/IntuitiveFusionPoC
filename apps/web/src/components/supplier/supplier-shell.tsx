@@ -27,9 +27,9 @@ export async function SupplierShell({ children }: { children: ReactNode }) {
       </a>
       <header className="glass sticky top-0 z-30 flex items-center gap-2 border-b border-border/70 px-3 py-2 sm:px-4">
         <Link
-          href="/supplier"
+          href="/"
           className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text no-underline"
-          aria-label="Supplier portal home"
+          aria-label="Intuitive Fusion home page"
         >
           <Logo withName compact size={36} />
         </Link>

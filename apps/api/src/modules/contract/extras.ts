@@ -2,6 +2,7 @@
  * Contract endpoints added after M11 (M12b): editing the management record, variations (US-CON-05), the deviation
  * register's risk ratings and delegate decisions (US-CON-02), and plain-language custom alerts (US-CMG-03).
  */
+import { overdueDisclosure } from '../b8/contract-b8.js';
 import { and, eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -121,6 +122,14 @@ export function makeVariationCreator(d: ContractDeps, x: Pick<ContractCtx, 'vari
       .from(contract)
       .where(eq(contract.parentId, parent.id));
     const settings = await loadSettings(tx, a.user.tenantId);
+    // a statutory disclosure that is past due stops further change to the same contract until it is recorded (NFR-L02)
+    const late = await overdueDisclosure(tx, parent.id, start);
+    if (late)
+      throw new AppError(
+        409,
+        'DISCLOSURE_OVERDUE',
+        `A public register disclosure was due on ${late.dueOn} and has not been recorded. Record it before changing this contract again.`,
+      );
     const parentEnd = (await effectiveEnd(tx, parent)) ?? parent.endDate!;
     const end = body.endDate ?? parentEnd;
     if (end < start)

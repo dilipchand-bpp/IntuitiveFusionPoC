@@ -230,12 +230,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0130',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'RFx / Tender Collaboration',
     area: null,
     priority: "Won't",
     title:
       'Support structured Interactive Response Schedules — digital bid-entry forms for vendor pricing and technical submissions replacing unstructured document attachments',
+    batch: 'B8',
   }, // DEFERRED(FR-0130)
   {
     id: 'FR-0140',
@@ -262,12 +263,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0175',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: null,
     priority: 'Could',
     title:
       'For high-value or high-risk tenders, the platform shall support an optional dual-witness requirement, under which encrypted submissions cannot be opened after closing...',
+    batch: 'B8',
   }, // DEFERRED(FR-0175)
   {
     id: 'FR-0180',
@@ -283,12 +285,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0185',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Tender Portal',
     area: null,
     priority: 'Could',
     title:
       'Validate supplier-uploaded insurance certificates via OCR-based extraction of policy limits and expiry, and shall block final submission where cover falls below the...',
+    batch: 'B8',
   }, // DEFERRED(FR-0185)
   {
     id: 'FR-0190',
@@ -644,12 +647,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0390',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Contract Award & Legal',
     area: null,
     priority: 'Could',
     title:
       'Where a customer operates an enterprise legal platform (for example HighQ, Icertis), the system shall raise an outbound matter-initiation event through an integration...',
+    batch: 'B8',
   }, // DEFERRED(FR-0390)
   {
     id: 'FR-0400',
@@ -1323,41 +1327,45 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0790',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Supplier ratings and performance scoring, including enterprise-rates-supplier and supplier-rates-enterprise, with configurable visibility of ratings',
+    batch: 'B8',
   }, // DEFERRED(FR-0790)
   {
     id: 'FR-0795',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title: 'Duplicate supplier detection across the supplier master',
+    batch: 'B8',
   }, // DEFERRED(FR-0795)
   {
     id: 'FR-0800',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Supplier risk, resilience and ESG scoring — combining performance, financial health, geopolitical exposure, cyber and compliance checks and operational disruption...',
+    batch: 'B8',
   }, // DEFERRED(FR-0800)
   {
     id: 'FR-0805',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Lessons-learned capture, with AI recall of relevant lessons on comparable future procurements by type, size or category',
+    batch: 'B8',
   }, // DEFERRED(FR-0805)
   {
     id: 'FR-0810',
@@ -1402,12 +1410,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0830',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Advanced legal functions in plain language — redaction of nominated sections, redlining, clause insertion at a nominated section — plus collaboration portals for...',
+    batch: 'B8',
   }, // DEFERRED(FR-0830)
   {
     id: 'FR-0835',
@@ -1635,22 +1644,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-U05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Usability & Accessibility',
     area: null,
     priority: 'Should',
     title:
       'An approver shall be able to complete an approval action from an emailed link without a full platform sign-in, presented with a summary checklist view for that...',
+    batch: 'B8',
   }, // DEFERRED(NFR-U05)
   {
     id: 'NFR-U08',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Usability & Accessibility',
     area: null,
     priority: 'Should',
     title:
       'Where the AI cannot reliably action an in-field amendment, the user shall have a usable fallback path to achieve the change (for example copying content into the AI...',
+    batch: 'B8',
   }, // DEFERRED(NFR-U08)
   {
     id: 'NFR-M01',
@@ -1845,22 +1856,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-L01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Legal',
     area: null,
     priority: 'Must',
     title:
       'Public-sector statutory timing rules shall be enforced, including minimum publication-to-close windows such as the 25-day window under WTO Government Procurement rules',
+    batch: 'B8',
   }, // DEFERRED(NFR-L01)
   {
     id: 'NFR-L02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Legal',
     area: null,
     priority: 'Must',
     title:
       'Public-sector statutory disclosure obligations shall be enforced for contract modifications exceeding a defined value-change threshold',
+    batch: 'B8',
   }, // DEFERRED(NFR-L02)
   {
     id: 'NFR-L03',
@@ -1874,12 +1887,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-L04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Legal',
     area: null,
     priority: 'Must',
     title:
       'Signed contract records shall be retained permanently and remain recoverable, with logical delete only, and the audit trail shall be of sufficient completeness to...',
+    batch: 'B8',
   }, // DEFERRED(NFR-L04)
   {
     id: 'NFR-R01',
@@ -2332,22 +2346,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-TP02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Third-Party & Vendor Security',
     area: null,
     priority: 'Must',
     title:
       'Sanctions and financial risk checks shall be re-run on the counterparty where contract negotiations extend beyond 30 days, before execution can proceed',
+    batch: 'B8',
   }, // DEFERRED(SEC-TP02)
   {
     id: 'SEC-TP03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Third-Party & Vendor Security',
     area: null,
     priority: 'Must',
     title:
       'Vendor legal name, tax registration and banking details shall be verified against ERP or vetted records before signature options unlock',
+    batch: 'B8',
   }, // DEFERRED(SEC-TP03)
   {
     id: 'SEC-TP04',

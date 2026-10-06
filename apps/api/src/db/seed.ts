@@ -78,6 +78,7 @@ export const emailFor = (key: string) => `${key}@meridian-demo.example`;
 const SUPPLIERS = [
   {
     key: 'brightwave',
+    location: { city: 'Sydney', state: 'NSW', country: 'Australia', lat: -33.87, lng: 151.21 },
     company: 'Brightwave Cleaning Pty Ltd',
     abn: '51824753556',
     sanctions: 'CLEAR',
@@ -86,6 +87,7 @@ const SUPPLIERS = [
   },
   {
     key: 'evergreen',
+    location: { city: 'Newcastle', state: 'NSW', country: 'Australia', lat: -32.93, lng: 151.78 },
     company: 'Evergreen Facility Services Pty Ltd',
     abn: '33102034591',
     sanctions: 'CLEAR',
@@ -94,6 +96,7 @@ const SUPPLIERS = [
   },
   {
     key: 'northstar',
+    location: { city: 'Brisbane', state: 'QLD', country: 'Australia', lat: -27.47, lng: 153.03 },
     company: 'Northstar Property Care Pty Ltd',
     abn: '12005357522',
     sanctions: 'CLEAR',
@@ -102,6 +105,7 @@ const SUPPLIERS = [
   },
   {
     key: 'summit',
+    location: { city: 'Perth', state: 'WA', country: 'Australia', lat: -31.95, lng: 115.86 },
     company: 'Summit Managed Services Pty Ltd',
     abn: '98765432109',
     sanctions: 'PENDING',
@@ -232,6 +236,7 @@ export async function seedDatabase(
         sanctionsStatus: sp.sanctions,
         insuranceStatus: sp.insurance,
         categories: [...sp.categories],
+        location: sp.location,
         lastCheckedAt: day(-3),
       });
       await log('supplier.register', 'supplier', uid(`supplier:${sp.key}`), { company: sp.company });

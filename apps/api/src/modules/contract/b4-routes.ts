@@ -716,7 +716,7 @@ export function registerContractB4(
       const out = await withContext(d.database, a.ctx, async (tx) => {
         const c = await x.load(tx, a, id);
         const v = (await x.view(tx, a, c)) as {
-          clauses: Array<{ title: string; text: string }>;
+          clauses: Array<{ title: string; text: string; redacted?: boolean }>;
           title: string | null;
           signatures: Array<{ decision: string; stamp: string | null }>;
         };
@@ -737,7 +737,7 @@ export function registerContractB4(
           doc: contractDocument(
             c,
             `${label}${v.title ? `: ${v.title}` : ''}`,
-            v.clauses,
+            v.clauses.map((k) => (k.redacted ? { ...k, text: '[Redacted]' } : k)), // redaction holds in every document (FR-0830)
             v.signatures.filter((s) => s.decision === 'APPROVED').map((s) => s.stamp ?? ''),
             c.status.replace('_', ' ').toLowerCase(),
             d.clock.now(),

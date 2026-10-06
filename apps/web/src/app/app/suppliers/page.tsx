@@ -3,12 +3,13 @@ import { EmptyState, Table, Td, Th } from '@if/ui';
 import { StatusBadges } from '@/components/supplier/status-badges';
 import type { SupplierRow } from '@/components/supplier/types';
 import { formatDateTime } from '@/lib/labels';
-import { apiGet } from '@/lib/session';
+import { apiGet, getSessionUser } from '@/lib/session';
+import { DuplicatesCard } from '@/components/supplier/b8-staff';
 
 export const metadata = { title: 'Suppliers – Intuitive Fusion' };
 
 export default async function SuppliersPage() {
-  const rows = await apiGet<SupplierRow[]>('/suppliers');
+  const [rows, user] = await Promise.all([apiGet<SupplierRow[]>('/suppliers'), getSessionUser()]);
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -18,6 +19,12 @@ export default async function SuppliersPage() {
           proof of concept the screening is simulated.
         </p>
       </header>
+      {user && (
+        <DuplicatesCard
+          csrf={user.csrfToken}
+          canDismiss={user.roles.some((r) => r === 'PROCUREMENT' || r === 'LEGAL')}
+        />
+      )}
       {!rows ? (
         <EmptyState title="The directory is unavailable" body="Please refresh the page." />
       ) : rows.length === 0 ? (

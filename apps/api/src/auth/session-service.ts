@@ -86,6 +86,17 @@ export class SessionService {
     return { id, cookieValue: this.sign(id), expiresAt };
   }
 
+  /**
+   * A short-lived session for a person who proved who they are some other way, such as a one-time approval link. The caller
+   * is responsible for revoking it when the one thing it was made for is done.
+   */
+  async createFor(userId: string, meta: { ip?: string; userAgent?: string } = {}) {
+    const user = await this.idp.loadUser(userId);
+    if (!user) return null;
+    const s = await this.create(user, meta);
+    return { ...s, csrf: this.csrfFor(s.id) };
+  }
+
   async resolve(cookieValue: string | undefined, expectedPool: 'STAFF' | 'SUPPLIER'): Promise<Resolved> {
     if (!cookieValue) return { ok: false, reason: 'MALFORMED' };
     const dot = cookieValue.lastIndexOf('.');

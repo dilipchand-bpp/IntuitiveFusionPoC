@@ -1,4 +1,5 @@
 'use client';
+import { ResponseFormCard } from './b8-cards';
 import { CheckCircle2, Clock, FileUp, Lock, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -186,6 +187,9 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
 
       {/* ------------------------------------------------------------ pricing, requests from the buyer, best and final offers */}
       <SupplierEvaluationCard tenderId={t.id} open={open} csrf={csrf} />
+
+      {/* ------------------------------------------------------------ the response form and the cover this tender needs */}
+      <ResponseFormCard tenderId={t.id} open={open} csrf={csrf} onChange={() => void reload()} />
 
       {/* ------------------------------------------------------------ your bid */}
       <Card role="region" aria-labelledby="bid-h">

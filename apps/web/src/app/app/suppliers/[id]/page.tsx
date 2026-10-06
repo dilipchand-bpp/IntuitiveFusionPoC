@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Badge, Card, EmptyState } from '@if/ui';
 import { AddContact } from '@/components/supplier/add-contact';
 import { ContactActions } from '@/components/supplier/contact-actions';
+import { RatingsCard, RiskCard } from '@/components/supplier/b8-staff';
 import { SanctionsReview } from '@/components/supplier/sanctions-review';
 import { StatusBadges } from '@/components/supplier/status-badges';
 import type { SupplierProfile } from '@/components/supplier/types';
@@ -41,6 +42,25 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
         )}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {user.roles.some((r) => ['PROCUREMENT', 'LEGAL', 'FINANCE', 'EXEC', 'PROBITY'].includes(r)) && (
+          <RiskCard
+            supplierId={s.id}
+            csrf={user.csrfToken}
+            canCheck={user.roles.some((r) => r === 'PROCUREMENT' || r === 'LEGAL')}
+          />
+        )}
+        {user.roles.some((r) =>
+          ['PROCUREMENT', 'LEGAL', 'FINANCE', 'EXEC', 'ADMIN', 'CONTRACT_MGR'].includes(r),
+        ) && (
+          <RatingsCard
+            supplierId={s.id}
+            csrf={user.csrfToken}
+            canRate={user.roles.some((r) => ['CONTRACT_MGR', 'PROCUREMENT', 'EXEC'].includes(r))}
+            contracts={s.contracts
+              .filter((c) => c.status === 'EXECUTED')
+              .map((c) => ({ id: c.id, number: c.number }))}
+          />
+        )}
         <Card aria-labelledby="contacts-h" role="region">
           <h2 id="contacts-h" className="font-heading text-xl font-bold">
             Contacts

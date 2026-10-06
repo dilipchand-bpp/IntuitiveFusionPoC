@@ -41,6 +41,8 @@ import type { SealedStore } from '../tender/files.js';
 import { isProtected } from './b4-rules.js';
 import { releaseExtra, registerContractB4 } from './b4-routes.js';
 import { registerContractB5 } from './b5-routes.js';
+import { registerContractB8 } from '../b8/contract-b8.js';
+import { orderClauses } from '../b8/rules.js';
 import { canSee, generatePlans, isNarrow, teamUserIds } from './b5-service.js';
 import { syncContractCompliance } from './compliance.js';
 import {
@@ -385,8 +387,9 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     const clauses = await tx.select().from(clause).where(eq(clause.contractId, c.id)).orderBy(asc(clause.id));
     const { lib, tpl } = await templateClauses(tx, a.user.tenantId, c);
     const libBy = new Map(lib.map((x, i) => [x.clauseId, { x, i }]));
-    const ordered = [...clauses].sort(
-      (x, y) => (libBy.get(x.clauseId)?.i ?? 99) - (libBy.get(y.clauseId)?.i ?? 99),
+    const ordered = orderClauses(
+      clauses,
+      lib.map((l) => l.clauseId),
     );
     const signatures = await signaturesOf(tx, a.user.tenantId, c.id);
     const live = signatures.filter((s) => s.decision === 'APPROVED');
@@ -535,9 +538,12 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       clauses: ordered.map((k) => ({
         id: k.clauseId,
         title: k.title,
-        text: k.text,
+        // redacted wording is shown to Legal alone (FR-0830)
+        text: k.redacted && !roles.includes('LEGAL') ? '[Redacted]' : k.text,
         mandatory: k.mandatory,
         changedFromTemplate: k.changedFromTemplate,
+        redacted: k.redacted,
+        inserted: k.afterClauseId !== null,
       })),
       deviations: devRows.map(({ id: kid, ...x }) => ({
         ...x,
@@ -1483,6 +1489,8 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     createVariation: makeVariationCreator(d, { variationsOf, notifyRoles }),
     registry,
   });
+
+  registerContractB8(app, p, d, reg, { load, templateClauses });
 
   return done;
 }

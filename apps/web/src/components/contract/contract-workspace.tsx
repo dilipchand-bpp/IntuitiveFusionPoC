@@ -1,4 +1,6 @@
 'use client';
+import { has } from './b5-shared';
+import { LegalToolsCard } from './b8-legal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -251,6 +253,8 @@ export function ContractWorkspace({
                     <h3 className="font-heading font-semibold">{k.title}</h3>
                     {k.mandatory && <Badge tone="neutral">Mandatory</Badge>}
                     {k.changedFromTemplate && <Badge tone="warning">Changed from template</Badge>}
+                    {k.inserted && <Badge tone="info">Added by Legal</Badge>}
+                    {k.redacted && <Badge tone="neutral">Redacted</Badge>}
                     {p.canEdit && editing !== k.id && (
                       <Button
                         variant="secondary"
@@ -407,6 +411,9 @@ export function ContractWorkspace({
           <EndorsementsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
           <CollabCard c={c} csrf={csrf} roles={roles} onChange={setC} />
           <StrategyCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          {has(roles, 'LEGAL', 'PROCUREMENT', 'DELEGATE', 'EXEC') && (
+            <LegalToolsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+          )}
         </div>
 
         <aside className="flex flex-col gap-6">

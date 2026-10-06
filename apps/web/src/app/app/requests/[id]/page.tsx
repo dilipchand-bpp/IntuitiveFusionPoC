@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Badge, Button } from '@if/ui';
 import { InstructBox, RiskAssessmentPanel } from '@/components/collab/ai-panels';
 import { DraftPanel } from '@/components/requests/draft-panel';
+import { LessonsPanel } from '@/components/requests/lessons';
 import { RequestActions } from '@/components/requests/request-actions';
 import { RequestExtras, type ExtendedView, type ExtrasData } from '@/components/requests/extras';
 import type { RequestView } from '@/components/requests/types';
@@ -72,6 +73,14 @@ export default async function RequestDetail({ params }: { params: Promise<{ id: 
           )}
           {view.status !== 'DRAFT' && (
             <RiskAssessmentPanel requestId={view.id} csrf={user.csrfToken} canEdit={canEdit} />
+          )}
+          {view.status !== 'DRAFT' && (
+            <LessonsPanel
+              requestId={view.id}
+              phase={view.phase}
+              csrf={user.csrfToken}
+              canClose={user.roles.some((r) => r === 'PROCUREMENT' || r === 'EXEC')}
+            />
           )}
           {suppliers && ecv && artefacts && delegates && variations && (
             <RequestExtras

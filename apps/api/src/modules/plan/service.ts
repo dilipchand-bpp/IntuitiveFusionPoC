@@ -19,6 +19,7 @@ import {
 import { AppError } from '../../http/errors.js';
 import { toView as requestView, valuesOf } from '../intake/service.js';
 import { loadSettings } from '../settings/settings.js';
+import { approvers, issueApprovalLinks } from '../b8/approval-links.js';
 import { applyLayout, loadLayout } from '../collab/routes.js';
 import { PLAN_FIELDS, PLAN_FIELD_BY_KEY, splitParagraphs } from './fields.js';
 import { summarisePlan } from './summary.js';
@@ -229,6 +230,14 @@ export class PlanService {
         'Plan awaiting your approval',
         `${l.req.number} ${l.req.title}`,
         `/app/plans/${l.req.id}`,
+      );
+      // each approver also gets a one-time link to decide without signing in (NFR-U05)
+      await issueApprovalLinks(
+        tx,
+        this.clock,
+        ctx.tenantId,
+        { type: 'PLAN', id: planId, label: `${l.req.number} ${l.req.title}` },
+        await approvers(tx, ctx.tenantId),
       );
     }
   }

@@ -65,6 +65,15 @@
   },
   {
    "name": "Collaboration"
+  },
+  {
+   "name": "Lessons"
+  },
+  {
+   "name": "Integrations"
+  },
+  {
+   "name": "ApprovalLinks"
   }
  ],
  "security": [
@@ -18782,6 +18791,2110 @@
      }
     }
    }
+  },
+  "/tenders/{id}/response-schedule": {
+   "get": {
+    "operationId": "getResponseSchedule",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "The structured response schedule: the questions a supplier answers instead of attaching documents",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseSchedule"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setResponseSchedule",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Define the response schedule (staged tender only)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseSchedule"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 once published; 422 duplicate key or a choice with under two options",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ResponseScheduleSave"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/requirements": {
+   "put": {
+    "operationId": "setTenderRequirements",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Set the insurance cover a bid must hold and whether opening needs two witnesses (staged tender only)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TenderRequirementsResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TenderRequirements"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/tenders/{id}/response-answers": {
+   "get": {
+    "operationId": "getResponseAnswers",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Every submitted answer side by side, after the tender closes (and opens, for a dual-witness tender)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResponseAnswersView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "409 TENDER_SEALED before close; 409 BIDS_SEALED before witnesses open it"
+   }
+  },
+  "/tenders/{id}/opening": {
+   "get": {
+    "operationId": "getOpening",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Where the dual-witness opening stands: who has witnessed and until when",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OpeningState"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/opening/witness": {
+   "post": {
+    "operationId": "witnessOpening",
+    "tags": [
+     "Tenders"
+    ],
+    "summary": "Confirm, by password, that you witness the opening; the second different person within the window opens the bids",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WitnessResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "401 password not confirmed; 403 not independent; 409 already witnessed, already opened or not required",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WitnessRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/tenders/{id}/response": {
+   "get": {
+    "operationId": "getSupplierResponse",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The response schedule with the supplier's answers, what is missing and whether their cover meets the tender",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierResponseView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "saveSupplierResponse",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Save answers to the response schedule; each is checked against its question",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierResponseSaved"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 with a message per answer; 409 once submitted or closed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierResponseSave"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/profile/insurance-certificate": {
+   "put": {
+    "operationId": "uploadInsuranceCertificate",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Upload an insurance certificate; the limit and expiry are read from it (rules-simulated reading)",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InsuranceCertificateResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 for a rejected or infected file; readable=false asks for the details by hand",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InsuranceCertificate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/profile/esg": {
+   "get": {
+    "operationId": "getSupplierEsg",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "ESG data the supplier has declared",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "updateSupplierEsg",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Declare carbon data, renewable share, diversity ownership and a modern slavery statement",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EsgUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/supplier/ratings": {
+   "get": {
+    "operationId": "getSupplierRatings",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "Contracts the supplier can rate, and ratings received if the organisation shows them",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierRatingsOwn"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "rateEnterprise",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The supplier rates the enterprise on a signed contract",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RatingResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 already rated; 422 wrong dimensions",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RatingCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/ratings": {
+   "post": {
+    "operationId": "rateSupplier",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "The enterprise rates a supplier on a signed contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RatingResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 already rated or contract not signed; 422 wrong dimensions",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RatingCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "getSupplierRatingsStaff",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Ratings of a supplier; what suppliers said is shown only if the organisation allows it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierRatings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/duplicates": {
+   "get": {
+    "operationId": "listDuplicateSuppliers",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Pairs of suppliers that look like the same business (same ABN or bank account, similar name)",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DuplicateList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/duplicates/dismiss": {
+   "post": {
+    "operationId": "dismissDuplicate",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Say two suppliers are not the same business",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DuplicateDismiss"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/risk": {
+   "get": {
+    "operationId": "getSupplierRisk",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Risk, resilience and ESG score with its factors, recommendations and alternative suppliers (rules-simulated)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierRisk"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/modern-slavery-check": {
+   "post": {
+    "operationId": "checkModernSlavery",
+    "tags": [
+     "Suppliers"
+    ],
+    "summary": "Run the modern slavery screen for a supplier and record the result",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ModernSlaveryResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/reports/supplier-scores": {
+   "get": {
+    "operationId": "getSupplierScores",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Every supplier's score, lowest first",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierScores"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/diversity": {
+   "get": {
+    "operationId": "getDiversityReport",
+    "tags": [
+     "Reporting"
+    ],
+    "summary": "Committed spend by diversity ownership, and carbon data reported",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DiversityReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/lessons": {
+   "get": {
+    "operationId": "listLessons",
+    "tags": [
+     "Lessons"
+    ],
+    "summary": "Lessons learned on a procurement",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Lesson"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "addLesson",
+    "tags": [
+     "Lessons"
+    ],
+    "summary": "Capture a lesson learned",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Lesson"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LessonCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/lessons/recall": {
+   "get": {
+    "operationId": "recallLessons",
+    "tags": [
+     "Lessons"
+    ],
+    "summary": "Lessons from comparable procurements, by category, size and wording, with why each was chosen (rules-simulated)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LessonRecall"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/close": {
+   "post": {
+    "operationId": "closeRequest",
+    "tags": [
+     "Lessons"
+    ],
+    "summary": "Close or cancel a procurement; a lesson learned (or a reason for none) is needed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestClosed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 LESSONS_REQUIRED; 409 if not yet in contract management (cancel instead)",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RequestClose"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/legal-edit": {
+   "post": {
+    "operationId": "legalEdit",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Redact a clause, propose a redline or insert a clause at a nominated place, in plain language",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalEditResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "apply=false previews; 409 once released for signature",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalEdit"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/redlines": {
+   "get": {
+    "operationId": "listRedlines",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Proposed changes to clauses, from Legal, the legal platform, outside counsel or the supplier",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RedlineList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/redlines/{redlineId}/decision": {
+   "post": {
+    "operationId": "decideRedline",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Accept (applies the wording) or reject a proposed change",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "redlineId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RedlineDecided"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 already decided or the wording is final",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RedlineDecision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/counsel-links": {
+   "post": {
+    "operationId": "createCounselLink",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Issue a one-time link for an outside law firm or the supplier's legal team to mark up this contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CounselLink"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CounselLinkCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listCounselLinks",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Links issued for this contract (never the link itself)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/CounselLink"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/counsel-links/{linkId}": {
+   "delete": {
+    "operationId": "revokeCounselLink",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Withdraw a counsel link",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "linkId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/counsel/{token}": {
+   "get": {
+    "operationId": "getCounselPage",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "The clauses an outside party may mark up, with their own redlines; read-only once the version is final",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CounselPage"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/counsel/{token}/redlines": {
+   "post": {
+    "operationId": "proposeCounselRedline",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "An outside party proposes new wording for a clause",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RedlineDecided"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "423 once the version is final",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CounselRedline"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/deleted": {
+   "get": {
+    "operationId": "listDeletedContracts",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Contracts that were logically deleted, with the reason",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "EXEC",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeletedContracts"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/restore": {
+   "post": {
+    "operationId": "restoreContract",
+    "tags": [
+     "Contracts"
+    ],
+    "summary": "Bring a logically deleted contract back, with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContractRestored"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContractRestore"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/integration-events": {
+   "get": {
+    "operationId": "listIntegrationEvents",
+    "tags": [
+     "Integrations"
+    ],
+    "summary": "Events sent to other systems and whether they were delivered",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationEvents"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/integration-events/retry": {
+   "post": {
+    "operationId": "retryIntegrationEvents",
+    "tags": [
+     "Integrations"
+    ],
+    "summary": "Try again every event that has not been delivered",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationRetry"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/integrations/legal/webhook": {
+   "post": {
+    "operationId": "legalPlatformWebhook",
+    "tags": [
+     "Integrations"
+    ],
+    "summary": "The customer's legal platform reports a matter stage and redlines; signed with the shared secret, safe to send twice",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalWebhookResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "401 for a bad signature or unknown matter; duplicate=true when seen before",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalWebhook"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/approval-links/{token}": {
+   "get": {
+    "operationId": "getApprovalLink",
+    "tags": [
+     "ApprovalLinks"
+    ],
+    "summary": "The summary checklist behind a one-time approval link (commercial information withheld by default)",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ApprovalLinkView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/approval-links/{token}/decision": {
+   "post": {
+    "operationId": "decideViaApprovalLink",
+    "tags": [
+     "ApprovalLinks"
+    ],
+    "summary": "Approve or reject from the link without a full sign-in; the same limits and checks apply",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ApprovalLinkDecided"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 above the approver's authority; step-up code required if the organisation asks for one",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovalLinkDecision"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -26303,6 +28416,512 @@
     ]
    },
    "AssistantReply": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ResponseScheduleSave": {
+    "type": "object",
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        },
+        "section": {
+         "type": "string",
+         "enum": [
+          "TECHNICAL",
+          "COMMERCIAL"
+         ]
+        },
+        "kind": {
+         "type": "string",
+         "enum": [
+          "TEXT",
+          "NUMBER",
+          "CHOICE",
+          "YESNO",
+          "DATE"
+         ]
+        },
+        "required": {
+         "type": "boolean"
+        },
+        "options": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        },
+        "unit": {
+         "type": "string"
+        },
+        "maxLength": {
+         "type": "integer"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "key",
+        "label",
+        "section",
+        "kind"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "items"
+    ]
+   },
+   "ResponseSchedule": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "TenderRequirements": {
+    "type": "object",
+    "properties": {
+     "requiredCover": {
+      "type": "number"
+     },
+     "dualWitness": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "TenderRequirementsResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ResponseAnswersView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OpeningState": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "WitnessRequest": {
+    "type": "object",
+    "properties": {
+     "password": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "password"
+    ]
+   },
+   "WitnessResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierResponseView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierResponseSave": {
+    "type": "object",
+    "properties": {
+     "answers": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "string"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "answers"
+    ]
+   },
+   "SupplierResponseSaved": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "InsuranceCertificate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "dataBase64": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "dataBase64"
+    ]
+   },
+   "InsuranceCertificateResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RatingCreate": {
+    "type": "object",
+    "properties": {
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "scores": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "integer"
+      }
+     },
+     "comment": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "contractId",
+     "scores"
+    ]
+   },
+   "RatingResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierRatings": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierRatingsOwn": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DuplicateList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DuplicateDismiss": {
+    "type": "object",
+    "properties": {
+     "supplierA": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "supplierB": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "supplierA",
+     "supplierB",
+     "reason"
+    ]
+   },
+   "SupplierRisk": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierScores": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DiversityReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsgUpdate": {
+    "type": "object",
+    "properties": {
+     "carbonTonnesCo2e": {
+      "type": "number"
+     },
+     "renewablePct": {
+      "type": "number"
+     },
+     "diversityOwned": {
+      "type": "string",
+      "enum": [
+       "NONE",
+       "INDIGENOUS",
+       "WOMEN",
+       "DISABILITY",
+       "SOCIAL_ENTERPRISE"
+      ]
+     },
+     "modernSlaveryStatement": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "EsgView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ModernSlaveryResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LessonCreate": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "WENT_WELL",
+       "TO_IMPROVE",
+       "RISK",
+       "TIP"
+      ]
+     },
+     "text": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "kind",
+     "text"
+    ]
+   },
+   "Lesson": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LessonRecall": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RequestClose": {
+    "type": "object",
+    "properties": {
+     "outcome": {
+      "type": "string",
+      "enum": [
+       "COMPLETED",
+       "CANCELLED"
+      ]
+     },
+     "reason": {
+      "type": "string"
+     },
+     "skipLessonsReason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "outcome"
+    ]
+   },
+   "RequestClosed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalEdit": {
+    "type": "object",
+    "properties": {
+     "instruction": {
+      "type": "string"
+     },
+     "apply": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "instruction"
+    ]
+   },
+   "LegalEditResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RedlineList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RedlineDecision": {
+    "type": "object",
+    "properties": {
+     "decision": {
+      "type": "string",
+      "enum": [
+       "ACCEPT",
+       "REJECT"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "decision"
+    ]
+   },
+   "RedlineDecided": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CounselLinkCreate": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     },
+     "party": {
+      "type": "string",
+      "enum": [
+       "EXTERNAL_COUNSEL",
+       "SUPPLIER"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "email",
+     "party"
+    ]
+   },
+   "CounselLink": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CounselPage": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CounselRedline": {
+    "type": "object",
+    "properties": {
+     "clauseId": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "clauseId",
+     "text"
+    ]
+   },
+   "IntegrationEvents": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IntegrationRetry": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalWebhook": {
+    "type": "object",
+    "properties": {
+     "eventId": {
+      "type": "string"
+     },
+     "matterRef": {
+      "type": "string"
+     },
+     "stage": {
+      "type": "string"
+     },
+     "redlines": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "clauseId": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        },
+        "author": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "clauseId",
+        "text"
+       ]
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "eventId",
+     "matterRef",
+     "stage"
+    ]
+   },
+   "LegalWebhookResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DeletedContracts": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractRestore": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "ContractRestored": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ApprovalLinkView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ApprovalLinkDecision": {
+    "type": "object",
+    "properties": {
+     "decision": {
+      "type": "string",
+      "enum": [
+       "APPROVE",
+       "REJECT"
+      ]
+     },
+     "comment": {
+      "type": "string"
+     },
+     "code": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "decision"
+    ]
+   },
+   "ApprovalLinkDecided": {
     "type": "object",
     "additionalProperties": true
    }

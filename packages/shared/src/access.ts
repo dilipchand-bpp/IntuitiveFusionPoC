@@ -78,6 +78,7 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
     prefix: '/app/dashboards',
     roles: ['PROCUREMENT', 'LEGAL', 'DELEGATE', 'EXEC', 'FINANCE', 'PROBITY', 'CONTRACT_MGR', 'ADMIN'],
   },
+  { prefix: '/app/contracts/deleted', roles: ['LEGAL', 'EXEC', 'PROBITY'] },
   { prefix: '/app/contracts/expiring', roles: ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'] },
   { prefix: '/app/contracts/alerts', roles: ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'] },
   { prefix: '/app/contracts/invoices', roles: ['FINANCE', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC'] },

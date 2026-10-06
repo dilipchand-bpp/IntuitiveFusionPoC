@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Badge, Button, Card, Field, Input } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
+import { CertificateUploader, EsgCard, RateEnterpriseCard } from './b8-cards';
 
 export interface SupplierSelfProfile {
   id: string;
@@ -182,9 +183,14 @@ export function SupplierProfile({
             Record the certificate
           </Button>
         </div>
+        <div className="mt-4 border-t border-border pt-4">
+          <CertificateUploader csrf={csrf} onDone={() => router.refresh()} />
+        </div>
       </Card>
 
       <BankCard csrf={csrf} />
+      <EsgCard csrf={csrf} />
+      <RateEnterpriseCard csrf={csrf} />
 
       <Card role="region" aria-labelledby="priv-h" data-testid="privacy-card">
         <h2 id="priv-h" className="font-heading text-xl font-bold">

@@ -50,6 +50,10 @@ export interface TenderView {
   }>;
   questions: QuestionView[];
   addenda: AddendumView[];
+  /** High value: the bids stay shut after close until two independent witnesses open them (FR-0175). */
+  dualWitness?: boolean;
+  bidsOpenedAt?: string | null;
+  requiredCover?: number | null;
   submissions: {
     count: number;
     sealed: boolean;
