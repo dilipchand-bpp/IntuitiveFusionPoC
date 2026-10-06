@@ -2,6 +2,7 @@ import { ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Logo, ThemeToggle } from '@if/ui';
+import { BrowserNotice } from '@/components/b10/browser-notice';
 import { PreviewLink } from '@/components/preview/preview-link';
 import { getBranding } from '@/lib/branding';
 import { LoginForm } from './login-form';
@@ -65,6 +66,7 @@ export default async function LoginPage() {
           </span>
         </div>
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 pb-16">
+          <BrowserNotice />
           <div className="flex flex-col gap-6 rounded-lg border border-border bg-surface p-8 shadow-lg">
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight">Sign in</h1>
@@ -76,7 +78,11 @@ export default async function LoginPage() {
           </div>
           <p className="px-2 text-center text-sm text-text-muted">
             This is a demonstration environment. Demo users and their shared password are listed in the
-            project README.
+            project README.{' '}
+            <Link href="/browser-support" className="underline">
+              Supported browsers
+            </Link>
+            .
           </p>
         </div>
       </main>
