@@ -1,0 +1,150 @@
+
+## RFx / Tender Collaboration (1)
+FR-0130 [Won't] Support structured Interactive Response Schedules — digital bid-entry forms for vendor pricing and technical submissions replacing unstructured document attachments
+
+## Tender Portal (2)
+FR-0175 [Could] For high-value or high-risk tenders, the platform shall support an optional dual-witness requirement, under which encrypted submissions cannot be opened after closing...
+FR-0185 [Could] Validate supplier-uploaded insurance certificates via OCR-based extraction of policy limits and expiry, and shall block final submission where cover falls below the...
+
+## Contract Award & Legal (1)
+FR-0390 [Could] Where a customer operates an enterprise legal platform (for example HighQ, Icertis), the system shall raise an outbound matter-initiation event through an integration...
+
+## Future Scope (19)
+FR-0790 [Won't] Supplier ratings and performance scoring, including enterprise-rates-supplier and supplier-rates-enterprise, with configurable visibility of ratings
+FR-0795 [Won't] Duplicate supplier detection across the supplier master
+FR-0800 [Won't] Supplier risk, resilience and ESG scoring — combining performance, financial health, geopolitical exposure, cyber and compliance checks and operational disruption...
+FR-0805 [Won't] Lessons-learned capture, with AI recall of relevant lessons on comparable future procurements by type, size or category
+FR-0810 [Won't] Foreign currency and FX management — handling multiple currencies, conversion between local and international currencies, annual or live forex rate feeds, and...
+FR-0815 [Won't] HR system integration for live delegate changes, position changes, resignations and new starters, with automatic addition and removal of staff by team and level
+FR-0820 [Won't] Guided buying from approved supplier lists, catalogues and contracts, and autonomous AI-initiated sourcing for commodity or low-value repetitive goods and services...
+FR-0825 [Won't] Native mobile application providing procurement request submission, supplier portal access, evaluator scoring, plain-language amendments, AI search, app-specific...
+FR-0830 [Won't] Advanced legal functions in plain language — redaction of nominated sections, redlining, clause insertion at a nominated section — plus collaboration portals for...
+FR-0835 [Won't] Gamification of the request and phase-progression experience, including themed progress characters, completion celebrations and progress-to-completion visualisations
+FR-0840 [Won't] Spend optimisation and benefits/cost analysis — contract consolidation opportunities, duplicate contract detection, rate-card optimisation, price variance analysis,...
+FR-0845 [Won't] Future commitment analysis reporting the value committed for future financial years, split by cost centre and business unit, with AI estimation and explicitly stated...
+FR-0850 [Won't] Extended dashboard personalisation — user-selected placement of charts and metrics (for example savings, spend tracker, ESG compliance) and selectable visual styles...
+FR-0855 [Won't] Expansion into adjacent domains — audit, risk and compliance management
+FR-0860 [Won't] Business continuity features — SMS and email alerting with response trackers, and phone location tracking during business continuity events
+FR-0865 [Won't] Defence-sector-grade data isolation, providing project-level encryption that is invisible outside an assigned sourcing group
+FR-0870 [Won't] Real-time, rather than periodic or batched, AI updating of evaluation report and contract management artefacts
+FR-0875 [Won't] Direct integration with third-party finance/ERP systems for payment execution
+FR-0880 [Won't] Real-time web-scale searching of external AI models against live institutional data
+
+## Performance & Response Time (4)
+NFR-P01 [Must] Early-stage artefacts, in particular the procurement plan, shall update live or near-real-time from the AI conversation, at least for the section the user is...
+NFR-P02 [Should] Later-stage artefacts such as evaluation reports and contract management records may update on a delayed or batched basis in order to manage AI processing cost
+NFR-P04 [Must] ERP budget checks and inventory look-ups shall return a clearance status to the user within the intake conversation without a perceptible workflow interruption
+NFR-P05 [Must] Reporting and analytics shall run on a data layer decoupled from the core transactional databases, so that complex analytical queries do not degrade transactional...
+
+## Scalability (4)
+NFR-SC01 [Must] Support multiple enterprise tenants, with request throttling and usage plans applied per customer tenant
+NFR-SC02 [Must] Compute shall scale elastically for document generation, evaluation scoring and dynamic clause assembly workloads without manual capacity intervention
+NFR-SC03 [Must] The analytics warehouse shall scale independently of the transactional databases
+NFR-SC04 [Must] The tender portal shall absorb peak submission load in the period immediately before tender close without rejecting or corrupting in-flight submissions
+
+## Availability & Reliability (4)
+NFR-AV01 [Must] Target 99.9% availability.
+NFR-AV02 [Must] Automated failover shall be provided for core services
+NFR-AV03 [Must] Integrations shall be resilient: webhook and event deliveries shall use idempotent retry handling, with reconciliation jobs to catch syncs missed while a target...
+NFR-AV04 [Must] Manual fallback workflows shall be available where ERP or legal-system integration is unavailable, delayed or unreliable, so that procurement can continue
+
+## Usability & Accessibility (3)
+NFR-U04 [Should] Configurable drag-and-drop layout and design shall be available across every lifecycle phase
+NFR-U05 [Should] An approver shall be able to complete an approval action from an emailed link without a full platform sign-in, presented with a summary checklist view for that...
+NFR-U08 [Should] Where the AI cannot reliably action an in-field amendment, the user shall have a usable fallback path to achieve the change (for example copying content into the AI...
+
+## Maintainability & Supportability (5)
+NFR-M01 [Must] All infrastructure shall be defined as code, enabling reproducible environments and configuration drift detection
+NFR-M03 [Must] Centralised observability shall provide metrics, logs and alarms, including dashboards for AI response latency, ERP synchronisation failures and workflow error rates
+NFR-M04 [Should] Distributed tracing shall be available end-to-end across microservices and serverless functions for latency bottleneck identification
+NFR-M05 [Must] Tenant configuration — workflows, sub-workflows, templates, field labels, thresholds, alert settings and delegation mappings — shall be changeable by an authorised...
+NFR-M06 [Should] The AI model layer shall be abstracted such that a tenant's approved model can be changed, or a new approved model added, through configuration rather than redevelopment
+
+## Compatibility & Portability (8)
+NFR-C01 [Must] Support multiple, pluggable underlying AI models (for example enterprise-approved Amazon Bedrock models) so that each customer can meet its own AI governance policy
+NFR-C02 [Must] Synchronise budget, general ledger, cost-centre and organisational-unit data with connected ERP systems — SAP S/4HANA, Oracle Cloud Financials, Microsoft Dynamics 365...
+NFR-C03 [Must] Synchronise legal matter status, redlines and stage updates with connected enterprise legal systems (for example HighQ, Icertis) via event-driven, webhook-based...
+NFR-C04 [Must] Integrate with third-party e-signature providers, including DocuSign and Adobe Sign, including pre-population of signatory names and email addresses
+NFR-C05 [Must] Integrate with third-party sanctions-screening and insurance-verification providers via a resilient API layer
+NFR-C06 [Should] Where an enterprise requires documents to be held in its own repository (for example SharePoint), the platform shall be able to read from and write to that...
+NFR-C07 [Should] Support integration with major procurement/contract management, legal and ERP platforms and with multiple middleware products, with direct integration preferred over...
+NFR-C08 [Should] A supported browser and operating-system baseline shall be defined and published for internal users and for external suppliers
+
+## Capacity & Data Volume (3)
+NFR-CA01 [Must] Support migration and ongoing storage of a customer's legacy estate, which the Detailed Design anticipates may comprise hundreds or thousands of contracts and...
+NFR-CA03 [Must] Audit event logs, AI conversation transcripts and document version history shall be retained for the full contract lifecycle plus the applicable statutory retention...
+NFR-CA04 [Must] Concurrent user volumes, tenant counts and document throughput shall be defined as sizing inputs for the platform
+
+## Disaster Recovery & Business Continuity (3)
+NFR-DR01 [Must] Regular, tested backups shall be taken of all procurement, evaluation, contract and analytics data, held in a secure store separate from the primary platform for...
+NFR-DR02 [Must] Recovery Time Objective and Recovery Point Objective shall be defined and demonstrated by test for each service tier
+NFR-DR03 [Must] Restore procedures shall be tested periodically, with the test outcome recorded, rather than relying on backup completion alone as evidence of recoverability
+
+## Legal (4)
+NFR-L01 [Must] Public-sector statutory timing rules shall be enforced, including minimum publication-to-close windows such as the 25-day window under WTO Government Procurement rules
+NFR-L02 [Must] Public-sector statutory disclosure obligations shall be enforced for contract modifications exceeding a defined value-change threshold
+NFR-L03 [Must] The native electronic/digital signature capability shall be aligned to eIDAS
+NFR-L04 [Must] Signed contract records shall be retained permanently and remain recoverable, with logical delete only, and the audit trail shall be of sufficient completeness to...
+
+## Regulatory & Environmental (6)
+NFR-R01 [Must] Institutional and customer data shall remain within the customer's own tenancy or cloud boundary
+NFR-R02 [Must] Data shall be stored in the country the enterprise nominates, with the platform supporting a customer election to host in a specific national region
+NFR-R03 [Must] AI population of fields shall combine in-house data with periodically refreshed external best-practice content, refreshed on a weekly or monthly cycle, without...
+NFR-R04 [Should] Support IRAP assessment and alignment to the Australian Government Information Security Manual for public-sector customers
+NFR-R05 [Should] ESG and socio-economic planning data captured at plan stage — carbon offset ceilings, domestic and regional labour content ratios and diversity-owned vendor...
+NFR-R06 [Must] Probity of the sourcing process shall be demonstrable to an external auditor, evidenced by segregation of duties, conflict-of-interest records, isolated evaluation,...
+
+## Authorisation & Access Control (2)
+SEC-AC09 [Must] Enterprises shall be able to define access policies that override the default hierarchy — for example restricting the procurement pack to evaluation committee...
+SEC-AC10 [Should] Supplier bank account details shall be restricted to a finance-only access segment, excluded from procurement and legal roles, with the option to pass the data...
+
+## Data Protection & Privacy (11)
+SEC-D01 [Must] All data shall be encrypted in transit and at rest using industry-standard algorithms
+SEC-D02 [Must] Customer-managed encryption keys shall be supported where required, with automatic key rotation
+SEC-D03 [Must] Supplier bid submissions shall be encrypted at the point of upload and shall remain inaccessible to any internal user — including database administrators and system...
+SEC-D04 [Must] Per-tenant envelope encryption shall be applied to the bid box, so that even privileged platform operators cannot decrypt submissions before closing time
+SEC-D05 [Must] Enterprise data shall never be exposed to public or general-availability AI endpoints
+SEC-D06 [Must] AI conversation content shall be afforded the same protection, residency and retention controls as structured platform data
+SEC-D07 [Must] Sensitive data — including banking details, personal information and defence-adjacent project data — shall be automatically discoverable and classifiable, feeding the...
+SEC-D08 [Must] Personal information shall be handled in accordance with the Australian Privacy Principles under the Privacy Act 1988, including collection notices, use and...
+SEC-D09 [Must] Cross-border disclosure controls shall prevent customer data leaving the nominated country or region, including for backup, logging and AI processing paths
+SEC-D10 [Must] Tenant and data isolation shall be such that compromise of one tenant or component does not expose other tenants' or users' data
+SEC-D11 [Should] Support the enterprise's elected storage topology — platform-hosted, hosted in the enterprise's own cloud, or hybrid — with equivalent protection applied in each
+
+## Audit Logging & Monitoring (4)
+SEC-L02 [Must] All administrative and data-plane actions on the underlying cloud platform shall be logged immutably, feeding the platform audit trail and probity reporting
+SEC-L06 [Must] Continuous threat monitoring shall detect anomalous access patterns across the platform's cloud accounts, with findings routed to the security team
+SEC-L07 [Must] A compliance-grade probity and audit-trail export shall be available to auditors, providing an unalterable history of evaluator access, conflict-of-interest...
+SEC-L08 [Must] Configuration compliance shall be continuously monitored with automated remediation, enforcing encryption, MFA and the absence of publicly accessible storage
+
+## Application Security (5)
+SEC-AP01 [Must] A web application firewall shall protect the tender portal and supplier portal from common web exploits
+SEC-AP02 [Must] Always-on denial-of-service protection shall be provided for internet-facing portals
+SEC-AP04 [Must] Every uploaded file shall be scanned for malware at the point of upload
+SEC-AP05 [Must] Penetration testing shall be conducted before go-live and periodically thereafter, with findings remediated and retested
+SEC-AP08 [Should] AI-specific application controls shall be implemented, including prompt-injection resistance for content ingested from supplier submissions and uploaded documents,...
+
+## Infrastructure & Network Security (5)
+SEC-N01 [Must] Implement government-level security protocols appropriate to public-sector customers and shall be assessed against the applicable control set
+SEC-N02 [Must] Network segmentation shall isolate internet-facing portal components from core transactional databases and document stores
+SEC-N03 [Must] Credentials for third-party ERP, legal-system, sanctions-screening and e-signature integrations shall be held in a managed secret store with automatic rotation
+SEC-N04 [Must] Document storage shall have no public read access
+SEC-N05 [Must] Backups shall be encrypted and access-controlled to the same standard as primary data, and shall be held within the nominated data-residency boundary
+
+## Incident Response & Vulnerability Management (5)
+SEC-IR01 [Must] A documented incident response playbook shall be maintained, covering supplier data breach scenarios including exposure of bank details and bid submissions
+SEC-IR02 [Must] Technical vulnerabilities shall be monitored, triaged and remediated against defined severity-based service levels, with critical findings blocking pipeline deployment
+SEC-IR03 [Must] Threat detection and security findings shall be routed to a named security owner with defined acknowledgement and response times
+SEC-IR04 [Must] A business continuity and ICT readiness plan shall be maintained and tested periodically, covering loss of the platform, loss of an integrated ERP or legal system,...
+SEC-IR05 [Must] Eligible data breach assessment and notification obligations shall be met, with a defined process for assessing and notifying affected individuals and the regulator
+
+## Third-Party & Vendor Security (8)
+SEC-TP01 [Must] Automated sanctions and watchlist screening (for example OFAC, EU Sanctions, INTERPOL) shall be performed on suppliers during onboarding, with document access...
+SEC-TP02 [Must] Sanctions and financial risk checks shall be re-run on the counterparty where contract negotiations extend beyond 30 days, before execution can proceed
+SEC-TP03 [Must] Vendor legal name, tax registration and banking details shall be verified against ERP or vetted records before signature options unlock
+SEC-TP04 [Must] Where middleware is used for integration, it shall not constitute a weaker security link on either the platform-to-middleware or the enterprise-to-middleware leg, and...
+SEC-TP05 [Must] Supplier insurance and compliance certificate currency shall be monitored, with a transactional hold blocking new purchase orders where mandatory cover has lapsed
+SEC-TP06 [Must] Cloud service provider security responsibilities shall be documented and reviewed under a shared responsibility model, identifying which controls are inherited and...
+SEC-TP07 [Must] Third-party AI model providers shall be assessed and approved against each tenant's AI governance policy before being enabled for that tenant
+SEC-TP08 [Should] Where legacy data migration is performed by a third party or requires extracts to leave the customer's environment, the transfer and handling shall be governed by the...
+TOTAL 107
