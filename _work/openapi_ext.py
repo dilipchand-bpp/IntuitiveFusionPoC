@@ -661,3 +661,143 @@ ep("POST", "/search", "search", SR, "Search my records, and an outside source wh
 ep("GET", "/search/external-log", "listExternalSearchLog", SR, "Every question sent to an outside source and what was withheld", ["ADMIN", "PROBITY", "EXEC"], None, "ExternalSearchLog", arrayResp=True)
 schemas["ActionItems"] = OBJ
 ep("GET", "/action-items", "listActionItems", "Dashboards", "What needs my attention now, with a link to the screen where each is dealt with", ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "ADMIN", "EXEC"], None, "ActionItems")
+
+# B10A block
+# ---------------------------------------------------------------- B10a: the connector foundation
+# NFR-C07 connector catalogue, SEC-N03 secret store, NFR-C05 resilient provider layer, NFR-AV03 delivery and reconciliation,
+# SEC-TP04 signed middleware legs, NFR-AV04 manual fallback. Appended to openapi_ext.py (runs in gen_openapi.py's namespace).
+schemas.update({n: OBJ for n in [
+    "ConnectorCatalogue", "ConnectorUpdate", "ConnectorView", "ConnectorTestResult", "ConnectorSyncRequest", "ConnectorSyncResult",
+    "SyncRun", "ManualTask", "ManualTaskComplete", "SecretList", "SecretValue", "SecretMeta", "ConnectorSecurity",
+    "InboundWebhook", "InboundWebhookResult", "SupplierVerification", "IntegrationEventView",
+]})
+CN = "Connectors"; SC = "SecretStore"; MT = "ManualFallback"
+CN_READ = ["ADMIN", "PROCUREMENT", "FINANCE", "LEGAL", "EXEC"]
+CN_OPS = ["ADMIN", "PROCUREMENT"]
+ep("GET", "/connectors", "listConnectors", CN, "The catalogue of supported providers by kind (all simulated) and this tenant's connectors with their health and circuit breaker", CN_READ, None, "ConnectorCatalogue")
+ep("PUT", "/connectors/{kind}", "updateConnector", CN, "Choose the provider, switch on or off, set the demonstration mode UP or DOWN and the non-secret configuration", ["ADMIN"], "ConnectorUpdate", "ConnectorView", note="422 for a provider not in the catalogue; 400 when the configuration holds something that looks like a secret")
+ep("POST", "/connectors/{kind}/test", "testConnector", CN, "Run a health check through the resilient layer and show the circuit breaker state (CLOSED, OPEN, HALF_OPEN)", CN_OPS, None, "ConnectorTestResult")
+ep("POST", "/connectors/{kind}/sync", "syncConnector", CN, "Send records outward through the connector, signed; safe to repeat because each record has a key. A failure is kept to retry and queues a manual task", ["ADMIN", "PROCUREMENT", "FINANCE"], "ConnectorSyncRequest", "ConnectorSyncResult", 201)
+ep("POST", "/connectors/{kind}/reconcile", "reconcileConnector", CN, "Compare what was sent with what the other side acknowledged and send what is missing again under the same key; a second run changes nothing", CN_OPS, None, "SyncRun")
+ep("GET", "/connectors/sync-runs", "listSyncRuns", CN, "Reconciliation runs: how many were expected, received, missing and repaired", CN_READ, None, "SyncRun", arrayResp=True, query=["kind"])
+ep("GET", "/connectors/{kind}/security", "getConnectorSecurity", CN, "Evidence for the middleware leg: algorithm, replay window, secret fingerprint and the count of rejected attempts", ["ADMIN", "PROCUREMENT", "PROBITY", "EXEC"], None, "ConnectorSecurity")
+ep("POST", "/integration-events/{id}/requeue", "requeueIntegrationEvent", CN, "Put a dead-lettered delivery back in the queue with fresh attempts and try it now", ["ADMIN", "PROCUREMENT", "LEGAL"], None, "IntegrationEventView", note="409 unless the event is a dead letter")
+ep("POST", "/integrations/{kind}/webhook", "inboundWebhook", CN, "Signed inbound message from the middleware (X-IF-Signature and X-IF-Timestamp, HMAC-SHA256, five-minute window); an event id is accepted once", None, "InboundWebhook", "InboundWebhookResult", note="401 for a bad signature, wrong secret, stale timestamp or unknown organisation; 409 REPLAYED for an event id already received")
+ep("POST", "/suppliers/{id}/verification", "verifySupplier", CN, "Screen a supplier against the sanctions list and verify insurance through the resilient layer; UNVERIFIED (provider unavailable) when a provider is down, never CLEAR", CN_OPS, None, "SupplierVerification")
+ep("GET", "/manual-tasks", "listManualTasks", MT, "Work to do by hand while a connected system is down, with instructions", CN_READ, None, "ManualTask", arrayResp=True, query=["status"])
+ep("POST", "/manual-tasks/{id}/complete", "completeManualTask", MT, "Mark a manual task done with the reference the person typed; the queued delivery is then closed", ["ADMIN", "PROCUREMENT", "FINANCE", "LEGAL"], "ManualTaskComplete", "ManualTask", note="409 when the task is already done or was superseded")
+ep("GET", "/secrets", "listSecrets", SC, "Names, versions, fingerprints and last rotation of stored secrets; values are never returned", ["ADMIN"], None, "SecretList")
+ep("PUT", "/secrets/{name}", "setSecret", SC, "Set or rotate a secret: a new version is written and the previous one retired; audited without the value", ["ADMIN"], "SecretValue", "SecretMeta")
+
+# B10B block
+# ---------------------------------------------------------------- B10b: ERP sync, legal status sync, HR feed, payment execution
+# NFR-C02 ERP sync (simulated SAP, Oracle, Dynamics), NFR-C03 legal system sync by webhook, FR-0815 HR feed, FR-0875 payments.
+# Appended to openapi_ext.py (runs in gen_openapi.py's namespace). The roles listed here MUST equal the route guards (authz matrix test).
+schemas.update({n: OBJ for n in [
+    "ErpOverview", "ErpSyncRequest", "ErpSyncResult", "ErpLedgerEntry", "ErpHistoryEntry", "ErpCostCentre", "ErpBudgetCheckRequest",
+    "ErpBudgetCheck", "LegalSimulateRequest", "LegalSimulateResult", "LegalSyncView", "LegalStatusSent", "LegalEventReprocessed",
+    "LegalInboundEvent", "LegalInboundResult", "HrFeedOverview", "HrFeedRunRequest", "HrFeedRunResult", "HrDelegationSync",
+    "HrReassignmentDone", "PaymentCreate", "Payment", "PaymentList", "PaymentSettled", "PaymentConfirmation", "PaymentConfirmationResult",
+]})
+ER = "ErpSync"; LG = "LegalSync"; HR = "HrFeed"; PY = "Payments"
+ER_READ = ["ADMIN", "FINANCE", "PROCUREMENT", "EXEC"]
+ER_RUN = ["ADMIN", "FINANCE"]
+ER_PICK = ["ADMIN", "REQUESTER", "PROCUREMENT", "FINANCE", "EXEC", "DELEGATE", "CONTRACT_MGR"]
+ER_CHECK = ["REQUESTER", "PROCUREMENT", "FINANCE", "EXEC"]
+ep("GET", "/erp/overview", "getErpOverview", ER, "Imported cost centres with budget, actuals and what is available, organisation units, budget lines, the last run and the ERP connector's provider and health (SIMULATED)", ER_READ, None, "ErpOverview")
+ep("POST", "/erp/sync", "runErpSync", ER, "Pull cost centres, organisation units, budgets and the ledger from the ERP connector's provider (SAP, Oracle or Dynamics), map them and upsert by external id. A second run changes nothing; changes at the source are reported as added, changed and removed. dryRun shows the counts without writing", ER_RUN, "ErpSyncRequest", "ErpSyncResult", note="200 with status FAILED and a manual task when the ERP connector is DOWN; 422 for a provider that is not an ERP feed")
+ep("GET", "/erp/ledger", "listErpLedger", ER, "Imported ledger postings, newest first", ER_READ, None, "ErpLedgerEntry", arrayResp=True, query=["costCentre", "limit"])
+ep("GET", "/erp/history", "listErpSyncs", ER, "Recent ERP imports with the counts of what was added, changed, removed and left alone", ER_READ, None, "ErpHistoryEntry", arrayResp=True)
+ep("GET", "/erp/cost-centres", "listErpCostCentres", ER, "Active imported cost centres, for choosing a cost centre", ER_PICK, None, "ErpCostCentre", arrayResp=True)
+ep("POST", "/erp/budget-check", "checkErpBudget", ER, "The budget check for a business unit or cost centre. An imported ERP budget line is used when there is one, otherwise the tenant settings; the answer names its source", ER_CHECK, "ErpBudgetCheckRequest", "ErpBudgetCheck", note="422 without a business unit or cost centre")
+LEG_READ = ["ADMIN", "LEGAL", "PROCUREMENT", "DELEGATE", "EXEC", "CONTRACT_MGR"]
+LEG_WORK = ["ADMIN", "LEGAL"]
+ep("POST", "/integrations/legal/events", "legalInboundEvent", LG, "Signed inbound event from the legal system: MATTER_STAGE_CHANGED, DOCUMENT_ATTACHED or MATTER_CLOSED (X-IF-Signature and X-IF-Timestamp, HMAC-SHA256, five-minute window). Applied to the matter and the contract page; an event id is applied once; a failure is kept and retried, then dead-lettered", None, "LegalInboundEvent", "LegalInboundResult", note="401 for a bad or stale signature or an unknown organisation; 202 when the event could not be applied yet (kept as FAILED or DEAD_LETTER)")
+ep("POST", "/integrations/legal/simulate", "simulateLegalEvent", LG, "Build a correctly signed inbound legal event for a matter and run it through the same receiver an outside caller uses (SIMULATED); options show a repeat, a bad signature and an unknown matter", LEG_WORK, "LegalSimulateRequest", "LegalSimulateResult", note="409 when the matter has no reference in the legal system or the legal connector is off")
+ep("POST", "/integrations/legal/events/{id}/reprocess", "reprocessLegalEvent", LG, "Apply an inbound legal event that failed or was dead-lettered, now", LEG_WORK, None, "LegalEventReprocessed", note="409 when the event was already applied")
+ep("POST", "/legal-matters/{id}/sync-status", "sendLegalMatterStatus", LG, "Send this matter's status to the legal system as a signed outbound event through the connector; safe to repeat, a failure is kept and a manual task is queued", ["ADMIN", "LEGAL", "PROCUREMENT"], None, "LegalStatusSent")
+ep("GET", "/contracts/{id}/legal-sync", "getContractLegalSync", LG, "The contract's legal matters as the legal system reports them: stage, documents attached, closed, and the event history with retries and dead letters", LEG_READ, None, "LegalSyncView")
+ep("GET", "/hr-feed/overview", "getHrFeedOverview", HR, "HR feed batches, every event with its outcome, exceptions that need a person, time-bound delegations and the work listed for reassignment", ["ADMIN"], None, "HrFeedOverview")
+ep("POST", "/hr-feed/run", "runHrFeed", HR, "Preview (dryRun) or apply the next batch of the simulated HR feed: starters, leavers, role changes and delegate changes. Each event id is applied once; ADMIN is never granted by the feed; a delegation is capped at the delegator's own limit", ["ADMIN"], "HrFeedRunRequest", "HrFeedRunResult", note="200 with ok false and a manual task when the HR connector is off or DOWN; 409 when there is no later batch")
+ep("POST", "/hr-feed/sync-delegations", "syncHrDelegations", HR, "Start delegations whose start date has come and end those whose end date has passed", ["ADMIN"], None, "HrDelegationSync")
+ep("POST", "/hr-feed/reassignments/{id}/done", "completeHrReassignment", HR, "Record that a leaver's open item was given to a new owner", ["ADMIN"], None, "HrReassignmentDone", note="409 when already done")
+PY_READ = ["FINANCE", "EXEC", "PROCUREMENT", "CONTRACT_MGR"]
+PY_ACT = ["FINANCE", "EXEC"]
+ep("POST", "/invoices/{id}/payments", "proposePayment", PY, "Propose a payment for a matched invoice (full or part). Repeating the same idempotency key returns the same payment and creates nothing", ["FINANCE"], "PaymentCreate", "Payment", 201, note="409 INVOICE_NOT_PAYABLE for an invoice that is not matched (blocked, exception, paid); 409 PAYMENT_EXCEEDS_INVOICE above what is still unpaid")
+ep("POST", "/payments/{id}/approve", "approvePayment", PY, "A different person approves the payment and the order is sent to the finance system through the PAYMENTS connector; if the system is down it waits with a manual task", PY_ACT, None, "Payment", note="403 ROLE_SOD_VIOLATION for the person who proposed it; 409 unless the payment is proposed")
+ep("POST", "/payments/{id}/retry", "retryPayment", PY, "Send a failed payment again, or try a waiting payment now", PY_ACT, None, "Payment", note="409 for a payment that is neither failed nor waiting")
+ep("POST", "/payments/{id}/cancel", "cancelPayment", PY, "Cancel a proposed or failed payment", PY_ACT, None, "Payment", note="409 once the order has been sent")
+ep("POST", "/payments/settle", "settlePayments", PY, "Bring up to date the payments whose order was delivered after a wait or paid by hand", PY_ACT, None, "PaymentSettled")
+ep("GET", "/payments", "listPayments", PY, "Payments with their status trail, and the PAYMENTS connector's state", PY_READ, None, "PaymentList", query=["invoiceId"])
+ep("GET", "/payments/{id}", "getPayment", PY, "One payment with its status trail", PY_READ, None, "Payment")
+ep("POST", "/integrations/payments/confirmation", "paymentConfirmation", PY, "The finance system's signed confirmation or failure callback; applied once per event id", None, "PaymentConfirmation", "PaymentConfirmationResult", note="401 for a bad or stale signature; 409 unless the payment was sent")
+
+# B10C block
+# ---------------------------------------------------------------- B10c: e-signature envelopes, document repository, continuity alerts
+# NFR-C04 e-signature providers with signatories pre-filled (simulated DocuSign and Adobe), NFR-C06 enterprise document repository
+# (simulated SharePoint), FR-0860 business-continuity alerts by SMS and email with response trackers (simulated gateways).
+# Appended to openapi_ext.py (runs in gen_openapi.py's namespace). Roles match the guards in apps/api/src/modules/b10x/*-routes.ts.
+schemas.update({n: OBJ for n in [
+    "EsignEnvelopeCard", "EsignEnvelopeCreate", "EsignSigningLink", "EsignSimulateEvent", "EsignSimulateResult", "EsignCeremony",
+    "EsignConfirm", "EsignConfirmResult",
+    "RepoProjects", "RepoFileList", "RepoFile", "RepoVersions", "RepoWrite", "RepoWriteResult", "RepoSources", "RepoPublish",
+    "RepoPublishResult", "RepoImport", "RepoImportResult",
+    "ContinuityOptions", "ContinuityRaise", "ContinuityTracker", "ContinuityEventList", "ContinuityAnswer", "ContinuityClose",
+    "ContinuityResend", "RespondLink", "RespondAnswer",
+]})
+ES = "ESignature"; RP = "DocumentRepository"; CB = "ContinuityAlerts"
+ES_READ = ["ADMIN", "PROCUREMENT", "LEGAL", "CONTRACT_MGR", "DELEGATE", "EXEC", "FINANCE", "PROBITY"]
+ES_MANAGE = ["ADMIN", "LEGAL", "PROCUREMENT"]
+ES_SIGN = ["DELEGATE", "EXEC"]
+ep("GET", "/contracts/{id}/envelope", "getContractEnvelope", ES, "The e-signature envelope for a contract: provider, status for each signatory and the event history (a signatory in blind signing sees only their own line)", ES_READ, None, "EsignEnvelopeCard")
+ep("POST", "/contracts/{id}/envelope", "createContractEnvelope", ES, "Create (or try again to create) the envelope for a contract that is out for signature, with the signatories pre-filled from the signature chain; closes the manual task if one was raised", ES_MANAGE, None, "EsignEnvelopeCard", 201, note="409 NO_ENVELOPE when the e-signature connector is not DocuSign or Adobe or the contract is not out for signature; 200 with result MANUAL_TASK when the provider is down")
+ep("POST", "/contracts/{id}/envelope/signing-link", "issueEnvelopeSigningLink", ES, "A fresh signing link for the signed-in signatory (the earlier link stops working)", ES_SIGN, None, "EsignSigningLink", note="403 NOT_A_SIGNATORY")
+ep("POST", "/contracts/{id}/envelope/simulate-event", "simulateEnvelopeEvent", ES, "Demonstration: make the simulated provider call back (sent, delivered, viewed, signed, declined, voided, expired) with a correctly signed message through the inbound webhook", ES_MANAGE, "EsignSimulateEvent", "EsignSimulateResult", note="a repeated eventId is refused as a replay; a signed callback reaches the chain only through the normal sign decision and may be REFUSED by signing authority or order")
+ep("GET", "/esign/{token}", "getEsignCeremony", ES, "The simulated signing ceremony: a summary of the document for the signatory the link was issued to; opening it is reported to the provider as delivered and viewed", ES_SIGN, None, "EsignCeremony", note="404 for a link that is not yours, expired or replaced")
+ep("POST", "/esign/{token}/confirm", "confirmEsign", ES, "The signatory's own confirmation: signs or declines through the contract's normal sign decision, so signing authority, order and checks still apply", ES_SIGN, "EsignConfirm", "EsignConfirmResult", note="403 SIGNING_AUTHORITY_INSUFFICIENT; 409 SIGNING_ORDER, ENVELOPE_CLOSED or ALREADY_DONE; 400 a decline needs a reason")
+REPO_READ = ["REQUESTER", "PROCUREMENT", "DELEGATE", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "EXEC"]
+REPO_WRITE = ["REQUESTER", "PROCUREMENT", "LEGAL", "CONTRACT_MGR"]
+REPO_PUBLISH = ["PROCUREMENT", "LEGAL", "CONTRACT_MGR"]
+ep("GET", "/repository/projects", "listRepositoryProjects", RP, "The project sites in the simulated repository that the caller may open (the same procurements the caller can see in reports)", REPO_READ, None, "RepoProjects", note="409 REPOSITORY_OFF when the connector is off; 503 REPOSITORY_UNAVAILABLE when it is down")
+ep("GET", "/repository/projects/{requestId}/files", "listRepositoryFiles", RP, "Folders and the newest version of each file in a project site", REPO_READ, None, "RepoFileList", query=["folder"], note="404 for a project the caller cannot see")
+ep("GET", "/repository/projects/{requestId}/files/{folder}/{name}", "readRepositoryFile", RP, "Read a file (newest version, or ?version=); the ETag is the version to send back in If-Match", REPO_READ, None, "RepoFile", query=["version"])
+ep("GET", "/repository/projects/{requestId}/files/{folder}/{name}/download", "downloadRepositoryFile", RP, "Download a file as it was stored", REPO_READ, None, None, query=["version"], note="the file's own content type")
+ep("GET", "/repository/projects/{requestId}/files/{folder}/{name}/versions", "listRepositoryVersions", RP, "Every version of a file, newest first", REPO_READ, None, "RepoVersions")
+ep("PUT", "/repository/projects/{requestId}/files/{folder}/{name}", "writeRepositoryFile", RP, "Write the next version of a file (never an overwrite): If-Match must carry the version last read; omit it only for a new file", REPO_WRITE, "RepoWrite", "RepoWriteResult", 201, note="428 PRECONDITION_REQUIRED without If-Match for an existing file; 412 PRECONDITION_FAILED for a stale version; 400 unsafe file; 413 over 2 MB; 422 FILE_INFECTED; 202 MANUAL_TASK when the repository is down")
+ep("GET", "/repository/projects/{requestId}/sources", "listRepositorySources", RP, "Platform documents of this project that can be filed: the tender pack, the evaluation report and contracts", REPO_READ, None, "RepoSources")
+ep("POST", "/repository/projects/{requestId}/publish", "publishToRepository", RP, "File a platform document (contract, evaluation report, tender pack) in the project folder as the next version; an unchanged document adds no version", REPO_PUBLISH, "RepoPublish", "RepoPublishResult", 201, note="200 UNCHANGED; 202 MANUAL_TASK when the repository is down; the document is fetched with the caller's own rights")
+ep("POST", "/repository/projects/{requestId}/import", "importFromRepository", RP, "Bring a repository file into a contract's negotiation drafts", ["LEGAL"], "RepoImport", "RepoImportResult", 201, note="404 for a contract of another project; 423 for a locked contract")
+CB_RAISE = ["PROCUREMENT", "CONTRACT_MGR", "EXEC"]
+CB_VIEW = ["PROCUREMENT", "CONTRACT_MGR", "EXEC", "LEGAL"]
+ep("GET", "/continuity/options", "getContinuityOptions", CB, "What can be picked when raising an event: kinds, severities, affected suppliers and contracts, recipient groups and people to escalate to", CB_RAISE, None, "ContinuityOptions")
+ep("POST", "/continuity/events", "raiseContinuityEvent", CB, "Raise a continuity event and send an SMS and an email to each recipient through the simulated gateway; returns the tracker and, once, each recipient's one-time response link", CB_RAISE, "ContinuityRaise", "ContinuityTracker", 201, note="422 SMS_NOT_PLAIN when the text message note carries a supplier name, a number or an identifier; NO_RECIPIENTS; AFFECTED_REQUIRED")
+ep("GET", "/continuity/events", "listContinuityEvents", CB, "Continuity events, newest first, with how many have answered", CB_VIEW, None, "ContinuityEventList")
+ep("GET", "/continuity/events/{id}", "getContinuityTracker", CB, "The tracker: who has been reached, by which channel, and who has not answered; reading it also records delivery receipts and escalates when due", CB_VIEW, None, "ContinuityTracker")
+ep("POST", "/continuity/events/{id}/resend", "resendContinuityEvent", CB, "Message the people who have not answered again, each with a new one-time link", CB_RAISE, None, "ContinuityResend", note="409 EVENT_CLOSED")
+ep("POST", "/continuity/events/{id}/responses/{responseId}", "recordContinuityAnswer", CB, "Record an answer taken by phone on someone's behalf", CB_RAISE, "ContinuityAnswer", "ContinuityTracker", note="409 EVENT_CLOSED")
+ep("POST", "/continuity/events/{id}/close", "closeContinuityEvent", CB, "Close the event with a summary of who answered what and how many messages got through", CB_RAISE, "ContinuityClose", "ContinuityTracker", note="409 when already closed")
+ep("GET", "/respond-links/{token}", "getRespondLink", CB, "The one-time response page for one recipient (no sign-in)", None, None, "RespondLink", note="404 unknown link; 410 LINK_EXPIRED")
+ep("POST", "/respond-links/{token}", "answerRespondLink", CB, "Say I am safe, I am affected or I need help; one answer per person, changeable until the event is closed", None, "RespondAnswer", "RespondLink", note="410 LINK_EXPIRED; 409 EVENT_CLOSED")
+
+# B10D block
+# ---------------------------------------------------------------- B10 (AI layer, configuration, client baseline, performance)
+schemas.update({n: OBJ for n in [
+    "AiModelCatalogue", "AiApprovalRequest", "AiApprovalRequested", "AiApprovalDecision", "AiApprovalDecided", "AiRevoke", "AiRevoked",
+    "AiActiveModel", "AiActiveModelSave", "ConfigInventory", "ConfigExport", "ConfigImport", "ConfigImportResult", "ClientCheck",
+    "ClientCheckResult", "ClientBaselineSummary", "BudgetCheckPerformance",
+]})
+AI = "AiModels"; CF = "Configuration"; PF = "Performance"
+AI_VIEW = ["ADMIN", "PROCUREMENT", "PROBITY", "EXEC"]
+STAFF_B10 = ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "ADMIN", "EXEC"]
+ep("GET", "/ai/models", "listAiModels", AI, "The AI models the platform can use, each with its approval state for this tenant and its data-handling profile (SEC-TP07)", AI_VIEW, None, "AiModelCatalogue")
+ep("POST", "/ai/models/{key}/request-approval", "requestAiModelApproval", AI, "Ask for a third-party AI model to be approved for this tenant", ["ADMIN", "PROCUREMENT"], "AiApprovalRequest", "AiApprovalRequested", 201, note="409 for the built-in model, an approved model or one with a request already waiting; 404 unknown model")
+ep("POST", "/ai/approvals/{id}/decision", "decideAiApproval", AI, "Approve or reject a request; never the person who made it", ["PROBITY", "EXEC"], "AiApprovalDecision", "AiApprovalDecided", note="403 SELF_APPROVAL when the caller made the request; 409 when already decided")
+ep("POST", "/ai/models/{key}/revoke", "revokeAiModel", AI, "Withdraw an approval; the tenant falls back to rules-simulated-v1 at once and the change is audited", ["ADMIN", "PROBITY", "EXEC"], "AiRevoke", "AiRevoked", note="409 unless the model is approved")
+ep("GET", "/ai/active-model", "getActiveAiModel", AI, "The model answering for this tenant now, and any per-task choices", STAFF_B10, None, "AiActiveModel")
+ep("PUT", "/ai/active-model", "setActiveAiModel", AI, "Switch the active model (and optional per-task models) by configuration; takes effect at once and is audited with old and new value", ["ADMIN"], "AiActiveModelSave", "AiActiveModel", note="409 MODEL_NOT_APPROVED for a third-party model that is not approved; 422 unknown model")
+ep("GET", "/admin/config/inventory", "getConfigInventory", CF, "Every settings section: fields, defaults, current value, who changed it last and the screen that edits it (NFR-M05)", ["ADMIN"], None, "ConfigInventory")
+ep("GET", "/admin/config/export", "exportConfig", CF, "All tenant configuration as a JSON file; secrets are left empty and no user data is included", ["ADMIN"], None, "ConfigExport", note="application/json attachment")
+ep("POST", "/admin/config/import", "importConfig", CF, "Validate a configuration file with the same schemas and show the difference; applies only when dryRun is false", ["ADMIN"], "ConfigImport", "ConfigImportResult", note="dryRun defaults to true; 422 when applying an invalid file")
+ep("POST", "/auth/client-check", "reportClientCheck", CF, "A signed-in browser reports its user agent and feature support; the server judges it against the published baseline and counts it", "*", "ClientCheck", "ClientCheckResult", note="Stores browser family, major version and the verdict only")
+ep("GET", "/admin/client-baseline", "getClientBaseline", CF, "Counts of sign-ins by browser and whether the baseline was met, with the published baseline", ["ADMIN"], None, "ClientBaselineSummary")
+ep("GET", "/admin/performance/budget-check", "getBudgetCheckPerformance", PF, "Count, p50, p95 and max of the measured budget check against the configured target (NFR-P04)", ["ADMIN"], None, "BudgetCheckPerformance", query=["last"])

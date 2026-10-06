@@ -201,5 +201,30 @@
       "NFR-P02",
       "NFR-U04"
     ]
+  },
+  "B10": {
+    "label": "B10 Integrations and the AI layer",
+    "evidence": "docs/B10-Evidence.md",
+    "ids": [
+      "FR-0815",
+      "FR-0860",
+      "FR-0875",
+      "NFR-AV03",
+      "NFR-AV04",
+      "NFR-C01",
+      "NFR-C02",
+      "NFR-C03",
+      "NFR-C04",
+      "NFR-C05",
+      "NFR-C06",
+      "NFR-C07",
+      "NFR-C08",
+      "NFR-M05",
+      "NFR-M06",
+      "NFR-P04",
+      "SEC-N03",
+      "SEC-TP04",
+      "SEC-TP07"
+    ]
   }
 }
