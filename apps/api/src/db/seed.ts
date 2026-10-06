@@ -3,6 +3,7 @@
  * Deterministic ids (uuid derived from a name) so tests, e2e and docs can refer to fixed records.
  * Idempotent: running it twice leaves one tenant and the same counts.
  */
+import { DEFAULT_CONNECTORS } from '../modules/b10conn/catalogue.js';
 import { ANCHORS, financialYear, fyStart } from '../modules/b9/fx-rules.js';
 import {
   SUB_WORKFLOWS,
@@ -341,6 +342,22 @@ export async function seedDatabase(
         source: 'ANNUAL',
         createdAt: opts.clock.now(),
       });
+
+    // the connector catalogue for this tenant: every provider simulated, switched on where the application already simulates it (NFR-C07)
+    for (const c of DEFAULT_CONNECTORS) {
+      await tx.insert(s.connector).values({
+        tenantId: TENANT_ID,
+        kind: c.kind,
+        provider: c.provider,
+        enabled: c.enabled,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await log('connector.seed', 'connector', TENANT_ID, {
+      kinds: DEFAULT_CONNECTORS.map((c) => c.kind),
+      simulated: true,
+    });
 
     // an approved catalogue of everyday goods for guided buying (FR-0820); Summit is on hold after screening, so its items cannot be ordered
     const CATALOGUE = [

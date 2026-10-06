@@ -101,7 +101,17 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
       'CHAIR',
     ],
   },
+  { prefix: '/app/connectors', roles: ['ADMIN', 'PROCUREMENT', 'FINANCE', 'LEGAL', 'EXEC'] },
+  {
+    prefix: '/app/repository',
+    roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'PROBITY', 'FINANCE', 'EXEC'],
+  },
+  { prefix: '/app/continuity', roles: ['PROCUREMENT', 'CONTRACT_MGR', 'EXEC', 'LEGAL'] },
+  // the simulated e-signature ceremony: a signed-in signatory only (a link alone never signs anything)
+  { prefix: '/esign', roles: ['DELEGATE', 'EXEC'] },
+  { prefix: '/app/erp', roles: ['ADMIN', 'FINANCE', 'PROCUREMENT', 'EXEC'] },
   { prefix: '/app/currency', roles: ['ADMIN', 'FINANCE'] },
+  { prefix: '/app/ai-models', roles: ['PROBITY', 'EXEC', 'PROCUREMENT'] },
   { prefix: '/app/reports/schedule', roles: ['PROCUREMENT', 'EXEC', 'DELEGATE'] },
   { prefix: '/app/reports/capacity', roles: ['PROCUREMENT', 'EXEC'] },
   { prefix: '/app/reports/supplier-risk', roles: ['PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'] },
@@ -141,6 +151,9 @@ export const PUBLIC_PATHS = [
   '/supplier/activate',
   '/activate',
   '/preview',
+  '/browser-support',
+  // a one-time link in an SMS or email: no sign-in (like /approve/[token], these have no route rule)
+  '/respond',
 ];
 
 /** Returns the roles allowed for a path, or null when the path is public / not guarded. */

@@ -1381,12 +1381,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0815',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'HR system integration for live delegate changes, position changes, resignations and new starters, with automatic addition and removal of staff by team and level',
+    batch: 'B10',
   }, // DEFERRED(FR-0815)
   {
     id: 'FR-0820',
@@ -1480,12 +1481,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0860',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Business continuity features — SMS and email alerting with response trackers, and phone location tracking during business continuity events',
+    batch: 'B10',
   }, // DEFERRED(FR-0860)
   {
     id: 'FR-0865',
@@ -1511,11 +1513,12 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0875',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title: 'Direct integration with third-party finance/ERP systems for payment execution',
+    batch: 'B10',
   }, // DEFERRED(FR-0875)
   {
     id: 'FR-0880',
@@ -1552,12 +1555,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-P04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Performance & Response Time',
     area: null,
     priority: 'Must',
     title:
       'ERP budget checks and inventory look-ups shall return a clearance status to the user within the intake conversation without a perceptible workflow interruption',
+    batch: 'B10',
   }, // DEFERRED(NFR-P04)
   {
     id: 'NFR-P05',
@@ -1631,22 +1635,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-AV03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Availability & Reliability',
     area: null,
     priority: 'Must',
     title:
       'Integrations shall be resilient: webhook and event deliveries shall use idempotent retry handling, with reconciliation jobs to catch syncs missed while a target...',
+    batch: 'B10',
   }, // DEFERRED(NFR-AV03)
   {
     id: 'NFR-AV04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Availability & Reliability',
     area: null,
     priority: 'Must',
     title:
       'Manual fallback workflows shall be available where ERP or legal-system integration is unavailable, delayed or unreliable, so that procurement can continue',
+    batch: 'B10',
   }, // DEFERRED(NFR-AV04)
   {
     id: 'NFR-U04',
@@ -1713,102 +1719,112 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-M05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Maintainability & Supportability',
     area: null,
     priority: 'Must',
     title:
       'Tenant configuration — workflows, sub-workflows, templates, field labels, thresholds, alert settings and delegation mappings — shall be changeable by an authorised...',
+    batch: 'B10',
   }, // DEFERRED(NFR-M05)
   {
     id: 'NFR-M06',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Maintainability & Supportability',
     area: null,
     priority: 'Should',
     title:
       "The AI model layer shall be abstracted such that a tenant's approved model can be changed, or a new approved model added, through configuration rather than redevelopment",
+    batch: 'B10',
   }, // DEFERRED(NFR-M06)
   {
     id: 'NFR-C01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Must',
     title:
       'Support multiple, pluggable underlying AI models (for example enterprise-approved Amazon Bedrock models) so that each customer can meet its own AI governance policy',
+    batch: 'B10',
   }, // DEFERRED(NFR-C01)
   {
     id: 'NFR-C02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Must',
     title:
       'Synchronise budget, general ledger, cost-centre and organisational-unit data with connected ERP systems — SAP S/4HANA, Oracle Cloud Financials, Microsoft Dynamics 365...',
+    batch: 'B10',
   }, // DEFERRED(NFR-C02)
   {
     id: 'NFR-C03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Must',
     title:
       'Synchronise legal matter status, redlines and stage updates with connected enterprise legal systems (for example HighQ, Icertis) via event-driven, webhook-based...',
+    batch: 'B10',
   }, // DEFERRED(NFR-C03)
   {
     id: 'NFR-C04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Must',
     title:
       'Integrate with third-party e-signature providers, including DocuSign and Adobe Sign, including pre-population of signatory names and email addresses',
+    batch: 'B10',
   }, // DEFERRED(NFR-C04)
   {
     id: 'NFR-C05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Must',
     title:
       'Integrate with third-party sanctions-screening and insurance-verification providers via a resilient API layer',
+    batch: 'B10',
   }, // DEFERRED(NFR-C05)
   {
     id: 'NFR-C06',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Should',
     title:
       'Where an enterprise requires documents to be held in its own repository (for example SharePoint), the platform shall be able to read from and write to that...',
+    batch: 'B10',
   }, // DEFERRED(NFR-C06)
   {
     id: 'NFR-C07',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Should',
     title:
       'Support integration with major procurement/contract management, legal and ERP platforms and with multiple middleware products, with direct integration preferred over...',
+    batch: 'B10',
   }, // DEFERRED(NFR-C07)
   {
     id: 'NFR-C08',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Compatibility & Portability',
     area: null,
     priority: 'Should',
     title:
       'A supported browser and operating-system baseline shall be defined and published for internal users and for external suppliers',
+    batch: 'B10',
   }, // DEFERRED(NFR-C08)
   {
     id: 'NFR-CA01',
@@ -2274,12 +2290,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-N03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Infrastructure & Network Security',
     area: null,
     priority: 'Must',
     title:
       'Credentials for third-party ERP, legal-system, sanctions-screening and e-signature integrations shall be held in a managed secret store with automatic rotation',
+    batch: 'B10',
   }, // DEFERRED(SEC-N03)
   {
     id: 'SEC-N04',
@@ -2385,12 +2402,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-TP04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Third-Party & Vendor Security',
     area: null,
     priority: 'Must',
     title:
       'Where middleware is used for integration, it shall not constitute a weaker security link on either the platform-to-middleware or the enterprise-to-middleware leg, and...',
+    batch: 'B10',
   }, // DEFERRED(SEC-TP04)
   {
     id: 'SEC-TP05',
@@ -2415,12 +2433,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-TP07',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Third-Party & Vendor Security',
     area: null,
     priority: 'Must',
     title:
       "Third-party AI model providers shall be assessed and approved against each tenant's AI governance policy before being enabled for that tenant",
+    batch: 'B10',
   }, // DEFERRED(SEC-TP07)
   {
     id: 'SEC-TP08',

@@ -11,6 +11,8 @@ export const envSchema = z.object({
   /** Login/forgot-password attempts per client per 15 minutes. Raised only by the automated e2e suite. */
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100000).default(10),
   STORAGE_DIR: z.string().min(1).default('./var/storage'),
+  /** Key for the local secret store (SEC-N03). Required in production; development and test derive it from SESSION_SECRET. */
+  SECRET_STORE_KEY: z.string().min(32, 'SECRET_STORE_KEY must be at least 32 characters').optional(),
   AI_PROVIDER: z.enum(['mock']).default('mock'),
   IDENTITY_PROVIDER: z.enum(['mock']).default('mock'),
 });

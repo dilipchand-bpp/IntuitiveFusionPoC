@@ -1589,13 +1589,20 @@ export const integrationEvent = pgTable(
     target: text('target').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
     payload: jsonb('payload').notNull().default({}),
-    status: text('status', { enum: ['PENDING', 'DELIVERED', 'FAILED'] })
+    status: text('status', { enum: ['PENDING', 'DELIVERED', 'FAILED', 'DEAD_LETTER'] })
       .notNull()
       .default('PENDING'),
     attempts: integer('attempts').notNull().default(0),
     lastError: text('last_error'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
     deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    /** Which connector it belongs to, which way it travels, when to try again and when the other side acknowledged it (NFR-AV03). */
+    connectorKind: text('connector_kind'),
+    direction: text('direction', { enum: ['OUT', 'IN'] })
+      .notNull()
+      .default('OUT'),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+    remoteAckAt: timestamp('remote_ack_at', { withTimezone: true }),
   },
   (t) => [uniqueIndex('integration_event_uq').on(t.tenantId, t.idempotencyKey)],
 );
@@ -1827,3 +1834,7 @@ export const externalSearchLog = pgTable('external_search_log', {
   withheld: jsonb('withheld').notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 });
+export * from './schema-b10d.js';
+export * from './schema-b10a.js';
+export * from './schema-b10c.js';
+export * from './schema-b10b.js';
