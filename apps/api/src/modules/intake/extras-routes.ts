@@ -3,6 +3,7 @@
  * (FR-0090), the downstream artefacts one conversation fills in (FR-0010), delegates by stage (FR-0725, FR-X06) and
  * per-procurement process variations (FR-0730). Everything is audited; nothing here reaches bid content.
  */
+import { isForeign } from '../b9/fx-rules.js';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -546,6 +547,8 @@ export function registerIntakeExtras(app: FastifyInstance, p: string, d: IntakeE
         { tenantId: a.user.tenantId, userId: target.id, roles },
         STAGE_SCOPE[stage],
         value,
+        null,
+        isForeign(l.row.currency),
       );
       if (!check.allowed)
         throw new AppError(
@@ -706,6 +709,8 @@ export function registerIntakeExtras(app: FastifyInstance, p: string, d: IntakeE
           { tenantId: a.user.tenantId, userId: a.user.id, roles: a.user.roles },
           'SOURCING_APPROVAL',
           Number(l.row.estimatedValue ?? 0),
+          null,
+          isForeign(l.row.currency),
         );
         if (!check.allowed)
           throw new AppError(

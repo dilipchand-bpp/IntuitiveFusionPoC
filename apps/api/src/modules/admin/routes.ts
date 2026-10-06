@@ -38,6 +38,8 @@ const createBody = z
     role: z.enum(STAFF_ROLES as [string, ...string[]]).optional(),
     maxValue: z.number().min(0).max(1e10),
     division: z.string().trim().min(1).max(80).optional(),
+    /** A limit for spend in a foreign currency; the other limits apply to spend in the base currency only (FR-0810). */
+    international: z.boolean().default(false),
   })
   .strict()
   .refine((b) => b.userId || b.role, { message: 'Choose a person or a role', path: ['userId'] });
@@ -73,6 +75,7 @@ export function registerAdminRoutes(app: FastifyInstance, p: string, d: AdminDep
       userName: name,
       maxValue: Number(x.maxValue),
       division: x.division,
+      international: x.international,
       active: x.active,
     }));
   }
@@ -116,6 +119,7 @@ export function registerAdminRoutes(app: FastifyInstance, p: string, d: AdminDep
               eq(delegation.tenantId, a.user.tenantId),
               eq(delegation.scope, body.scope),
               eq(delegation.userId, u.id),
+              eq(delegation.international, body.international),
               eq(delegation.active, true),
             ),
           );
@@ -135,6 +139,7 @@ export function registerAdminRoutes(app: FastifyInstance, p: string, d: AdminDep
           userId: body.userId ?? null,
           maxValue: body.maxValue.toFixed(2),
           division: body.division ?? null,
+          international: body.international,
           active: true,
         })
         .returning();
@@ -142,7 +147,13 @@ export function registerAdminRoutes(app: FastifyInstance, p: string, d: AdminDep
         action: 'delegation.create',
         entityType: 'delegation',
         entityId: row!.id,
-        after: { scope: body.scope, userId: body.userId ?? null, role, maxValue: body.maxValue },
+        after: {
+          scope: body.scope,
+          userId: body.userId ?? null,
+          role,
+          maxValue: body.maxValue,
+          international: body.international,
+        },
       });
       if (body.userId)
         await tx.insert(notification).values({

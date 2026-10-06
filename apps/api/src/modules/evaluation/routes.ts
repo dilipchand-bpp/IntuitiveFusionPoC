@@ -4,6 +4,7 @@
  * consensus with variance flags -> lock -> report -> delegate approval.
  * An evaluation a person may not see is a 404, never a 403.
  */
+import { isForeign } from '../b9/fx-rules.js';
 import { createHash } from 'node:crypto';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -1381,6 +1382,8 @@ export function registerEvaluationRoutes(app: FastifyInstance, p: string, d: Eva
             { tenantId: a.user.tenantId, userId: a.user.id, roles: a.user.roles },
             'SOURCING_APPROVAL',
             value,
+            null,
+            isForeign(l.req.currency),
           );
           if (!del.allowed)
             throw new AppError(

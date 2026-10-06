@@ -202,6 +202,41 @@ const GLOSSARY: Array<{ re: RegExp; term: string; text: string }> = [
     text: 'An approver is sent a one-time link to a checklist for one procurement. They can approve or send it back without signing in, and the same authority limits and checks apply. Dollar values are withheld unless the organisation chooses to show them.',
   },
   {
+    re: /currenc|exchange rate|foreign|international delegation|\bfx\b/,
+    term: 'Currencies and international delegations',
+    text: 'A request can be in a foreign currency. It is converted to Australian dollars at the rate for the financial year (July to June), or at a live rate if the organisation chooses, and both amounts are kept. Approval limits for foreign-currency spend are a separate, international delegation.',
+  },
+  {
+    re: /guided buying|catalogue|autonomous sourcing|auto.?source/,
+    term: 'Guided buying',
+    text: 'For everyday goods you can buy from the approved catalogue, or describe what you need and see a recommendation scored on price, supplier standing and delivery. Nothing is ordered by the platform: approving only drafts a request, which goes through the usual checks. Above the limit the organisation sets, a full request is needed.',
+  },
+  {
+    re: /future commitment|committed to pay|spend optimi[sz]ation|where can we save/,
+    term: 'Future commitment and optimisation',
+    text: 'Future commitment adds up what the organisation has agreed to pay later, showing fixed amounts, ceilings, ranges and unknowns separately. Spend optimisation lists where spend could fall: contracts worth consolidating, duplicate contracts, missing rate cards and prices that drifted. Savings are estimates.',
+  },
+  {
+    re: /risk register|audit finding|obligation|heat ?map/,
+    term: 'Audit, risk and compliance register',
+    text: 'A register of risks, audit findings and obligations with a likelihood and impact rating, an owner, due dates and actions. Probity and executive staff can also pull in the risks the platform already knows about, such as a sanctions match.',
+  },
+  {
+    re: /my dashboard|personali[sz]e.*dashboard|dashboard.*(widget|3d|layout)/,
+    term: 'My dashboard',
+    text: 'You can choose, order, size and style the widgets on your own dashboard, within what your role may see. Reset returns you to the default for your role.',
+  },
+  {
+    re: /out of date|stale|batched|refresh.*(report|plan)|real.?time update/,
+    term: 'Keeping reports and plans up to date',
+    text: 'The evaluation report and contract management plans follow the records behind them. The organisation chooses whether they are rewritten at once, in a batch every few minutes, or only when someone presses refresh. An approved report is never rewritten.',
+  },
+  {
+    re: /outside (source|search)|external search|search the web/,
+    term: 'Search with an outside source',
+    text: 'Search covers your own records first. If the organisation allows it you can also ask an outside source; reference numbers, ABNs, email addresses, amounts and supplier names are taken out of the question first, and every outbound question is logged.',
+  },
+  {
     re: /envelope/,
     term: 'Funding envelope',
     text: 'A pool of money that procurements and contracts draw down, so you can see what remains.',

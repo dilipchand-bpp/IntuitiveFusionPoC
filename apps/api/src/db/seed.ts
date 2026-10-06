@@ -3,6 +3,7 @@
  * Deterministic ids (uuid derived from a name) so tests, e2e and docs can refer to fixed records.
  * Idempotent: running it twice leaves one tenant and the same counts.
  */
+import { ANCHORS, financialYear, fyStart } from '../modules/b9/fx-rules.js';
 import {
   SUB_WORKFLOWS,
   classifyCategory,
@@ -294,6 +295,132 @@ export async function seedDatabase(
       scope: 'SOURCING_APPROVAL',
       maxValue: '10000000.00',
     });
+
+    // grants for spend in a foreign currency are separate, and lower (FR-0810)
+    for (const g of [
+      {
+        key: 'delegate-sourcing',
+        user: 'delegate',
+        role: 'DELEGATE',
+        scope: 'SOURCING_APPROVAL',
+        max: '100000.00',
+      },
+      {
+        key: 'delegate-publish',
+        user: 'delegate',
+        role: 'DELEGATE',
+        scope: 'PUBLISH_PERMISSION',
+        max: '1000000.00',
+      },
+      { key: 'exec-sourcing', user: 'exec', role: 'EXEC', scope: 'SOURCING_APPROVAL', max: '5000000.00' },
+    ] as const) {
+      const id = uid(`delegation:intl:${g.key}`);
+      await tx.insert(s.delegation).values({
+        id,
+        tenantId: TENANT_ID,
+        scope: g.scope,
+        role: g.role,
+        userId: userId(g.user),
+        maxValue: g.max,
+        international: true,
+      });
+      await log('delegation.create', 'delegation', id, {
+        scope: g.scope,
+        maxValue: g.max,
+        international: true,
+      });
+    }
+    // annual exchange rates for the financial year the seed is made in (FR-0810)
+    const seedDay = opts.clock.now().toISOString().slice(0, 10);
+    for (const [currency, rate] of Object.entries(ANCHORS))
+      await tx.insert(s.fxRate).values({
+        tenantId: TENANT_ID,
+        currency,
+        rate: String(rate),
+        asOf: fyStart(financialYear(seedDay)),
+        source: 'ANNUAL',
+        createdAt: opts.clock.now(),
+      });
+
+    // an approved catalogue of everyday goods for guided buying (FR-0820); Summit is on hold after screening, so its items cannot be ordered
+    const CATALOGUE = [
+      {
+        sup: 'northstar',
+        sku: 'PAP-A4-500',
+        name: 'Recycled A4 copy paper, 500 sheets',
+        cat: 'Office supplies',
+        unit: 'ream',
+        price: 4.5,
+        lead: 3,
+      },
+      {
+        sup: 'brightwave',
+        sku: 'PAP-A4-500',
+        name: 'Recycled A4 copy paper, 500 sheets',
+        cat: 'Office supplies',
+        unit: 'ream',
+        price: 5.2,
+        lead: 1,
+      },
+      {
+        sup: 'evergreen',
+        sku: 'PAP-A4-500',
+        name: 'Recycled A4 copy paper, 500 sheets',
+        cat: 'Office supplies',
+        unit: 'ream',
+        price: 4.9,
+        lead: 7,
+      },
+      {
+        sup: 'summit',
+        sku: 'PAP-A4-500',
+        name: 'Recycled A4 copy paper, 500 sheets',
+        cat: 'Office supplies',
+        unit: 'ream',
+        price: 3.8,
+        lead: 2,
+      },
+      {
+        sup: 'brightwave',
+        sku: 'CLN-MOP-12',
+        name: 'Microfibre mop heads, pack of 12',
+        cat: 'Cleaning consumables',
+        unit: 'pack',
+        price: 38,
+        lead: 2,
+      },
+      {
+        sup: 'evergreen',
+        sku: 'CLN-BAG-100',
+        name: 'Heavy duty bin liners, 100 bags',
+        cat: 'Cleaning consumables',
+        unit: 'box',
+        price: 21.5,
+        lead: 4,
+      },
+      {
+        sup: 'northstar',
+        sku: 'GRD-GLV-L',
+        name: 'Work gloves, large',
+        cat: 'Safety equipment',
+        unit: 'pair',
+        price: 9.75,
+        lead: 5,
+      },
+    ];
+    for (const c of CATALOGUE)
+      await tx.insert(s.catalogueItem).values({
+        id: uid(`catalogue:${c.sup}:${c.sku}`),
+        tenantId: TENANT_ID,
+        supplierId: uid(`supplier:${c.sup}`),
+        sku: c.sku,
+        name: c.name,
+        category: c.cat,
+        unit: c.unit,
+        unitPrice: String(c.price),
+        leadDays: c.lead,
+        createdAt: opts.clock.now(),
+      });
 
     // ---- requests
     type Req = {

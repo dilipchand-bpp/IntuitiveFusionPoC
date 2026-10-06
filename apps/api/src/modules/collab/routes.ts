@@ -60,7 +60,7 @@ export interface CollabDeps extends GuardDeps {
 }
 
 const uuid = z.string().uuid();
-const KINDS = ['PLAN', 'RFX', 'REPORT'] as const;
+const KINDS = ['PLAN', 'RFX', 'REPORT', 'INTAKE', 'CONTRACT'] as const;
 const DOC_TYPES = {
   request: 'REQUEST',
   plan: 'PLAN',
@@ -170,6 +170,35 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
         const out = [];
         for (const k of KINDS) out.push(await layoutView(tx, a.user.tenantId, k));
         return out;
+      });
+    },
+  );
+
+  /** What a page shows and in what order, for anyone who can open the page (NFR-U04). */
+  reg('GET', '/layouts/{kind}/applied');
+  app.get(
+    `${p}/layouts/:kind/applied`,
+    {
+      preHandler: guard(d, [
+        'REQUESTER',
+        'PROCUREMENT',
+        'DELEGATE',
+        'EVALUATOR',
+        'CHAIR',
+        'LEGAL',
+        'CONTRACT_MGR',
+        'PROBITY',
+        'FINANCE',
+        'ADMIN',
+        'EXEC',
+      ]),
+    },
+    async (req) => {
+      const a = req.auth!;
+      const { kind } = parse(z.object({ kind: z.enum(KINDS) }), req.params);
+      return withContext(d.database, a.ctx, async (tx) => {
+        const v = await layoutView(tx, a.user.tenantId, kind);
+        return { kind, custom: !v.isDefault, keys: v.sections.filter((s) => s.enabled).map((s) => s.key) };
       });
     },
   );

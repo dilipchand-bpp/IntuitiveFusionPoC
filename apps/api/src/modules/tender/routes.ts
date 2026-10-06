@@ -3,6 +3,7 @@
  * State machine: STAGED -> (delegate permission) -> PUBLISHED -> CLOSED (automatic at the closing time).
  * A tender nobody may see is a 404, never a 403, so existence is not revealed.
  */
+import { isForeign } from '../b9/fx-rules.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { and, count, desc, eq, inArray, max } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -512,6 +513,8 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
         { tenantId: a.user.tenantId, userId: a.user.id, roles: a.user.roles },
         'PUBLISH_PERMISSION',
         value,
+        null,
+        isForeign(l.req.currency),
       );
       if (!del.allowed)
         throw new AppError(

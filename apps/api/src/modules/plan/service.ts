@@ -1,3 +1,4 @@
+import { isForeign } from '../b9/fx-rules.js';
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Clock, RoleName } from '@if/shared';
@@ -488,6 +489,8 @@ export class PlanService {
         { tenantId: auth.user.tenantId, userId: auth.user.id, roles },
         'SOURCING_APPROVAL',
         value,
+        null,
+        isForeign(l.req.currency),
       );
       if (l.req.requesterId === auth.user.id)
         reason = 'You raised this request, so someone else must approve it.';

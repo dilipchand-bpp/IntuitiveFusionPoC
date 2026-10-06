@@ -4,6 +4,7 @@
  * delegation limit, separation of duties and the step-up code all still apply; the link only replaces the sign-in.
  * Commercial information is withheld unless the organisation chooses to show it.
  */
+import { isForeign } from '../b9/fx-rules.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -223,6 +224,8 @@ export function registerApprovalLinks(app: FastifyInstance, p: string, d: LinkDe
         { tenantId: l.tenantId, userId: l.userId, roles },
         'SOURCING_APPROVAL',
         value,
+        null,
+        isForeign(reqRow?.currency),
       );
       checks.push({ label: 'The amount is within your approval authority', ok: del.allowed });
       return {

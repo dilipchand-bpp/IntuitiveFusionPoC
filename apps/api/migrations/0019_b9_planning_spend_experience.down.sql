@@ -1,0 +1,14 @@
+DELETE FROM layout_template WHERE kind IN ('INTAKE', 'CONTRACT');
+ALTER TABLE layout_template DROP CONSTRAINT layout_template_kind_check;
+ALTER TABLE layout_template ADD CONSTRAINT layout_template_kind_check CHECK (kind IN ('PLAN', 'RFX', 'REPORT'));
+DROP TABLE IF EXISTS external_search_log;
+DROP TABLE IF EXISTS artefact_state;
+DROP TABLE IF EXISTS grc_item;
+DROP TABLE IF EXISTS user_dashboard;
+DROP TABLE IF EXISTS review_note;
+DROP TABLE IF EXISTS sourcing_proposal;
+DROP TABLE IF EXISTS catalogue_item;
+ALTER TABLE delegation DROP COLUMN IF EXISTS international;
+ALTER TABLE request DROP COLUMN IF EXISTS fx_rate;
+ALTER TABLE request DROP COLUMN IF EXISTS original_amount;
+DROP TABLE IF EXISTS fx_rate;

@@ -110,9 +110,11 @@ describe('delivered requirements (roadmap batches)', () => {
   });
 
   it('nothing deferred is marked built, and the built list matches delivered.json', () => {
-    expect(ROADMAP.filter((i) => i.tier === 'D' && i.status !== 'DEFERRED' && i.status !== 'BUILT')).toEqual(
-      [],
-    );
+    expect(
+      ROADMAP.filter(
+        (i) => i.tier === 'D' && i.status !== 'DEFERRED' && i.status !== 'BUILT' && i.status !== 'PARTIAL',
+      ),
+    ).toEqual([]);
     const file = JSON.parse(readFileSync(`${root}_work/delivered.json`, 'utf8')) as Record<
       string,
       { ids: string[] }
@@ -121,5 +123,22 @@ describe('delivered requirements (roadmap batches)', () => {
       .flatMap((b) => b.ids)
       .sort();
     expect(built.map((i) => i.id).sort()).toEqual(listed);
+  });
+
+  it('a partly built requirement says what is and is not built, names its batch, and is cited by an automated test', () => {
+    const partial = JSON.parse(readFileSync(`${root}_work/partial.json`, 'utf8')) as Record<
+      string,
+      { batch: string; note: string }
+    >;
+    const shown = ROADMAP.filter((i) => i.tier === 'D' && i.status === 'PARTIAL');
+    expect(shown.map((i) => i.id).sort()).toEqual(Object.keys(partial).sort());
+    for (const i of shown) {
+      expect(i.note, i.id).toMatch(/Not built/);
+      expect(i.batch, i.id).toMatch(/^B\d+$/);
+      expect(
+        new RegExp(`(?<![A-Za-z0-9-])${i.id}(?![0-9A-Za-z])`).test(allTests),
+        `${i.id} has no test`,
+      ).toBe(true);
+    }
   });
 });

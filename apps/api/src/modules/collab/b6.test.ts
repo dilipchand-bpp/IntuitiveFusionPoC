@@ -47,7 +47,7 @@ const planOf = async (requestId: string) =>
 describe('FR-0085 FR-0115 FR-0365 layout designers', () => {
   it('each document has a system default; an organisation orders and trims it, and the plan, the tender pack follow', async () => {
     const list = (await call('procurement', 'GET', '/layouts')).json() as Json[];
-    expect(list.map((l) => l.kind)).toEqual(['PLAN', 'RFX', 'REPORT']);
+    expect(list.map((l) => l.kind)).toEqual(['PLAN', 'RFX', 'REPORT', 'INTAKE', 'CONTRACT']);
     expect(list.every((l) => l.isDefault && l.name === 'System default')).toBe(true);
     expect((await call('requester', 'GET', '/layouts')).statusCode).toBe(403);
 

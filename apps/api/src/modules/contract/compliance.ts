@@ -4,6 +4,7 @@
  * itself when a current certificate is recorded. A fixed warning goes out 30 days before a certificate expires.
  * Runs with the alert scheduler and whenever the alerts are read, and is safe to run any number of times.
  */
+import { noteChange } from '../b9/artefacts.js';
 import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import type { AuditService } from '../../audit/audit-service.js';
 import type { RequestContext, Tx } from '../../db/client.js';
@@ -112,6 +113,16 @@ export async function syncContractCompliance(
     );
     released = 1;
   }
+  if (placed || released)
+    await noteChange(
+      tx,
+      { audit, clock: { now: () => now } },
+      c.tenantId,
+      'CONTRACT_PLANS',
+      c.id,
+      placed ? 'A purchase order hold was placed' : 'A purchase order hold was lifted',
+      now,
+    );
 
   // the fixed warning, 30 days before the certificate expires; a renewed certificate moves it
   const want =

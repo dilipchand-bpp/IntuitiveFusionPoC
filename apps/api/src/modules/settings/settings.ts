@@ -241,6 +241,50 @@ export const SECTIONS = {
       showCommercial: z.boolean(),
     })
     .strict(),
+  currency: z
+    .object({
+      /** What every total is kept and shown in. Changing it later would make old figures wrong, so it is shown but not edited. */
+      base: z.literal('AUD'),
+      /** ANNUAL: one rate per currency for each financial year. LIVE: the latest rate from the feed (FR-0810). */
+      rateMode: z.enum(['ANNUAL', 'LIVE']),
+    })
+    .strict(),
+  artefacts: z
+    .object({
+      /** How fast the evaluation report and the contract management plans follow a change in the records (FR-0870, NFR-P02). */
+      laterStage: z.enum(['REALTIME', 'BATCHED', 'MANUAL']),
+      batchMinutes: z.number().int().min(1).max(1440),
+    })
+    .strict(),
+  buying: z
+    .object({
+      enabled: z.boolean(),
+      /** The most a recommended purchase can be worth for the platform to draft it without a procurement officer starting it (FR-0820). */
+      autoSourceLimitAud: z.number().min(0).max(1e7),
+    })
+    .strict(),
+  externalSearch: z
+    .object({
+      /** Allow a search to also ask an outside AI source. Only the words of the question go out; nothing from the organisation's records (FR-0880). */
+      enabled: z.boolean(),
+    })
+    .strict(),
+  branding: z
+    .object({
+      productName: z.string().trim().min(2).max(40),
+      tagline: z.string().trim().max(80),
+      palette: z.enum(['INDIGO', 'TEAL', 'CRIMSON', 'FOREST', 'SLATE']),
+      supportEmail: z.string().trim().email().max(120).or(z.literal('')),
+    })
+    .strict(),
+  analytics: z
+    .object({
+      refreshMinutes: z.number().int().min(1).max(1440),
+      consolidationPct: z.number().min(0).max(50),
+      varianceThresholdPct: z.number().min(0).max(100),
+      driftThresholdPct: z.number().min(0).max(100),
+    })
+    .strict(),
   security: z
     .object({
       requireMfa: z.boolean(),
@@ -389,6 +433,12 @@ export const DEFAULTS: Settings = {
   ratings: { supplierSeesRatings: false, staffSeeSupplierRatings: true },
   legalPlatform: { enabled: false, name: 'Legal platform', webhookSecret: '', simulateOutage: false },
   approvalLinks: { enabled: true, validHours: 48, showCommercial: false },
+  currency: { base: 'AUD', rateMode: 'ANNUAL' },
+  artefacts: { laterStage: 'REALTIME', batchMinutes: 15 },
+  buying: { enabled: true, autoSourceLimitAud: 5_000 },
+  externalSearch: { enabled: false },
+  branding: { productName: 'Intuitive Fusion', tagline: '', palette: 'INDIGO', supportEmail: '' },
+  analytics: { refreshMinutes: 15, consolidationPct: 8, varianceThresholdPct: 5, driftThresholdPct: 10 },
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },

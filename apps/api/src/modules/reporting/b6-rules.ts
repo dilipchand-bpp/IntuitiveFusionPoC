@@ -12,7 +12,7 @@ import { addDays, daysBetween } from '../contract/dates.js';
 export const B6_MODEL = 'rules-simulated-v1';
 
 // ---------------------------------------------------------------- layout templates (FR-0085, FR-0115, FR-0365)
-export type LayoutKind = 'PLAN' | 'RFX' | 'REPORT';
+export type LayoutKind = 'PLAN' | 'RFX' | 'REPORT' | 'INTAKE' | 'CONTRACT';
 export interface LayoutSection {
   key: string;
   label: string;
@@ -33,8 +33,40 @@ const RFX_MANDATORY = new Set([
 ]);
 const REPORT_MANDATORY = new Set(['summary', 'ranking', 'recommendation']);
 
+/**
+ * The panels of a page rather than the sections of a document (NFR-U04): the request page and the contract page. With the plan,
+ * the tender pack and the evaluation report, they make a layout for every phase of the lifecycle. A page lists its panels in
+ * the order shown; the page itself knows which column each one belongs in.
+ */
+const INTAKE_PANELS: LayoutSection[] = [
+  { key: 'progress', label: 'Journey to completion', mandatory: false },
+  { key: 'actions', label: 'Actions on this request', mandatory: true },
+  { key: 'advance', label: 'Move this procurement on', mandatory: false },
+  { key: 'risk', label: 'Risk assessment', mandatory: false },
+  { key: 'lessons', label: 'Lessons learned and closing', mandatory: false },
+  { key: 'extras', label: 'Suppliers, delegates, documents and process changes', mandatory: false },
+];
+const CONTRACT_PANELS: LayoutSection[] = [
+  { key: 'clauses', label: 'Clauses', mandatory: true },
+  { key: 'management', label: 'Contract management', mandatory: false },
+  { key: 'variation', label: 'Variation details', mandatory: false },
+  { key: 'deviations', label: 'Changes from the template', mandatory: false },
+  { key: 'checks', label: 'Checks before signature', mandatory: false },
+  { key: 'endorsements', label: 'Endorsements', mandatory: false },
+  { key: 'collab', label: 'Working together on the document', mandatory: false },
+  { key: 'strategy', label: 'Negotiation strategy', mandatory: false },
+  { key: 'legal', label: 'Legal edits and redlines', mandatory: false },
+  { key: 'terms', label: 'Terms (side)', mandatory: true },
+  { key: 'signature', label: 'Signatures (side)', mandatory: true },
+  { key: 'signing', label: 'Signing invitations (side)', mandatory: false },
+  { key: 'risksummary', label: 'Risk summary (side)', mandatory: false },
+  { key: 'questions', label: 'Questions to ask (side)', mandatory: false },
+];
+
 /** The sections each document is made of: the system default order and which cannot be left out. */
 export function catalog(kind: LayoutKind): LayoutSection[] {
+  if (kind === 'INTAKE') return INTAKE_PANELS;
+  if (kind === 'CONTRACT') return CONTRACT_PANELS;
   if (kind === 'PLAN')
     return PLAN_FIELDS.map((f) => ({ key: f.key, label: f.label, mandatory: f.mandatory }));
   if (kind === 'RFX')

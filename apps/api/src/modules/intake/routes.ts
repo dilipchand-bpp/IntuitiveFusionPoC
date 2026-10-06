@@ -3,6 +3,8 @@
  * Visibility: a user whose only role is REQUESTER sees their own requests; other staff roles see the tenant.
  * A request that exists but is not visible looks exactly like one that does not exist (404, never 403).
  */
+import { SUPPORTED, isForeign } from '../b9/fx-rules.js';
+import { toBaseAmount } from '../b9/fx-routes.js';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -10,7 +12,7 @@ import type { Clock } from '@if/shared';
 import type { AiProvider } from '../../adapters/ai-provider.js';
 import type { ErpBudgetService } from '../../adapters/erp.js';
 import type { AuditService } from '../../audit/audit-service.js';
-import { guard, type GuardDeps } from '../../auth/guard.js';
+import { guard, type AuthContext, type GuardDeps } from '../../auth/guard.js';
 import { withContext, type Tx } from '../../db/client.js';
 import { chatMessage, contract, conversation, request, tenant } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
@@ -45,7 +47,9 @@ const patchBody = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
     category: z.string().trim().min(1).max(200).optional(),
+    /** The amount, in `currency` when one is given (otherwise in the request's own currency). */
     estimatedValue: z.number().min(0).max(1e12).optional(),
+    currency: z.enum(SUPPORTED).optional(),
     termMonths: z.number().int().min(1).max(360).optional(),
     businessUnit: z.string().trim().min(1).max(100).optional(),
     fields: z.record(z.string().max(4000)).optional(),
@@ -176,15 +180,86 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
     const body = parse(patchBody, req.body ?? {});
     const view = await withContext(d.database, a.ctx, async (tx) => {
       const row = await svc.createDraft(tx, a.ctx);
-      const changes = toChanges(body);
-      if (changes.length === 0) {
+      const money = await moneyOf(tx, a.user.tenantId, body, 'AUD', d.clock.now());
+      const changes = toChanges(money.body);
+      if (changes.length === 0 && !money.touched) {
         const l = (await loadRequest(tx, a.user.tenantId, row.id))!;
         return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
       }
-      return svc.applyChanges(tx, a.ctx, row.id, changes, 'USER', await tenantConfig(tx, a.user.tenantId));
+      if (changes.length)
+        await svc.applyChanges(tx, a.ctx, row.id, changes, 'USER', await tenantConfig(tx, a.user.tenantId));
+      return keepMoney(tx, a, row.id, money);
     });
     return reply.status(201).send(view);
   });
+
+  /**
+   * An amount typed in a foreign currency is converted once, here, and the request keeps the original and the rate. When the
+   * amount is sent without a currency, it is in the currency the request already has (FR-0810).
+   */
+  async function moneyOf(
+    tx: Parameters<Parameters<typeof withContext>[2]>[0],
+    tenantId: string,
+    body: z.infer<typeof patchBody>,
+    current: string,
+    now: Date,
+  ) {
+    const cur = body.currency ?? current;
+    const out: {
+      body: z.infer<typeof patchBody>;
+      touched: boolean;
+      currency: string;
+      original: number | null;
+      rate: number | null;
+    } = {
+      body: { ...body },
+      touched: false,
+      currency: cur,
+      original: null,
+      rate: null,
+    };
+    delete out.body.currency;
+    if (body.estimatedValue === undefined) {
+      if (body.currency && body.currency !== current) {
+        if (isForeign(body.currency))
+          throw new AppError(422, 'VALIDATION_FAILED', 'Enter the amount in that currency too', [
+            { field: 'estimatedValue', message: `Give the value in ${body.currency}` },
+          ]);
+        out.touched = true; // back to the base currency: the value stays as it is
+        out.currency = 'AUD';
+      }
+      return out;
+    }
+    out.touched = true;
+    if (!isForeign(cur)) {
+      out.currency = 'AUD';
+      return out;
+    }
+    const c = await toBaseAmount(tx, tenantId, cur, body.estimatedValue, now.toISOString().slice(0, 10));
+    out.body.estimatedValue = c.base;
+    out.original = c.original;
+    out.rate = c.rate;
+    return out;
+  }
+  /** Writes the currency, the original amount and the rate beside the converted value, and returns the fresh view. */
+  async function keepMoney(
+    tx: Parameters<Parameters<typeof withContext>[2]>[0],
+    a: AuthContext,
+    id: string,
+    m: Awaited<ReturnType<typeof moneyOf>>,
+  ) {
+    if (m.touched)
+      await tx
+        .update(request)
+        .set({
+          currency: m.currency,
+          originalAmount: m.original === null ? null : String(m.original),
+          fxRate: m.rate === null ? null : String(m.rate),
+        })
+        .where(eq(request.id, id));
+    const l = (await loadRequest(tx, a.user.tenantId, id))!;
+    return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
+  }
 
   reg('GET', '/requests/{id}');
   app.get(`${p}/requests/:id`, { preHandler: guard(d, [...READERS]) }, async (req) => {
@@ -211,9 +286,13 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           'VERSION_CONFLICT',
           'The request was changed by someone else; reload and try again',
         );
-      const changes = toChanges(body);
-      if (changes.length === 0) return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
-      return svc.applyChanges(tx, a.ctx, id, changes, 'USER', await tenantConfig(tx, a.user.tenantId));
+      const money = await moneyOf(tx, a.user.tenantId, body, l.row.currency, d.clock.now());
+      const changes = toChanges(money.body);
+      if (changes.length === 0 && !money.touched)
+        return toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
+      if (changes.length)
+        await svc.applyChanges(tx, a.ctx, id, changes, 'USER', await tenantConfig(tx, a.user.tenantId));
+      return keepMoney(tx, a, id, money);
     });
   });
 

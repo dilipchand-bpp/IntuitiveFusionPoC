@@ -55,8 +55,12 @@ export interface RequestView {
   number: string;
   title: string;
   category?: string;
+  /** Always in the base currency (AUD), so every total and every approval limit uses one currency. */
   estimatedValue: number;
   currency: string;
+  /** When the amount was typed in a foreign currency: that amount and the rate used to convert it (FR-0810). */
+  originalAmount?: number;
+  fxRate?: number;
   termMonths?: number;
   businessUnit?: string;
   requesterId: string;
@@ -152,6 +156,8 @@ export function toView(r: RequestRow, rows: FieldRow[], settings: Settings = DEF
     ...(r.category ? { category: r.category } : {}),
     estimatedValue: value,
     currency: r.currency,
+    ...(r.originalAmount !== null ? { originalAmount: Number(r.originalAmount) } : {}),
+    ...(r.fxRate !== null ? { fxRate: Number(r.fxRate) } : {}),
     ...(r.termMonths !== null ? { termMonths: r.termMonths } : {}),
     ...(r.businessUnit ? { businessUnit: r.businessUnit } : {}),
     requesterId: r.requesterId,

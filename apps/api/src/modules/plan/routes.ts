@@ -3,6 +3,7 @@
  * State machine: DRAFT -> AWAITING_SIGNOFF -> AWAITING_APPROVAL -> APPROVED_LOCKED -> (reopen) REOPENED -> ...
  * Visibility mirrors requests: a requester sees their own; an invisible plan is a 404, never a 403.
  */
+import { isForeign } from '../b9/fx-rules.js';
 import { and, desc, eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -395,6 +396,8 @@ export function registerPlanRoutes(app: FastifyInstance, p: string, d: PlanDeps)
             { tenantId: a.user.tenantId, userId: a.user.id, roles },
             'SOURCING_APPROVAL',
             value,
+            null,
+            isForeign(l.req.currency),
           );
           if (!del.allowed)
             throw new AppError(

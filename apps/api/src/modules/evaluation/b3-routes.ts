@@ -9,6 +9,7 @@
  *  - the probity advisor's allocation, hold, plan and outcomes report (FR-0310, FR-0340).
  * Every change is audited. Scores stay hidden exactly as before: nothing here lets an evaluator see another's marks.
  */
+import { noteChange } from '../b9/artefacts.js';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -37,7 +38,6 @@ import { TenderService } from '../tender/service.js';
 import { adviseNegotiation, tcoOf } from './commercial.js';
 import { loadExtras, noticeToSupplier, runComplianceGate } from './b3-service.js';
 import { registerPanelRoutes, registerProbityRoutes, registerScoringRoutes } from './b3-routes2.js';
-import { composeReport, storeReport } from './report-compose.js';
 import { atLeast, type EvaluationService, type Loaded } from './service.js';
 
 export interface B3Deps extends GuardDeps {
@@ -115,12 +115,24 @@ export function registerEvaluationB3(app: FastifyInstance, p: string, d: B3Deps,
     svc.view(tx, a, (await svc.load(tx, a.user.tenantId, id))!);
 
   /** A recompiled draft keeps the report in step with offers or waivers accepted after the lock (FR-0350). */
-  async function recompile(a: AuthContext, id: string) {
+  async function recompile(
+    a: AuthContext,
+    id: string,
+    reason = 'An offer or a waiver was accepted after the lock',
+  ) {
     await withSystem(d.database, async (tx) => {
       const l = await svc.load(tx, a.user.tenantId, id);
       if (!l || l.ev.status !== 'LOCKED') return;
       const now = d.clock.now();
-      await storeReport(tx, a.user.tenantId, id, await composeReport(tx, svc, l, now), 'DRAFT', now);
+      await noteChange(
+        tx,
+        { audit: d.audit, clock: d.clock },
+        a.user.tenantId,
+        'EVAL_REPORT',
+        id,
+        reason,
+        now,
+      );
     });
   }
 

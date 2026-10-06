@@ -23,6 +23,8 @@ export async function checkDelegation(
   scope: DelegationScope,
   value: number,
   division?: string | null,
+  /** Spend in a foreign currency is covered only by grants made for international spend, and the reverse (FR-0810). */
+  international = false,
 ): Promise<DelegationCheck> {
   const rows = await tx
     .select()
@@ -33,7 +35,8 @@ export async function checkDelegation(
   const applicable = rows.filter(
     (d) =>
       (d.userId ? d.userId === actor.userId : actor.roles.includes(d.role)) &&
-      (!d.division || d.division === division),
+      (!d.division || d.division === division) &&
+      d.international === international,
   );
   if (applicable.length === 0) {
     return {

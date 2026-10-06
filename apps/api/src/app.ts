@@ -21,6 +21,15 @@ import { registerIntakeExtras } from './modules/intake/extras-routes.js';
 import { registerEsgRoutes } from './modules/plan/esg.js';
 import { registerMigrationRoutes } from './modules/migration/routes.js';
 import { registerTenderB8 } from './modules/b8/tender-b8.js';
+import { AnalyticsStore } from './analytics/store.js';
+import { registerAnalytics } from './modules/b9/analytics-routes.js';
+import { registerSearch } from './modules/b9/search.js';
+import { registerArtefacts, runDue as runArtefactsDue } from './modules/b9/artefacts.js';
+import { registerBuying } from './modules/b9/buying.js';
+import { registerNotesGrc } from './modules/b9/notes-grc.js';
+import { registerDashboardPrefs } from './modules/b9/dashboard-routes.js';
+import { registerFx } from './modules/b9/fx-routes.js';
+import { registerProgress } from './modules/b9/progress.js';
 import { registerApprovalLinks } from './modules/b8/approval-links.js';
 import { registerSupplierB8Routes } from './modules/b8/supplier-b8.js';
 import { registerAssistantRoutes } from './modules/assistant/routes.js';
@@ -51,6 +60,8 @@ export interface AppDeps {
   idp?: IdentityProvider;
   ai?: AiProvider;
   erp?: ErpBudgetService;
+  /** The separate store reports read from (NFR-P05). Defaults to a new in-memory one. */
+  analytics?: AnalyticsStore;
 }
 
 const problem = (reply: FastifyReply, status: number, body: Record<string, unknown>) =>
@@ -199,6 +210,32 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     implemented.add(k);
   for (const k of registerSupplierB8Routes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerApprovalLinks(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerProgress(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerFx(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerDashboardPrefs(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerBuying(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerArtefacts(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerSearch(app, API_PREFIX, guardDeps)) implemented.add(k);
+  if (deps.alertSchedulerMinutes) {
+    // batched artefacts are brought up to date on the same schedule as the alerts
+    const h = setInterval(
+      () =>
+        void runArtefactsDue(deps.database, { audit, clock: deps.clock }, deps.clock.now()).catch(
+          () => undefined,
+        ),
+      deps.alertSchedulerMinutes * 60_000,
+    );
+    h.unref();
+    app.addHook('onClose', async () => clearInterval(h));
+  }
+  for (const k of registerNotesGrc(app, API_PREFIX, {
+    ...guardDeps,
+    defaultTenantSlug: config.DEFAULT_TENANT_SLUG,
+  }))
+    implemented.add(k);
+  const analytics = deps.analytics ?? (await AnalyticsStore.open());
+  if (!deps.analytics) app.addHook('onClose', async () => analytics.close());
+  for (const k of registerAnalytics(app, API_PREFIX, { ...guardDeps, analytics })) implemented.add(k);
   for (const k of registerAdminRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerIntakeExtras(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerEsgRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);

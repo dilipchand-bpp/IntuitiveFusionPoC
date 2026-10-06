@@ -3,6 +3,7 @@
  * authority, US-CON-04 lock on execution. The deviation register (US-CON-02) is derived read-only from the clauses
  * changed from the template; variations (US-CON-05) stay a stub.
  */
+import { noteChange } from '../b9/artefacts.js';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -1391,6 +1392,16 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
           // an executed variation can move the end date: the parent's scheduled alerts follow it
           const [parent] = await tx.select().from(contract).where(eq(contract.id, c.parentId));
           if (parent) await rescheduleAlerts(tx, parent, now.toISOString().slice(0, 10));
+          if (parent)
+            await noteChange(
+              tx,
+              { audit: d.audit, clock: d.clock },
+              a.user.tenantId,
+              'CONTRACT_PLANS',
+              parent.id,
+              `Variation ${c.number} was signed`,
+              now,
+            );
         }
         await d.audit.record(tx, a.ctx, {
           action: 'contract.sign',
