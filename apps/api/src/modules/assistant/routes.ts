@@ -12,10 +12,10 @@ import { withContext, type Tx } from '../../db/client.js';
 import { contract, delegation, invoice, notification, plan, supplier } from '../../db/schema.js';
 import { parse } from '../../http/errors.js';
 import { addDays, iso } from '../contract/dates.js';
+import { modelStamp, resolveModel } from '../b10ai/service.js';
 import { parseQuestion } from '../reporting/b6-rules.js';
 import { visibleRequests } from '../reporting/scope.js';
 import {
-  ASSISTANT_MODEL,
   answer,
   askLink,
   attentionReply,
@@ -232,7 +232,22 @@ export function registerAssistantRoutes(app: FastifyInstance, p: string, d: Guar
       if (!reply) reply = unknownReply(who);
       // keep only links this person may open, and never anything outside the portal
       reply.actions = reply.actions.filter((x) => x.href.startsWith('/') && canOpen(roles, x.href));
-      return { ...reply, intent: intent.kind, executed: done_ !== null, model: ASSISTANT_MODEL };
+      // the tenant's active model words the footer, so switching models by configuration is visible on every answer (NFR-C01, NFR-M06)
+      const used = await withContext(d.database, a.ctx, (tx) =>
+        resolveModel(tx, a.user.tenantId, 'assistant-footer'),
+      );
+      const footer = await used.model.complete('assistant-footer', {
+        intent: intent.kind,
+        topic: reply.topic,
+      });
+      return {
+        ...reply,
+        intent: intent.kind,
+        executed: done_ !== null,
+        ...modelStamp(used),
+        footer: footer.text,
+        ...(footer.note ? { footerNote: footer.note } : {}),
+      };
     },
   );
   return done;

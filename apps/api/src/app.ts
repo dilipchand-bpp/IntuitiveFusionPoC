@@ -47,6 +47,10 @@ import { registerTenderRoutes } from './modules/tender/routes.js';
 import { registerSupplierDirectory } from './modules/tender/supplier-directory.js';
 import { registerSupplierRoutes } from './modules/tender/supplier-routes.js';
 import { registerTenderB2 } from './modules/tender/b2-routes.js';
+import { registerB10ai } from './modules/b10ai/index.js';
+import { registerConnectors } from './modules/b10conn/routes.js';
+import { registerB10b } from './modules/b10erp/index.js';
+import { registerB10x } from './modules/b10x/index.js';
 import { registerSpecStubs } from './spec-routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -244,6 +248,27 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   for (const k of registerMigrationRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerSettingsRoutes(app, API_PREFIX, {
     ...guardDeps,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+  }))
+    implemented.add(k);
+  for (const k of registerB10ai(app, API_PREFIX, guardDeps)) implemented.add(k);
+  if (config.NODE_ENV === 'production' && !config.SECRET_STORE_KEY)
+    throw new Error('SECRET_STORE_KEY is required in production (the local secret store has no key)');
+  for (const k of registerConnectors(app, API_PREFIX, {
+    ...guardDeps,
+    secretKeyMaterial: config.SECRET_STORE_KEY ?? config.SESSION_SECRET,
+    defaultTenantSlug: config.DEFAULT_TENANT_SLUG,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+  }))
+    implemented.add(k);
+  for (const k of registerB10x(app, API_PREFIX, {
+    ...guardDeps,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+  }))
+    implemented.add(k);
+  for (const k of registerB10b(app, API_PREFIX, {
+    ...guardDeps,
+    defaultTenantSlug: config.DEFAULT_TENANT_SLUG,
     schedulerMinutes: deps.alertSchedulerMinutes,
   }))
     implemented.add(k);

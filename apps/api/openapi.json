@@ -98,6 +98,45 @@
   },
   {
    "name": "Search"
+  },
+  {
+   "name": "Connectors"
+  },
+  {
+   "name": "ManualFallback"
+  },
+  {
+   "name": "SecretStore"
+  },
+  {
+   "name": "ErpSync"
+  },
+  {
+   "name": "LegalSync"
+  },
+  {
+   "name": "HrFeed"
+  },
+  {
+   "name": "Payments"
+  },
+  {
+   "name": "ESignature"
+  },
+  {
+   "name": "DocumentRepository"
+  },
+  {
+   "name": "ContinuityAlerts"
+  },
+  {
+   "name": "AiModels"
+  },
+  {
+   "name": "Configuration"
+  },
+  {
+   "name": "Performance"
   }
  ],
  "security": [
@@ -22886,6 +22925,3966 @@
      }
     }
    }
+  },
+  "/connectors": {
+   "get": {
+    "operationId": "listConnectors",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "The catalogue of supported providers by kind (all simulated) and this tenant's connectors with their health and circuit breaker",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "FINANCE",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConnectorCatalogue"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/connectors/{kind}": {
+   "put": {
+    "operationId": "updateConnector",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Choose the provider, switch on or off, set the demonstration mode UP or DOWN and the non-secret configuration",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConnectorView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 for a provider not in the catalogue; 400 when the configuration holds something that looks like a secret",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConnectorUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/connectors/{kind}/test": {
+   "post": {
+    "operationId": "testConnector",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Run a health check through the resilient layer and show the circuit breaker state (CLOSED, OPEN, HALF_OPEN)",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConnectorTestResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/connectors/{kind}/sync": {
+   "post": {
+    "operationId": "syncConnector",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Send records outward through the connector, signed; safe to repeat because each record has a key. A failure is kept to retry and queues a manual task",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "FINANCE"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConnectorSyncResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConnectorSyncRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/connectors/{kind}/reconcile": {
+   "post": {
+    "operationId": "reconcileConnector",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Compare what was sent with what the other side acknowledged and send what is missing again under the same key; a second run changes nothing",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SyncRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/connectors/sync-runs": {
+   "get": {
+    "operationId": "listSyncRuns",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Reconciliation runs: how many were expected, received, missing and repaired",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "FINANCE",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SyncRun"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/connectors/{kind}/security": {
+   "get": {
+    "operationId": "getConnectorSecurity",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Evidence for the middleware leg: algorithm, replay window, secret fingerprint and the count of rejected attempts",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConnectorSecurity"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/integration-events/{id}/requeue": {
+   "post": {
+    "operationId": "requeueIntegrationEvent",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Put a dead-lettered delivery back in the queue with fresh attempts and try it now",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrationEventView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 unless the event is a dead letter"
+   }
+  },
+  "/integrations/{kind}/webhook": {
+   "post": {
+    "operationId": "inboundWebhook",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Signed inbound message from the middleware (X-IF-Signature and X-IF-Timestamp, HMAC-SHA256, five-minute window); an event id is accepted once",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InboundWebhookResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "401 for a bad signature, wrong secret, stale timestamp or unknown organisation; 409 REPLAYED for an event id already received",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InboundWebhook"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/verification": {
+   "post": {
+    "operationId": "verifySupplier",
+    "tags": [
+     "Connectors"
+    ],
+    "summary": "Screen a supplier against the sanctions list and verify insurance through the resilient layer; UNVERIFIED (provider unavailable) when a provider is down, never CLEAR",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierVerification"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/manual-tasks": {
+   "get": {
+    "operationId": "listManualTasks",
+    "tags": [
+     "ManualFallback"
+    ],
+    "summary": "Work to do by hand while a connected system is down, with instructions",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "FINANCE",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ManualTask"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/manual-tasks/{id}/complete": {
+   "post": {
+    "operationId": "completeManualTask",
+    "tags": [
+     "ManualFallback"
+    ],
+    "summary": "Mark a manual task done with the reference the person typed; the queued delivery is then closed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "FINANCE",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ManualTask"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when the task is already done or was superseded",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ManualTaskComplete"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/secrets": {
+   "get": {
+    "operationId": "listSecrets",
+    "tags": [
+     "SecretStore"
+    ],
+    "summary": "Names, versions, fingerprints and last rotation of stored secrets; values are never returned",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecretList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/secrets/{name}": {
+   "put": {
+    "operationId": "setSecret",
+    "tags": [
+     "SecretStore"
+    ],
+    "summary": "Set or rotate a secret: a new version is written and the previous one retired; audited without the value",
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecretMeta"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SecretValue"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/erp/overview": {
+   "get": {
+    "operationId": "getErpOverview",
+    "tags": [
+     "ErpSync"
+    ],
+    "summary": "Imported cost centres with budget, actuals and what is available, organisation units, budget lines, the last run and the ERP connector's provider and health (SIMULATED)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "FINANCE",
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErpOverview"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/erp/sync": {
+   "post": {
+    "operationId": "runErpSync",
+    "tags": [
+     "ErpSync"
+    ],
+    "summary": "Pull cost centres, organisation units, budgets and the ledger from the ERP connector's provider (SAP, Oracle or Dynamics), map them and upsert by external id. A second run changes nothing; changes at the source are reported as added, changed and removed. dryRun shows the counts without writing",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErpSyncResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "200 with status FAILED and a manual task when the ERP connector is DOWN; 422 for a provider that is not an ERP feed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ErpSyncRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/erp/ledger": {
+   "get": {
+    "operationId": "listErpLedger",
+    "tags": [
+     "ErpSync"
+    ],
+    "summary": "Imported ledger postings, newest first",
+    "parameters": [
+     {
+      "name": "costCentre",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "FINANCE",
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ErpLedgerEntry"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/erp/history": {
+   "get": {
+    "operationId": "listErpSyncs",
+    "tags": [
+     "ErpSync"
+    ],
+    "summary": "Recent ERP imports with the counts of what was added, changed, removed and left alone",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "FINANCE",
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ErpHistoryEntry"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/erp/cost-centres": {
+   "get": {
+    "operationId": "listErpCostCentres",
+    "tags": [
+     "ErpSync"
+    ],
+    "summary": "Active imported cost centres, for choosing a cost centre",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "REQUESTER",
+     "PROCUREMENT",
+     "FINANCE",
+     "EXEC",
+     "DELEGATE",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ErpCostCentre"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/erp/budget-check": {
+   "post": {
+    "operationId": "checkErpBudget",
+    "tags": [
+     "ErpSync"
+    ],
+    "summary": "The budget check for a business unit or cost centre. An imported ERP budget line is used when there is one, otherwise the tenant settings; the answer names its source",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErpBudgetCheck"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 without a business unit or cost centre",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ErpBudgetCheckRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/integrations/legal/events": {
+   "post": {
+    "operationId": "legalInboundEvent",
+    "tags": [
+     "LegalSync"
+    ],
+    "summary": "Signed inbound event from the legal system: MATTER_STAGE_CHANGED, DOCUMENT_ATTACHED or MATTER_CLOSED (X-IF-Signature and X-IF-Timestamp, HMAC-SHA256, five-minute window). Applied to the matter and the contract page; an event id is applied once; a failure is kept and retried, then dead-lettered",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalInboundResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "401 for a bad or stale signature or an unknown organisation; 202 when the event could not be applied yet (kept as FAILED or DEAD_LETTER)",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalInboundEvent"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/integrations/legal/simulate": {
+   "post": {
+    "operationId": "simulateLegalEvent",
+    "tags": [
+     "LegalSync"
+    ],
+    "summary": "Build a correctly signed inbound legal event for a matter and run it through the same receiver an outside caller uses (SIMULATED); options show a repeat, a bad signature and an unknown matter",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalSimulateResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when the matter has no reference in the legal system or the legal connector is off",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalSimulateRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/integrations/legal/events/{id}/reprocess": {
+   "post": {
+    "operationId": "reprocessLegalEvent",
+    "tags": [
+     "LegalSync"
+    ],
+    "summary": "Apply an inbound legal event that failed or was dead-lettered, now",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalEventReprocessed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when the event was already applied"
+   }
+  },
+  "/legal-matters/{id}/sync-status": {
+   "post": {
+    "operationId": "sendLegalMatterStatus",
+    "tags": [
+     "LegalSync"
+    ],
+    "summary": "Send this matter's status to the legal system as a signed outbound event through the connector; safe to repeat, a failure is kept and a manual task is queued",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalStatusSent"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/contracts/{id}/legal-sync": {
+   "get": {
+    "operationId": "getContractLegalSync",
+    "tags": [
+     "LegalSync"
+    ],
+    "summary": "The contract's legal matters as the legal system reports them: stage, documents attached, closed, and the event history with retries and dead letters",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalSyncView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/hr-feed/overview": {
+   "get": {
+    "operationId": "getHrFeedOverview",
+    "tags": [
+     "HrFeed"
+    ],
+    "summary": "HR feed batches, every event with its outcome, exceptions that need a person, time-bound delegations and the work listed for reassignment",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HrFeedOverview"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/hr-feed/run": {
+   "post": {
+    "operationId": "runHrFeed",
+    "tags": [
+     "HrFeed"
+    ],
+    "summary": "Preview (dryRun) or apply the next batch of the simulated HR feed: starters, leavers, role changes and delegate changes. Each event id is applied once; ADMIN is never granted by the feed; a delegation is capped at the delegator's own limit",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HrFeedRunResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "200 with ok false and a manual task when the HR connector is off or DOWN; 409 when there is no later batch",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HrFeedRunRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/hr-feed/sync-delegations": {
+   "post": {
+    "operationId": "syncHrDelegations",
+    "tags": [
+     "HrFeed"
+    ],
+    "summary": "Start delegations whose start date has come and end those whose end date has passed",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HrDelegationSync"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/hr-feed/reassignments/{id}/done": {
+   "post": {
+    "operationId": "completeHrReassignment",
+    "tags": [
+     "HrFeed"
+    ],
+    "summary": "Record that a leaver's open item was given to a new owner",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HrReassignmentDone"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when already done"
+   }
+  },
+  "/invoices/{id}/payments": {
+   "post": {
+    "operationId": "proposePayment",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "Propose a payment for a matched invoice (full or part). Repeating the same idempotency key returns the same payment and creates nothing",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Payment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 INVOICE_NOT_PAYABLE for an invoice that is not matched (blocked, exception, paid); 409 PAYMENT_EXCEEDS_INVOICE above what is still unpaid",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PaymentCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/payments/{id}/approve": {
+   "post": {
+    "operationId": "approvePayment",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "A different person approves the payment and the order is sent to the finance system through the PAYMENTS connector; if the system is down it waits with a manual task",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Payment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 ROLE_SOD_VIOLATION for the person who proposed it; 409 unless the payment is proposed"
+   }
+  },
+  "/payments/{id}/retry": {
+   "post": {
+    "operationId": "retryPayment",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "Send a failed payment again, or try a waiting payment now",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Payment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 for a payment that is neither failed nor waiting"
+   }
+  },
+  "/payments/{id}/cancel": {
+   "post": {
+    "operationId": "cancelPayment",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "Cancel a proposed or failed payment",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Payment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 once the order has been sent"
+   }
+  },
+  "/payments/settle": {
+   "post": {
+    "operationId": "settlePayments",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "Bring up to date the payments whose order was delivered after a wait or paid by hand",
+    "parameters": [],
+    "x-roles": [
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentSettled"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/payments": {
+   "get": {
+    "operationId": "listPayments",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "Payments with their status trail, and the PAYMENTS connector's state",
+    "parameters": [
+     {
+      "name": "invoiceId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "EXEC",
+     "PROCUREMENT",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/payments/{id}": {
+   "get": {
+    "operationId": "getPayment",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "One payment with its status trail",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "EXEC",
+     "PROCUREMENT",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Payment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/integrations/payments/confirmation": {
+   "post": {
+    "operationId": "paymentConfirmation",
+    "tags": [
+     "Payments"
+    ],
+    "summary": "The finance system's signed confirmation or failure callback; applied once per event id",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentConfirmationResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "401 for a bad or stale signature; 409 unless the payment was sent",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PaymentConfirmation"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/envelope": {
+   "get": {
+    "operationId": "getContractEnvelope",
+    "tags": [
+     "ESignature"
+    ],
+    "summary": "The e-signature envelope for a contract: provider, status for each signatory and the event history (a signatory in blind signing sees only their own line)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsignEnvelopeCard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createContractEnvelope",
+    "tags": [
+     "ESignature"
+    ],
+    "summary": "Create (or try again to create) the envelope for a contract that is out for signature, with the signatories pre-filled from the signature chain; closes the manual task if one was raised",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsignEnvelopeCard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NO_ENVELOPE when the e-signature connector is not DocuSign or Adobe or the contract is not out for signature; 200 with result MANUAL_TASK when the provider is down"
+   }
+  },
+  "/contracts/{id}/envelope/signing-link": {
+   "post": {
+    "operationId": "issueEnvelopeSigningLink",
+    "tags": [
+     "ESignature"
+    ],
+    "summary": "A fresh signing link for the signed-in signatory (the earlier link stops working)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsignSigningLink"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 NOT_A_SIGNATORY"
+   }
+  },
+  "/contracts/{id}/envelope/simulate-event": {
+   "post": {
+    "operationId": "simulateEnvelopeEvent",
+    "tags": [
+     "ESignature"
+    ],
+    "summary": "Demonstration: make the simulated provider call back (sent, delivered, viewed, signed, declined, voided, expired) with a correctly signed message through the inbound webhook",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsignSimulateResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "a repeated eventId is refused as a replay; a signed callback reaches the chain only through the normal sign decision and may be REFUSED by signing authority or order",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EsignSimulateEvent"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/esign/{token}": {
+   "get": {
+    "operationId": "getEsignCeremony",
+    "tags": [
+     "ESignature"
+    ],
+    "summary": "The simulated signing ceremony: a summary of the document for the signatory the link was issued to; opening it is reported to the provider as delivered and viewed",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsignCeremony"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 for a link that is not yours, expired or replaced"
+   }
+  },
+  "/esign/{token}/confirm": {
+   "post": {
+    "operationId": "confirmEsign",
+    "tags": [
+     "ESignature"
+    ],
+    "summary": "The signatory's own confirmation: signs or declines through the contract's normal sign decision, so signing authority, order and checks still apply",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsignConfirmResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 SIGNING_AUTHORITY_INSUFFICIENT; 409 SIGNING_ORDER, ENVELOPE_CLOSED or ALREADY_DONE; 400 a decline needs a reason",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EsignConfirm"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/repository/projects": {
+   "get": {
+    "operationId": "listRepositoryProjects",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "The project sites in the simulated repository that the caller may open (the same procurements the caller can see in reports)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoProjects"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "409 REPOSITORY_OFF when the connector is off; 503 REPOSITORY_UNAVAILABLE when it is down"
+   }
+  },
+  "/repository/projects/{requestId}/files": {
+   "get": {
+    "operationId": "listRepositoryFiles",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Folders and the newest version of each file in a project site",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "folder",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoFileList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 for a project the caller cannot see"
+   }
+  },
+  "/repository/projects/{requestId}/files/{folder}/{name}": {
+   "get": {
+    "operationId": "readRepositoryFile",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Read a file (newest version, or ?version=); the ETag is the version to send back in If-Match",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "folder",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "version",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoFile"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "writeRepositoryFile",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Write the next version of a file (never an overwrite): If-Match must carry the version last read; omit it only for a new file",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "folder",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoWriteResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "428 PRECONDITION_REQUIRED without If-Match for an existing file; 412 PRECONDITION_FAILED for a stale version; 400 unsafe file; 413 over 2 MB; 422 FILE_INFECTED; 202 MANUAL_TASK when the repository is down",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RepoWrite"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/repository/projects/{requestId}/files/{folder}/{name}/download": {
+   "get": {
+    "operationId": "downloadRepositoryFile",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Download a file as it was stored",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "folder",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "version",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "the file's own content type"
+   }
+  },
+  "/repository/projects/{requestId}/files/{folder}/{name}/versions": {
+   "get": {
+    "operationId": "listRepositoryVersions",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Every version of a file, newest first",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "folder",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoVersions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/repository/projects/{requestId}/sources": {
+   "get": {
+    "operationId": "listRepositorySources",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Platform documents of this project that can be filed: the tender pack, the evaluation report and contracts",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoSources"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/repository/projects/{requestId}/publish": {
+   "post": {
+    "operationId": "publishToRepository",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "File a platform document (contract, evaluation report, tender pack) in the project folder as the next version; an unchanged document adds no version",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoPublishResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "200 UNCHANGED; 202 MANUAL_TASK when the repository is down; the document is fetched with the caller's own rights",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RepoPublish"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/repository/projects/{requestId}/import": {
+   "post": {
+    "operationId": "importFromRepository",
+    "tags": [
+     "DocumentRepository"
+    ],
+    "summary": "Bring a repository file into a contract's negotiation drafts",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoImportResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "404 for a contract of another project; 423 for a locked contract",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RepoImport"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/continuity/options": {
+   "get": {
+    "operationId": "getContinuityOptions",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "What can be picked when raising an event: kinds, severities, affected suppliers and contracts, recipient groups and people to escalate to",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityOptions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/continuity/events": {
+   "post": {
+    "operationId": "raiseContinuityEvent",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "Raise a continuity event and send an SMS and an email to each recipient through the simulated gateway; returns the tracker and, once, each recipient's one-time response link",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityTracker"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 SMS_NOT_PLAIN when the text message note carries a supplier name, a number or an identifier; NO_RECIPIENTS; AFFECTED_REQUIRED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContinuityRaise"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listContinuityEvents",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "Continuity events, newest first, with how many have answered",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityEventList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/continuity/events/{id}": {
+   "get": {
+    "operationId": "getContinuityTracker",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "The tracker: who has been reached, by which channel, and who has not answered; reading it also records delivery receipts and escalates when due",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityTracker"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/continuity/events/{id}/resend": {
+   "post": {
+    "operationId": "resendContinuityEvent",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "Message the people who have not answered again, each with a new one-time link",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityResend"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 EVENT_CLOSED"
+   }
+  },
+  "/continuity/events/{id}/responses/{responseId}": {
+   "post": {
+    "operationId": "recordContinuityAnswer",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "Record an answer taken by phone on someone's behalf",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "responseId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityTracker"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 EVENT_CLOSED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContinuityAnswer"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/continuity/events/{id}/close": {
+   "post": {
+    "operationId": "closeContinuityEvent",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "Close the event with a summary of who answered what and how many messages got through",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContinuityTracker"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when already closed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContinuityClose"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/respond-links/{token}": {
+   "get": {
+    "operationId": "getRespondLink",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "The one-time response page for one recipient (no sign-in)",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RespondLink"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "description": "404 unknown link; 410 LINK_EXPIRED",
+    "security": []
+   },
+   "post": {
+    "operationId": "answerRespondLink",
+    "tags": [
+     "ContinuityAlerts"
+    ],
+    "summary": "Say I am safe, I am affected or I need help; one answer per person, changeable until the event is closed",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RespondLink"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "410 LINK_EXPIRED; 409 EVENT_CLOSED",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RespondAnswer"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/ai/models": {
+   "get": {
+    "operationId": "listAiModels",
+    "tags": [
+     "AiModels"
+    ],
+    "summary": "The AI models the platform can use, each with its approval state for this tenant and its data-handling profile (SEC-TP07)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiModelCatalogue"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/ai/models/{key}/request-approval": {
+   "post": {
+    "operationId": "requestAiModelApproval",
+    "tags": [
+     "AiModels"
+    ],
+    "summary": "Ask for a third-party AI model to be approved for this tenant",
+    "parameters": [
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiApprovalRequested"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 for the built-in model, an approved model or one with a request already waiting; 404 unknown model",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiApprovalRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/ai/approvals/{id}/decision": {
+   "post": {
+    "operationId": "decideAiApproval",
+    "tags": [
+     "AiModels"
+    ],
+    "summary": "Approve or reject a request; never the person who made it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiApprovalDecided"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 SELF_APPROVAL when the caller made the request; 409 when already decided",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiApprovalDecision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/ai/models/{key}/revoke": {
+   "post": {
+    "operationId": "revokeAiModel",
+    "tags": [
+     "AiModels"
+    ],
+    "summary": "Withdraw an approval; the tenant falls back to rules-simulated-v1 at once and the change is audited",
+    "parameters": [
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiRevoked"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 unless the model is approved",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiRevoke"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/ai/active-model": {
+   "get": {
+    "operationId": "getActiveAiModel",
+    "tags": [
+     "AiModels"
+    ],
+    "summary": "The model answering for this tenant now, and any per-task choices",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiActiveModel"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setActiveAiModel",
+    "tags": [
+     "AiModels"
+    ],
+    "summary": "Switch the active model (and optional per-task models) by configuration; takes effect at once and is audited with old and new value",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiActiveModel"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 MODEL_NOT_APPROVED for a third-party model that is not approved; 422 unknown model",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiActiveModelSave"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/config/inventory": {
+   "get": {
+    "operationId": "getConfigInventory",
+    "tags": [
+     "Configuration"
+    ],
+    "summary": "Every settings section: fields, defaults, current value, who changed it last and the screen that edits it (NFR-M05)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigInventory"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/config/export": {
+   "get": {
+    "operationId": "exportConfig",
+    "tags": [
+     "Configuration"
+    ],
+    "summary": "All tenant configuration as a JSON file; secrets are left empty and no user data is included",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigExport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "application/json attachment"
+   }
+  },
+  "/admin/config/import": {
+   "post": {
+    "operationId": "importConfig",
+    "tags": [
+     "Configuration"
+    ],
+    "summary": "Validate a configuration file with the same schemas and show the difference; applies only when dryRun is false",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ConfigImportResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "dryRun defaults to true; 422 when applying an invalid file",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConfigImport"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/auth/client-check": {
+   "post": {
+    "operationId": "reportClientCheck",
+    "tags": [
+     "Configuration"
+    ],
+    "summary": "A signed-in browser reports its user agent and feature support; the server judges it against the published baseline and counts it",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClientCheckResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "Stores browser family, major version and the verdict only",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ClientCheck"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/client-baseline": {
+   "get": {
+    "operationId": "getClientBaseline",
+    "tags": [
+     "Configuration"
+    ],
+    "summary": "Counts of sign-ins by browser and whether the baseline was met, with the published baseline",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClientBaselineSummary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/performance/budget-check": {
+   "get": {
+    "operationId": "getBudgetCheckPerformance",
+    "tags": [
+     "Performance"
+    ],
+    "summary": "Count, p50, p95 and max of the measured budget check against the configured target (NFR-P04)",
+    "parameters": [
+     {
+      "name": "last",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BudgetCheckPerformance"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -31061,6 +35060,358 @@
     "additionalProperties": true
    },
    "ActionItems": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorCatalogue": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorUpdate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorTestResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorSyncRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorSyncResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SyncRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ManualTask": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ManualTaskComplete": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecretList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecretValue": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecretMeta": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConnectorSecurity": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "InboundWebhook": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "InboundWebhookResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierVerification": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IntegrationEventView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpOverview": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpSyncRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpSyncResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpLedgerEntry": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpHistoryEntry": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpCostCentre": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpBudgetCheckRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ErpBudgetCheck": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalSimulateRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalSimulateResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalSyncView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalStatusSent": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalEventReprocessed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalInboundEvent": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalInboundResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HrFeedOverview": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HrFeedRunRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HrFeedRunResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HrDelegationSync": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HrReassignmentDone": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PaymentCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Payment": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PaymentList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PaymentSettled": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PaymentConfirmation": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PaymentConfirmationResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignEnvelopeCard": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignEnvelopeCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignSigningLink": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignSimulateEvent": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignSimulateResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignCeremony": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignConfirm": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsignConfirmResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoProjects": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoFileList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoFile": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoVersions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoWrite": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoWriteResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoSources": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoPublish": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoPublishResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoImport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RepoImportResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityOptions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityRaise": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityTracker": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityEventList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityAnswer": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityClose": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContinuityResend": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RespondLink": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RespondAnswer": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiModelCatalogue": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiApprovalRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiApprovalRequested": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiApprovalDecision": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiApprovalDecided": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiRevoke": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiRevoked": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiActiveModel": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AiActiveModelSave": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConfigInventory": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConfigExport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConfigImport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ConfigImportResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClientCheck": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClientCheckResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClientBaselineSummary": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BudgetCheckPerformance": {
     "type": "object",
     "additionalProperties": true
    }

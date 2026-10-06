@@ -36,7 +36,8 @@ import {
   tenant,
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
-import { MockSanctionsScreening, type SanctionsScreening } from '../../adapters/sanctions.js';
+import type { SanctionsScreening } from '../../adapters/sanctions.js';
+import { ConnectorSanctionsScreening } from '../b10conn/screening.js';
 import { MockVendorRegistry, type VendorRegistry } from '../../adapters/vendor-registry.js';
 import type { SealedStore } from '../tender/files.js';
 import { isProtected } from './b4-rules.js';
@@ -1478,7 +1479,7 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     templateClauses,
     store: d.store,
     registry,
-    sanctions: d.sanctions ?? new MockSanctionsScreening(),
+    sanctions: d.sanctions ?? new ConnectorSanctionsScreening(d.database, d.clock),
   });
   registerContractExtras(app, p, d, reg, {
     load,

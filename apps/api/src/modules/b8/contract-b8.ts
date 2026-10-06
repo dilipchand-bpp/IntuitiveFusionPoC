@@ -26,6 +26,7 @@ import { AppError, parse } from '../../http/errors.js';
 import { hashToken } from '../tender/routes.js';
 import { loadSettings } from '../settings/settings.js';
 import { eventView, retryFailed } from './integration.js';
+import { connectorSecret } from '../b10conn/secrets.js';
 import { B8_MODEL, insertedClauseId, orderClauses, parseLegalEdit } from './rules.js';
 import type { ContractDeps } from '../contract/routes.js';
 
@@ -543,8 +544,10 @@ export function registerContractB8(app: FastifyInstance, p: string, d: ContractD
         const deny = () => new AppError(401, 'UNAUTHORIZED', 'The message could not be verified');
         if (!m) throw deny();
         const s = await loadSettings(tx, m.tenantId);
-        if (!s.legalPlatform.enabled || !s.legalPlatform.webhookSecret) throw deny();
-        const want = sign(s.legalPlatform.webhookSecret, body);
+        // the shared secret comes from the secret store; the old setting is the fallback (SEC-N03)
+        const secret = await connectorSecret(tx, m.tenantId, 'LEGAL', s.legalPlatform.webhookSecret);
+        if (!s.legalPlatform.enabled || !secret) throw deny();
+        const want = sign(secret, body);
         const a1 = Buffer.from(want);
         const b1 = Buffer.from(given.padEnd(want.length, ' ').slice(0, want.length));
         if (given.length !== want.length || !timingSafeEqual(a1, b1)) throw deny();
@@ -555,6 +558,8 @@ export function registerContractB8(app: FastifyInstance, p: string, d: ContractD
           .values({
             tenantId: m.tenantId,
             kind: 'LEGAL_WEBHOOK',
+            connectorKind: 'LEGAL',
+            direction: 'IN',
             target: s.legalPlatform.name,
             idempotencyKey: key,
             payload: { matterRef: body.matterRef, stage: body.stage },

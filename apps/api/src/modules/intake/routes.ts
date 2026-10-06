@@ -19,6 +19,9 @@ import { AppError, parse } from '../../http/errors.js';
 import { dispatch, usersWithRole } from '../notify/dispatch.js';
 import { FUNCTION_ROLES, requiredEngagements } from './classify.js';
 import { loadSettings } from '../settings/settings.js';
+import { budgetReply, type ConversationBudget } from '../b10ai/budget-reply.js';
+import { nowMs, recordSample } from '../b10ai/perf.js';
+import { checkBudget, sourceLine } from '../b10erp/budget.js';
 import { IntakeService, loadRequest, toView, valuesOf, type RequestView } from './service.js';
 import { FIELD_BY_KEY, missingMandatory, nextQuestions } from './fields.js';
 
@@ -327,12 +330,17 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
       }
       const cfg = await tenantConfig(tx, a.user.tenantId);
       const amount = Number(values.estimatedValue ?? 0);
-      const budget = await d.erp.check({
+      const t0 = nowMs();
+      // an imported ERP budget line for the unit or cost centre decides when there is one (NFR-C02); otherwise the settings do
+      const budget = await checkBudget(tx, d.erp, {
         tenantId: a.user.tenantId,
         businessUnit: values.businessUnit!,
         amount,
         settings: cfg,
+        at: d.clock.now(),
+        costCentre: (values as Record<string, string | undefined>).costCentre ?? null,
       });
+      await recordSample(tx, a.user.tenantId, 'BUDGET_CHECK', nowMs() - t0, d.clock.now());
       const cap = settings.intake.budgetCap;
       if (budget.status === 'EXCEEDED' && cap === 'HARD') {
         // Persist the outcome and audit the refusal, then report it after commit.
@@ -381,7 +389,12 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
         entityType: 'request',
         entityId: id,
         before: { status: 'DRAFT', phase: 'INTAKE' },
-        after: { status: 'SUBMITTED', phase: 'PLAN', budgetCheck: budget.status },
+        after: {
+          status: 'SUBMITTED',
+          phase: 'PLAN',
+          budgetCheck: budget.status,
+          budgetSource: budget.source.label,
+        },
       });
       await svc.notifyProcurement(tx, a.ctx, l.row.number, l.row.title);
       // soft cap: the request goes ahead but the variance is escalated to the executive (FR-0055, FR-X05)
@@ -436,7 +449,13 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           after: { required: eng.map((e) => e.function) },
         });
       const r = (await loadRequest(tx, a.user.tenantId, id))!;
-      return { kind: 'ok' as const, view: toView(r.row, r.fields, await loadSettings(tx, a.user.tenantId)) };
+      return {
+        kind: 'ok' as const,
+        view: {
+          ...toView(r.row, r.fields, await loadSettings(tx, a.user.tenantId)),
+          budgetSource: budget.source,
+        },
+      };
     });
     if (outcome.kind === 'blocked') {
       throw new AppError(
@@ -548,6 +567,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           'Voice input is coming soon; please type your message',
         );
 
+      const started = nowMs();
       const result = await withContext(d.database, a.ctx, async (tx) => {
         const [c] = await tx
           .select()
@@ -592,6 +612,26 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           const l = (await loadRequest(tx, a.user.tenantId, requestId))!;
           view = toView(l.row, l.fields, await loadSettings(tx, a.user.tenantId));
         }
+        // When the person has just said how much it is (or for which unit), the budget check is answered here, in the same
+        // reply, not later at submission (NFR-P04). The check is advisory; submission runs it again and decides.
+        let budget: ConversationBudget | null = null;
+        const touched = draft.changes.some((c) => c.key === 'estimatedValue' || c.key === 'businessUnit');
+        if (touched && view.businessUnit && view.estimatedValue > 0) {
+          const settings = await loadSettings(tx, a.user.tenantId);
+          const t0 = nowMs();
+          const res = await checkBudget(tx, d.erp, {
+            tenantId: a.user.tenantId,
+            businessUnit: view.businessUnit,
+            amount: view.estimatedValue,
+            settings: cfg,
+            at: d.clock.now(),
+          });
+          const ms = nowMs() - t0;
+          await recordSample(tx, a.user.tenantId, 'BUDGET_CHECK', ms, d.clock.now());
+          budget = budgetReply(res, view.estimatedValue, view.businessUnit, settings.intake.budgetCap, ms);
+          budget = { ...budget, text: `${budget.text} ${sourceLine(res.source)}`.trim() };
+          draft.reply = `${draft.reply} ${budget.text}`;
+        }
         await d.audit.record(tx, a.ctx, {
           action: 'ai.propose',
           entityType: 'conversation',
@@ -629,8 +669,11 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
             proposedChanges: proposed,
           })
           .returning();
-        return { assistant: assistant!, proposed, view, requestId };
+        return { assistant: assistant!, proposed, view, requestId, budget };
       });
+      await withContext(d.database, a.ctx, (tx) =>
+        recordSample(tx, a.user.tenantId, 'INTAKE_MESSAGE', nowMs() - started, d.clock.now()),
+      );
       return reply.status(201).send({
         id: result.assistant.id,
         role: 'ASSISTANT',
@@ -638,6 +681,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
         createdAt: result.assistant.createdAt.toISOString(),
         proposedChanges: result.proposed,
         requestId: result.requestId,
+        ...(result.budget ? { budgetCheck: result.budget } : {}),
         request: result.view,
       });
     },

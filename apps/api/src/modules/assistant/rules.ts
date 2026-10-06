@@ -349,6 +349,10 @@ const PAGES: Array<{ prefix: string; text: string }> = [
   },
   { prefix: '/app/suppliers', text: 'The supplier directory: onboarding status, sanctions and insurance.' },
   {
+    prefix: '/app/connectors',
+    text: 'The systems the platform connects to (all simulated here): health, secrets, deliveries, reconciliation and manual tasks for when a system is down.',
+  },
+  {
     prefix: '/app/reports',
     text: 'Portfolio reports. You only see procurements your role is allowed to see.',
   },

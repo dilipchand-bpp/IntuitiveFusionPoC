@@ -16,6 +16,7 @@ import {
   contractRate,
   contractRebate,
   invoice,
+  payment,
   purchaseOrder,
   supplier,
   workOrder,
@@ -752,6 +753,23 @@ export function registerContractB5(
           409,
           'INVALID_STATE',
           i.status === 'BLOCKED' ? 'A blocked invoice cannot be paid until it is released' : 'Already paid',
+        );
+      // a payment already proposed, in flight or confirmed through the payment run (FR-0875) means this invoice cannot also be marked paid by hand
+      const [runPay] = await tx
+        .select({ id: payment.id })
+        .from(payment)
+        .where(
+          and(
+            eq(payment.invoiceId, id),
+            inArray(payment.status, ['PROPOSED', 'APPROVED', 'SENT', 'CONFIRMED']),
+          ),
+        )
+        .limit(1);
+      if (runPay)
+        throw new AppError(
+          409,
+          'PAYMENT_IN_PROGRESS',
+          'A payment for this invoice is already in the payment run; it cannot also be recorded as paid by hand',
         );
       const [row] = await tx
         .update(invoice)

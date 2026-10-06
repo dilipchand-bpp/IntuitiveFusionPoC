@@ -299,6 +299,20 @@ export const SECTIONS = {
       (a) => new Set(a.map((m) => m.erpName.toLowerCase())).size === a.length,
       'Each ERP field can be mapped once',
     ),
+  ai: z
+    .object({
+      /** The model that answers (NFR-C01, NFR-M06). A third-party model can be named here only after it is approved for the tenant (SEC-TP07). */
+      activeModel: z.string().trim().min(1).max(60),
+      /** A different model for one kind of task; anything not listed uses the active model. */
+      taskOverrides: z.record(z.string().max(40), z.string().trim().min(1).max(60)).optional(),
+    })
+    .strict(),
+  performance: z
+    .object({
+      /** Target for the budget check inside the intake conversation, in milliseconds (NFR-P04). */
+      budgetCheckMs: z.number().int().min(50).max(60_000),
+    })
+    .strict(),
   workflowRouting: z
     .object({
       simpleBelow: z.number().min(0).max(1e10),
@@ -441,6 +455,8 @@ export const DEFAULTS: Settings = {
   analytics: { refreshMinutes: 15, consolidationPct: 8, varianceThresholdPct: 5, driftThresholdPct: 10 },
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
+  ai: { activeModel: 'rules-simulated-v1' },
+  performance: { budgetCheckMs: 2000 },
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },
 };
 

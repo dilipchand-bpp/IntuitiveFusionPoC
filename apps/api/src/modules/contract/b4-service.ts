@@ -5,6 +5,7 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { RoleName } from '@if/shared';
 import type { VendorRegistry } from '../../adapters/vendor-registry.js';
+import { insuranceVia } from '../b10conn/screening.js';
 import type { SanctionsScreening } from '../../adapters/sanctions.js';
 import type { AuthContext } from '../../auth/guard.js';
 import type { Database, Tx } from '../../db/client.js';
@@ -165,17 +166,21 @@ export async function runRecheck(
 ): Promise<CheckResult[]> {
   const [s] = await tx.select().from(supplier).where(eq(supplier.id, c.supplierId));
   if (!s) return [];
-  const sc = await sanctions.screen({ company: s.company, abn: s.abn });
+  const sc = await sanctions.screen({ company: s.company, abn: s.abn, tenantId: c.tenantId, tx });
+  const insured = await insuranceVia(tx, { now: () => now }, c.tenantId, { company: s.company, abn: s.abn });
   const fr = await registry.financialRisk(s.abn, s.company);
   const results: CheckResult[] = [
     {
       key: 'SANCTIONS',
       label: 'Sanctions screening',
-      result: sc.status === 'MATCH' ? 'FAIL' : 'PASS',
+      // a screening that could not be made is a warning, never a pass (NFR-C05)
+      result: sc.status === 'MATCH' ? 'FAIL' : sc.status === 'UNVERIFIED' ? 'WARN' : 'PASS',
       detail:
         sc.status === 'MATCH'
           ? `${sc.reason ?? 'The company matches a watchlist entry'}`
-          : 'No watchlist match',
+          : sc.status === 'UNVERIFIED'
+            ? (sc.reason ?? 'UNVERIFIED (provider unavailable)')
+            : 'No watchlist match',
     },
     {
       key: 'FINANCIAL_RISK',
@@ -186,17 +191,32 @@ export async function runRecheck(
     {
       key: 'INSURANCE',
       label: 'Insurance',
-      result: s.insuranceStatus === 'EXPIRED' ? 'FAIL' : 'PASS',
+      result:
+        s.insuranceStatus === 'EXPIRED' ||
+        insured.result.state === 'EXPIRED' ||
+        insured.result.state === 'NOT_FOUND'
+          ? 'FAIL'
+          : insured.result.state === 'UNVERIFIED'
+            ? 'WARN'
+            : 'PASS',
       detail:
         s.insuranceStatus === 'EXPIRED'
           ? 'The insurance certificate has expired'
-          : `Insurance is ${s.insuranceStatus.toLowerCase()}`,
+          : insured.result.state === 'UNVERIFIED'
+            ? `Insurance is ${s.insuranceStatus.toLowerCase()} on record; ${insured.result.note}`
+            : insured.result.state === 'VERIFIED'
+              ? `Insurance is ${s.insuranceStatus.toLowerCase()}; the insurer confirms it`
+              : insured.result.note,
     },
   ];
   await store(tx, c, 'RECHECK', results, now);
   await tx
     .update(supplier)
-    .set({ sanctionsStatus: sc.status === 'MATCH' ? 'MATCH' : 'CLEAR', lastCheckedAt: now })
+    .set({
+      // an unverified screening leaves the supplier's status as it was; it is never turned into CLEAR
+      ...(sc.status === 'UNVERIFIED' ? {} : { sanctionsStatus: sc.status === 'MATCH' ? 'MATCH' : 'CLEAR' }),
+      lastCheckedAt: now,
+    })
     .where(eq(supplier.id, s.id));
   return results;
 }

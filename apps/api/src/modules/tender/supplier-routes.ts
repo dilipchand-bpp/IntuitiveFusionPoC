@@ -24,7 +24,8 @@ import {
   tender,
   tenant,
 } from '../../db/schema.js';
-import { MockSanctionsScreening, type SanctionsScreening } from '../../adapters/sanctions.js';
+import type { SanctionsScreening } from '../../adapters/sanctions.js';
+import { ConnectorSanctionsScreening } from '../b10conn/screening.js';
 import { AppError, parse } from '../../http/errors.js';
 import { dispatch, usersWithRole } from '../notify/dispatch.js';
 import { sendEmail } from '../notify/email.js';
@@ -80,7 +81,8 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
   const done = new Set<string>();
   const reg = (m: string, path: string) => done.add(`${m} ${path}`);
   const svc = new TenderService(d.clock, d.audit, d.store);
-  const screening = d.sanctions ?? new MockSanctionsScreening();
+  const screening =
+    d.sanctions ?? new ConnectorSanctionsScreening(d.database, d.clock, d.config.DEFAULT_TENANT_SLUG);
   const fresh = () => svc.closeDue(d.database);
   const tid = (req: { params: unknown }) => parse(z.object({ id: uuid }), req.params).id;
   const publicLimit = {
@@ -287,7 +289,8 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
             tenantId,
             company: b.company,
             abn,
-            sanctionsStatus: screen.status,
+            // a screening that could not be made is never recorded as clear: the supplier stays pending (NFR-C05)
+            sanctionsStatus: screen.status === 'UNVERIFIED' ? 'PENDING' : screen.status,
             sanctionsNote: screen.reason ?? null,
             insuranceStatus: 'UNKNOWN',
             onboarding: {

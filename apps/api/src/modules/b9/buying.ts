@@ -21,6 +21,7 @@ import {
 import { AppError, parse } from '../../http/errors.js';
 import { IntakeService } from '../intake/service.js';
 import { loadSettings } from '../settings/settings.js';
+import { modelStamp, resolveModel, type Resolved } from '../b10ai/service.js';
 
 export const BUY_MODEL = 'rules-simulated-v1';
 const uuid = z.string().uuid();
@@ -423,8 +424,20 @@ export function registerBuying(app: FastifyInstance, p: string, d: BuyingDeps): 
     },
   );
 
-  const propView = (r: typeof sourcingProposal.$inferSelect, limit: number) => {
+  /** The recommendation as a person sees it. The summary is written by the tenant's active AI model (NFR-C01, NFR-M06). */
+  const propView = async (
+    tx: Tx,
+    r: typeof sourcingProposal.$inferSelect,
+    limit: number,
+    resolved?: Resolved,
+  ) => {
     const shortlist = r.shortlist as Scored[];
+    const used = resolved ?? (await resolveModel(tx, r.tenantId, 'recommendation-summary'));
+    const summary = await used.model.complete('recommendation-summary', {
+      need: r.need,
+      quantity: Number(r.quantity),
+      candidates: shortlist,
+    });
     return {
       id: r.id,
       need: r.need,
@@ -436,7 +449,9 @@ export function registerBuying(app: FastifyInstance, p: string, d: BuyingDeps): 
       requestId: r.requestId,
       withinLimit: r.total === null ? null : Number(r.total) <= limit,
       limit,
-      model: BUY_MODEL,
+      ...modelStamp(used),
+      summary: summary.text,
+      ...(summary.note ? { summaryNote: summary.note } : {}),
       createdAt: r.createdAt.toISOString(),
     };
   };
@@ -481,7 +496,7 @@ export function registerBuying(app: FastifyInstance, p: string, d: BuyingDeps): 
             total: best?.total ?? null,
           },
         });
-        return propView(row!, s.buying.autoSourceLimitAud);
+        return propView(tx, row!, s.buying.autoSourceLimitAud);
       });
       return reply.status(201).send(out);
     },
@@ -501,7 +516,10 @@ export function registerBuying(app: FastifyInstance, p: string, d: BuyingDeps): 
       const mine = a.user.roles.includes('PROCUREMENT')
         ? rows
         : rows.filter((r) => r.requesterId === a.user.id);
-      return mine.map((r) => propView(r, s.buying.autoSourceLimitAud));
+      const used = await resolveModel(tx, a.user.tenantId, 'recommendation-summary');
+      const out = [];
+      for (const r of mine) out.push(await propView(tx, r, s.buying.autoSourceLimitAud, used));
+      return out;
     });
   });
 
@@ -534,6 +552,7 @@ export function registerBuying(app: FastifyInstance, p: string, d: BuyingDeps): 
             entityId: id,
           });
           return propView(
+            tx,
             (await tx.select().from(sourcingProposal).where(eq(sourcingProposal.id, id)))[0]!,
             s.buying.autoSourceLimitAud,
           );
@@ -579,6 +598,7 @@ export function registerBuying(app: FastifyInstance, p: string, d: BuyingDeps): 
           after: { sku: pick.sku, total: pick.total, requestId: r2d.requestId },
         });
         return propView(
+          tx,
           (await tx.select().from(sourcingProposal).where(eq(sourcingProposal.id, id)))[0]!,
           s.buying.autoSourceLimitAud,
         );

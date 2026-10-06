@@ -2,12 +2,12 @@
  * Routes that back the application shell: dashboard KPIs (US-RPT-01 frame) and notifications (US-PLT-04).
  * Reads run as the least-privilege app role with the caller's identity published for row level security.
  */
-import { and, desc, eq, gte, lte, ne, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { guard, type GuardDeps } from '../auth/guard.js';
 import { withContext } from '../db/client.js';
-import { alert, evaluation, notification, panelMember, plan } from '../db/schema.js';
+import { alert, notification } from '../db/schema.js';
 import { actionItemsFor } from './b9/action-items.js';
 import { visibleRequests } from './reporting/scope.js';
 import { AppError, parse } from '../http/errors.js';

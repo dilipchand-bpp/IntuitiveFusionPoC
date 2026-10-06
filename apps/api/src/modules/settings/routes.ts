@@ -14,6 +14,7 @@ import { appUser, notification, notificationDelivery } from '../../db/schema.js'
 import { AppError, parse } from '../../http/errors.js';
 import { FIELD_BY_KEY } from '../intake/fields.js';
 import { sweepGrants } from '../admin/grants.js';
+import { assertSettable } from '../b10ai/service.js';
 import { EscalationService } from '../notify/dispatch.js';
 import {
   SECTIONS,
@@ -44,7 +45,7 @@ const updateBody = z
   .refine((b) => Object.values(b).some((v) => v !== undefined), { message: 'Send at least one section' });
 
 /** Cross-field rules a single-section schema cannot see. Returns the problems found. */
-function crossCheck(next: Settings): Array<{ field: string; message: string }> {
+export function crossCheck(next: Settings): Array<{ field: string; message: string }> {
   const problems: Array<{ field: string; message: string }> = [];
   const custom = new Set(next.customFields.map((c) => c.key));
   for (const c of next.customFields)
@@ -98,6 +99,8 @@ export function registerSettingsRoutes(app: FastifyInstance, p: string, d: Setti
       const problems = crossCheck(merged as Settings);
       if (problems.length > 0)
         throw new AppError(422, 'VALIDATION_FAILED', 'Some settings are not valid', problems);
+      // a third-party AI model can be named only once it is approved for this organisation (SEC-TP07)
+      if (body.ai) await assertSettable(tx, a.user.tenantId, body.ai);
       const { before, after } = await saveSettings(tx, a.user.tenantId, body as Partial<Settings>);
       // one audit event per changed section: who, which setting, the old and the new value (FR-0690)
       for (const name of SECTION_NAMES) {
