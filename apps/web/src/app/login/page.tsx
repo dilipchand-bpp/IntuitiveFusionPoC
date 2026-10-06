@@ -3,11 +3,16 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { Logo, ThemeToggle } from '@if/ui';
 import { PreviewLink } from '@/components/preview/preview-link';
+import { getBranding } from '@/lib/branding';
 import { LoginForm } from './login-form';
 
-export const metadata = { title: 'Sign in – Intuitive Fusion' };
+export async function generateMetadata() {
+  const b = await getBranding();
+  return { title: `Sign in – ${b.productName}` };
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const brand = await getBranding();
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <aside className="bg-brand-gradient relative hidden flex-col justify-between overflow-hidden p-12 lg:flex">
@@ -17,10 +22,12 @@ export default function LoginPage() {
         <Link
           href="/"
           className="relative w-fit text-gradient-fg no-underline"
-          aria-label="Intuitive Fusion home"
+          aria-label={`${brand.productName} home`}
         >
-          <Logo withName size={44} />
+          <Logo size={44} />
+          <span className="ml-3 font-heading text-lg font-bold">{brand.productName}</span>
         </Link>
+        {brand.tagline && <p className="relative -mt-8 text-sm opacity-90">{brand.tagline}</p>}
         <div className="relative flex flex-col gap-8">
           <h2 className="text-5xl font-extrabold leading-[1.08] tracking-tight">
             From request to signed contract, in one conversation.
@@ -44,8 +51,13 @@ export default function LoginPage() {
       </aside>
       <main id="main" className="flex flex-col">
         <div className="flex items-center justify-between p-4 lg:justify-end">
-          <Link href="/" className="text-text no-underline lg:hidden" aria-label="Intuitive Fusion home">
-            <Logo withName size={36} />
+          <Link
+            href="/"
+            className="text-text no-underline lg:hidden"
+            aria-label={`${brand.productName} home`}
+          >
+            <Logo size={36} />
+            <span className="ml-3 font-heading text-lg font-bold">{brand.productName}</span>
           </Link>
           <span className="flex items-center gap-1">
             <PreviewLink />

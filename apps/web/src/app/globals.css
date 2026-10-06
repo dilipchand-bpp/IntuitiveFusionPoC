@@ -129,6 +129,26 @@
   .pulse-dot {
     animation: if-pulse-dot 1.8s ease-out infinite;
   }
+  /* Celebration confetti (FR-0835): falls once; the global reduced-motion rule makes it still. */
+  @keyframes if-confetti {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) rotate(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--dx, 0), 90px) rotate(var(--rot, 360deg));
+    }
+  }
+  .confetti-piece {
+    position: absolute;
+    top: 0;
+    width: 8px;
+    height: 12px;
+    border-radius: 2px;
+    animation: if-confetti 1.6s ease-in forwards;
+    animation-delay: var(--d, 0ms);
+  }
   @supports (animation-timeline: view()) {
     .reveal-scroll {
       animation: if-rise linear both;

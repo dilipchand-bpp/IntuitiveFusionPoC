@@ -82,6 +82,9 @@ export default async function Dashboard({
         <p className="mt-1 text-text-muted" data-testid="scope-text">
           {SCOPE_TEXT[k.scope]} Figures come from synthetic demo data.
         </p>
+        <p className="mt-2 text-sm">
+          <Link href="/app/dashboard/my">Personalise my dashboard</Link>
+        </p>
       </header>
 
       <section

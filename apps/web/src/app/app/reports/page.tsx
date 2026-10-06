@@ -35,6 +35,16 @@ export default async function ReportsPage() {
             ['/app/reports/schedule', 'Schedule', ['PROCUREMENT', 'EXEC', 'DELEGATE']],
             ['/app/reports/capacity', 'Workload and capacity', ['PROCUREMENT', 'EXEC']],
             [
+              '/app/reports/commitment',
+              'Future commitment',
+              ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR'],
+            ],
+            [
+              '/app/reports/optimisation',
+              'Spend optimisation',
+              ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR'],
+            ],
+            [
               '/app/reports/supplier-risk',
               'Supplier risk map',
               ['PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'],
