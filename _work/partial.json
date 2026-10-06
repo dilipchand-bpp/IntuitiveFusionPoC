@@ -1,0 +1,14 @@
+{
+  "FR-0825": {
+    "batch": "B9",
+    "note": "Built as an installable mobile web app: the same request, scoring, supplier-portal, search and dashboard screens work on a phone, it installs to the home screen, and notes can be captured during a supplier review. Not built: a native app for the Apple or Google stores, which needs a native shell and store accounts (see docs/B9-Evidence.md)."
+  },
+  "FR-0855": {
+    "batch": "B9",
+    "note": "Built: an audit, risk and compliance register, and white labelling (name and colour). Not built: IT service desk, project management, HR performance management, CRM and full ERP functionality (payments, accounting, budgeting), which are separate products."
+  },
+  "NFR-P05": {
+    "batch": "B9",
+    "note": "Built: a separate analytics store that is refreshed from the main database, and the new analytical reports (spend optimisation, future commitment and the spend views) read from it. Not built: moving the older operational dashboards and reports onto it; they still read the main database."
+  }
+}

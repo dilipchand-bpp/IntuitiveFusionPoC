@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CONTRAST_PAIRS, contrastRatio, dark, light, themeToCss } from './theme';
+import {
+  CONTRAST_PAIRS,
+  PALETTES,
+  PALETTE_NAMES,
+  contrastRatio,
+  dark,
+  light,
+  themeToCss,
+  withPalette,
+} from './theme';
 
 describe('theme contrast contract (WCAG 2.1 AA)', () => {
   for (const [name, tokens] of [
@@ -27,6 +36,33 @@ describe('theme contrast contract (WCAG 2.1 AA)', () => {
   it('generated theme.css is in sync with theme.ts (run `npm run theme:build -w @if/ui`)', () => {
     const onDisk = readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
     expect(onDisk).toBe(themeToCss());
+  });
+});
+
+describe('white labelling palettes (FR-0855)', () => {
+  it('offers the base palette and four more', () => {
+    expect(PALETTE_NAMES).toEqual(['INDIGO', ...Object.keys(PALETTES)]);
+  });
+  for (const [name, p] of Object.entries(PALETTES)) {
+    for (const [mode, base, over] of [
+      ['light', light, p.light],
+      ['dark', dark, p.dark],
+    ] as const) {
+      const tokens = withPalette(base, over);
+      for (const [fg, bg, min, why] of CONTRAST_PAIRS) {
+        it(`${name} ${mode}: ${fg} on ${bg} >= ${min}:1 (${why})`, () => {
+          expect(contrastRatio(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(min);
+        });
+      }
+    }
+  }
+  it('emits a block for each palette, for light, the system dark setting and the manual dark setting', () => {
+    const css = themeToCss();
+    for (const n of Object.keys(PALETTES)) {
+      expect(css).toContain(`:root[data-palette='${n}']:not([data-theme='dark'])`);
+      expect(css).toContain(`:root[data-palette='${n}']:not([data-theme='light'])`);
+      expect(css).toContain(`:root[data-palette='${n}'][data-theme='dark']`);
+    }
   });
 });
 

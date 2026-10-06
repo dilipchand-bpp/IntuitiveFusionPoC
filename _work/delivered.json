@@ -184,5 +184,22 @@
       "NFR-U05",
       "NFR-U08"
     ]
+  },
+  "B9": {
+    "label": "B9 Planning, spend and experience",
+    "evidence": "docs/B9-Evidence.md",
+    "ids": [
+      "FR-0810",
+      "FR-0820",
+      "FR-0835",
+      "FR-0840",
+      "FR-0845",
+      "FR-0850",
+      "FR-0870",
+      "FR-0880",
+      "NFR-P01",
+      "NFR-P02",
+      "NFR-U04"
+    ]
   }
 }

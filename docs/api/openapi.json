@@ -74,6 +74,30 @@
   },
   {
    "name": "ApprovalLinks"
+  },
+  {
+   "name": "Currency"
+  },
+  {
+   "name": "Dashboards"
+  },
+  {
+   "name": "Analytics"
+  },
+  {
+   "name": "Progress"
+  },
+  {
+   "name": "RiskRegister"
+  },
+  {
+   "name": "GuidedBuying"
+  },
+  {
+   "name": "Artefacts"
+  },
+  {
+   "name": "Search"
   }
  ],
  "security": [
@@ -20895,6 +20919,1926 @@
      }
     }
    }
+  },
+  "/fx/rates": {
+   "get": {
+    "operationId": "listFxRates",
+    "tags": [
+     "Currency"
+    ],
+    "summary": "Exchange rates in force today and the history, by annual or live setting",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FxRates"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "saveFxRates",
+    "tags": [
+     "Currency"
+    ],
+    "summary": "Set the annual rates for a financial year",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FxRates"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 unsupported currency or a rate that is not positive",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FxRatesSave"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/fx/refresh": {
+   "post": {
+    "operationId": "refreshFxRates",
+    "tags": [
+     "Currency"
+    ],
+    "summary": "Pull the latest simulated live rates",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FxRefreshResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/fx/convert": {
+   "get": {
+    "operationId": "convertAmount",
+    "tags": [
+     "Currency"
+    ],
+    "summary": "Convert an amount to AUD at the rate in force on a date",
+    "parameters": [
+     {
+      "name": "amount",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "currency",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "on",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FxConversion"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/me/dashboard": {
+   "get": {
+    "operationId": "getMyDashboard",
+    "tags": [
+     "Dashboards"
+    ],
+    "summary": "My own dashboard: the widgets I chose, or the default for my role, and the catalogue I may choose from",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "saveMyDashboard",
+    "tags": [
+     "Dashboards"
+    ],
+    "summary": "Choose, order, size and style my widgets",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 for a widget my role cannot use or a style it cannot take",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DashboardSave"
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "operationId": "resetMyDashboard",
+    "tags": [
+     "Dashboards"
+    ],
+    "summary": "Go back to the default dashboard for my role",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/analytics/status": {
+   "get": {
+    "operationId": "getAnalyticsStatus",
+    "tags": [
+     "Analytics"
+    ],
+    "summary": "When the separate analytics store was last refreshed from the main database",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalyticsStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/analytics/refresh": {
+   "post": {
+    "operationId": "refreshAnalytics",
+    "tags": [
+     "Analytics"
+    ],
+    "summary": "Refresh the analytics store now",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalyticsRefreshed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/reports/future-commitment": {
+   "get": {
+    "operationId": "getFutureCommitment",
+    "tags": [
+     "Analytics"
+    ],
+    "summary": "What the enterprise is committed to pay in future: fixed amounts, ceilings, ranges, unknowns and extensions",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FutureCommitment"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/reports/optimisation": {
+   "get": {
+    "operationId": "getOptimisation",
+    "tags": [
+     "Analytics"
+    ],
+    "summary": "Where spend can be reduced: consolidation, duplicate contracts, rate card gaps and price variance",
+    "parameters": [],
+    "x-roles": [
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OptimisationReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/notes/targets": {
+   "get": {
+    "operationId": "listNoteTargets",
+    "tags": [
+     "Progress"
+    ],
+    "summary": "The suppliers the caller may take review notes about",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReviewNoteTargets"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/notes": {
+   "post": {
+    "operationId": "createNote",
+    "tags": [
+     "Progress"
+    ],
+    "summary": "Take a note about a supplier, private or shared with the team",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReviewNote"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReviewNoteCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listNotes",
+    "tags": [
+     "Progress"
+    ],
+    "summary": "My notes, and the ones others shared, about a supplier",
+    "parameters": [
+     {
+      "name": "supplierId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ReviewNote"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/notes/{id}": {
+   "delete": {
+    "operationId": "deleteNote",
+    "tags": [
+     "Progress"
+    ],
+    "summary": "Delete one of my own notes",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "EXEC",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/grc/items": {
+   "get": {
+    "operationId": "listGrcItems",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Risks, audit findings and obligations in the register",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "LEGAL",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/GrcItem"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createGrcItem",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Add a risk, an audit finding or an obligation",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "LEGAL",
+     "PROCUREMENT",
+     "FINANCE"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrcItem"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 a risk needs likelihood and impact",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrcItemCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/grc/items/{id}": {
+   "patch": {
+    "operationId": "updateGrcItem",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Change the rating, owner, dates or status",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "LEGAL",
+     "PROCUREMENT",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrcItem"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 accepting needs a treatment of at least ten characters",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrcItemUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/grc/items/{id}/actions": {
+   "post": {
+    "operationId": "addGrcAction",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Assign an action; the owner is notified",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "LEGAL",
+     "PROCUREMENT",
+     "FINANCE"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrcItem"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrcActionCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/grc/items/{id}/actions/{actionId}/complete": {
+   "post": {
+    "operationId": "completeGrcAction",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Mark an action done",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "actionId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "LEGAL",
+     "PROCUREMENT",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrcItem"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/grc/summary": {
+   "get": {
+    "operationId": "getGrcSummary",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Counts by kind and status and the likelihood and impact heat map",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "LEGAL",
+     "FINANCE",
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrcSummary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/grc/sync": {
+   "post": {
+    "operationId": "syncGrc",
+    "tags": [
+     "RiskRegister"
+    ],
+    "summary": "Pull in what the platform already knows (sanctions, expired insurance and the like), once each",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GrcSyncResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/branding": {
+   "get": {
+    "operationId": "getBranding",
+    "tags": [
+     "Currency"
+    ],
+    "summary": "The product name, tagline, palette and support address (shown on the sign-in page)",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Branding"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/requests/{id}/progress": {
+   "get": {
+    "operationId": "getRequestProgress",
+    "tags": [
+     "Progress"
+    ],
+    "summary": "How far a procurement has come, by milestone",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProgressView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 for a request the caller cannot see; 403 for suppliers"
+   }
+  },
+  "/layouts/{kind}/applied": {
+   "get": {
+    "operationId": "getAppliedLayout",
+    "tags": [
+     "Progress"
+    ],
+    "summary": "What a page shows and in what order, for anyone who can open the page",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AppliedLayout"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/catalogue": {
+   "get": {
+    "operationId": "listCatalogue",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "The approved catalogue, with suppliers that cannot be ordered from marked",
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "category",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CatalogueView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "addCatalogueItem",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "Add a catalogue item",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CatalogueItemResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CatalogueItemCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/catalogue/{id}": {
+   "patch": {
+    "operationId": "updateCatalogueItem",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "Change the price, lead time or whether it is offered",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CatalogueItemResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CatalogueItemUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/buying/orders": {
+   "post": {
+    "operationId": "orderFromCatalogue",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "Draft a request from chosen catalogue lines",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BuyingOrderResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BuyingOrder"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/buying/auto-source": {
+   "post": {
+    "operationId": "autoSource",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "Describe a need: the platform shortlists, scores and recommends (rules-simulated-v1)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SourcingProposal"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SourceNeed"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/buying/proposals": {
+   "get": {
+    "operationId": "listProposals",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "My sourcing proposals (procurement sees all)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SourcingProposal"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/buying/proposals/{id}/decision": {
+   "post": {
+    "operationId": "decideProposal",
+    "tags": [
+     "GuidedBuying"
+    ],
+    "summary": "A person approves or rejects a recommendation; approving drafts a request",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SourcingProposal"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 OVER_LIMIT above the limit; SUPPLIER_NOT_APPROVED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProposalDecision"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/artefacts/{kind}/{id}/state": {
+   "get": {
+    "operationId": "getArtefactState",
+    "tags": [
+     "Artefacts"
+    ],
+    "summary": "Whether an evaluation report or contract plans are out of date, and when they will be refreshed",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ArtefactState"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/artefacts/{kind}/{id}/refresh": {
+   "post": {
+    "operationId": "refreshArtefact",
+    "tags": [
+     "Artefacts"
+    ],
+    "summary": "Bring an artefact up to date now",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "CONTRACT_MGR",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ArtefactRefreshed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 for an approved report"
+   }
+  },
+  "/search": {
+   "post": {
+    "operationId": "search",
+    "tags": [
+     "Search"
+    ],
+    "summary": "Search my records, and an outside source when the organisation allows it (identifiers withheld)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SearchResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SearchQuery"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/search/external-log": {
+   "get": {
+    "operationId": "listExternalSearchLog",
+    "tags": [
+     "Search"
+    ],
+    "summary": "Every question sent to an outside source and what was withheld",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ExternalSearchLog"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -28922,6 +30866,150 @@
     ]
    },
    "ApprovalLinkDecided": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "FxRates": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "FxRatesSave": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "FxRefreshResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "FxConversion": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DashboardView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "DashboardSave": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AnalyticsStatus": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AnalyticsRefreshed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "FutureCommitment": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OptimisationReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReviewNoteTargets": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReviewNoteCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ReviewNote": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrcItem": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrcItemCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrcItemUpdate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrcActionCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrcSummary": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "GrcSyncResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "Branding": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProgressView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AppliedLayout": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CatalogueView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CatalogueItemCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CatalogueItemUpdate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CatalogueItemResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BuyingOrder": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BuyingOrderResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SourceNeed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SourcingProposal": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ProposalDecision": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ArtefactState": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ArtefactRefreshed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SearchQuery": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SearchResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ExternalSearchLog": {
     "type": "object",
     "additionalProperties": true
    }

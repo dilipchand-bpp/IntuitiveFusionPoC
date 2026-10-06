@@ -1370,12 +1370,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0810',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Foreign currency and FX management — handling multiple currencies, conversion between local and international currencies, annual or live forex rate feeds, and...',
+    batch: 'B9',
   }, // DEFERRED(FR-0810)
   {
     id: 'FR-0815',
@@ -1390,22 +1391,25 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0820',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Guided buying from approved supplier lists, catalogues and contracts, and autonomous AI-initiated sourcing for commodity or low-value repetitive goods and services...',
+    batch: 'B9',
   }, // DEFERRED(FR-0820)
   {
     id: 'FR-0825',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'PARTIAL',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Native mobile application providing procurement request submission, supplier portal access, evaluator scoring, plain-language amendments, AI search, app-specific...',
+    batch: 'B9',
+    note: 'Built as an installable mobile web app: the same request, scoring, supplier-portal, search and dashboard screens work on a phone, it installs to the home screen, and notes can be captured during a supplier review. Not built: a native app for the Apple or Google stores, which needs a native shell and store accounts (see docs/B9-Evidence.md).',
   }, // DEFERRED(FR-0825)
   {
     id: 'FR-0830',
@@ -1421,51 +1425,57 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0835',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Gamification of the request and phase-progression experience, including themed progress characters, completion celebrations and progress-to-completion visualisations',
+    batch: 'B9',
   }, // DEFERRED(FR-0835)
   {
     id: 'FR-0840',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Spend optimisation and benefits/cost analysis — contract consolidation opportunities, duplicate contract detection, rate-card optimisation, price variance analysis,...',
+    batch: 'B9',
   }, // DEFERRED(FR-0840)
   {
     id: 'FR-0845',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Future commitment analysis reporting the value committed for future financial years, split by cost centre and business unit, with AI estimation and explicitly stated...',
+    batch: 'B9',
   }, // DEFERRED(FR-0845)
   {
     id: 'FR-0850',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Extended dashboard personalisation — user-selected placement of charts and metrics (for example savings, spend tracker, ESG compliance) and selectable visual styles...',
+    batch: 'B9',
   }, // DEFERRED(FR-0850)
   {
     id: 'FR-0855',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'PARTIAL',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title: 'Expansion into adjacent domains — audit, risk and compliance management',
+    batch: 'B9',
+    note: 'Built: an audit, risk and compliance register, and white labelling (name and colour). Not built: IT service desk, project management, HR performance management, CRM and full ERP functionality (payments, accounting, budgeting), which are separate products.',
   }, // DEFERRED(FR-0855)
   {
     id: 'FR-0860',
@@ -1490,12 +1500,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0870',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Real-time, rather than periodic or batched, AI updating of evaluation report and contract management artefacts',
+    batch: 'B9',
   }, // DEFERRED(FR-0870)
   {
     id: 'FR-0875',
@@ -1509,31 +1520,34 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0880',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title: 'Real-time web-scale searching of external AI models against live institutional data',
+    batch: 'B9',
   }, // DEFERRED(FR-0880)
   {
     id: 'NFR-P01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Performance & Response Time',
     area: null,
     priority: 'Must',
     title:
       'Early-stage artefacts, in particular the procurement plan, shall update live or near-real-time from the AI conversation, at least for the section the user is...',
+    batch: 'B9',
   }, // DEFERRED(NFR-P01)
   {
     id: 'NFR-P02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Performance & Response Time',
     area: null,
     priority: 'Should',
     title:
       'Later-stage artefacts such as evaluation reports and contract management records may update on a delayed or batched basis in order to manage AI processing cost',
+    batch: 'B9',
   }, // DEFERRED(NFR-P02)
   {
     id: 'NFR-P04',
@@ -1548,12 +1562,14 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-P05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'PARTIAL',
     category: 'Performance & Response Time',
     area: null,
     priority: 'Must',
     title:
       'Reporting and analytics shall run on a data layer decoupled from the core transactional databases, so that complex analytical queries do not degrade transactional...',
+    batch: 'B9',
+    note: 'Built: a separate analytics store that is refreshed from the main database, and the new analytical reports (spend optimisation, future commitment and the spend views) read from it. Not built: moving the older operational dashboards and reports onto it; they still read the main database.',
   }, // DEFERRED(NFR-P05)
   {
     id: 'NFR-SC01',
@@ -1635,11 +1651,12 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-U04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Usability & Accessibility',
     area: null,
     priority: 'Should',
     title: 'Configurable drag-and-drop layout and design shall be available across every lifecycle phase',
+    batch: 'B9',
   }, // DEFERRED(NFR-U04)
   {
     id: 'NFR-U05',

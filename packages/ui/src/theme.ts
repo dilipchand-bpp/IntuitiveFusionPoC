@@ -188,6 +188,75 @@ export const CONTRAST_PAIRS: ReadonlyArray<readonly [keyof ColorTokens, keyof Co
     ['gradientTo', 'bg', 4.5, 'gradient headline text on page (end)'],
   ];
 
+// ---------- white labelling (FR-0855) ----------
+
+/**
+ * Colour sets an organisation can choose for its own portal. INDIGO is the base theme above; each other palette changes only
+ * the accent and the brand gradient, and every one passes the same contrast contract in both themes (a test checks it).
+ */
+export const PALETTE_NAMES = ['INDIGO', 'TEAL', 'CRIMSON', 'FOREST', 'SLATE'] as const;
+export type PaletteName = (typeof PALETTE_NAMES)[number];
+type PaletteTokens = Pick<
+  ColorTokens,
+  'accent' | 'accentHover' | 'ring' | 'gradientFrom' | 'gradientTo' | 'gradientFg'
+>;
+const pal = (accent: string, hover: string, to: string, fg: string): PaletteTokens => ({
+  accent,
+  accentHover: hover,
+  ring: accent,
+  gradientFrom: accent,
+  gradientTo: to,
+  gradientFg: fg,
+});
+export const PALETTES: Record<
+  Exclude<PaletteName, 'INDIGO'>,
+  { light: PaletteTokens; dark: PaletteTokens }
+> = {
+  TEAL: {
+    light: pal('#0E6B73', '#0A545A', '#1F7A5C', '#FFFFFF'),
+    dark: pal('#5CD1D9', '#7FE0E6', '#7FE3B8', '#08201F'),
+  },
+  CRIMSON: {
+    light: pal('#B3263E', '#8F1D31', '#B4411C', '#FFFFFF'),
+    dark: pal('#FF8DA1', '#FFA9B8', '#FFB38A', '#2A0A12'),
+  },
+  FOREST: {
+    light: pal('#2F6B2F', '#245524', '#4A7A23', '#FFFFFF'),
+    dark: pal('#8FD18F', '#A8DEA8', '#C4E37A', '#0F2410'),
+  },
+  SLATE: {
+    light: pal('#3D4F66', '#2E3D50', '#566B87', '#FFFFFF'),
+    dark: pal('#A9B8CC', '#C2CEDC', '#C8D3E3', '#10151D'),
+  },
+};
+/** The tokens a palette in a theme actually uses: the base theme with the palette laid over it. */
+export const withPalette = (base: ColorTokens, p: PaletteTokens): ColorTokens => ({ ...base, ...p });
+
+const paletteCss = (): string =>
+  (Object.keys(PALETTES) as Array<keyof typeof PALETTES>)
+    .map((n) => {
+      const vars = (t: PaletteTokens, indent: string) =>
+        Object.entries(t)
+          .map(([k, val]) => `${indent}--if-color-${kebabCase(k)}: ${val};`)
+          .join('\n');
+      const sel = `:root[data-palette='${n}']`;
+      return [
+        `${sel}:not([data-theme='dark']) {`,
+        vars(PALETTES[n].light, '  '),
+        '}',
+        '@media (prefers-color-scheme: dark) {',
+        `  ${sel}:not([data-theme='light']) {`,
+        vars(PALETTES[n].dark, '    '),
+        '  }',
+        '}',
+        `${sel}[data-theme='dark'] {`,
+        vars(PALETTES[n].dark, '  '),
+        '}',
+      ].join('\n');
+    })
+    .join('\n');
+const kebabCase = (s: string) => s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+
 // ---------- emitters (pure functions, used by the build script and tests) ----------
 
 const kebab = (s: string) => s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
@@ -241,6 +310,7 @@ ${colorVars(dark, '    ')}
 ${colorVars(dark)}
   color-scheme: dark;
 }
+${paletteCss()}
 @media (prefers-reduced-motion: reduce) {
   :root {
     --if-motion-fast: 0ms;

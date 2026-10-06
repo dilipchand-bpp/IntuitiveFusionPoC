@@ -115,13 +115,14 @@ test.describe('NFR-U05 approving from a link', () => {
   test('a delegate decides from a one-time link without signing in; the link is then spent', async ({
     browser,
   }) => {
-    const { id: requestId } = await planAwaitingApproval(`B8 link ${rand()}`);
+    const title = `B8 link ${rand()}`;
+    const { id: requestId } = await planAwaitingApproval(title);
     const del = await apiAs('delegate');
     const notes = (await (await del.api.get('/api/v1/notifications')).json()) as
-      | { items?: Array<{ title: string; link: string | null }> }
-      | Array<{ title: string; link: string | null }>;
+      | { items?: Array<{ title: string; body?: string; link: string | null }> }
+      | Array<{ title: string; body?: string; link: string | null }>;
     const list = Array.isArray(notes) ? notes : (notes.items ?? []);
-    const link = list.find((n) => n.title === 'Approve without signing in')?.link;
+    const link = list.find((n) => n.title === 'Approve without signing in' && n.body?.includes(title))?.link;
     expect(link, 'the delegate should have been sent a link').toBeTruthy();
 
     const ctx = await browser.newContext(); // no cookies: nobody is signed in

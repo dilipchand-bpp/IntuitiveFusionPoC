@@ -6,15 +6,17 @@
 export interface RoadmapItem {
   id: string;
   tier: 'S' | 'D';
-  /** BUILT: delivered in a roadmap batch. PARTIAL: referenced by earlier built work. PLANNED: coming soon. DEFERRED: tier D. */
+  /** BUILT: delivered in a roadmap batch. PARTIAL: partly built (tier D, with a note) or referenced by earlier built work (tier S). PLANNED: coming soon. DEFERRED: tier D. */
   status: 'BUILT' | 'PARTIAL' | 'PLANNED' | 'DEFERRED';
   category: string;
   /** The screen the feature belongs to (tier S only). */
   area: string | null;
   priority: string;
   title: string;
-  /** The roadmap batch that delivered it (B1, B2 ...), when built. */
+  /** The roadmap batch that delivered it (B1, B2 ...), when built or partly built. */
   batch?: string;
+  /** For a partly built requirement: what is built and what is not. */
+  note?: string;
 }
 
 export { ROADMAP_DATA as ROADMAP } from './roadmap-data.js';

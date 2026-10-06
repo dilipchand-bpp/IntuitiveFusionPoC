@@ -376,3 +376,39 @@
 | POST | `/integrations/legal/webhook` | legalPlatformWebhook | public | The customer's legal platform reports a matter stage and redlines; signed with the shared secret, safe to send twice | 401 for a bad signature or unknown matter; duplicate=true when seen before |
 | GET | `/approval-links/{token}` | getApprovalLink | public | The summary checklist behind a one-time approval link (commercial information withheld by default) |  |
 | POST | `/approval-links/{token}/decision` | decideViaApprovalLink | public | Approve or reject from the link without a full sign-in; the same limits and checks apply | 403 above the approver's authority; step-up code required if the organisation asks for one |
+| GET | `/fx/rates` | listFxRates | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Exchange rates in force today and the history, by annual or live setting |  |
+| PUT | `/fx/rates` | saveFxRates | ADMIN, FINANCE | Set the annual rates for a financial year | 422 unsupported currency or a rate that is not positive |
+| POST | `/fx/refresh` | refreshFxRates | ADMIN, FINANCE | Pull the latest simulated live rates |  |
+| GET | `/fx/convert` | convertAmount | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Convert an amount to AUD at the rate in force on a date |  |
+| GET | `/me/dashboard` | getMyDashboard | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | My own dashboard: the widgets I chose, or the default for my role, and the catalogue I may choose from |  |
+| PUT | `/me/dashboard` | saveMyDashboard | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Choose, order, size and style my widgets | 422 for a widget my role cannot use or a style it cannot take |
+| DELETE | `/me/dashboard` | resetMyDashboard | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | Go back to the default dashboard for my role |  |
+| GET | `/analytics/status` | getAnalyticsStatus | EXEC, FINANCE, PROCUREMENT, CONTRACT_MGR, ADMIN | When the separate analytics store was last refreshed from the main database |  |
+| POST | `/analytics/refresh` | refreshAnalytics | EXEC, FINANCE, PROCUREMENT, ADMIN | Refresh the analytics store now |  |
+| GET | `/reports/future-commitment` | getFutureCommitment | EXEC, FINANCE, PROCUREMENT, CONTRACT_MGR | What the enterprise is committed to pay in future: fixed amounts, ceilings, ranges, unknowns and extensions |  |
+| GET | `/reports/optimisation` | getOptimisation | EXEC, FINANCE, PROCUREMENT, CONTRACT_MGR | Where spend can be reduced: consolidation, duplicate contracts, rate card gaps and price variance |  |
+| GET | `/notes/targets` | listNoteTargets | PROCUREMENT, LEGAL, FINANCE, EXEC, CONTRACT_MGR, PROBITY, DELEGATE, EVALUATOR, CHAIR | The suppliers the caller may take review notes about |  |
+| POST | `/notes` | createNote | PROCUREMENT, LEGAL, FINANCE, EXEC, CONTRACT_MGR, PROBITY, DELEGATE, EVALUATOR, CHAIR | Take a note about a supplier, private or shared with the team |  |
+| GET | `/notes` | listNotes | PROCUREMENT, LEGAL, FINANCE, EXEC, CONTRACT_MGR, PROBITY, DELEGATE, EVALUATOR, CHAIR | My notes, and the ones others shared, about a supplier |  |
+| DELETE | `/notes/{id}` | deleteNote | PROCUREMENT, LEGAL, FINANCE, EXEC, CONTRACT_MGR, PROBITY, DELEGATE, EVALUATOR, CHAIR | Delete one of my own notes |  |
+| GET | `/grc/items` | listGrcItems | PROBITY, EXEC, LEGAL, FINANCE, PROCUREMENT, CONTRACT_MGR, DELEGATE | Risks, audit findings and obligations in the register |  |
+| POST | `/grc/items` | createGrcItem | PROBITY, EXEC, LEGAL, PROCUREMENT, FINANCE | Add a risk, an audit finding or an obligation | 422 a risk needs likelihood and impact |
+| PATCH | `/grc/items/{id}` | updateGrcItem | PROBITY, EXEC, LEGAL, PROCUREMENT, FINANCE | Change the rating, owner, dates or status | 422 accepting needs a treatment of at least ten characters |
+| POST | `/grc/items/{id}/actions` | addGrcAction | PROBITY, EXEC, LEGAL, PROCUREMENT, FINANCE | Assign an action; the owner is notified |  |
+| POST | `/grc/items/{id}/actions/{actionId}/complete` | completeGrcAction | PROBITY, EXEC, LEGAL, PROCUREMENT, FINANCE | Mark an action done |  |
+| GET | `/grc/summary` | getGrcSummary | PROBITY, EXEC, LEGAL, FINANCE, PROCUREMENT, CONTRACT_MGR, DELEGATE | Counts by kind and status and the likelihood and impact heat map |  |
+| POST | `/grc/sync` | syncGrc | PROBITY, EXEC | Pull in what the platform already knows (sanctions, expired insurance and the like), once each |  |
+| GET | `/branding` | getBranding | public | The product name, tagline, palette and support address (shown on the sign-in page) |  |
+| GET | `/requests/{id}/progress` | getRequestProgress | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | How far a procurement has come, by milestone | 404 for a request the caller cannot see; 403 for suppliers |
+| GET | `/layouts/{kind}/applied` | getAppliedLayout | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | What a page shows and in what order, for anyone who can open the page |  |
+| GET | `/catalogue` | listCatalogue | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | The approved catalogue, with suppliers that cannot be ordered from marked |  |
+| POST | `/catalogue` | addCatalogueItem | PROCUREMENT | Add a catalogue item |  |
+| PATCH | `/catalogue/{id}` | updateCatalogueItem | PROCUREMENT | Change the price, lead time or whether it is offered |  |
+| POST | `/buying/orders` | orderFromCatalogue | REQUESTER, PROCUREMENT | Draft a request from chosen catalogue lines |  |
+| POST | `/buying/auto-source` | autoSource | REQUESTER, PROCUREMENT | Describe a need: the platform shortlists, scores and recommends (rules-simulated-v1) |  |
+| GET | `/buying/proposals` | listProposals | REQUESTER, PROCUREMENT | My sourcing proposals (procurement sees all) |  |
+| POST | `/buying/proposals/{id}/decision` | decideProposal | REQUESTER, PROCUREMENT | A person approves or rejects a recommendation; approving drafts a request | 409 OVER_LIMIT above the limit; SUPPLIER_NOT_APPROVED |
+| GET | `/artefacts/{kind}/{id}/state` | getArtefactState | PROCUREMENT, DELEGATE, EXEC, PROBITY, CHAIR, LEGAL, CONTRACT_MGR | Whether an evaluation report or contract plans are out of date, and when they will be refreshed |  |
+| POST | `/artefacts/{kind}/{id}/refresh` | refreshArtefact | PROCUREMENT, CONTRACT_MGR, LEGAL | Bring an artefact up to date now | 409 for an approved report |
+| POST | `/search` | search | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | Search my records, and an outside source when the organisation allows it (identifiers withheld) |  |
+| GET | `/search/external-log` | listExternalSearchLog | ADMIN, PROBITY, EXEC | Every question sent to an outside source and what was withheld |  |

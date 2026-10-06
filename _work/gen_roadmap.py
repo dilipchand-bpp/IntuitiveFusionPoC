@@ -87,6 +87,10 @@ for batch, info in json.load(open(os.path.join(ROOT, '_work', 'delivered.json'),
     for rid in info['ids']:
         delivered[rid] = batch
 
+# tier D requirements that are partly built, with what is and is not built (maintained by hand, checked by a test)
+partial = json.load(open(os.path.join(ROOT, "_work", "partial.json"), encoding="utf8"))
+assert not (set(partial) & set(delivered)), "a requirement is either built or partly built"
+
 items = []
 for r in rows:
     tier = r["POC tier"]
@@ -99,10 +103,10 @@ for r in rows:
         area = AREA.get(cat)
         assert area, f"no area for stub category {cat!r} ({rid})"
     else:
-        status = "BUILT" if rid in delivered else "DEFERRED"
+        status = "BUILT" if rid in delivered else ("PARTIAL" if rid in partial else "DEFERRED")
         area = None
     items.append(
-        dict(id=rid, tier=tier, status=status, category=cat, area=area, priority=r["Priority"], title=title(desc.get(rid, "")), batch=delivered.get(rid))
+        dict(id=rid, tier=tier, status=status, category=cat, area=area, priority=r["Priority"], title=title(desc.get(rid, "")), batch=delivered.get(rid) or (partial.get(rid) or {}).get("batch"), note=(partial.get(rid) or {}).get("note"))
     )
 
 
@@ -122,7 +126,7 @@ for it in items:
     area = ts(it["area"]) if it["area"] else "null"
     lines.append(
         f"  {{ id: {ts(it['id'])}, tier: {ts(it['tier'])}, status: {ts(it['status'])}, category: {ts(it['category'])}, "
-        f"area: {area}, priority: {ts(it['priority'])}, title: {ts(it['title'])}{', batch: ' + ts(it['batch']) if it['batch'] else ''} }}, // {marker}"
+        f"area: {area}, priority: {ts(it['priority'])}, title: {ts(it['title'])}{', batch: ' + ts(it['batch']) if it['batch'] else ''}{', note: ' + ts(it['note']) if it.get('note') else ''} }}, // {marker}"
     )
 lines.append("];")
 lines.append("")
