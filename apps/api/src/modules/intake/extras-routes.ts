@@ -448,6 +448,8 @@ export function registerIntakeExtras(app: FastifyInstance, p: string, d: IntakeE
           eq(delegation.tenantId, a.user.tenantId),
           eq(delegation.scope, scope),
           eq(delegation.active, true),
+          // foreign-currency spend is covered only by international delegations, and the reverse (FR-0810)
+          eq(delegation.international, l.row.originalAmount !== null),
         ),
       );
     const candidates: Array<{ userId: string; limit: number }> = [];

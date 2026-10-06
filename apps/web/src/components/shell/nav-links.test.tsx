@@ -47,8 +47,8 @@ describe('the left menu groups pages under headings that open and close', () => 
     expect(isShown('Tenders')).toBe(true);
     expect(isShown('Reports')).toBe(false);
     expect(isShown('Audit trail')).toBe(false);
-    expect(screen.getByRole('button', { name: 'Procure' })).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('button', { name: 'Insight' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Procure' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Insight' }).getAttribute('aria-expanded')).toBe('false');
   });
 
   it('a heading opens and closes its pages, and the choice is remembered', async () => {
@@ -83,6 +83,6 @@ describe('the left menu groups pages under headings that open and close', () => 
   it('marks the current page', () => {
     path = '/app/tenders';
     render(<NavLinks items={ITEMS} />);
-    expect(screen.getByText('Tenders', { selector: 'a' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Tenders', { selector: 'a' }).getAttribute('aria-current')).toBe('page');
   });
 });

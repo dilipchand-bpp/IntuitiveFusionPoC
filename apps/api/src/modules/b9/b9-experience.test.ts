@@ -458,3 +458,14 @@ describe('Waiting for you: the action list behind the dashboard card', () => {
     expect((await call('supplier', 'GET', '/action-items')).statusCode).toBe(403);
   });
 });
+
+describe('FR-0810 awards are routed on ordinary authority, not on the international grant', () => {
+  it('a delegate who holds both is the only one reached for a domestic value', async () => {
+    const { routeApproval } = await import('../evaluation/b3-service.js');
+    const r = await env.withSystem(env.database, (tx) => routeApproval(tx, TENANT_ID, 50_000));
+    // the seed gives the international delegations to the same people; they must not widen or change the route
+    const names = await env.withSystem(env.database, (tx) => tx.select().from(s.appUser));
+    const routed = names.filter((u) => r.userIds.includes(u.id)).map((u) => u.name);
+    expect(routed).toEqual(['Dana Okafor']);
+  });
+});

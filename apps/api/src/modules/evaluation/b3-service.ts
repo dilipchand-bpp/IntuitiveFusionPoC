@@ -259,6 +259,8 @@ export async function routeApproval(
         eq(delegation.tenantId, tenantId),
         eq(delegation.scope, 'SOURCING_APPROVAL'),
         eq(delegation.active, true),
+        // authority for spend in a foreign currency is a separate grant (FR-0810); awards are routed on the ordinary one
+        eq(delegation.international, false),
       ),
     );
   const roles = await tx

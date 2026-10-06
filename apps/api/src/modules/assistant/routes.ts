@@ -152,6 +152,7 @@ async function gather(d: GuardDeps, tx: Tx, a: AuthContext): Promise<Facts> {
     .from(delegation)
     .where(and(eq(delegation.tenantId, a.user.tenantId), eq(delegation.active, true)));
   f.limits = dels
+    .filter((x) => !x.international)
     .filter((x) => (x.userId ? x.userId === a.user.id : roles.includes(x.role)))
     .map((x) => ({ scope: x.scope as string, limit: Number(x.maxValue) }))
     .reduce<Facts['limits']>((acc, x) => {
