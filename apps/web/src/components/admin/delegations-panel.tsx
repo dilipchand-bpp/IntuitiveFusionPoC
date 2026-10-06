@@ -12,6 +12,7 @@ export interface DelegationRow {
   userId: string | null;
   userName: string | null;
   maxValue: number;
+  international?: boolean;
   active: boolean;
 }
 export interface StaffUser {
@@ -57,7 +58,12 @@ export function DelegationsPanel({
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ scope: 'CONTRACT_SIGNING', userId: '', maxValue: '' });
+  const [form, setForm] = useState({
+    scope: 'CONTRACT_SIGNING',
+    userId: '',
+    maxValue: '',
+    international: false,
+  });
 
   async function save(r: DelegationRow, patch: { maxValue?: number; active?: boolean }) {
     setBusy(r.id);
@@ -88,7 +94,12 @@ export function DelegationsPanel({
       const made = await api<DelegationRow>('/admin/delegations', {
         method: 'POST',
         csrf,
-        body: { scope: form.scope, userId: form.userId, maxValue: Number(form.maxValue) },
+        body: {
+          scope: form.scope,
+          userId: form.userId,
+          maxValue: Number(form.maxValue),
+          international: form.international,
+        },
       });
       setRows([...rows, made]);
       setOpen(false);
@@ -113,7 +124,12 @@ export function DelegationsPanel({
           variant="secondary"
           className="ml-auto"
           onClick={() => {
-            setForm({ scope: 'CONTRACT_SIGNING', userId: users[0]?.id ?? '', maxValue: '' });
+            setForm({
+              scope: 'CONTRACT_SIGNING',
+              userId: users[0]?.id ?? '',
+              maxValue: '',
+              international: false,
+            });
             setError(null);
             setOpen(true);
           }}
@@ -161,7 +177,14 @@ export function DelegationsPanel({
             const editing = r.id in edit;
             return (
               <tr key={r.id} data-testid="delegation-row">
-                <Td label="Authority">{SCOPE[r.scope]}</Td>
+                <Td label="Authority">
+                  {SCOPE[r.scope]}
+                  {r.international && (
+                    <Badge tone="info" className="ml-2">
+                      International
+                    </Badge>
+                  )}
+                </Td>
                 <Td label="Person">{who}</Td>
                 <Td label="Role">{r.role}</Td>
                 <Td label="Limit" className="text-right">
@@ -270,6 +293,20 @@ export function DelegationsPanel({
               onChange={(e) => setForm({ ...form, maxValue: e.target.value })}
             />
           </Field>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={form.international}
+              onChange={(e) => setForm({ ...form, international: e.target.checked })}
+            />
+            <span>
+              International (foreign-currency spend only)
+              <span className="block text-text-muted">
+                Applies only to requests valued in a currency other than AUD.
+              </span>
+            </span>
+          </label>
           {error && (
             <p role="alert" className="text-sm font-medium text-error">
               {error}

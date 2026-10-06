@@ -1,8 +1,8 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Dialog, Field, Input, Textarea } from '@if/ui';
+import { Button, Dialog, Field, Input, Select, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import type { FieldView, RequestView } from './types';
 
@@ -26,9 +26,29 @@ export function RequestActions({
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const draft = view.status === 'DRAFT';
+  const startCurrency = view.currency ?? 'AUD';
+  const [currency, setCurrency] = useState(startCurrency);
+  const [supported, setSupported] = useState<string[]>(['AUD']);
+  useEffect(() => {
+    if (!editing) return;
+    api<{ supported: string[] }>('/fx/rates')
+      .then((r) => setSupported(r.supported))
+      .catch(() => setSupported(['AUD']));
+  }, [editing]);
 
   const beginEdit = () => {
-    setValues(Object.fromEntries(view.fields.map((f: FieldView) => [f.key, f.value ?? ''])));
+    setValues(
+      Object.fromEntries(
+        view.fields.map((f: FieldView) => [
+          f.key,
+          // a value typed in a foreign currency is edited in that currency, not as its AUD equivalent
+          f.key === 'estimatedValue' && startCurrency !== 'AUD' && view.originalAmount !== undefined
+            ? String(view.originalAmount)
+            : (f.value ?? ''),
+        ]),
+      ),
+    );
+    setCurrency(startCurrency);
     setEditing(true);
     setErrors({});
     setFormError(null);
@@ -38,16 +58,32 @@ export function RequestActions({
     setBusy(true);
     setErrors({});
     setFormError(null);
+    const shownValue = (f: FieldView) =>
+      f.key === 'estimatedValue' && startCurrency !== 'AUD' && view.originalAmount !== undefined
+        ? String(view.originalAmount)
+        : (f.value ?? '');
     const changed = view.fields.filter(
-      (f) => (values[f.key] ?? '') !== (f.value ?? '') && (values[f.key] ?? '').trim() !== '',
+      (f) => (values[f.key] ?? '') !== shownValue(f) && (values[f.key] ?? '').trim() !== '',
     );
+    // the amount and its currency go together, so the API converts once and keeps the original and the rate
+    const moneyChanged =
+      changed.some((f) => f.key === 'estimatedValue') || (currency !== startCurrency && currency !== 'AUD');
+    const money = moneyChanged
+      ? { estimatedValue: Number((values.estimatedValue ?? '').replace(/[^0-9.]/g, '')), currency }
+      : currency !== startCurrency
+        ? { currency }
+        : {};
+    const others = changed.filter((f) => f.key !== 'estimatedValue');
     try {
-      if (changed.length > 0) {
+      if (others.length > 0 || Object.keys(money).length > 0) {
         await api(`/requests/${view.id}`, {
           method: 'PATCH',
           csrf,
           body: {
-            fields: Object.fromEntries(changed.map((f) => [f.key, values[f.key]!])),
+            ...(others.length > 0
+              ? { fields: Object.fromEntries(others.map((f) => [f.key, values[f.key]!])) }
+              : {}),
+            ...money,
             expectedVersion: view.version,
           },
         });
@@ -165,6 +201,22 @@ export function RequestActions({
           }}
           aria-label="Edit request fields"
         >
+          <Field
+            label="Currency of the estimated value"
+            hint={
+              currency === 'AUD'
+                ? undefined
+                : 'Enter the estimated value below in this currency. It is converted to AUD at the rate in force, and the original is kept.'
+            }
+          >
+            <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+              {[...new Set(['AUD', startCurrency, ...supported])].map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+          </Field>
           {view.fields.map((f) => (
             <Field key={f.key} label={f.label} error={errors[f.key]}>
               {LONG.has(f.key) ? (

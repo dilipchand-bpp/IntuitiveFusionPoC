@@ -2,7 +2,7 @@
 import { has } from './b5-shared';
 import { LegalToolsCard } from './b8-legal';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Badge, Button, Card, Dialog, Field, Input, Select, Stepper, Textarea, type BadgeTone } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
@@ -37,12 +37,27 @@ const problem = (e: unknown): Problem =>
     ? { message: e.message, list: (e.problem.errors ?? []).map((x) => x.message) }
     : { message: 'Something went wrong. Please try again.', list: [] };
 
+const DEFAULT_MAIN = [
+  'clauses',
+  'management',
+  'variation',
+  'deviations',
+  'checks',
+  'endorsements',
+  'collab',
+  'strategy',
+  'legal',
+];
+
 export function ContractWorkspace({
   initial,
+  layout,
   csrf,
   roles = [],
 }: {
   initial: ContractView;
+  /** The panels to show in the main column, in order; absent means the standard layout. */
+  layout?: string[];
   csrf: string;
   roles?: string[];
 }) {
@@ -186,6 +201,221 @@ export function ContractWorkspace({
 
   const [statusLabel, tone] = CONTRACT_STATUS[c.status] ?? [c.status, 'neutral' as const];
   const RISK_TONE: Record<string, BadgeTone> = { LOW: 'success', MEDIUM: 'warning', HIGH: 'error' };
+  const panel_clauses = (
+    <>
+      <Card aria-labelledby="clauses-h" role="region">
+        <h2 id="clauses-h" className="font-heading text-xl font-bold">
+          Clauses
+        </h2>
+        <ol className="mt-3 flex flex-col gap-4" data-testid="clauses">
+          {c.clauses.map((k) => (
+            <li key={k.id} className="rounded-md border border-border p-3" data-testid={`clause-${k.id}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-heading font-semibold">{k.title}</h3>
+                {k.mandatory && <Badge tone="neutral">Mandatory</Badge>}
+                {k.changedFromTemplate && <Badge tone="warning">Changed from template</Badge>}
+                {k.inserted && <Badge tone="info">Added by Legal</Badge>}
+                {k.redacted && <Badge tone="neutral">Redacted</Badge>}
+                {p.canEdit && editing !== k.id && (
+                  <Button
+                    variant="secondary"
+                    className="ml-auto"
+                    aria-label={`Edit ${k.title}`}
+                    onClick={() => {
+                      setEditing(k.id);
+                      setDraftText(k.text);
+                      setError(null);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </div>
+              {editing === k.id ? (
+                <div className="mt-2 flex flex-col gap-2">
+                  <Textarea
+                    aria-label={`Wording of ${k.title}`}
+                    rows={5}
+                    value={draftText}
+                    onChange={(e) => setDraftText(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button loading={busy === `clause-${k.id}`} onClick={() => void saveClause(k.id)}>
+                      Save clause
+                    </Button>
+                    <Button variant="secondary" onClick={() => setEditing(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-2 whitespace-pre-line text-sm text-text">{k.text}</p>
+              )}
+            </li>
+          ))}
+        </ol>
+      </Card>
+    </>
+  );
+  const panel_management = (
+    <>
+      {c.status === 'EXECUTED' && !c.parent && (
+        <ManagementCard
+          record={c.record}
+          contractId={c.id}
+          csrf={csrf}
+          editable={p.canEditRecord}
+          onChange={setC}
+        />
+      )}
+
+      {c.status === 'EXECUTED' && !c.parent && <ContractManagementTabs c={c} csrf={csrf} roles={roles} />}
+    </>
+  );
+  const panel_variation = <>{c.variation && <VariationInfo v={c.variation} />}</>;
+  const panel_deviations = (
+    <>
+      <Card aria-labelledby="dev-h" role="region">
+        <h2 id="dev-h" className="font-heading text-xl font-bold">
+          Deviations from the template
+        </h2>
+        {c.deviations.length === 0 ? (
+          <p className="mt-2 text-sm text-text-muted" data-testid="no-deviations">
+            No clause differs from the standard template.
+          </p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-3" data-testid="deviations">
+            {c.deviations.map((x) => (
+              <li
+                key={x.clauseId}
+                className="rounded-md border border-border p-3 text-sm"
+                data-testid={`deviation-${x.clauseId}`}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold">{x.title}</p>
+                  <Badge tone={RISK_TONE[x.risk] ?? 'neutral'}>{x.risk.toLowerCase()} risk</Badge>
+                  {x.decision === 'APPROVED' && <Badge tone="success">Approved</Badge>}
+                  {x.decision === 'REJECTED' && <Badge tone="error">Rejected</Badge>}
+                  {x.protected && <Badge tone="error">Non-negotiable clause</Badge>}
+                  {!x.decision && x.protected && (
+                    <Badge tone="warning">Needs General Counsel or the risk delegate</Badge>
+                  )}
+                  {!x.decision && !x.protected && (x.mandatory || x.risk === 'HIGH') && (
+                    <Badge tone="warning">Needs a delegate</Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-text-muted">
+                  <span className="font-semibold">Template: </span>
+                  {x.templateText}
+                </p>
+                <p className="mt-1">
+                  <span className="font-semibold">Now: </span>
+                  {x.currentText}
+                </p>
+                {x.stamp && <p className="mt-1 font-mono text-xs text-text-muted">{x.stamp}</p>}
+                {x.acceptances.map((y) => (
+                  <p key={y.stamp} className="mt-1 text-xs text-text-muted">
+                    {y.stamp}: {y.statement}
+                  </p>
+                ))}
+                {(p.canAmendRisk || p.canDecideDeviations) && (
+                  <div className="mt-2 flex flex-wrap items-end gap-2">
+                    {p.canAmendRisk && (
+                      <label className="flex flex-col gap-1 text-xs font-semibold">
+                        Risk rating
+                        <Select
+                          aria-label={`Risk rating for ${x.title}`}
+                          value={x.risk}
+                          onChange={(e) => void setRisk(x.clauseId, e.target.value)}
+                          className="w-36"
+                        >
+                          <option value="LOW">Low</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HIGH">High</option>
+                        </Select>
+                      </label>
+                    )}
+                    {p.canDecideDeviations && (
+                      <>
+                        <Button
+                          aria-label={`Approve the change to ${x.title}`}
+                          loading={busy === `dev-${x.clauseId}`}
+                          onClick={() => void decideDeviation(x.clauseId, 'APPROVE')}
+                        >
+                          Approve change
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          aria-label={`Reject the change to ${x.title}`}
+                          onClick={() => {
+                            setError(null);
+                            setComment('');
+                            setRejectClause(x.clauseId);
+                            setDialog('devreject');
+                          }}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+                <DeviationTools
+                  c={c}
+                  csrf={csrf}
+                  roles={roles}
+                  onChange={setC}
+                  clauseId={x.clauseId}
+                  title={x.title}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </>
+  );
+  const panel_checks = (
+    <>
+      <ChecksCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+    </>
+  );
+  const panel_endorsements = (
+    <>
+      <EndorsementsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+    </>
+  );
+  const panel_collab = (
+    <>
+      <CollabCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+    </>
+  );
+  const panel_strategy = (
+    <>
+      <StrategyCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+    </>
+  );
+  const panel_legal = (
+    <>
+      {has(roles, 'LEGAL', 'PROCUREMENT', 'DELEGATE', 'EXEC') && (
+        <LegalToolsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
+      )}
+    </>
+  );
+  // the main column follows the organisation's layout for this page: which panels, and in what order (NFR-U04)
+  const mainPanels: Record<string, ReactNode> = {
+    clauses: panel_clauses,
+    management: panel_management,
+    variation: panel_variation,
+    deviations: panel_deviations,
+    checks: panel_checks,
+    endorsements: panel_endorsements,
+    collab: panel_collab,
+    strategy: panel_strategy,
+    legal: panel_legal,
+  };
+  const mainOrder = (layout ?? DEFAULT_MAIN).filter((k) => k in mainPanels);
+
   return (
     <div className="flex flex-col gap-6" data-testid="contract-workspace">
       <header className="flex flex-col gap-2">
@@ -242,178 +472,9 @@ export function ContractWorkspace({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-6">
-          <Card aria-labelledby="clauses-h" role="region">
-            <h2 id="clauses-h" className="font-heading text-xl font-bold">
-              Clauses
-            </h2>
-            <ol className="mt-3 flex flex-col gap-4" data-testid="clauses">
-              {c.clauses.map((k) => (
-                <li key={k.id} className="rounded-md border border-border p-3" data-testid={`clause-${k.id}`}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-heading font-semibold">{k.title}</h3>
-                    {k.mandatory && <Badge tone="neutral">Mandatory</Badge>}
-                    {k.changedFromTemplate && <Badge tone="warning">Changed from template</Badge>}
-                    {k.inserted && <Badge tone="info">Added by Legal</Badge>}
-                    {k.redacted && <Badge tone="neutral">Redacted</Badge>}
-                    {p.canEdit && editing !== k.id && (
-                      <Button
-                        variant="secondary"
-                        className="ml-auto"
-                        aria-label={`Edit ${k.title}`}
-                        onClick={() => {
-                          setEditing(k.id);
-                          setDraftText(k.text);
-                          setError(null);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                    )}
-                  </div>
-                  {editing === k.id ? (
-                    <div className="mt-2 flex flex-col gap-2">
-                      <Textarea
-                        aria-label={`Wording of ${k.title}`}
-                        rows={5}
-                        value={draftText}
-                        onChange={(e) => setDraftText(e.target.value)}
-                      />
-                      <div className="flex gap-2">
-                        <Button loading={busy === `clause-${k.id}`} onClick={() => void saveClause(k.id)}>
-                          Save clause
-                        </Button>
-                        <Button variant="secondary" onClick={() => setEditing(null)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 whitespace-pre-line text-sm text-text">{k.text}</p>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </Card>
-
-          {c.status === 'EXECUTED' && !c.parent && (
-            <ManagementCard
-              record={c.record}
-              contractId={c.id}
-              csrf={csrf}
-              editable={p.canEditRecord}
-              onChange={setC}
-            />
-          )}
-
-          {c.status === 'EXECUTED' && !c.parent && <ContractManagementTabs c={c} csrf={csrf} roles={roles} />}
-          {c.variation && <VariationInfo v={c.variation} />}
-
-          <Card aria-labelledby="dev-h" role="region">
-            <h2 id="dev-h" className="font-heading text-xl font-bold">
-              Deviations from the template
-            </h2>
-            {c.deviations.length === 0 ? (
-              <p className="mt-2 text-sm text-text-muted" data-testid="no-deviations">
-                No clause differs from the standard template.
-              </p>
-            ) : (
-              <ul className="mt-3 flex flex-col gap-3" data-testid="deviations">
-                {c.deviations.map((x) => (
-                  <li
-                    key={x.clauseId}
-                    className="rounded-md border border-border p-3 text-sm"
-                    data-testid={`deviation-${x.clauseId}`}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{x.title}</p>
-                      <Badge tone={RISK_TONE[x.risk] ?? 'neutral'}>{x.risk.toLowerCase()} risk</Badge>
-                      {x.decision === 'APPROVED' && <Badge tone="success">Approved</Badge>}
-                      {x.decision === 'REJECTED' && <Badge tone="error">Rejected</Badge>}
-                      {x.protected && <Badge tone="error">Non-negotiable clause</Badge>}
-                      {!x.decision && x.protected && (
-                        <Badge tone="warning">Needs General Counsel or the risk delegate</Badge>
-                      )}
-                      {!x.decision && !x.protected && (x.mandatory || x.risk === 'HIGH') && (
-                        <Badge tone="warning">Needs a delegate</Badge>
-                      )}
-                    </div>
-                    <p className="mt-1 text-text-muted">
-                      <span className="font-semibold">Template: </span>
-                      {x.templateText}
-                    </p>
-                    <p className="mt-1">
-                      <span className="font-semibold">Now: </span>
-                      {x.currentText}
-                    </p>
-                    {x.stamp && <p className="mt-1 font-mono text-xs text-text-muted">{x.stamp}</p>}
-                    {x.acceptances.map((y) => (
-                      <p key={y.stamp} className="mt-1 text-xs text-text-muted">
-                        {y.stamp}: {y.statement}
-                      </p>
-                    ))}
-                    {(p.canAmendRisk || p.canDecideDeviations) && (
-                      <div className="mt-2 flex flex-wrap items-end gap-2">
-                        {p.canAmendRisk && (
-                          <label className="flex flex-col gap-1 text-xs font-semibold">
-                            Risk rating
-                            <Select
-                              aria-label={`Risk rating for ${x.title}`}
-                              value={x.risk}
-                              onChange={(e) => void setRisk(x.clauseId, e.target.value)}
-                              className="w-36"
-                            >
-                              <option value="LOW">Low</option>
-                              <option value="MEDIUM">Medium</option>
-                              <option value="HIGH">High</option>
-                            </Select>
-                          </label>
-                        )}
-                        {p.canDecideDeviations && (
-                          <>
-                            <Button
-                              aria-label={`Approve the change to ${x.title}`}
-                              loading={busy === `dev-${x.clauseId}`}
-                              onClick={() => void decideDeviation(x.clauseId, 'APPROVE')}
-                            >
-                              Approve change
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              aria-label={`Reject the change to ${x.title}`}
-                              onClick={() => {
-                                setError(null);
-                                setComment('');
-                                setRejectClause(x.clauseId);
-                                setDialog('devreject');
-                              }}
-                            >
-                              Reject
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    <DeviationTools
-                      c={c}
-                      csrf={csrf}
-                      roles={roles}
-                      onChange={setC}
-                      clauseId={x.clauseId}
-                      title={x.title}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <ChecksCard c={c} csrf={csrf} roles={roles} onChange={setC} />
-          <EndorsementsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
-          <CollabCard c={c} csrf={csrf} roles={roles} onChange={setC} />
-          <StrategyCard c={c} csrf={csrf} roles={roles} onChange={setC} />
-          {has(roles, 'LEGAL', 'PROCUREMENT', 'DELEGATE', 'EXEC') && (
-            <LegalToolsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
-          )}
+          {mainOrder.map((k) => (
+            <Fragment key={k}>{mainPanels[k]}</Fragment>
+          ))}
         </div>
 
         <aside className="flex flex-col gap-6">

@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AiBadge, Badge, Button, Dialog, Field, Input, Stamp, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
@@ -109,7 +109,35 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
   const [nature, setNature] = useState('');
   const p = plan.permissions;
 
+  // NFR-P01: pick up another person's edits while this page is open. Never while the viewer is typing something unsaved.
+  const [live, setLive] = useState('');
+  const quiet = useRef(true);
+  const ownAt = useRef(0);
+  quiet.current =
+    busy === null &&
+    editKey === null &&
+    !instruction.trim() &&
+    !comment.trim() &&
+    !reopen &&
+    !reopenReason.trim() &&
+    !nature.trim();
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible' || !quiet.current) return;
+      if (Date.now() - ownAt.current < 10_000) return;
+      api<PlanView & { updatedByName?: string }>(`/requests/${plan.requestId}/plan`)
+        .then((latest) => {
+          if (!quiet.current || latest.version <= plan.version) return;
+          setLive(`Updated by ${latest.updatedByName ?? 'another user'} just now`);
+          router.refresh();
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [plan.requestId, plan.version, router]);
+
   async function run<T>(label: string, fn: () => Promise<T>, done?: (r: T) => void) {
+    ownAt.current = Date.now();
     setBusy(label);
     setError(null);
     setNotice(null);
@@ -124,6 +152,7 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
           : 'Something went wrong. Please try again.',
       );
     } finally {
+      ownAt.current = Date.now();
       setBusy(null);
     }
   }
@@ -183,6 +212,10 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
         )}
         <Badge tone="neutral">{aud.format(plan.estimatedValue)}</Badge>
       </header>
+
+      <p aria-live="polite" role="status" className={live ? 'text-sm font-medium text-info' : 'sr-only'}>
+        {live}
+      </p>
 
       {error && (
         <p

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge, Button, Dialog, Field, Input, Select, Stepper, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { TENDER_TYPE_LABEL, formatDateTime } from '@/lib/labels';
+import { ArtefactBadge } from '@/components/b9/artefact-badge';
 import { Card, problem } from './eval-card';
 import { ClarificationsPanel, NegotiationPanel, PlainScoreEntry, RankingEntry } from './b3-commercial';
 import {
@@ -1008,6 +1009,17 @@ function ReportPanel({
         )
       }
     >
+      {rep &&
+        roles.some((x) => ['PROCUREMENT', 'DELEGATE', 'EXEC', 'PROBITY', 'CHAIR', 'LEGAL'].includes(x)) && (
+          <div className="mt-3">
+            <ArtefactBadge
+              kind="EVAL_REPORT"
+              id={ev.id}
+              csrf={csrf}
+              canRefresh={roles.includes('PROCUREMENT')}
+            />
+          </div>
+        )}
       {rep && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild variant="secondary">

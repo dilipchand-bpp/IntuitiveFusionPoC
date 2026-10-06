@@ -23,10 +23,12 @@ export interface ShellUser {
 export function ShellFrame({
   user,
   items,
+  brand,
   children,
 }: {
   user: ShellUser;
   items: NavItem[];
+  brand?: { productName: string; tagline: string };
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -51,9 +53,17 @@ export function ShellFrame({
         <Link
           href="/"
           className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text no-underline"
-          aria-label="Intuitive Fusion home page"
+          aria-label={`${brand?.productName ?? 'Intuitive Fusion'} home page`}
         >
-          <Logo withName compact size={36} />
+          <Logo size={36} />
+          <span className="ml-3 hidden whitespace-nowrap font-heading text-lg font-bold sm:inline">
+            {brand?.productName ?? 'Intuitive Fusion'}
+            {brand?.tagline && (
+              <span className="ml-2 hidden text-xs font-normal text-text-muted xl:inline">
+                {brand.tagline}
+              </span>
+            )}
+          </span>
         </Link>
         <span className="mx-1 hidden rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent xl:inline">
           Proof of concept · synthetic data

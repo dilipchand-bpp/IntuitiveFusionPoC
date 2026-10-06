@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { MfaPanel, type MfaStatus } from '@/components/security/mfa-panel';
+import { getBranding } from '@/lib/branding';
 import { navFor } from '@/lib/nav';
 import { apiGet, getSessionUser } from '@/lib/session';
 import { ShellFrame } from './shell-frame';
@@ -10,6 +11,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect('/login');
   // an organisation that requires an authenticator app: until it is set up, this is all the person can see
+  const brand = await getBranding();
   const mfa = await apiGet<MfaStatus>('/auth/mfa');
   const mustEnrol = Boolean(mfa && mfa.required && !mfa.enrolled);
   return (
@@ -21,6 +23,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         csrfToken: user.csrfToken,
         homePath: user.homePath,
       }}
+      brand={{ productName: brand.productName, tagline: brand.tagline }}
       items={navFor(user.roles, Boolean(user.external))}
     >
       {mustEnrol && mfa ? <MfaPanel status={mfa} csrf={user.csrfToken} gate /> : children}

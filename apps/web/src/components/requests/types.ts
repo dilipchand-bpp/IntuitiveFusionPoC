@@ -18,6 +18,10 @@ export interface RequestView {
   title: string;
   category?: string;
   estimatedValue: number;
+  /** The currency the value was typed in; the value above is always AUD. */
+  currency?: string;
+  originalAmount?: number;
+  fxRate?: number;
   termMonths?: number;
   businessUnit?: string;
   phase: string;

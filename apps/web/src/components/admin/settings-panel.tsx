@@ -4,6 +4,9 @@ import { useState, type ReactNode } from 'react';
 import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
+/** The colour palettes an organisation can choose (the same names the theme defines). */
+const PALETTE_NAMES = ['INDIGO', 'TEAL', 'CRIMSON', 'FOREST', 'SLATE'] as const;
+
 export interface SettingsData {
   numbering: { scheme: 'YEAR_SEQ' | 'FY_SEQ' | 'SEQ'; prefix: string; digits: number };
   numberingExample: string;
@@ -59,6 +62,22 @@ export interface SettingsData {
   ratings: { supplierSeesRatings: boolean; staffSeeSupplierRatings: boolean };
   legalPlatform: { enabled: boolean; name: string; webhookSecret: string; simulateOutage: boolean };
   approvalLinks: { enabled: boolean; validHours: number; showCommercial: boolean };
+  currency: { base: 'AUD'; rateMode: 'ANNUAL' | 'LIVE' };
+  artefacts: { laterStage: 'REALTIME' | 'BATCHED' | 'MANUAL'; batchMinutes: number };
+  buying: { enabled: boolean; autoSourceLimitAud: number };
+  externalSearch: { enabled: boolean };
+  branding: {
+    productName: string;
+    tagline: string;
+    palette: (typeof PALETTE_NAMES)[number];
+    supportEmail: string;
+  };
+  analytics: {
+    refreshMinutes: number;
+    consolidationPct: number;
+    varianceThresholdPct: number;
+    driftThresholdPct: number;
+  };
   contractManagement: {
     erpIntegrated: boolean;
     variationModel: 'CUMULATIVE' | 'INCREMENTAL';
@@ -1244,6 +1263,223 @@ export function SettingsPanel({
             className="w-32"
           />
         </Field>
+      </Section>
+
+      <Section
+        {...sec('currency')}
+        title="Currency and exchange rates"
+        blurb="Every total is kept in Australian dollars. Annual mode uses one rate per currency for each financial year (1 July to 30 June), set by finance. Live mode uses the latest rate from the rates feed."
+        onSave={() => void save('currency', s.currency)}
+      >
+        <Field label="Rates in use">
+          <Select
+            value={s.currency.rateMode}
+            onChange={(e) =>
+              setS({
+                ...s,
+                currency: { ...s.currency, rateMode: e.target.value as SettingsData['currency']['rateMode'] },
+              })
+            }
+          >
+            <option value="ANNUAL">Annual rates, one per financial year</option>
+            <option value="LIVE">Live rates from the feed</option>
+          </Select>
+        </Field>
+        <p className="text-sm text-text-muted">Base currency: {s.currency.base} (fixed).</p>
+      </Section>
+
+      <Section
+        {...sec('artefacts')}
+        title="Reports and plans following changes"
+        blurb="How fast the evaluation report and the contract management plans catch up when the records behind them change."
+        onSave={() => void save('artefacts', s.artefacts)}
+      >
+        <Field label="Update">
+          <Select
+            value={s.artefacts.laterStage}
+            onChange={(e) =>
+              setS({
+                ...s,
+                artefacts: {
+                  ...s.artefacts,
+                  laterStage: e.target.value as SettingsData['artefacts']['laterStage'],
+                },
+              })
+            }
+          >
+            <option value="REALTIME">Real-time, at once</option>
+            <option value="BATCHED">Batched, after a delay</option>
+            <option value="MANUAL">Manual, when someone refreshes</option>
+          </Select>
+        </Field>
+        <Field label="Batch interval (minutes)" hint="Used in batched mode, 1 to 1440">
+          <Input
+            type="number"
+            min={1}
+            max={1440}
+            value={s.artefacts.batchMinutes}
+            onChange={(e) =>
+              setS({ ...s, artefacts: { ...s.artefacts, batchMinutes: Number(e.target.value) } })
+            }
+            className="w-32"
+          />
+        </Field>
+      </Section>
+
+      <Section
+        {...sec('buying')}
+        title="Buying assistant"
+        blurb="Recommended purchases can be drafted as requests for the buyer. Up to the limit the platform may draft without a procurement officer starting it."
+        onSave={() => void save('buying', s.buying)}
+      >
+        <label className="flex min-h-[44px] items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="size-5 accent-[var(--if-color-accent)]"
+            checked={s.buying.enabled}
+            onChange={(e) => setS({ ...s, buying: { ...s.buying, enabled: e.target.checked } })}
+          />
+          <span>Buying recommendations are on</span>
+        </label>
+        <Field label="Draft without an officer up to (AUD)">
+          <Input
+            type="number"
+            min={0}
+            max={10000000}
+            value={s.buying.autoSourceLimitAud}
+            onChange={(e) =>
+              setS({ ...s, buying: { ...s.buying, autoSourceLimitAud: Number(e.target.value) } })
+            }
+            className="w-40"
+          />
+        </Field>
+      </Section>
+
+      <Section
+        {...sec('externalSearch')}
+        title="Outside AI search"
+        blurb="Allow a search to also ask an outside AI source. Only the words of the question go out; nothing from the organisation's records."
+        onSave={() => void save('externalSearch', s.externalSearch)}
+      >
+        <label className="flex min-h-[44px] items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="size-5 accent-[var(--if-color-accent)]"
+            checked={s.externalSearch.enabled}
+            onChange={(e) => setS({ ...s, externalSearch: { enabled: e.target.checked } })}
+          />
+          <span>Allow searches to ask an outside AI source</span>
+        </label>
+      </Section>
+
+      <Section
+        {...sec('branding')}
+        title="Branding"
+        blurb="The name, tagline and colours people see. A change shows on the next page load."
+        onSave={() => void save('branding', s.branding)}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Product name" hint="2 to 40 characters">
+            <Input
+              maxLength={40}
+              value={s.branding.productName}
+              onChange={(e) => setS({ ...s, branding: { ...s.branding, productName: e.target.value } })}
+            />
+          </Field>
+          <Field label="Tagline" hint="Up to 80 characters">
+            <Input
+              maxLength={80}
+              value={s.branding.tagline}
+              onChange={(e) => setS({ ...s, branding: { ...s.branding, tagline: e.target.value } })}
+            />
+          </Field>
+          <Field label="Colour palette">
+            <Select
+              value={s.branding.palette}
+              onChange={(e) =>
+                setS({
+                  ...s,
+                  branding: { ...s.branding, palette: e.target.value as SettingsData['branding']['palette'] },
+                })
+              }
+            >
+              {PALETTE_NAMES.map((n) => (
+                <option key={n} value={n}>
+                  {n.charAt(0) + n.slice(1).toLowerCase()}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Support email" hint="Leave empty for none">
+            <Input
+              type="email"
+              maxLength={120}
+              value={s.branding.supportEmail}
+              onChange={(e) => setS({ ...s, branding: { ...s.branding, supportEmail: e.target.value } })}
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section
+        {...sec('analytics')}
+        title="Analytics"
+        blurb="How often dashboards refresh and the thresholds that flag a saving, a variance or drift."
+        onSave={() => void save('analytics', s.analytics)}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Refresh every (minutes)">
+            <Input
+              type="number"
+              min={1}
+              max={1440}
+              value={s.analytics.refreshMinutes}
+              onChange={(e) =>
+                setS({ ...s, analytics: { ...s.analytics, refreshMinutes: Number(e.target.value) } })
+              }
+              className="w-32"
+            />
+          </Field>
+          <Field label="Consolidation saving (%)" hint="0 to 50">
+            <Input
+              type="number"
+              min={0}
+              max={50}
+              step="any"
+              value={s.analytics.consolidationPct}
+              onChange={(e) =>
+                setS({ ...s, analytics: { ...s.analytics, consolidationPct: Number(e.target.value) } })
+              }
+              className="w-32"
+            />
+          </Field>
+          <Field label="Variance threshold (%)" hint="0 to 100">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step="any"
+              value={s.analytics.varianceThresholdPct}
+              onChange={(e) =>
+                setS({ ...s, analytics: { ...s.analytics, varianceThresholdPct: Number(e.target.value) } })
+              }
+              className="w-32"
+            />
+          </Field>
+          <Field label="Drift threshold (%)" hint="0 to 100">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step="any"
+              value={s.analytics.driftThresholdPct}
+              onChange={(e) =>
+                setS({ ...s, analytics: { ...s.analytics, driftThresholdPct: Number(e.target.value) } })
+              }
+              className="w-32"
+            />
+          </Field>
+        </div>
       </Section>
 
       <Section

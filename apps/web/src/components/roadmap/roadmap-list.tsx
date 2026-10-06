@@ -24,6 +24,11 @@ export function RoadmapList({ items, label }: { items: readonly RoadmapItem[]; l
           <div className="min-w-0 flex-1 basis-72">
             <span className="font-mono text-xs text-text-muted">{i.id}</span>
             <p className="text-sm">{i.title}</p>
+            {i.note && (
+              <p className="mt-1 max-w-prose text-xs text-text-muted" data-testid="roadmap-note">
+                {i.note}
+              </p>
+            )}
           </div>
           <Badge tone={STATUS[i.status].tone}>{STATUS[i.status].label}</Badge>
         </li>

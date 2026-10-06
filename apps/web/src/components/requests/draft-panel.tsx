@@ -11,6 +11,7 @@ import {
   STATUS_TONE,
   displayValue,
 } from '@/lib/labels';
+import { aud } from '@/lib/labels';
 import type { FieldView, RequestView } from './types';
 
 const FACTS = ['title', 'category', 'estimatedValue', 'termMonths', 'businessUnit', 'contractOwner'];
@@ -86,6 +87,12 @@ export function DraftPanel({ view, hideHeader = false }: { view: RequestView; hi
             <Tile key={f.key} f={f} big={f.key === 'estimatedValue'} />
           ))}
         </dl>
+        {view.currency && view.currency !== 'AUD' && view.originalAmount !== undefined && view.fxRate && (
+          <p className="mt-2 text-sm text-text-muted" data-testid="fx-line">
+            {view.originalAmount.toLocaleString('en-AU')} {view.currency} = {aud.format(view.estimatedValue)}{' '}
+            at {view.fxRate.toLocaleString('en-AU', { maximumFractionDigits: 6 })}
+          </p>
+        )}
       </section>
 
       {pick(NARRATIVE).length > 0 && (

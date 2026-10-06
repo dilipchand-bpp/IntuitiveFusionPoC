@@ -15,6 +15,7 @@ import {
   Textarea,
   Th,
 } from '@if/ui';
+import { ArtefactBadge } from '@/components/b9/artefact-badge';
 import { aud, formatDateTime } from '@/lib/labels';
 import { Bar, PRIORITY_TONE, has, send, useData, useRun } from './b5-shared';
 import type { ContractView } from './types';
@@ -1216,6 +1217,15 @@ function PlansTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
               p.reasons.map((x) => <li key={x}>{x}</li>)
             )}
           </ul>
+          {has(roles, 'CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC') && (
+            <ArtefactBadge
+              kind="CONTRACT_PLANS"
+              id={c.id}
+              csrf={csrf}
+              canRefresh={has(roles, 'CONTRACT_MGR', 'PROCUREMENT', 'LEGAL')}
+              onRefreshed={() => void reload()}
+            />
+          )}
           {p.plans.map((pl) => (
             <details key={pl.kind} className="rounded-md border border-border p-3">
               <summary className="cursor-pointer font-semibold">
