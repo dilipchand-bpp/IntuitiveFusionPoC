@@ -156,3 +156,17 @@ test.describe('NFR-P01 live plan updates', () => {
     await expect(page.getByRole('status').filter({ hasText: /just now/ })).toBeVisible();
   });
 });
+
+test.describe('Waiting for you drills down', () => {
+  test('the dashboard card opens the list of actions, each linking to its screen', async ({ page }) => {
+    await signIn(page, 'delegate');
+    await page.goto('/app/dashboard');
+    await page.getByRole('link', { name: /Waiting for you/ }).click();
+    await expect(page.getByRole('heading', { name: 'Waiting for you' })).toBeVisible();
+    await expect(page.getByTestId('action-list')).toContainText('Plan to approve');
+    await expect(page).toHaveTitle(/Waiting for you/);
+    await scan(page);
+    await page.getByTestId('action-list').getByRole('link').first().click();
+    await expect(page).toHaveURL(/\/app\/plans\//);
+  });
+});

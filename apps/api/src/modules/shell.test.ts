@@ -75,7 +75,9 @@ describe('GET /dashboard/kpis', () => {
   it('pending actions reflect the role: delegate sees plans awaiting approval, chair sees evaluations in progress', async () => {
     expect((await get('delegate', '/dashboard/kpis')).json().pendingMyAction).toBe(1);
     expect((await get('chair', '/dashboard/kpis')).json().pendingMyAction).toBe(1);
-    expect((await get('legal', '/dashboard/kpis')).json().pendingMyAction).toBe(0);
+    // legal has the seeded contract in legal review; finance has nothing to act on
+    expect((await get('legal', '/dashboard/kpis')).json().pendingMyAction).toBe(1);
+    expect((await get('finance', '/dashboard/kpis')).json().pendingMyAction).toBe(0);
   });
 
   it('suppliers cannot read portfolio KPIs (403) and anonymous gets 401', async () => {

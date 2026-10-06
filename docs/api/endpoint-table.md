@@ -412,3 +412,4 @@
 | POST | `/artefacts/{kind}/{id}/refresh` | refreshArtefact | PROCUREMENT, CONTRACT_MGR, LEGAL | Bring an artefact up to date now | 409 for an approved report |
 | POST | `/search` | search | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, EXEC | Search my records, and an outside source when the organisation allows it (identifiers withheld) |  |
 | GET | `/search/external-log` | listExternalSearchLog | ADMIN, PROBITY, EXEC | Every question sent to an outside source and what was withheld |  |
+| GET | `/action-items` | listActionItems | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC | What needs my attention now, with a link to the screen where each is dealt with |  |

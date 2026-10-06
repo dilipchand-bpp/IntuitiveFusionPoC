@@ -114,12 +114,18 @@ export default async function Dashboard({
           hint={k.alertsDue === null ? 'Contract management only' : undefined}
           icon={<AlarmClock className="size-5" aria-hidden="true" />}
         />
-        <KpiCard
-          label="Waiting for you"
-          value={k.pendingMyAction}
-          hint="Actions for your role"
-          icon={<ListChecks className="size-5" aria-hidden="true" />}
-        />
+        <Link
+          href="/app/actions"
+          aria-label={`Waiting for you: ${k.pendingMyAction}. Open the list of actions`}
+          className="block rounded-lg no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <KpiCard
+            label="Waiting for you"
+            value={k.pendingMyAction}
+            hint="Select to see the actions for your role"
+            icon={<ListChecks className="size-5" aria-hidden="true" />}
+          />
+        </Link>
       </section>
 
       <section aria-labelledby="by-phase" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

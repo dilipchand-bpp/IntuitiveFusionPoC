@@ -440,3 +440,21 @@ describe('FR-0855 white labelling', () => {
     expect(TENANT_ID).toBeTruthy();
   });
 });
+
+describe('Waiting for you: the action list behind the dashboard card', () => {
+  it('lists what each role must act on, with links, and the card count matches the list', async () => {
+    const del = (await call('delegate', 'GET', '/action-items')).json() as Json;
+    const kpi = (await call('delegate', 'GET', '/dashboard/kpis')).json() as Json;
+    expect(kpi.pendingMyAction).toBe(del.count);
+    expect(del.items.every((i: Json) => i.link.startsWith('/app/') && i.title && i.detail)).toBe(true);
+    // a requester's drafts, and only theirs
+    const c = await call('requester', 'POST', '/requests', { title: 'Action item fixture' });
+    const mine = (await call('requester', 'GET', '/action-items')).json() as Json;
+    expect(mine.items.find((i: Json) => i.link === `/app/requests/${c.json().id}`)).toMatchObject({
+      kind: 'Draft request',
+    });
+    const other = await env.extraUser('other-requester-2', 'REQUESTER');
+    expect(((await call(other.email, 'GET', '/action-items')).json() as Json).count).toBe(0);
+    expect((await call('supplier', 'GET', '/action-items')).statusCode).toBe(403);
+  });
+});

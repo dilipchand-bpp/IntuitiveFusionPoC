@@ -25,6 +25,7 @@ import { AnalyticsStore } from './analytics/store.js';
 import { registerAnalytics } from './modules/b9/analytics-routes.js';
 import { registerSearch } from './modules/b9/search.js';
 import { registerArtefacts, runDue as runArtefactsDue } from './modules/b9/artefacts.js';
+import { registerActionItems } from './modules/b9/action-items.js';
 import { registerBuying } from './modules/b9/buying.js';
 import { registerNotesGrc } from './modules/b9/notes-grc.js';
 import { registerDashboardPrefs } from './modules/b9/dashboard-routes.js';
@@ -214,6 +215,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   for (const k of registerFx(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerDashboardPrefs(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerBuying(app, API_PREFIX, guardDeps)) implemented.add(k);
+  for (const k of registerActionItems(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerArtefacts(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerSearch(app, API_PREFIX, guardDeps)) implemented.add(k);
   if (deps.alertSchedulerMinutes) {

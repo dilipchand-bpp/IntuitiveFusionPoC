@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { guard, type GuardDeps } from '../auth/guard.js';
 import { withContext } from '../db/client.js';
 import { alert, evaluation, notification, panelMember, plan } from '../db/schema.js';
+import { actionItemsFor } from './b9/action-items.js';
 import { visibleRequests } from './reporting/scope.js';
 import { AppError, parse } from '../http/errors.js';
 
@@ -64,32 +65,8 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
             )
         : [{ n: null }];
 
-      // "Waiting for me": what each role is expected to act on next.
-      let pending = 0;
-      const roles = a.user.roles;
-      if (roles.includes('DELEGATE') || roles.includes('EXEC')) {
-        const [x] = await tx
-          .select({ n: sql<number>`count(*)::int` })
-          .from(plan)
-          .where(and(eq(plan.tenantId, a.user.tenantId), eq(plan.status, 'AWAITING_APPROVAL')));
-        pending += x?.n ?? 0;
-      }
-      if (roles.includes('CHAIR') || roles.includes('EVALUATOR')) {
-        const [x] = await tx
-          .select({ n: sql<number>`count(*)::int` })
-          .from(panelMember)
-          .innerJoin(evaluation, eq(evaluation.id, panelMember.evaluationId))
-          .where(
-            and(
-              eq(panelMember.userId, a.user.id),
-              notInArray(panelMember.coiState, ['REMOVED', 'DECLARED_CONFLICT']),
-              ne(evaluation.status, 'APPROVED'),
-            ),
-          );
-        pending += x?.n ?? 0;
-      }
-      if (roles.includes('REQUESTER'))
-        pending += rows.filter((r) => r.status === 'DRAFT' && r.requesterId === a.user.id).length;
+      // "Waiting for me": what each role is expected to act on next (the list behind the card is GET /action-items)
+      const pending = (await actionItemsFor(tx, a, now)).length;
 
       const byPhase = Object.entries(
         active.reduce<Record<string, number>>((m, r) => ((m[r.phase] = (m[r.phase] ?? 0) + 1), m), {}),

@@ -22839,6 +22839,53 @@
      }
     }
    }
+  },
+  "/action-items": {
+   "get": {
+    "operationId": "listActionItems",
+    "tags": [
+     "Dashboards"
+    ],
+    "summary": "What needs my attention now, with a link to the screen where each is dealt with",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ActionItems"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -31010,6 +31057,10 @@
     "additionalProperties": true
    },
    "ExternalSearchLog": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ActionItems": {
     "type": "object",
     "additionalProperties": true
    }

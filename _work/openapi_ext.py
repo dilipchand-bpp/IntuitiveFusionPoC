@@ -659,3 +659,5 @@ ep("GET", "/artefacts/{kind}/{id}/state", "getArtefactState", AF, "Whether an ev
 ep("POST", "/artefacts/{kind}/{id}/refresh", "refreshArtefact", AF, "Bring an artefact up to date now", ["PROCUREMENT", "CONTRACT_MGR", "LEGAL"], None, "ArtefactRefreshed", note="409 for an approved report")
 ep("POST", "/search", "search", SR, "Search my records, and an outside source when the organisation allows it (identifiers withheld)", STAFF_BUY, "SearchQuery", "SearchResult")
 ep("GET", "/search/external-log", "listExternalSearchLog", SR, "Every question sent to an outside source and what was withheld", ["ADMIN", "PROBITY", "EXEC"], None, "ExternalSearchLog", arrayResp=True)
+schemas["ActionItems"] = OBJ
+ep("GET", "/action-items", "listActionItems", "Dashboards", "What needs my attention now, with a link to the screen where each is dealt with", ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "ADMIN", "EXEC"], None, "ActionItems")
