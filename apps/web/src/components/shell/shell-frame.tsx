@@ -6,6 +6,7 @@ import { Button, Drawer, Logo, ThemeToggle } from '@if/ui';
 import type { NavItem } from '@/lib/nav';
 import { CommandPalette } from './command-palette';
 import { PreviewLink } from '@/components/preview/preview-link';
+import { AskAi } from './ask-ai';
 import { NavLinks } from './nav-links';
 import { NotificationBell } from './notification-bell';
 import { ProfileMenu } from './profile-menu';
@@ -79,6 +80,7 @@ export function ShellFrame({
           {children}
         </main>
       </div>
+      <AskAi csrf={user.csrfToken} />
     </div>
   );
 }

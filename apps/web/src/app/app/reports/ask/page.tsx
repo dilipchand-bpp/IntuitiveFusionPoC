@@ -3,7 +3,8 @@ import { getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'Ask for a report – Intuitive Fusion' };
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams;
   const user = await getSessionUser();
   return (
     <div className="flex flex-col gap-6">
@@ -14,7 +15,7 @@ export default async function Page() {
           share them.
         </p>
       </header>
-      <AskPanel csrf={user!.csrfToken} />
+      <AskPanel csrf={user!.csrfToken} initial={q?.slice(0, 300)} />
     </div>
   );
 }

@@ -501,3 +501,10 @@ ep("POST", "/requests/{id}/phase/sync", "syncProcurementPhase", CB, "Detect that
 ep("POST", "/requests/phase-sync", "syncAllProcurementPhases", CB, "Catch every procurement's tracker up with its records", ["PROCUREMENT", "EXEC"], None, "PhaseSyncAll")
 ep("POST", "/tenders/{id}/template-change", "changeTenderTemplate", CB, "Change a staged tender to another template in plain language and fill it in again, keeping sections a person wrote", ["PROCUREMENT"], "PlainInstruction", "TemplateChanged")
 ep("POST", "/evaluations/{id}/committee/instruct", "instructCommittee", CB, "Add or remove an evaluation committee member from an instruction or a name, with a picker where several people match", ["PROCUREMENT"], "CommitteeInstruction", "CommitteeResult", note="status AMBIGUOUS lists candidates; 409 HAS_SCORES")
+
+# ---------------------------------------------------------------- X01: conversational assistant
+schemas.update({
+    "AssistantMessage": obj({"message": S, "page": S}, ["message"]),
+    "AssistantReply": OBJ,
+})
+ep("POST", "/assistant/chat", "assistantChat", "Assistant", "Ask the assistant about the workflow, roles and approvals, what needs attention or what to fix, or give a simple instruction (rules-simulated)", STAFF_ALL + ["SUPPLIER"], "AssistantMessage", "AssistantReply")

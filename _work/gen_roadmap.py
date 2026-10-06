@@ -99,7 +99,7 @@ for r in rows:
         area = AREA.get(cat)
         assert area, f"no area for stub category {cat!r} ({rid})"
     else:
-        status = "DEFERRED"
+        status = "BUILT" if rid in delivered else "DEFERRED"
         area = None
     items.append(
         dict(id=rid, tier=tier, status=status, category=cat, area=area, priority=r["Priority"], title=title(desc.get(rid, "")), batch=delivered.get(rid))

@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { aud } from '@/lib/labels';
@@ -1105,8 +1105,8 @@ interface View {
   mine: boolean;
   owner?: string;
 }
-export function AskPanel({ csrf }: { csrf: string }) {
-  const [q, setQ] = useState('');
+export function AskPanel({ csrf, initial = '' }: { csrf: string; initial?: string }) {
+  const [q, setQ] = useState(initial);
   const [ans, setAns] = useState<Answer | null>(null);
   const [name, setName] = useState('');
   const [shared, setShared] = useState(false);
@@ -1116,6 +1116,13 @@ export function AskPanel({ csrf }: { csrf: string }) {
     r.run('ask', async () => {
       setAns(await send<Answer>(csrf, 'POST', '/reports/ask', { question: text }));
     });
+  const first = useRef(false);
+  useEffect(() => {
+    if (initial && !first.current) {
+      first.current = true;
+      void ask(initial);
+    }
+  });
   return (
     <div className="flex flex-col gap-5" data-testid="ask">
       <form

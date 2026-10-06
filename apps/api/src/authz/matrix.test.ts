@@ -153,6 +153,6 @@ describe('authorisation matrix (every operation x every role)', () => {
     );
     expect(supplierOps.length).toBeGreaterThan(0);
     for (const o of supplierOps)
-      expect(['SupplierPortal', 'Tenders', 'Auth', 'Notifications']).toContain(o.op.tags?.[0]);
+      expect(['SupplierPortal', 'Tenders', 'Auth', 'Notifications', 'Assistant']).toContain(o.op.tags?.[0]);
   });
 });

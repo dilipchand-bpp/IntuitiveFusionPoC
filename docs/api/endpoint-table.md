@@ -335,3 +335,4 @@
 | POST | `/requests/phase-sync` | syncAllProcurementPhases | PROCUREMENT, EXEC | Catch every procurement's tracker up with its records |  |
 | POST | `/tenders/{id}/template-change` | changeTenderTemplate | PROCUREMENT | Change a staged tender to another template in plain language and fill it in again, keeping sections a person wrote |  |
 | POST | `/evaluations/{id}/committee/instruct` | instructCommittee | PROCUREMENT | Add or remove an evaluation committee member from an instruction or a name, with a picker where several people match | status AMBIGUOUS lists candidates; 409 HAS_SCORES |
+| POST | `/assistant/chat` | assistantChat | REQUESTER, PROCUREMENT, DELEGATE, EVALUATOR, CHAIR, LEGAL, CONTRACT_MGR, PROBITY, FINANCE, ADMIN, EXEC, SUPPLIER | Ask the assistant about the workflow, roles and approvals, what needs attention or what to fix, or give a simple instruction (rules-simulated) |  |

@@ -155,5 +155,12 @@
       "FR-0770",
       "FR-0775"
     ]
+  },
+  "B7": {
+    "label": "B7 Conversational assistant (Ask AI)",
+    "evidence": "docs/B7-Evidence.md",
+    "ids": [
+      "FR-X01"
+    ]
   }
 }

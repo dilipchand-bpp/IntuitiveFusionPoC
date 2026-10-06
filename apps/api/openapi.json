@@ -18718,6 +18718,70 @@
      }
     }
    }
+  },
+  "/assistant/chat": {
+   "post": {
+    "operationId": "assistantChat",
+    "tags": [
+     "Assistant"
+    ],
+    "summary": "Ask the assistant about the workflow, roles and approvals, what needs attention or what to fix, or give a simple instruction (rules-simulated)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC",
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AssistantReply"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AssistantMessage"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -26220,6 +26284,25 @@
     ]
    },
    "CommitteeResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AssistantMessage": {
+    "type": "object",
+    "properties": {
+     "message": {
+      "type": "string"
+     },
+     "page": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "message"
+    ]
+   },
+   "AssistantReply": {
     "type": "object",
     "additionalProperties": true
    }

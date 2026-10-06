@@ -39,6 +39,7 @@ const EXTERNAL_OK = [
   '/evaluations',
   '/evaluation-reports',
   '/settings',
+  '/assistant',
 ];
 
 /** Resolves the session (if any) for every request; enforcement happens per route in guard(). */

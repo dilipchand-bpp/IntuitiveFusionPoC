@@ -6,12 +6,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-X01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Request Intake & AI',
     area: null,
     priority: 'Could',
     title:
       'Provide a conversational AI capability in which the user can request information and provide instructions',
+    batch: 'B7',
   }, // DEFERRED(FR-X01)
   {
     id: 'FR-0010',

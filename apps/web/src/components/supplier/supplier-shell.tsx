@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Logo, ThemeToggle } from '@if/ui';
 import { PreviewLink } from '@/components/preview/preview-link';
+import { AskAi } from '@/components/shell/ask-ai';
 import { NotificationBell } from '@/components/shell/notification-bell';
 import { ProfileMenu } from '@/components/shell/profile-menu';
 import { getSessionUser } from '@/lib/session';
@@ -59,6 +60,7 @@ export async function SupplierShell({ children }: { children: ReactNode }) {
       <main id="main" tabIndex={-1} className="reveal mx-auto max-w-4xl p-4 outline-none sm:p-6 lg:p-8">
         {children}
       </main>
+      <AskAi csrf={user.csrfToken} supplier />
     </div>
   );
 }
