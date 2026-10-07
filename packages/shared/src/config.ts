@@ -13,6 +13,8 @@ export const envSchema = z.object({
   STORAGE_DIR: z.string().min(1).default('./var/storage'),
   /** Key for the local secret store (SEC-N03). Required in production; development and test derive it from SESSION_SECRET. */
   SECRET_STORE_KEY: z.string().min(32, 'SECRET_STORE_KEY must be at least 32 characters').optional(),
+  /** Platform operator token (NFR-SC01). Unset: the operator endpoints do not exist (404). Sent as X-Operator-Token. */
+  OPERATOR_TOKEN: z.string().min(24, 'OPERATOR_TOKEN must be at least 24 characters').optional(),
   AI_PROVIDER: z.enum(['mock']).default('mock'),
   IDENTITY_PROVIDER: z.enum(['mock']).default('mock'),
 });

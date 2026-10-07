@@ -37,7 +37,8 @@ export type AuthResult =
  * adapter implements the same interface using OIDC; the rest of the API only ever sees AuthenticatedUser.
  */
 export interface IdentityProvider {
-  authenticate(email: string, password: string): Promise<AuthResult>;
+  /** `tenantSlug` names the organisation to sign in to; without it the default organisation is tried first (NFR-SC01). */
+  authenticate(email: string, password: string, tenantSlug?: string): Promise<AuthResult>;
   loadUser(userId: string): Promise<AuthenticatedUser | null>;
   /** Starts a password reset. Must do the same work whether or not the account exists. Returns the tenant for audit. */
   requestPasswordReset(email: string): Promise<{ tenantId: string | null }>;
@@ -56,7 +57,7 @@ export class MockIdentityProvider implements IdentityProvider {
     this.dummyHash = argon2Hash('timing-equaliser-not-a-real-password');
   }
 
-  async authenticate(email: string, password: string): Promise<AuthResult> {
+  async authenticate(email: string, password: string, tenantSlug?: string): Promise<AuthResult> {
     const now = this.clock.now();
     const norm = email.trim().toLowerCase();
     const found = await withSystem(this.database, async (tx) => {
@@ -64,7 +65,19 @@ export class MockIdentityProvider implements IdentityProvider {
         .select({ id: tenant.id })
         .from(tenant)
         .where(eq(tenant.slug, this.defaultTenantSlug));
-      const [u] = await tx.select().from(appUser).where(eq(appUser.email, norm));
+      if (tenantSlug && tenantSlug !== this.defaultTenantSlug) {
+        // a named organisation: the account must belong to it (the same address can exist in several organisations)
+        const [named] = await tx.select({ id: tenant.id }).from(tenant).where(eq(tenant.slug, tenantSlug));
+        if (!named) return { tenantId: null, user: null };
+        const [u] = await tx
+          .select()
+          .from(appUser)
+          .where(and(eq(appUser.email, norm), eq(appUser.tenantId, named.id)));
+        return { tenantId: named.id, user: u ?? null };
+      }
+      // no organisation named: the default one first, then any (an address that exists in one organisation only still works)
+      const rows = await tx.select().from(appUser).where(eq(appUser.email, norm));
+      const u = rows.find((r) => r.tenantId === t?.id) ?? rows[0];
       return { tenantId: t?.id ?? null, user: u ?? null };
     });
     const u = found.user;

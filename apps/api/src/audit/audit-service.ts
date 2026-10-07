@@ -6,7 +6,9 @@ import { auditEvent, tenant } from '../db/schema.js';
 
 export const GENESIS = 'GENESIS';
 const REDACTED = '[REDACTED]';
-const SENSITIVE_KEY = /pass(word)?|secret|token|hash$|authorization|cookie|api[-_]?key|credential/i;
+// bank details (SEC-AC10): the BSB and the account number never reach the log, whichever module writes the event
+const SENSITIVE_KEY =
+  /pass(word)?|secret|token|hash$|authorization|cookie|api[-_]?key|credential|^bsb$|^account$|account[-_]?(number|no)$/i;
 
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
 

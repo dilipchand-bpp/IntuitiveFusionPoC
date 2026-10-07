@@ -226,5 +226,38 @@
       "SEC-TP04",
       "SEC-TP07"
     ]
+  },
+  "B11": {
+    "label": "B11 Security and data protection controls",
+    "evidence": "docs/B11-Evidence.md",
+    "ids": [
+      "FR-0865",
+      "NFR-L03",
+      "NFR-R01",
+      "NFR-R02",
+      "NFR-R03",
+      "NFR-R05",
+      "NFR-R06",
+      "NFR-SC01",
+      "SEC-AC09",
+      "SEC-AC10",
+      "SEC-AP04",
+      "SEC-AP08",
+      "SEC-D01",
+      "SEC-D02",
+      "SEC-D03",
+      "SEC-D04",
+      "SEC-D05",
+      "SEC-D06",
+      "SEC-D07",
+      "SEC-D08",
+      "SEC-D09",
+      "SEC-D10",
+      "SEC-IR05",
+      "SEC-L02",
+      "SEC-L06",
+      "SEC-L07",
+      "SEC-L08"
+    ]
   }
 }

@@ -801,3 +801,192 @@ ep("POST", "/admin/config/import", "importConfig", CF, "Validate a configuration
 ep("POST", "/auth/client-check", "reportClientCheck", CF, "A signed-in browser reports its user agent and feature support; the server judges it against the published baseline and counts it", "*", "ClientCheck", "ClientCheckResult", note="Stores browser family, major version and the verdict only")
 ep("GET", "/admin/client-baseline", "getClientBaseline", CF, "Counts of sign-ins by browser and whether the baseline was met, with the published baseline", ["ADMIN"], None, "ClientBaselineSummary")
 ep("GET", "/admin/performance/budget-check", "getBudgetCheckPerformance", PF, "Count, p50, p95 and max of the measured budget check against the configured target (NFR-P04)", ["ADMIN"], None, "BudgetCheckPerformance", query=["last"])
+
+# B11A block
+# ---------------------------------------------------------------- B11a: encryption, keys, sealed bids, upload scanning, restricted projects, evidence
+# SEC-D01 evidence, SEC-D02 keys with rotation, SEC-D03 sealed bids, SEC-D04 envelope encryption, SEC-AP04 malware scanning,
+# FR-0865 restricted projects, NFR-R01 / SEC-D10 isolation check. Appended to openapi_ext.py (runs in gen_openapi.py's namespace).
+schemas.update({n: OBJ for n in [
+    "KeyList", "KeyView", "KeyRewrapResult", "BidBox", "QuarantineList", "QuarantineRescan", "SecurityEvidence",
+    "IsolationCheck", "EncryptExistingResult", "RestrictRequest", "RestrictResult", "RestrictionView", "RestrictionDelegate",
+    "RestrictedProjectList",
+]})
+KY = "Keys"; BB = "SealedBids"; QT = "Quarantine"; EV = "SecurityEvidence"; RP = "RestrictedProjects"
+KEY_READ = ["ADMIN", "PROBITY", "EXEC"]
+BOX = ["ADMIN", "PROCUREMENT", "PROBITY", "EXEC", "LEGAL"]
+ep("GET", "/security/keys", "listKeys", KY, "Tenant key versions per purpose (DATA, BIDS, PROJECT) with state and how many objects each protects; key material is never returned. SIMULATED key service", KEY_READ, None, "KeyList")
+ep("POST", "/security/keys/{purpose}/rotate", "rotateKey", KY, "Create a new key version for the purpose; the previous version is retired but still decrypts what it sealed", ["ADMIN"], None, "KeyView", 201)
+ep("POST", "/security/keys/{purpose}/rewrap", "rewrapKey", KY, "Re-wrap every data key of the purpose to the newest key version without touching a ciphertext; versions that are disabled are skipped and reported", ["ADMIN"], None, "KeyRewrapResult")
+ep("POST", "/security/keys/{id}/disable", "disableKey", KY, "Disable a key version: what it protects then fails to decrypt with 'key disabled'", ["ADMIN"], None, "KeyView", note="409 LAST_ACTIVE_KEY when it is the only active key for its purpose")
+ep("POST", "/security/keys/{id}/enable", "enableKey", KY, "Enable a disabled key version again (it returns as RETIRED)", ["ADMIN"], None, "KeyView")
+ep("GET", "/tenders/{id}/bid-box", "getBidBox", BB, "Sealed bids: metadata only (existence, size, time, hash) until the tender closes and, for a high-value tender, two witnesses have opened it", BOX, None, "BidBox")
+ep("GET", "/tenders/{id}/bid-box/files/{fileId}", "downloadBidFile", BB, "Decrypt and download a bid file; every decryption is audited", BOX, None, None, note="423 BIDS_SEALED before close, 423 BIDS_NOT_OPENED before the witnesses open a high-value tender, 403 BID_READ_NOT_PERMITTED for a role not entitled to bid content")
+ep("GET", "/security/quarantine", "listQuarantine", QT, "Uploads refused as infected (no content kept) and uploads held as PENDING_SCAN; the simulated scanner's state and test signatures", ["ADMIN", "PROBITY"], None, "QuarantineList")
+ep("POST", "/security/quarantine/{id}/rescan", "rescanQuarantineItem", QT, "Rescan an upload held while the scanner was down; clean items are CLEARED, infected ones quarantined", ["ADMIN"], None, "QuarantineRescan", note="409 SCANNER_DOWN while the scanner is still down")
+ep("GET", "/security/evidence", "getSecurityEvidence", EV, "Encryption in transit and at rest, measured: HSTS and cookie flags, registry of encrypted fields with encrypted and plaintext row counts, key versions in use, and what is not evidenced here", KEY_READ, None, "SecurityEvidence")
+ep("POST", "/security/isolation-check", "runIsolationCheck", EV, "Live tenant-isolation check: tables with tenant_id, which have row level security, and that no foreign row is visible", ["ADMIN"], None, "IsolationCheck")
+ep("POST", "/security/encrypt-existing", "encryptExisting", EV, "One-off, safe to repeat: encrypt older plaintext bids and bank details and move a legal platform secret out of the settings", ["ADMIN"], None, "EncryptExistingResult")
+ep("POST", "/requests/{id}/restrict", "restrictRequest", RP, "Mark a procurement as a restricted project with a reason: its plan text, report narrative and documents are encrypted with a per-project key and it is invisible outside its sourcing group", ["PROCUREMENT", "EXEC"], "RestrictRequest", "RestrictResult", 201, note="409 when already restricted")
+ep("GET", "/requests/{id}/restriction", "getRestriction", RP, "The restriction on a procurement; 404 for anyone outside its sourcing group, exactly as for an id that does not exist", "*", None, "RestrictionView")
+ep("POST", "/requests/{id}/restriction/delegates", "addRestrictionDelegate", RP, "Name a delegate who joins the sourcing group of a restricted project", ["PROCUREMENT", "EXEC"], "RestrictionDelegate", None, 201)
+ep("GET", "/security/restricted-projects", "listRestrictedProjects", RP, "The restricted projects the caller belongs to", ["ADMIN", "PROBITY", "EXEC", "PROCUREMENT"], None, "RestrictedProjectList")
+
+# B11B block
+# ---------------------------------------------------------------- B11b (residency, egress, retention, classification, privacy, content safety, breach, topology)
+schemas.update({n: OBJ for n in [
+    "ResidencyView", "ResidencyChange", "ResidencyChanged", "EgressView", "EgressChange", "EgressProbe", "EgressProbeResult",
+    "RetentionView", "RetentionChange", "RetentionRun", "LegalHoldCreate", "LegalHoldCreated", "LegalHoldRelease", "LegalHoldReleased",
+    "ClassificationRun", "ClassificationView", "ClassificationReview", "ClassificationReviewed",
+    "PrivacyNotice", "PrivacyNoticeStatus", "PrivacyNoticeAck", "PrivacyNoticeAcked", "PrivacySettings",
+    "PrivacyRequestLodge", "PrivacyRequestLog", "PrivacyRequestView", "PrivacyRequestList", "PrivacyRequestAssign", "PrivacyRequestVerify",
+    "PrivacyRequestComplete", "PrivacyRequestRefuse", "PrivacyOverdueRun", "PrivacyExport",
+    "ContentFlags", "ContentFlagReviewed", "ContentInspect", "ContentInspectResult",
+    "IncidentReport", "IncidentReported", "IncidentList", "IncidentMine", "IncidentView", "IncidentQuestions", "IncidentAssess",
+    "IncidentContainment", "IncidentRemindersRun", "IncidentClose", "HostingTopology",
+]})
+RS = "Residency"; EG = "Egress"; RT = "Retention"; CL = "Classification"; PV = "Privacy"; CS = "ContentSafety"; IN = "Incidents"; DS = "Design"
+RES_READ = ["ADMIN", "PROBITY", "EXEC"]
+PRIV_MGR = ["ADMIN", "LEGAL", "PROBITY"]
+INC_MGR = ["ADMIN", "PROBITY", "LEGAL", "EXEC"]
+SAFETY = ["ADMIN", "PROBITY", "PROCUREMENT"]
+STAFF_B11 = ["REQUESTER", "PROCUREMENT", "DELEGATE", "EVALUATOR", "CHAIR", "LEGAL", "CONTRACT_MGR", "PROBITY", "FINANCE", "ADMIN", "EXEC"]
+ep("GET", "/admin/residency", "getResidency", RS, "The elected hosting country, allowed regions, every outbound path with its region and whether it is allowed, and recent refusals (NFR-R02, SEC-D09)", RES_READ, None, "ResidencyView")
+ep("PUT", "/admin/residency", "setResidency", RS, "Change the hosting country, allowed regions, AI region or log region; a reason is required and the change is audited. Connectors now outside the allowed regions are switched off; nothing is ever switched back on", ["ADMIN"], "ResidencyChange", "ResidencyChanged", note="422 VALIDATION_FAILED without a reason; 409 NO_CHANGE")
+ep("GET", "/admin/egress", "getEgress", EG, "The egress allow-list, the evidence text and the attempts blocked (SEC-D05)", RES_READ, None, "EgressView")
+ep("PUT", "/admin/egress", "setEgress", EG, "Replace the egress allow-list; a reason is required, a too-broad wildcard is refused, the change is audited", ["ADMIN"], "EgressChange", "EgressView", note="422 for an invalid or too broad host pattern")
+ep("POST", "/admin/egress/probe", "probeEgress", EG, "Try a host through the egress gate; a host not on the list is refused, audited and counted", ["ADMIN"], "EgressProbe", "EgressProbeResult", note="422 EGRESS_BLOCKED when the host is not on the allow-list")
+ep("GET", "/privacy/retention", "getRetention", RT, "AI conversation retention setting, stamps, legal holds and recent purge runs (SEC-D06)", PRIV_MGR, None, "RetentionView")
+ep("PUT", "/privacy/retention", "setRetention", RT, "Set the days an AI conversation transcript is kept (30 at least); audited", ["ADMIN"], "RetentionChange", "RetentionView", note="400 below 30 days")
+ep("POST", "/privacy/retention/run", "runRetention", RT, "Anonymise expired AI conversation transcripts now; legal-hold records are skipped and the reason recorded; audit events are never touched", ["ADMIN"], None, "RetentionRun")
+ep("POST", "/privacy/legal-holds", "placeLegalHold", RT, "Place a legal hold on a request or a conversation so it is never purged", PRIV_MGR, "LegalHoldCreate", "LegalHoldCreated", 201, note="409 ALREADY_HELD; 404 unknown record")
+ep("POST", "/privacy/legal-holds/{id}/release", "releaseLegalHold", RT, "Release a legal hold, with a reason", PRIV_MGR, "LegalHoldRelease", "LegalHoldReleased", note="409 ALREADY_RELEASED")
+ep("POST", "/privacy/classification/run", "runClassification", CL, "Scan the text-bearing tables and classify what is found; idempotent; stores masked samples only (SEC-D07)", ["ADMIN", "PROBITY"], None, "ClassificationRun")
+ep("GET", "/privacy/classification", "getClassification", CL, "Findings summarised by class and location, with warnings for sensitive data in unexpected places", ["PROBITY", "ADMIN", "LEGAL", "EXEC"], None, "ClassificationView", query=["status", "class", "warningsOnly"])
+ep("POST", "/privacy/classification/{id}/review", "reviewClassification", CL, "Confirm or dismiss a finding, with a reason", ["ADMIN", "PROBITY", "LEGAL"], "ClassificationReview", "ClassificationReviewed")
+ep("GET", "/privacy/notice", "getPrivacyNotice", PV, "The collection notice and its version for a place where personal information is collected (SEC-D08)", None, None, "PrivacyNotice", query=["context"])
+ep("GET", "/privacy/notice/status", "getPrivacyNoticeStatus", PV, "Which places the signed-in person has acknowledged the current notice version", "*", None, "PrivacyNoticeStatus")
+ep("POST", "/privacy/notice/ack", "acknowledgePrivacyNotice", PV, "Record that the signed-in person acknowledged the current notice version in a place", "*", "PrivacyNoticeAck", "PrivacyNoticeAcked", 201, note="200 when already acknowledged")
+ep("GET", "/privacy/settings", "getPrivacySettings", PV, "Notice text and version, privacy officer role and response days", PRIV_MGR, None, "PrivacySettings")
+ep("PUT", "/privacy/settings", "setPrivacySettings", PV, "Change the notice, officer role and response days; audited", ["ADMIN"], "PrivacySettings", "PrivacySettings")
+ep("POST", "/privacy/requests", "lodgePrivacyRequest", PV, "Lodge an access or correction request about yourself; identity is verified because you are signed in (staff or supplier contact)", "*", "PrivacyRequestLodge", "PrivacyRequestView", 201)
+ep("GET", "/privacy/requests/mine", "listMyPrivacyRequests", PV, "Your own privacy requests and their state", "*", None, "PrivacyRequestList")
+ep("GET", "/privacy/requests", "listPrivacyRequests", PV, "All privacy requests with due dates and overdue flags", PRIV_MGR, None, "PrivacyRequestList", query=["status"])
+ep("POST", "/privacy/requests/log", "logPrivacyRequest", PV, "Log a request taken from a caller; staff record how identity was verified", PRIV_MGR, "PrivacyRequestLog", "PrivacyRequestView", 201)
+ep("POST", "/privacy/requests/run-overdue", "escalateOverduePrivacyRequests", PV, "Escalate each overdue request once to the privacy officer role", PRIV_MGR, None, "PrivacyOverdueRun")
+ep("POST", "/privacy/requests/{id}/assign", "assignPrivacyRequest", PV, "Take or assign a request; moves it to IN_PROGRESS", PRIV_MGR, "PrivacyRequestAssign", "PrivacyRequestView", note="409 when closed")
+ep("POST", "/privacy/requests/{id}/verify", "verifyPrivacyRequest", PV, "Record how the requester's identity was verified", PRIV_MGR, "PrivacyRequestVerify", "PrivacyRequestView")
+ep("POST", "/privacy/requests/{id}/apply-correction", "applyPrivacyCorrection", PV, "Apply the requested correction to the person's profile with a before and after audit", PRIV_MGR, None, "PrivacyRequestView", note="409 IDENTITY_NOT_VERIFIED, ALREADY_APPLIED or EMAIL_IN_USE")
+ep("POST", "/privacy/requests/{id}/complete", "completePrivacyRequest", PV, "Complete a request with a response summary", PRIV_MGR, "PrivacyRequestComplete", "PrivacyRequestView", note="409 until identity is verified and the export or correction is done")
+ep("POST", "/privacy/requests/{id}/refuse", "refusePrivacyRequest", PV, "Refuse a request; a reason is required", PRIV_MGR, "PrivacyRequestRefuse", "PrivacyRequestView")
+ep("GET", "/privacy/requests/{id}/export", "exportPrivacyRequest", PV, "The person's own records as a JSON download; managers any time after verification, the requester once the request is completed", "*", None, "PrivacyExport", note="application/json attachment; 404 for anyone else; 409 until verified or completed")
+ep("GET", "/content-safety/flags", "listContentFlags", CS, "Recent supplier or uploaded text that contained instruction-like content (SEC-AP08)", SAFETY, None, "ContentFlags")
+ep("POST", "/content-safety/flags/{id}/review", "reviewContentFlag", CS, "Mark a flag reviewed", SAFETY, None, "ContentFlagReviewed")
+ep("POST", "/content-safety/inspect", "inspectContent", CS, "Show how a piece of text would be neutralised, wrapped as data and flagged", SAFETY, "ContentInspect", "ContentInspectResult")
+ep("POST", "/incidents/report", "reportIncident", IN, "Report a suspected data breach; any staff member (SEC-IR05)", STAFF_B11, "IncidentReport", "IncidentReported", 201)
+ep("GET", "/incidents/mine", "listMyIncidents", IN, "Incidents you reported", STAFF_B11, None, "IncidentMine")
+ep("GET", "/incidents/questions", "getIncidentQuestions", IN, "The assessment questions and the rule set (rules-simulated-v1; decision support, not legal advice)", INC_MGR, None, "IncidentQuestions")
+ep("GET", "/incidents", "listIncidents", IN, "All incidents with deadlines and recommendations", INC_MGR, None, "IncidentList")
+ep("POST", "/incidents/run-reminders", "runIncidentReminders", IN, "Remind, then escalate, incidents whose 30-day assessment is outstanding", INC_MGR, None, "IncidentRemindersRun")
+ep("GET", "/incidents/{id}", "getIncident", IN, "One incident in full: assessment, containment, notice drafts, reminders", INC_MGR, None, "IncidentView")
+ep("POST", "/incidents/{id}/assess", "assessIncident", IN, "Answer the likelihood-of-serious-harm questions; returns a score and a recommendation of Notifiable or Not notifiable (record the reason)", INC_MGR, "IncidentAssess", "IncidentView", note="422 unless every question is answered")
+ep("POST", "/incidents/{id}/containment", "setIncidentContainment", IN, "Tick or untick a containment step", INC_MGR, "IncidentContainment", "IncidentView")
+ep("POST", "/incidents/{id}/notifications/{audience}/draft", "draftIncidentNotice", IN, "Draft the notice to the regulator or to affected individuals from a template with merge fields; audience is REGULATOR or INDIVIDUALS", INC_MGR, None, "IncidentView", note="409 unless assessed as Notifiable")
+ep("POST", "/incidents/{id}/notifications/{audience}/send", "sendIncidentNotice", IN, "Send a drafted notice. SIMULATED through the MESSAGING connector: a record is kept, nothing is sent", INC_MGR, None, "IncidentView", note="422 RESIDENCY_VIOLATION or EGRESS_BLOCKED when the gateway is outside the allowed regions; 409 without a draft")
+ep("POST", "/incidents/{id}/close", "closeIncident", IN, "Close the incident with lessons learned", INC_MGR, "IncidentClose", "IncidentView", note="409 until notified (Notifiable) or the reason is recorded (Not notifiable)")
+ep("GET", "/design/hosting-topology", "getHostingTopology", DS, "The three hosting options with data flows, responsibilities, residency and key management. DESIGN ONLY: not built (SEC-D11)", STAFF_B11, None, "HostingTopology")
+
+# B11C block
+# ---------------------------------------------------------------- B11c (audit chain, evidence pack, anomalous access, compliance, access policies, bank details)
+schemas.update({n: OBJ for n in [
+    "AdminChainStatus", "AdminChainVerified",
+    "PackCoverage", "PackRequest", "PackBundle", "PackVerifyRequest", "PackVerification",
+    "SecurityAlertList", "SecurityAlertView", "SecurityAlertNote", "SecurityAlertClose", "SecurityAlertSessionsEnded",
+    "MonitorRun", "MonitorStatus",
+    "ComplianceView", "ComplianceRun", "ComplianceRemediate", "ComplianceRemediated",
+    "AccessPolicyList", "AccessPolicyCreate", "AccessPolicyView", "AccessPolicyReason", "AccessPolicySimulate", "AccessPolicySimulation",
+    "AccessTagList", "AccessTagCreate", "AccessTagView", "AccessTagRemoved",
+    "SupplierBankView", "OwnBankView", "BankChangeRequest", "BankChangeView", "BankChangeList", "BankChangeConfirm", "BankChangeReject",
+]})
+AUD = "AuditIntegrity"; PK = "EvidencePack"; MON = "SecurityMonitor"; CMP = "Compliance"; POL = "AccessPolicies"; BNK = "BankDetails"
+CHAIN_READ = ["PROBITY", "EXEC", "ADMIN"]
+ALERT_ROLES = ["ADMIN", "PROBITY", "EXEC"]
+BANK_VIEW = ["PROCUREMENT", "LEGAL", "FINANCE", "ADMIN", "EXEC", "PROBITY", "CONTRACT_MGR", "DELEGATE"]
+BANK_LIST = ["FINANCE", "PROCUREMENT", "ADMIN", "EXEC", "PROBITY"]
+ep("GET", "/audit/admin-chain", "getAdminChain", AUD, "Re-computes the whole tenant hash chain, reports the first broken link, the administrative-event count, head hash and digest, the database guards and the latest recorded verification (SEC-L02)", CHAIN_READ, None, "AdminChainStatus", note="Readable by probity and executives as well as administrators, so administrators are not the only verifiers")
+ep("POST", "/audit/admin-chain/verify", "verifyAdminChain", AUD, "Runs the same verification and keeps the outcome as an append-only record and an audit event", CHAIN_READ, None, "AdminChainVerified")
+ep("GET", "/audit/export-pack/coverage", "getPackCoverage", PK, "What an external auditor would look for on one procurement, pass or fail per item computed from the data (NFR-R06)", CHAIN_READ, None, "PackCoverage", query=["requestId"], note="404 for an unknown procurement")
+ep("POST", "/audit/export-pack", "createExportPack", PK, "An evidence pack for a date range and optionally one procurement: audit events as the hash-chain segment, probity records, coverage, manifest with SHA-256 per file, head hash and a signature. SIMULATED signature (HMAC with the secret audit.export.signing); a real deployment signs with an asymmetric key in an HSM (SEC-L07)", CHAIN_READ, "PackRequest", "PackBundle", note="format JSON returns a bundle file, ZIP returns application/zip; 422 EXPORT_TOO_LARGE over 20000 events; recorded in the audit trail")
+ep("POST", "/audit/export-pack/verify", "verifyExportPack", PK, "Checks a pack (bundle JSON or base64 zip): every file against the manifest, the signature, every event hash and link, the head hash, and each event against the live chain; names the parts that fail", ["PROBITY", "EXEC", "ADMIN", "LEGAL"], "PackVerifyRequest", "PackVerification")
+ep("GET", "/security/alerts", "listSecurityAlerts", MON, "Alerts raised by the access monitor (rules-simulated-v1) and by configuration drift, newest first, with the owner it was routed to (SEC-L06)", ALERT_ROLES, None, "SecurityAlertList", query=["status", "limit"])
+ep("POST", "/security/alerts/{id}/acknowledge", "acknowledgeSecurityAlert", MON, "Acknowledge an alert; an alert nobody acknowledges within the configured minutes is escalated to the executives", ALERT_ROLES, "SecurityAlertNote", "SecurityAlertView", note="409 when closed")
+ep("POST", "/security/alerts/{id}/close", "closeSecurityAlert", MON, "Close an alert with a note of at least five characters", ALERT_ROLES, "SecurityAlertClose", "SecurityAlertView", note="409 when already closed")
+ep("POST", "/security/alerts/{id}/end-sessions", "endSecurityAlertSessions", MON, "Ends every session of the person the alert is about so they must sign in again; the account is never locked; audited", ["ADMIN", "PROBITY"], "SecurityAlertNote", "SecurityAlertSessionsEnded", note="409 NO_SUBJECT for a configuration alert; 409 OWN_SESSIONS")
+ep("POST", "/security/monitor/run", "runSecurityMonitor", MON, "Flushes the access log, applies the rules, raises alerts, escalates what is due and trims the log", ALERT_ROLES, None, "MonitorRun")
+ep("GET", "/security/monitor/status", "getSecurityMonitorStatus", MON, "The rules and thresholds, the security owner, the last run and 24 hours of access-log counts", ALERT_ROLES, None, "MonitorStatus")
+ep("GET", "/compliance", "getCompliance", CMP, "The configuration checks with their last result, since when a check has been failing, guidance and whether a one-click fix exists (SEC-L08)", ALERT_ROLES, None, "ComplianceView")
+ep("POST", "/compliance/run", "runCompliance", CMP, "Runs every check now; a check that passed and now fails raises a security alert for the security owner", ALERT_ROLES, None, "ComplianceRun")
+ep("POST", "/compliance/checks/{key}/remediate", "remediateComplianceCheck", CMP, "Applies the one safe settings change for a failing check, with a reason; audited like any settings change, then the checks run again", ["ADMIN"], "ComplianceRemediate", "ComplianceRemediated", note="409 NO_ONE_CLICK for guidance-only checks; 409 ALREADY_PASSING; 404 unknown check")
+ep("GET", "/access/policies", "listAccessPolicies", POL, "Access policies that override the default hierarchy (SEC-AC09)", ALERT_ROLES, None, "AccessPolicyList", query=["includeInactive"])
+ep("POST", "/access/policies", "createAccessPolicy", POL, "Create a DENY or ALLOW policy for a role or a person, an action, a resource selector and conditions, with a reason and an optional expiry; an explicit DENY always wins", ["ADMIN"], "AccessPolicyCreate", "AccessPolicyView", 201, note="400 for an unknown role or person or an expiry in the past")
+ep("POST", "/access/policies/{id}/disable", "disableAccessPolicy", POL, "Switch a policy off, with a reason", ["ADMIN"], "AccessPolicyReason", "AccessPolicyView", note="409 when already off")
+ep("DELETE", "/access/policies/{id}", "deleteAccessPolicy", POL, "Delete a policy, with a reason; the record stays for the audit trail", ["ADMIN"], "AccessPolicyReason", "AccessPolicyView", note="409 when already deleted")
+ep("POST", "/access/policies/simulate", "simulateAccessPolicy", POL, "What can this person see: the decision for a person, a procurement and an action, which policy decided and why each policy did or did not apply", ALERT_ROLES, "AccessPolicySimulate", "AccessPolicySimulation")
+ep("GET", "/access/tags", "listAccessTags", POL, "Tags on procurements that policies can select on", ALERT_ROLES, None, "AccessTagList")
+ep("POST", "/access/tags", "addAccessTag", POL, "Tag a procurement, for example hr-sensitive", ["ADMIN"], "AccessTagCreate", "AccessTagView", 201, note="409 ALREADY_TAGGED")
+ep("DELETE", "/access/tags/{id}", "removeAccessTag", POL, "Remove a tag", ["ADMIN"], None, "AccessTagRemoved")
+ep("GET", "/suppliers/{id}/bank", "getSupplierBank", BNK, "A supplier's bank details: unmasked only for finance (and every unmasked read is audited); every other role sees the BSB hidden and the last three digits of the account (SEC-AC10)", BANK_VIEW, None, "SupplierBankView")
+ep("GET", "/supplier/profile/bank", "getOwnBank", "SupplierPortal", "The supplier's own bank details, unmasked, and whether a change is waiting for finance", ["SUPPLIER"], None, "OwnBankView")
+ep("POST", "/suppliers/{id}/bank-change", "requestBankChange", BNK, "Staff ask for a change to a supplier's bank details; held PENDING, the old details stay in force until a different finance person confirms", ["FINANCE", "PROCUREMENT"], "BankChangeRequest", "BankChangeView", 201)
+ep("GET", "/bank-changes", "listBankChanges", BNK, "Bank detail changes waiting for finance (or by status); details are masked for everyone but finance", BANK_LIST, None, "BankChangeList", query=["status"])
+ep("POST", "/bank-changes/{id}/confirm", "confirmBankChange", BNK, "Confirm a change; never the person who asked for it", ["FINANCE"], "BankChangeConfirm", "BankChangeView", note="403 SECOND_PERSON when the caller asked for it; 409 when already decided")
+ep("POST", "/bank-changes/{id}/reject", "rejectBankChange", BNK, "Reject a change with a note; details recorded for the first time are taken out again", ["FINANCE"], "BankChangeReject", "BankChangeView", note="403 SECOND_PERSON; 409 when already decided")
+
+# B11D block
+# ---------------------------------------------------------------- B11d: signature levels, outside content, ESG plan targets, tenants
+# NFR-L03 signature levels aligned to eIDAS (SES, AES, QES), NFR-R03 field population from in-house data and refreshed outside
+# content, NFR-R05 ESG and socio-economic plan data with ceilings and ratios checked, NFR-SC01 tenants, usage plans, per-tenant
+# throttling and metering. Appended to openapi_ext.py (runs in gen_openapi.py's namespace). Roles match the guards in
+# apps/api/src/modules/b11prod/*-routes.ts exactly.
+schemas.update({n: OBJ for n in [
+    "SignatureLevelCard", "SignatureLevelOverride", "SignatureEvidenceExport",
+    "ContentPacks", "ContentRefresh", "ContentRefreshResult", "ContentItems", "ContentHints",
+    "EsgTargets", "EsgTargetUpdate", "EsgException", "EsgAcknowledge",
+    "UsageView", "OperatorTenantList", "OperatorTenantCreate", "OperatorTenantCreated", "OperatorPlanChange", "OperatorPlanChanged",
+]})
+# the sign decision may carry how the signer proves who they are; the level it reaches is recorded on the signature
+schemas["ContractSignRequest"] = obj({
+    "decision": enum("APPROVE", "REJECT"),
+    "comment": S,
+    "method": enum("PASSWORD", "PASSWORD_MFA"),
+    "password": {"type": "string", "maxLength": 128},
+    "mfaCode": {"type": "string", "maxLength": 10},
+}, ["decision"])
+for _e in E:
+    if _e["op"] == "signContract":
+        _e["req"] = "ContractSignRequest"
+        _e["note"] += "; 422 SIGNATURE_LEVEL_TOO_LOW when the signature reaches a lower eIDAS level (SES, AES, QES) than the contract needs; 403 SIGNATURE_REAUTH_FAILED for a wrong password or authenticator code. method PASSWORD_MFA signs at AES; a provider ceremony through the qualified provider signs at QES"
+# an optional tenant short name on sign-in; the default organisation is used when it is left out
+schemas["LoginRequest"]["properties"]["tenant"] = {"type": "string", "minLength": 1, "maxLength": 60}
+
+SG = "SignatureLevels"; CT = "OutsideContent"; EG = "EsgTargets"; TN = "Tenants"
+SG_READ = ["PROCUREMENT", "LEGAL", "CONTRACT_MGR", "DELEGATE", "EXEC", "FINANCE", "PROBITY", "ADMIN"]
+ep("GET", "/contracts/{id}/signature-level", "getContractSignatureLevel", SG, "The eIDAS level this contract needs and why (Legal's override, a value tier or the default), the level each signature reached with its non-repudiation evidence, whether the signed content is unchanged, and an explainer of the three levels", SG_READ, None, "SignatureLevelCard", note="A signatory in blind signing sees only their own line until the contract is executed")
+ep("PUT", "/contracts/{id}/signature-level", "setContractSignatureLevel", SG, "Legal sets the level a contract needs (SES, AES or QES) with a reason, over the value tiers in settings; null clears the override. Audited", ["LEGAL"], "SignatureLevelOverride", "SignatureLevelCard", note="400 when the reason is under 10 characters; 423 once the contract is executed and locked")
+ep("GET", "/contracts/{id}/signature-evidence", "exportSignatureEvidence", SG, "Non-repudiation evidence for each signature: signer, method, level, time, SHA-256 document digest, IP address and browser class, and whether the contract still matches what was signed. Audited as an export", SG_READ, None, "SignatureEvidenceExport", note="application/json attachment")
+CT_READ = ["PROCUREMENT", "ADMIN", "LEGAL", "EXEC"]
+CT_RUN = ["ADMIN", "PROCUREMENT"]
+ep("GET", "/content", "listContentPacks", CT, "The outside content packs (UNSPSC taxonomy, market benchmarks, risk library, clause references, ESG reference): version, source name and URL, refreshed and valid-until dates, state CURRENT, STALE, FAILED or NONE, item count, checksum, what the last refresh changed, and the in-house fallback note. The outside source is simulated", CT_READ, None, "ContentPacks")
+ep("GET", "/content/{key}/items", "listContentItems", CT, "The items of one pack (the path key is the pack kind)", CT_READ, None, "ContentItems", note="400 for a kind that is not one of the five")
+ep("POST", "/content/refresh", "refreshContent", CT, "Refresh one pack or all of them now, through the resilient provider layer (middleware connector). Applying the same release twice changes nothing; a failed call keeps what is held. toVersion is a demonstration control and never moves backwards", CT_RUN, "ContentRefresh", "ContentRefreshResult", note="422 VERSION_OLDER or VERSION_UNAVAILABLE")
+ep("GET", "/requests/{id}/content-hints", "getRequestContentHints", CT, "What in-house data and the outside packs suggest for a request: classification code, market price benchmark and standard risks, each with its source (In-house, Outside content with name and version, or both) and a note when a pack is stale and only in-house data was used", ["REQUESTER", "PROCUREMENT", "LEGAL", "DELEGATE", "EXEC", "PROBITY", "CONTRACT_MGR"], None, "ContentHints", note="A requester sees only their own requests")
+EG_READ = ["REQUESTER", "PROCUREMENT", "DELEGATE", "LEGAL", "PROBITY", "EXEC", "FINANCE"]
+ep("GET", "/plans/{id}/esg-targets", "getPlanEsgTargets", EG, "The nine ESG and socio-economic metrics of a plan: limit and organisation default, figure and where it came from (awarded contracts and declared supplier ESG data, or the owner's forecast), PASS, AT RISK or BREACH with the arithmetic, any exception, and the plan gate state", EG_READ, None, "EsgTargets", note="A requester sees only their own plans")
+ep("PUT", "/plans/{id}/esg-targets/{key}", "updatePlanEsgTarget", EG, "Set a plan's own limit (looser than the organisation's only within the allowed relaxation, with a reason and an approver note), reset it, or enter a forecast. Changing the limit or forecast withdraws an exception. Audited", ["PROCUREMENT", "REQUESTER"], "EsgTargetUpdate", "EsgTargets", note="422 ESG_OVERRIDE_NEEDS_REASON or ESG_OVERRIDE_OUT_OF_BOUNDS; 423 once the plan is locked; the path key is the metric key")
+ep("POST", "/plans/{id}/esg-targets/{key}/exception", "recordEsgException", EG, "Procurement records why a metric in breach should go ahead; the delegates are told", ["PROCUREMENT"], "EsgException", "EsgTargets", note="409 NOT_IN_BREACH; 423 once the plan is locked")
+ep("POST", "/plans/{id}/esg-targets/{key}/acknowledge", "acknowledgeEsgException", EG, "A delegate acknowledges the exception; with every breach acknowledged the ESG ceilings gate is satisfied and the plan moves on. Not the person who raised the request", ["DELEGATE", "EXEC"], "EsgAcknowledge", "EsgTargets", note="409 NO_EXCEPTION or ALREADY_ACKNOWLEDGED; 403 SOD_VIOLATION")
+ep("POST", "/plans/{id}/esg-targets/apply-bids", "applyBidsToEsgForecast", EG, "Use the lowest-priced submitted bid's declared ESG data as the starting forecast for each metric (indicative only; the awarded contract replaces it)", ["PROCUREMENT"], None, "EsgTargets", note="409 NO_BIDS when there are no submitted bids or the contract is already awarded")
+ep("GET", "/usage", "getTenantUsage", TN, "The organisation's usage plan and limits (requests per minute and burst, daily requests, monthly AI calls, storage, users) with today's requests and refused requests, the month's AI calls and the last week", ["ADMIN"], None, "UsageView", note="Counts are batched and written first when this is read")
+OP_NOTE = "Public as far as sessions go: no cookie and no CSRF token. The only credential is the X-Operator-Token header, compared in constant time with the OPERATOR_TOKEN setting (at least 24 characters). When OPERATOR_TOKEN is not set these endpoints do not exist (404). Limited per client address. 401 OPERATOR_TOKEN_INVALID for a missing or wrong token"
+ep("GET", "/operator/tenants", "operatorListTenants", TN, "Platform operator: every tenant with its plan, active users and today's use, and the available usage plans", None, None, "OperatorTenantList", note=OP_NOTE)
+ep("POST", "/operator/tenants", "operatorCreateTenant", TN, "Platform operator: create a tenant with its short name, a first ADMIN user and a usage plan. The first administrator's one-time password is in the response once; only its hash is kept", None, "OperatorTenantCreate", "OperatorTenantCreated", 201, note=OP_NOTE + "; 409 TENANT_EXISTS; 422 UNKNOWN_PLAN")
+ep("PATCH", "/operator/tenants/{id}/plan", "operatorChangeTenantPlan", TN, "Platform operator: move a tenant to another usage plan; the new limits apply to the next request and the change is audited in the tenant's log", None, "OperatorPlanChange", "OperatorPlanChanged", note=OP_NOTE + "; 404 unknown tenant; 422 UNKNOWN_PLAN (also for a plan made for another tenant)")

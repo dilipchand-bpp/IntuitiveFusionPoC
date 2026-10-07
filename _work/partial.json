@@ -10,5 +10,9 @@
   "NFR-P05": {
     "batch": "B9",
     "note": "Built: a separate analytics store that is refreshed from the main database, and the new analytical reports (spend optimisation, future commitment and the spend views) read from it. Not built: moving the older operational dashboards and reports onto it; they still read the main database."
+  },
+  "SEC-D11": {
+    "batch": "B11",
+    "note": "Built: a design page and document comparing platform-hosted, customer-cloud and hybrid hosting (data flows, responsibilities, residency and key management). Not built: any of the three topologies; this is a design only."
   }
 }

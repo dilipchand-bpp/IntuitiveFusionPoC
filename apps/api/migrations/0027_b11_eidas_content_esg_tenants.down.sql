@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS usage_counter;
+DROP TABLE IF EXISTS tenant_usage_plan;
+DROP TABLE IF EXISTS usage_plan;
+DROP TABLE IF EXISTS plan_esg_target;
+DROP TABLE IF EXISTS content_item;
+DROP TABLE IF EXISTS content_pack;
+ALTER TABLE esign_envelope DROP CONSTRAINT IF EXISTS esign_envelope_provider_check;
+ALTER TABLE esign_envelope ADD CONSTRAINT esign_envelope_provider_check CHECK (provider IN ('DOCUSIGN', 'ADOBE'));
+DROP TABLE IF EXISTS contract_signature_policy;
+DROP TABLE IF EXISTS signature_evidence;

@@ -102,6 +102,7 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
     ],
   },
   { prefix: '/app/connectors', roles: ['ADMIN', 'PROCUREMENT', 'FINANCE', 'LEGAL', 'EXEC'] },
+  { prefix: '/app/content', roles: ['ADMIN', 'PROCUREMENT', 'LEGAL', 'EXEC'] },
   {
     prefix: '/app/repository',
     roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'PROBITY', 'FINANCE', 'EXEC'],
@@ -112,6 +113,12 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
   { prefix: '/app/erp', roles: ['ADMIN', 'FINANCE', 'PROCUREMENT', 'EXEC'] },
   { prefix: '/app/currency', roles: ['ADMIN', 'FINANCE'] },
   { prefix: '/app/ai-models', roles: ['PROBITY', 'EXEC', 'PROCUREMENT'] },
+  // B11c: audit chain and evidence pack, security alerts, configuration compliance, bank detail changes
+  { prefix: '/app/audit-chain', roles: ['PROBITY', 'EXEC', 'ADMIN'] },
+  { prefix: '/app/audit-pack', roles: ['PROBITY', 'EXEC', 'ADMIN'] },
+  { prefix: '/app/security-alerts', roles: ['ADMIN', 'PROBITY', 'EXEC'] },
+  { prefix: '/app/compliance', roles: ['ADMIN', 'PROBITY', 'EXEC'] },
+  { prefix: '/app/bank-changes', roles: ['FINANCE', 'PROCUREMENT', 'ADMIN', 'EXEC', 'PROBITY'] },
   { prefix: '/app/reports/schedule', roles: ['PROCUREMENT', 'EXEC', 'DELEGATE'] },
   { prefix: '/app/reports/capacity', roles: ['PROCUREMENT', 'EXEC'] },
   { prefix: '/app/reports/supplier-risk', roles: ['PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'] },
@@ -138,6 +145,17 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
   },
   { prefix: '/app/suppliers', roles: ['PROCUREMENT', 'LEGAL', 'FINANCE', 'ADMIN'] },
   { prefix: '/app/reports', roles: ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR'] },
+  // B11b: residency and egress are read by oversight roles; privacy management, classification and content safety are narrower
+  { prefix: '/admin/residency', roles: ['ADMIN', 'PROBITY', 'EXEC'] },
+  // B11a: keys and security evidence are read by oversight roles; the quarantine list by administrators and probity
+  { prefix: '/admin/keys', roles: ['ADMIN', 'PROBITY', 'EXEC'] },
+  { prefix: '/admin/security-evidence', roles: ['ADMIN', 'PROBITY', 'EXEC'] },
+  { prefix: '/admin/quarantine', roles: ['ADMIN', 'PROBITY'] },
+  { prefix: '/app/restricted-projects', roles: ['PROCUREMENT', 'EXEC', 'PROBITY'] },
+  { prefix: '/app/bid-box', roles: ['PROCUREMENT', 'PROBITY', 'LEGAL', 'EXEC'] },
+  { prefix: '/app/privacy/manage', roles: ['ADMIN', 'LEGAL', 'PROBITY'] },
+  { prefix: '/app/classification', roles: ['PROBITY', 'ADMIN', 'LEGAL', 'EXEC'] },
+  { prefix: '/app/content-safety', roles: ['ADMIN', 'PROBITY', 'PROCUREMENT'] },
   { prefix: '/app', roles: STAFF },
 ];
 

@@ -1492,12 +1492,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'FR-0865',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Future Scope',
     area: null,
     priority: "Won't",
     title:
       'Defence-sector-grade data isolation, providing project-level encryption that is invisible outside an assigned sourcing group',
+    batch: 'B11',
   }, // DEFERRED(FR-0865)
   {
     id: 'FR-0870',
@@ -1578,12 +1579,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-SC01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Scalability',
     area: null,
     priority: 'Must',
     title:
       'Support multiple enterprise tenants, with request throttling and usage plans applied per customer tenant',
+    batch: 'B11',
   }, // DEFERRED(NFR-SC01)
   {
     id: 'NFR-SC02',
@@ -1911,11 +1913,12 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-L03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Legal',
     area: null,
     priority: 'Must',
     title: 'The native electronic/digital signature capability shall be aligned to eIDAS',
+    batch: 'B11',
   }, // DEFERRED(NFR-L03)
   {
     id: 'NFR-L04',
@@ -1931,31 +1934,34 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-R01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Regulatory & Environmental',
     area: null,
     priority: 'Must',
     title: "Institutional and customer data shall remain within the customer's own tenancy or cloud boundary",
+    batch: 'B11',
   }, // DEFERRED(NFR-R01)
   {
     id: 'NFR-R02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Regulatory & Environmental',
     area: null,
     priority: 'Must',
     title:
       'Data shall be stored in the country the enterprise nominates, with the platform supporting a customer election to host in a specific national region',
+    batch: 'B11',
   }, // DEFERRED(NFR-R02)
   {
     id: 'NFR-R03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Regulatory & Environmental',
     area: null,
     priority: 'Must',
     title:
       'AI population of fields shall combine in-house data with periodically refreshed external best-practice content, refreshed on a weekly or monthly cycle, without...',
+    batch: 'B11',
   }, // DEFERRED(NFR-R03)
   {
     id: 'NFR-R04',
@@ -1970,22 +1976,24 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'NFR-R05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Regulatory & Environmental',
     area: null,
     priority: 'Should',
     title:
       'ESG and socio-economic planning data captured at plan stage — carbon offset ceilings, domestic and regional labour content ratios and diversity-owned vendor...',
+    batch: 'B11',
   }, // DEFERRED(NFR-R05)
   {
     id: 'NFR-R06',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Regulatory & Environmental',
     area: null,
     priority: 'Must',
     title:
       'Probity of the sourcing process shall be demonstrable to an external auditor, evidenced by segregation of duties, conflict-of-interest records, isolated evaluation,...',
+    batch: 'B11',
   }, // DEFERRED(NFR-R06)
   {
     id: 'SEC-A01',
@@ -2055,169 +2063,187 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-AC09',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Authorisation & Access Control',
     area: null,
     priority: 'Must',
     title:
       'Enterprises shall be able to define access policies that override the default hierarchy — for example restricting the procurement pack to evaluation committee...',
+    batch: 'B11',
   }, // DEFERRED(SEC-AC09)
   {
     id: 'SEC-AC10',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Authorisation & Access Control',
     area: null,
     priority: 'Should',
     title:
       'Supplier bank account details shall be restricted to a finance-only access segment, excluded from procurement and legal roles, with the option to pass the data...',
+    batch: 'B11',
   }, // DEFERRED(SEC-AC10)
   {
     id: 'SEC-D01',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title: 'All data shall be encrypted in transit and at rest using industry-standard algorithms',
+    batch: 'B11',
   }, // DEFERRED(SEC-D01)
   {
     id: 'SEC-D02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title: 'Customer-managed encryption keys shall be supported where required, with automatic key rotation',
+    batch: 'B11',
   }, // DEFERRED(SEC-D02)
   {
     id: 'SEC-D03',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       'Supplier bid submissions shall be encrypted at the point of upload and shall remain inaccessible to any internal user — including database administrators and system...',
+    batch: 'B11',
   }, // DEFERRED(SEC-D03)
   {
     id: 'SEC-D04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       'Per-tenant envelope encryption shall be applied to the bid box, so that even privileged platform operators cannot decrypt submissions before closing time',
+    batch: 'B11',
   }, // DEFERRED(SEC-D04)
   {
     id: 'SEC-D05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title: 'Enterprise data shall never be exposed to public or general-availability AI endpoints',
+    batch: 'B11',
   }, // DEFERRED(SEC-D05)
   {
     id: 'SEC-D06',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       'AI conversation content shall be afforded the same protection, residency and retention controls as structured platform data',
+    batch: 'B11',
   }, // DEFERRED(SEC-D06)
   {
     id: 'SEC-D07',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       'Sensitive data — including banking details, personal information and defence-adjacent project data — shall be automatically discoverable and classifiable, feeding the...',
+    batch: 'B11',
   }, // DEFERRED(SEC-D07)
   {
     id: 'SEC-D08',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       'Personal information shall be handled in accordance with the Australian Privacy Principles under the Privacy Act 1988, including collection notices, use and...',
+    batch: 'B11',
   }, // DEFERRED(SEC-D08)
   {
     id: 'SEC-D09',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       'Cross-border disclosure controls shall prevent customer data leaving the nominated country or region, including for backup, logging and AI processing paths',
+    batch: 'B11',
   }, // DEFERRED(SEC-D09)
   {
     id: 'SEC-D10',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Must',
     title:
       "Tenant and data isolation shall be such that compromise of one tenant or component does not expose other tenants' or users' data",
+    batch: 'B11',
   }, // DEFERRED(SEC-D10)
   {
     id: 'SEC-D11',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'PARTIAL',
     category: 'Data Protection & Privacy',
     area: null,
     priority: 'Should',
     title:
       "Support the enterprise's elected storage topology — platform-hosted, hosted in the enterprise's own cloud, or hybrid — with equivalent protection applied in each",
+    batch: 'B11',
+    note: 'Built: a design page and document comparing platform-hosted, customer-cloud and hybrid hosting (data flows, responsibilities, residency and key management). Not built: any of the three topologies; this is a design only.',
   }, // DEFERRED(SEC-D11)
   {
     id: 'SEC-L02',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Audit Logging & Monitoring',
     area: null,
     priority: 'Must',
     title:
       'All administrative and data-plane actions on the underlying cloud platform shall be logged immutably, feeding the platform audit trail and probity reporting',
+    batch: 'B11',
   }, // DEFERRED(SEC-L02)
   {
     id: 'SEC-L06',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Audit Logging & Monitoring',
     area: null,
     priority: 'Must',
     title:
       "Continuous threat monitoring shall detect anomalous access patterns across the platform's cloud accounts, with findings routed to the security team",
+    batch: 'B11',
   }, // DEFERRED(SEC-L06)
   {
     id: 'SEC-L07',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Audit Logging & Monitoring',
     area: null,
     priority: 'Must',
     title:
       'A compliance-grade probity and audit-trail export shall be available to auditors, providing an unalterable history of evaluator access, conflict-of-interest...',
+    batch: 'B11',
   }, // DEFERRED(SEC-L07)
   {
     id: 'SEC-L08',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Audit Logging & Monitoring',
     area: null,
     priority: 'Must',
     title:
       'Configuration compliance shall be continuously monitored with automated remediation, enforcing encryption, MFA and the absence of publicly accessible storage',
+    batch: 'B11',
   }, // DEFERRED(SEC-L08)
   {
     id: 'SEC-AP01',
@@ -2241,11 +2267,12 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-AP04',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Application Security',
     area: null,
     priority: 'Must',
     title: 'Every uploaded file shall be scanned for malware at the point of upload',
+    batch: 'B11',
   }, // DEFERRED(SEC-AP04)
   {
     id: 'SEC-AP05',
@@ -2260,12 +2287,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-AP08',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Application Security',
     area: null,
     priority: 'Should',
     title:
       'AI-specific application controls shall be implemented, including prompt-injection resistance for content ingested from supplier submissions and uploaded documents,...',
+    batch: 'B11',
   }, // DEFERRED(SEC-AP08)
   {
     id: 'SEC-N01',
@@ -2360,12 +2388,13 @@ export const ROADMAP_DATA: readonly RoadmapItem[] = [
   {
     id: 'SEC-IR05',
     tier: 'D',
-    status: 'DEFERRED',
+    status: 'BUILT',
     category: 'Incident Response & Vulnerability Management',
     area: null,
     priority: 'Must',
     title:
       'Eligible data breach assessment and notification obligations shall be met, with a defined process for assessing and notifying affected individuals and the regulator',
+    batch: 'B11',
   }, // DEFERRED(SEC-IR05)
   {
     id: 'SEC-TP01',

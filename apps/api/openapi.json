@@ -137,6 +137,75 @@
   },
   {
    "name": "Performance"
+  },
+  {
+   "name": "Keys"
+  },
+  {
+   "name": "SealedBids"
+  },
+  {
+   "name": "Quarantine"
+  },
+  {
+   "name": "SecurityEvidence"
+  },
+  {
+   "name": "RestrictedProjects"
+  },
+  {
+   "name": "Residency"
+  },
+  {
+   "name": "Egress"
+  },
+  {
+   "name": "Retention"
+  },
+  {
+   "name": "Classification"
+  },
+  {
+   "name": "Privacy"
+  },
+  {
+   "name": "ContentSafety"
+  },
+  {
+   "name": "Incidents"
+  },
+  {
+   "name": "Design"
+  },
+  {
+   "name": "AuditIntegrity"
+  },
+  {
+   "name": "EvidencePack"
+  },
+  {
+   "name": "SecurityMonitor"
+  },
+  {
+   "name": "Compliance"
+  },
+  {
+   "name": "AccessPolicies"
+  },
+  {
+   "name": "BankDetails"
+  },
+  {
+   "name": "SignatureLevels"
+  },
+  {
+   "name": "OutsideContent"
+  },
+  {
+   "name": "EsgTargets"
+  },
+  {
+   "name": "Tenants"
   }
  ],
  "security": [
@@ -4983,13 +5052,13 @@
       "$ref": "#/components/responses/E423"
      }
     },
-    "description": "403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed",
+    "description": "403 SIGNING_AUTHORITY_INSUFFICIENT; 409 ALREADY_SIGNED; 423 once executed; 422 SIGNATURE_LEVEL_TOO_LOW when the signature reaches a lower eIDAS level (SES, AES, QES) than the contract needs; 403 SIGNATURE_REAUTH_FAILED for a wrong password or authenticator code. method PASSWORD_MFA signs at AES; a provider ceremony through the qualified provider signs at QES",
     "requestBody": {
      "required": true,
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/Decision"
+        "$ref": "#/components/schemas/ContractSignRequest"
        }
       }
      }
@@ -14136,6 +14205,41 @@
         "$ref": "#/components/schemas/BankDetails"
        }
       }
+     }
+    }
+   },
+   "get": {
+    "operationId": "getOwnBank",
+    "tags": [
+     "SupplierPortal"
+    ],
+    "summary": "The supplier's own bank details, unmasked, and whether a change is waiting for finance",
+    "parameters": [],
+    "x-roles": [
+     "SUPPLIER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OwnBankView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
      }
     }
    }
@@ -26885,6 +26989,5400 @@
      }
     }
    }
+  },
+  "/security/keys": {
+   "get": {
+    "operationId": "listKeys",
+    "tags": [
+     "Keys"
+    ],
+    "summary": "Tenant key versions per purpose (DATA, BIDS, PROJECT) with state and how many objects each protects; key material is never returned. SIMULATED key service",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KeyList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/security/keys/{purpose}/rotate": {
+   "post": {
+    "operationId": "rotateKey",
+    "tags": [
+     "Keys"
+    ],
+    "summary": "Create a new key version for the purpose; the previous version is retired but still decrypts what it sealed",
+    "parameters": [
+     {
+      "name": "purpose",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KeyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/security/keys/{purpose}/rewrap": {
+   "post": {
+    "operationId": "rewrapKey",
+    "tags": [
+     "Keys"
+    ],
+    "summary": "Re-wrap every data key of the purpose to the newest key version without touching a ciphertext; versions that are disabled are skipped and reported",
+    "parameters": [
+     {
+      "name": "purpose",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KeyRewrapResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/security/keys/{id}/disable": {
+   "post": {
+    "operationId": "disableKey",
+    "tags": [
+     "Keys"
+    ],
+    "summary": "Disable a key version: what it protects then fails to decrypt with 'key disabled'",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KeyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 LAST_ACTIVE_KEY when it is the only active key for its purpose"
+   }
+  },
+  "/security/keys/{id}/enable": {
+   "post": {
+    "operationId": "enableKey",
+    "tags": [
+     "Keys"
+    ],
+    "summary": "Enable a disabled key version again (it returns as RETIRED)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KeyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/bid-box": {
+   "get": {
+    "operationId": "getBidBox",
+    "tags": [
+     "SealedBids"
+    ],
+    "summary": "Sealed bids: metadata only (existence, size, time, hash) until the tender closes and, for a high-value tender, two witnesses have opened it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "PROBITY",
+     "EXEC",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BidBox"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/tenders/{id}/bid-box/files/{fileId}": {
+   "get": {
+    "operationId": "downloadBidFile",
+    "tags": [
+     "SealedBids"
+    ],
+    "summary": "Decrypt and download a bid file; every decryption is audited",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "fileId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT",
+     "PROBITY",
+     "EXEC",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "423 BIDS_SEALED before close, 423 BIDS_NOT_OPENED before the witnesses open a high-value tender, 403 BID_READ_NOT_PERMITTED for a role not entitled to bid content"
+   }
+  },
+  "/security/quarantine": {
+   "get": {
+    "operationId": "listQuarantine",
+    "tags": [
+     "Quarantine"
+    ],
+    "summary": "Uploads refused as infected (no content kept) and uploads held as PENDING_SCAN; the simulated scanner's state and test signatures",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/QuarantineList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/security/quarantine/{id}/rescan": {
+   "post": {
+    "operationId": "rescanQuarantineItem",
+    "tags": [
+     "Quarantine"
+    ],
+    "summary": "Rescan an upload held while the scanner was down; clean items are CLEARED, infected ones quarantined",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/QuarantineRescan"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 SCANNER_DOWN while the scanner is still down"
+   }
+  },
+  "/security/evidence": {
+   "get": {
+    "operationId": "getSecurityEvidence",
+    "tags": [
+     "SecurityEvidence"
+    ],
+    "summary": "Encryption in transit and at rest, measured: HSTS and cookie flags, registry of encrypted fields with encrypted and plaintext row counts, key versions in use, and what is not evidenced here",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecurityEvidence"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/security/isolation-check": {
+   "post": {
+    "operationId": "runIsolationCheck",
+    "tags": [
+     "SecurityEvidence"
+    ],
+    "summary": "Live tenant-isolation check: tables with tenant_id, which have row level security, and that no foreign row is visible",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IsolationCheck"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/security/encrypt-existing": {
+   "post": {
+    "operationId": "encryptExisting",
+    "tags": [
+     "SecurityEvidence"
+    ],
+    "summary": "One-off, safe to repeat: encrypt older plaintext bids and bank details and move a legal platform secret out of the settings",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EncryptExistingResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/requests/{id}/restrict": {
+   "post": {
+    "operationId": "restrictRequest",
+    "tags": [
+     "RestrictedProjects"
+    ],
+    "summary": "Mark a procurement as a restricted project with a reason: its plan text, report narrative and documents are encrypted with a per-project key and it is invisible outside its sourcing group",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RestrictResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when already restricted",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RestrictRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/restriction": {
+   "get": {
+    "operationId": "getRestriction",
+    "tags": [
+     "RestrictedProjects"
+    ],
+    "summary": "The restriction on a procurement; 404 for anyone outside its sourcing group, exactly as for an id that does not exist",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RestrictionView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/requests/{id}/restriction/delegates": {
+   "post": {
+    "operationId": "addRestrictionDelegate",
+    "tags": [
+     "RestrictedProjects"
+    ],
+    "summary": "Name a delegate who joins the sourcing group of a restricted project",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RestrictionDelegate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/security/restricted-projects": {
+   "get": {
+    "operationId": "listRestrictedProjects",
+    "tags": [
+     "RestrictedProjects"
+    ],
+    "summary": "The restricted projects the caller belongs to",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RestrictedProjectList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/admin/residency": {
+   "get": {
+    "operationId": "getResidency",
+    "tags": [
+     "Residency"
+    ],
+    "summary": "The elected hosting country, allowed regions, every outbound path with its region and whether it is allowed, and recent refusals (NFR-R02, SEC-D09)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResidencyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setResidency",
+    "tags": [
+     "Residency"
+    ],
+    "summary": "Change the hosting country, allowed regions, AI region or log region; a reason is required and the change is audited. Connectors now outside the allowed regions are switched off; nothing is ever switched back on",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResidencyChanged"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 VALIDATION_FAILED without a reason; 409 NO_CHANGE",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ResidencyChange"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/egress": {
+   "get": {
+    "operationId": "getEgress",
+    "tags": [
+     "Egress"
+    ],
+    "summary": "The egress allow-list, the evidence text and the attempts blocked (SEC-D05)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EgressView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setEgress",
+    "tags": [
+     "Egress"
+    ],
+    "summary": "Replace the egress allow-list; a reason is required, a too-broad wildcard is refused, the change is audited",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EgressView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 for an invalid or too broad host pattern",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EgressChange"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/admin/egress/probe": {
+   "post": {
+    "operationId": "probeEgress",
+    "tags": [
+     "Egress"
+    ],
+    "summary": "Try a host through the egress gate; a host not on the list is refused, audited and counted",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EgressProbeResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 EGRESS_BLOCKED when the host is not on the allow-list",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EgressProbe"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/retention": {
+   "get": {
+    "operationId": "getRetention",
+    "tags": [
+     "Retention"
+    ],
+    "summary": "AI conversation retention setting, stamps, legal holds and recent purge runs (SEC-D06)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RetentionView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setRetention",
+    "tags": [
+     "Retention"
+    ],
+    "summary": "Set the days an AI conversation transcript is kept (30 at least); audited",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RetentionView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "400 below 30 days",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RetentionChange"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/retention/run": {
+   "post": {
+    "operationId": "runRetention",
+    "tags": [
+     "Retention"
+    ],
+    "summary": "Anonymise expired AI conversation transcripts now; legal-hold records are skipped and the reason recorded; audit events are never touched",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RetentionRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/privacy/legal-holds": {
+   "post": {
+    "operationId": "placeLegalHold",
+    "tags": [
+     "Retention"
+    ],
+    "summary": "Place a legal hold on a request or a conversation so it is never purged",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalHoldCreated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 ALREADY_HELD; 404 unknown record",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalHoldCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/legal-holds/{id}/release": {
+   "post": {
+    "operationId": "releaseLegalHold",
+    "tags": [
+     "Retention"
+    ],
+    "summary": "Release a legal hold, with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LegalHoldReleased"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 ALREADY_RELEASED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LegalHoldRelease"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/classification/run": {
+   "post": {
+    "operationId": "runClassification",
+    "tags": [
+     "Classification"
+    ],
+    "summary": "Scan the text-bearing tables and classify what is found; idempotent; stores masked samples only (SEC-D07)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClassificationRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/privacy/classification": {
+   "get": {
+    "operationId": "getClassification",
+    "tags": [
+     "Classification"
+    ],
+    "summary": "Findings summarised by class and location, with warnings for sensitive data in unexpected places",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "class",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "warningsOnly",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "ADMIN",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClassificationView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/privacy/classification/{id}/review": {
+   "post": {
+    "operationId": "reviewClassification",
+    "tags": [
+     "Classification"
+    ],
+    "summary": "Confirm or dismiss a finding, with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClassificationReviewed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ClassificationReview"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/notice": {
+   "get": {
+    "operationId": "getPrivacyNotice",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "The collection notice and its version for a place where personal information is collected (SEC-D08)",
+    "parameters": [
+     {
+      "name": "context",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyNotice"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "security": []
+   }
+  },
+  "/privacy/notice/status": {
+   "get": {
+    "operationId": "getPrivacyNoticeStatus",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Which places the signed-in person has acknowledged the current notice version",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyNoticeStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/privacy/notice/ack": {
+   "post": {
+    "operationId": "acknowledgePrivacyNotice",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Record that the signed-in person acknowledged the current notice version in a place",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyNoticeAcked"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "200 when already acknowledged",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyNoticeAck"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/settings": {
+   "get": {
+    "operationId": "getPrivacySettings",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Notice text and version, privacy officer role and response days",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacySettings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "setPrivacySettings",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Change the notice, officer role and response days; audited",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacySettings"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacySettings"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/requests": {
+   "post": {
+    "operationId": "lodgePrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Lodge an access or correction request about yourself; identity is verified because you are signed in (staff or supplier contact)",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyRequestLodge"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listPrivacyRequests",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "All privacy requests with due dates and overdue flags",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/privacy/requests/mine": {
+   "get": {
+    "operationId": "listMyPrivacyRequests",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Your own privacy requests and their state",
+    "parameters": [],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/privacy/requests/log": {
+   "post": {
+    "operationId": "logPrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Log a request taken from a caller; staff record how identity was verified",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyRequestLog"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/requests/run-overdue": {
+   "post": {
+    "operationId": "escalateOverduePrivacyRequests",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Escalate each overdue request once to the privacy officer role",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyOverdueRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/privacy/requests/{id}/assign": {
+   "post": {
+    "operationId": "assignPrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Take or assign a request; moves it to IN_PROGRESS",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when closed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyRequestAssign"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/requests/{id}/verify": {
+   "post": {
+    "operationId": "verifyPrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Record how the requester's identity was verified",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyRequestVerify"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/requests/{id}/apply-correction": {
+   "post": {
+    "operationId": "applyPrivacyCorrection",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Apply the requested correction to the person's profile with a before and after audit",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 IDENTITY_NOT_VERIFIED, ALREADY_APPLIED or EMAIL_IN_USE"
+   }
+  },
+  "/privacy/requests/{id}/complete": {
+   "post": {
+    "operationId": "completePrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Complete a request with a response summary",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 until identity is verified and the export or correction is done",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyRequestComplete"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/requests/{id}/refuse": {
+   "post": {
+    "operationId": "refusePrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "Refuse a request; a reason is required",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "LEGAL",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyRequestView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PrivacyRequestRefuse"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/privacy/requests/{id}/export": {
+   "get": {
+    "operationId": "exportPrivacyRequest",
+    "tags": [
+     "Privacy"
+    ],
+    "summary": "The person's own records as a JSON download; managers any time after verification, the requester once the request is completed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "any-authenticated",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PrivacyExport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "application/json attachment; 404 for anyone else; 409 until verified or completed"
+   }
+  },
+  "/content-safety/flags": {
+   "get": {
+    "operationId": "listContentFlags",
+    "tags": [
+     "ContentSafety"
+    ],
+    "summary": "Recent supplier or uploaded text that contained instruction-like content (SEC-AP08)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentFlags"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/content-safety/flags/{id}/review": {
+   "post": {
+    "operationId": "reviewContentFlag",
+    "tags": [
+     "ContentSafety"
+    ],
+    "summary": "Mark a flag reviewed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentFlagReviewed"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/content-safety/inspect": {
+   "post": {
+    "operationId": "inspectContent",
+    "tags": [
+     "ContentSafety"
+    ],
+    "summary": "Show how a piece of text would be neutralised, wrapped as data and flagged",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentInspectResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentInspect"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents/report": {
+   "post": {
+    "operationId": "reportIncident",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Report a suspected data breach; any staff member (SEC-IR05)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentReported"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentReport"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents/mine": {
+   "get": {
+    "operationId": "listMyIncidents",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Incidents you reported",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentMine"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/incidents/questions": {
+   "get": {
+    "operationId": "getIncidentQuestions",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "The assessment questions and the rule set (rules-simulated-v1; decision support, not legal advice)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentQuestions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/incidents": {
+   "get": {
+    "operationId": "listIncidents",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "All incidents with deadlines and recommendations",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/incidents/run-reminders": {
+   "post": {
+    "operationId": "runIncidentReminders",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Remind, then escalate, incidents whose 30-day assessment is outstanding",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentRemindersRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/incidents/{id}": {
+   "get": {
+    "operationId": "getIncident",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "One incident in full: assessment, containment, notice drafts, reminders",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/incidents/{id}/assess": {
+   "post": {
+    "operationId": "assessIncident",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Answer the likelihood-of-serious-harm questions; returns a score and a recommendation of Notifiable or Not notifiable (record the reason)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 unless every question is answered",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentAssess"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents/{id}/containment": {
+   "post": {
+    "operationId": "setIncidentContainment",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Tick or untick a containment step",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentContainment"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/incidents/{id}/notifications/{audience}/draft": {
+   "post": {
+    "operationId": "draftIncidentNotice",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Draft the notice to the regulator or to affected individuals from a template with merge fields; audience is REGULATOR or INDIVIDUALS",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "audience",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 unless assessed as Notifiable"
+   }
+  },
+  "/incidents/{id}/notifications/{audience}/send": {
+   "post": {
+    "operationId": "sendIncidentNotice",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Send a drafted notice. SIMULATED through the MESSAGING connector: a record is kept, nothing is sent",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "audience",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 RESIDENCY_VIOLATION or EGRESS_BLOCKED when the gateway is outside the allowed regions; 409 without a draft"
+   }
+  },
+  "/incidents/{id}/close": {
+   "post": {
+    "operationId": "closeIncident",
+    "tags": [
+     "Incidents"
+    ],
+    "summary": "Close the incident with lessons learned",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IncidentView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 until notified (Notifiable) or the reason is recorded (Not notifiable)",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IncidentClose"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/design/hosting-topology": {
+   "get": {
+    "operationId": "getHostingTopology",
+    "tags": [
+     "Design"
+    ],
+    "summary": "The three hosting options with data flows, responsibilities, residency and key management. DESIGN ONLY: not built (SEC-D11)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HostingTopology"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/audit/admin-chain": {
+   "get": {
+    "operationId": "getAdminChain",
+    "tags": [
+     "AuditIntegrity"
+    ],
+    "summary": "Re-computes the whole tenant hash chain, reports the first broken link, the administrative-event count, head hash and digest, the database guards and the latest recorded verification (SEC-L02)",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminChainStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Readable by probity and executives as well as administrators, so administrators are not the only verifiers"
+   }
+  },
+  "/audit/admin-chain/verify": {
+   "post": {
+    "operationId": "verifyAdminChain",
+    "tags": [
+     "AuditIntegrity"
+    ],
+    "summary": "Runs the same verification and keeps the outcome as an append-only record and an audit event",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminChainVerified"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/audit/export-pack/coverage": {
+   "get": {
+    "operationId": "getPackCoverage",
+    "tags": [
+     "EvidencePack"
+    ],
+    "summary": "What an external auditor would look for on one procurement, pass or fail per item computed from the data (NFR-R06)",
+    "parameters": [
+     {
+      "name": "requestId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PackCoverage"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "404 for an unknown procurement"
+   }
+  },
+  "/audit/export-pack": {
+   "post": {
+    "operationId": "createExportPack",
+    "tags": [
+     "EvidencePack"
+    ],
+    "summary": "An evidence pack for a date range and optionally one procurement: audit events as the hash-chain segment, probity records, coverage, manifest with SHA-256 per file, head hash and a signature. SIMULATED signature (HMAC with the secret audit.export.signing); a real deployment signs with an asymmetric key in an HSM (SEC-L07)",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PackBundle"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "format JSON returns a bundle file, ZIP returns application/zip; 422 EXPORT_TOO_LARGE over 20000 events; recorded in the audit trail",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PackRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/audit/export-pack/verify": {
+   "post": {
+    "operationId": "verifyExportPack",
+    "tags": [
+     "EvidencePack"
+    ],
+    "summary": "Checks a pack (bundle JSON or base64 zip): every file against the manifest, the signature, every event hash and link, the head hash, and each event against the live chain; names the parts that fail",
+    "parameters": [],
+    "x-roles": [
+     "PROBITY",
+     "EXEC",
+     "ADMIN",
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PackVerification"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PackVerifyRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/security/alerts": {
+   "get": {
+    "operationId": "listSecurityAlerts",
+    "tags": [
+     "SecurityMonitor"
+    ],
+    "summary": "Alerts raised by the access monitor (rules-simulated-v1) and by configuration drift, newest first, with the owner it was routed to (SEC-L06)",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecurityAlertList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/security/alerts/{id}/acknowledge": {
+   "post": {
+    "operationId": "acknowledgeSecurityAlert",
+    "tags": [
+     "SecurityMonitor"
+    ],
+    "summary": "Acknowledge an alert; an alert nobody acknowledges within the configured minutes is escalated to the executives",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecurityAlertView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when closed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SecurityAlertNote"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/security/alerts/{id}/close": {
+   "post": {
+    "operationId": "closeSecurityAlert",
+    "tags": [
+     "SecurityMonitor"
+    ],
+    "summary": "Close an alert with a note of at least five characters",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecurityAlertView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when already closed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SecurityAlertClose"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/security/alerts/{id}/end-sessions": {
+   "post": {
+    "operationId": "endSecurityAlertSessions",
+    "tags": [
+     "SecurityMonitor"
+    ],
+    "summary": "Ends every session of the person the alert is about so they must sign in again; the account is never locked; audited",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SecurityAlertSessionsEnded"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NO_SUBJECT for a configuration alert; 409 OWN_SESSIONS",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SecurityAlertNote"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/security/monitor/run": {
+   "post": {
+    "operationId": "runSecurityMonitor",
+    "tags": [
+     "SecurityMonitor"
+    ],
+    "summary": "Flushes the access log, applies the rules, raises alerts, escalates what is due and trims the log",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MonitorRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/security/monitor/status": {
+   "get": {
+    "operationId": "getSecurityMonitorStatus",
+    "tags": [
+     "SecurityMonitor"
+    ],
+    "summary": "The rules and thresholds, the security owner, the last run and 24 hours of access-log counts",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MonitorStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/compliance": {
+   "get": {
+    "operationId": "getCompliance",
+    "tags": [
+     "Compliance"
+    ],
+    "summary": "The configuration checks with their last result, since when a check has been failing, guidance and whether a one-click fix exists (SEC-L08)",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComplianceView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/compliance/run": {
+   "post": {
+    "operationId": "runCompliance",
+    "tags": [
+     "Compliance"
+    ],
+    "summary": "Runs every check now; a check that passed and now fails raises a security alert for the security owner",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComplianceRun"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    }
+   }
+  },
+  "/compliance/checks/{key}/remediate": {
+   "post": {
+    "operationId": "remediateComplianceCheck",
+    "tags": [
+     "Compliance"
+    ],
+    "summary": "Applies the one safe settings change for a failing check, with a reason; audited like any settings change, then the checks run again",
+    "parameters": [
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComplianceRemediated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NO_ONE_CLICK for guidance-only checks; 409 ALREADY_PASSING; 404 unknown check",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ComplianceRemediate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access/policies": {
+   "get": {
+    "operationId": "listAccessPolicies",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Access policies that override the default hierarchy (SEC-AC09)",
+    "parameters": [
+     {
+      "name": "includeInactive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessPolicyList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "createAccessPolicy",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Create a DENY or ALLOW policy for a role or a person, an action, a resource selector and conditions, with a reason and an optional expiry; an explicit DENY always wins",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessPolicyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "400 for an unknown role or person or an expiry in the past",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessPolicyCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access/policies/{id}/disable": {
+   "post": {
+    "operationId": "disableAccessPolicy",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Switch a policy off, with a reason",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessPolicyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 when already off",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessPolicyReason"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access/policies/{id}": {
+   "delete": {
+    "operationId": "deleteAccessPolicy",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Delete a policy, with a reason; the record stays for the audit trail",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessPolicyView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "409 when already deleted",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessPolicyReason"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access/policies/simulate": {
+   "post": {
+    "operationId": "simulateAccessPolicy",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "What can this person see: the decision for a person, a procurement and an action, which policy decided and why each policy did or did not apply",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessPolicySimulation"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessPolicySimulate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access/tags": {
+   "get": {
+    "operationId": "listAccessTags",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Tags on procurements that policies can select on",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROBITY",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessTagList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "addAccessTag",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Tag a procurement, for example hr-sensitive",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessTagView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 ALREADY_TAGGED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AccessTagCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/access/tags/{id}": {
+   "delete": {
+    "operationId": "removeAccessTag",
+    "tags": [
+     "AccessPolicies"
+    ],
+    "summary": "Remove a tag",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AccessTagRemoved"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/bank": {
+   "get": {
+    "operationId": "getSupplierBank",
+    "tags": [
+     "BankDetails"
+    ],
+    "summary": "A supplier's bank details: unmasked only for finance (and every unmasked read is audited); every other role sees the BSB hidden and the last three digits of the account (SEC-AC10)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "FINANCE",
+     "ADMIN",
+     "EXEC",
+     "PROBITY",
+     "CONTRACT_MGR",
+     "DELEGATE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierBankView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/suppliers/{id}/bank-change": {
+   "post": {
+    "operationId": "requestBankChange",
+    "tags": [
+     "BankDetails"
+    ],
+    "summary": "Staff ask for a change to a supplier's bank details; held PENDING, the old details stay in force until a different finance person confirms",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BankChangeView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BankChangeRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/bank-changes": {
+   "get": {
+    "operationId": "listBankChanges",
+    "tags": [
+     "BankDetails"
+    ],
+    "summary": "Bank detail changes waiting for finance (or by status); details are masked for everyone but finance",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE",
+     "PROCUREMENT",
+     "ADMIN",
+     "EXEC",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BankChangeList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/bank-changes/{id}/confirm": {
+   "post": {
+    "operationId": "confirmBankChange",
+    "tags": [
+     "BankDetails"
+    ],
+    "summary": "Confirm a change; never the person who asked for it",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BankChangeView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 SECOND_PERSON when the caller asked for it; 409 when already decided",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BankChangeConfirm"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/bank-changes/{id}/reject": {
+   "post": {
+    "operationId": "rejectBankChange",
+    "tags": [
+     "BankDetails"
+    ],
+    "summary": "Reject a change with a note; details recorded for the first time are taken out again",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BankChangeView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 SECOND_PERSON; 409 when already decided",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BankChangeReject"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/signature-level": {
+   "get": {
+    "operationId": "getContractSignatureLevel",
+    "tags": [
+     "SignatureLevels"
+    ],
+    "summary": "The eIDAS level this contract needs and why (Legal's override, a value tier or the default), the level each signature reached with its non-repudiation evidence, whether the signed content is unchanged, and an explainer of the three levels",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SignatureLevelCard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "A signatory in blind signing sees only their own line until the contract is executed"
+   },
+   "put": {
+    "operationId": "setContractSignatureLevel",
+    "tags": [
+     "SignatureLevels"
+    ],
+    "summary": "Legal sets the level a contract needs (SES, AES or QES) with a reason, over the value tiers in settings; null clears the override. Audited",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SignatureLevelCard"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "400 when the reason is under 10 characters; 423 once the contract is executed and locked",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SignatureLevelOverride"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contracts/{id}/signature-evidence": {
+   "get": {
+    "operationId": "exportSignatureEvidence",
+    "tags": [
+     "SignatureLevels"
+    ],
+    "summary": "Non-repudiation evidence for each signature: signer, method, level, time, SHA-256 document digest, IP address and browser class, and whether the contract still matches what was signed. Audited as an export",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "DELEGATE",
+     "EXEC",
+     "FINANCE",
+     "PROBITY",
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SignatureEvidenceExport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "application/json attachment"
+   }
+  },
+  "/content": {
+   "get": {
+    "operationId": "listContentPacks",
+    "tags": [
+     "OutsideContent"
+    ],
+    "summary": "The outside content packs (UNSPSC taxonomy, market benchmarks, risk library, clause references, ESG reference): version, source name and URL, refreshed and valid-until dates, state CURRENT, STALE, FAILED or NONE, item count, checksum, what the last refresh changed, and the in-house fallback note. The outside source is simulated",
+    "parameters": [],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentPacks"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/content/{key}/items": {
+   "get": {
+    "operationId": "listContentItems",
+    "tags": [
+     "OutsideContent"
+    ],
+    "summary": "The items of one pack (the path key is the pack kind)",
+    "parameters": [
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "ADMIN",
+     "LEGAL",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentItems"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "400 for a kind that is not one of the five"
+   }
+  },
+  "/content/refresh": {
+   "post": {
+    "operationId": "refreshContent",
+    "tags": [
+     "OutsideContent"
+    ],
+    "summary": "Refresh one pack or all of them now, through the resilient provider layer (middleware connector). Applying the same release twice changes nothing; a failed call keeps what is held. toVersion is a demonstration control and never moves backwards",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentRefreshResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 VERSION_OLDER or VERSION_UNAVAILABLE",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentRefresh"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/requests/{id}/content-hints": {
+   "get": {
+    "operationId": "getRequestContentHints",
+    "tags": [
+     "OutsideContent"
+    ],
+    "summary": "What in-house data and the outside packs suggest for a request: classification code, market price benchmark and standard risks, each with its source (In-house, Outside content with name and version, or both) and a note when a pack is stale and only in-house data was used",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "LEGAL",
+     "DELEGATE",
+     "EXEC",
+     "PROBITY",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentHints"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "A requester sees only their own requests"
+   }
+  },
+  "/plans/{id}/esg-targets": {
+   "get": {
+    "operationId": "getPlanEsgTargets",
+    "tags": [
+     "EsgTargets"
+    ],
+    "summary": "The nine ESG and socio-economic metrics of a plan: limit and organisation default, figure and where it came from (awarded contracts and declared supplier ESG data, or the owner's forecast), PASS, AT RISK or BREACH with the arithmetic, any exception, and the plan gate state",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "PROBITY",
+     "EXEC",
+     "FINANCE"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgTargets"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "A requester sees only their own plans"
+   }
+  },
+  "/plans/{id}/esg-targets/{key}": {
+   "put": {
+    "operationId": "updatePlanEsgTarget",
+    "tags": [
+     "EsgTargets"
+    ],
+    "summary": "Set a plan's own limit (looser than the organisation's only within the allowed relaxation, with a reason and an approver note), reset it, or enter a forecast. Changing the limit or forecast withdraws an exception. Audited",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT",
+     "REQUESTER"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgTargets"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "422 ESG_OVERRIDE_NEEDS_REASON or ESG_OVERRIDE_OUT_OF_BOUNDS; 423 once the plan is locked; the path key is the metric key",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EsgTargetUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/esg-targets/{key}/exception": {
+   "post": {
+    "operationId": "recordEsgException",
+    "tags": [
+     "EsgTargets"
+    ],
+    "summary": "Procurement records why a metric in breach should go ahead; the delegates are told",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgTargets"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "409 NOT_IN_BREACH; 423 once the plan is locked",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EsgException"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/esg-targets/{key}/acknowledge": {
+   "post": {
+    "operationId": "acknowledgeEsgException",
+    "tags": [
+     "EsgTargets"
+    ],
+    "summary": "A delegate acknowledges the exception; with every breach acknowledged the ESG ceilings gate is satisfied and the plan moves on. Not the person who raised the request",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "DELEGATE",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgTargets"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NO_EXCEPTION or ALREADY_ACKNOWLEDGED; 403 SOD_VIOLATION",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EsgAcknowledge"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/plans/{id}/esg-targets/apply-bids": {
+   "post": {
+    "operationId": "applyBidsToEsgForecast",
+    "tags": [
+     "EsgTargets"
+    ],
+    "summary": "Use the lowest-priced submitted bid's declared ESG data as the starting forecast for each metric (indicative only; the awarded contract replaces it)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EsgTargets"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NO_BIDS when there are no submitted bids or the contract is already awarded"
+   }
+  },
+  "/usage": {
+   "get": {
+    "operationId": "getTenantUsage",
+    "tags": [
+     "Tenants"
+    ],
+    "summary": "The organisation's usage plan and limits (requests per minute and burst, daily requests, monthly AI calls, storage, users) with today's requests and refused requests, the month's AI calls and the last week",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UsageView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Counts are batched and written first when this is read"
+   }
+  },
+  "/operator/tenants": {
+   "get": {
+    "operationId": "operatorListTenants",
+    "tags": [
+     "Tenants"
+    ],
+    "summary": "Platform operator: every tenant with its plan, active users and today's use, and the available usage plans",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OperatorTenantList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     }
+    },
+    "description": "Public as far as sessions go: no cookie and no CSRF token. The only credential is the X-Operator-Token header, compared in constant time with the OPERATOR_TOKEN setting (at least 24 characters). When OPERATOR_TOKEN is not set these endpoints do not exist (404). Limited per client address. 401 OPERATOR_TOKEN_INVALID for a missing or wrong token",
+    "security": []
+   },
+   "post": {
+    "operationId": "operatorCreateTenant",
+    "tags": [
+     "Tenants"
+    ],
+    "summary": "Platform operator: create a tenant with its short name, a first ADMIN user and a usage plan. The first administrator's one-time password is in the response once; only its hash is kept",
+    "parameters": [],
+    "x-roles": "public",
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OperatorTenantCreated"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "Public as far as sessions go: no cookie and no CSRF token. The only credential is the X-Operator-Token header, compared in constant time with the OPERATOR_TOKEN setting (at least 24 characters). When OPERATOR_TOKEN is not set these endpoints do not exist (404). Limited per client address. 401 OPERATOR_TOKEN_INVALID for a missing or wrong token; 409 TENANT_EXISTS; 422 UNKNOWN_PLAN",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OperatorTenantCreate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/operator/tenants/{id}/plan": {
+   "patch": {
+    "operationId": "operatorChangeTenantPlan",
+    "tags": [
+     "Tenants"
+    ],
+    "summary": "Platform operator: move a tenant to another usage plan; the new limits apply to the next request and the change is audited in the tenant's log",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": "public",
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OperatorPlanChanged"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "429": {
+      "$ref": "#/components/responses/E429"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "Public as far as sessions go: no cookie and no CSRF token. The only credential is the X-Operator-Token header, compared in constant time with the OPERATOR_TOKEN setting (at least 24 characters). When OPERATOR_TOKEN is not set these endpoints do not exist (404). Limited per client address. 401 OPERATOR_TOKEN_INVALID for a missing or wrong token; 404 unknown tenant; 422 UNKNOWN_PLAN (also for a plan made for another tenant)",
+    "security": [],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OperatorPlanChange"
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -27052,6 +32550,11 @@
       "type": "string",
       "minLength": 8,
       "maxLength": 128
+     },
+     "tenant": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
      }
     },
     "additionalProperties": false,
@@ -35414,6 +40917,500 @@
    "BudgetCheckPerformance": {
     "type": "object",
     "additionalProperties": true
+   },
+   "KeyList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "KeyView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "KeyRewrapResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BidBox": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "QuarantineList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "QuarantineRescan": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecurityEvidence": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IsolationCheck": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EncryptExistingResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RestrictRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RestrictResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RestrictionView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RestrictionDelegate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RestrictedProjectList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ResidencyView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ResidencyChange": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ResidencyChanged": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EgressView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EgressChange": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EgressProbe": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EgressProbeResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RetentionView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RetentionChange": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "RetentionRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalHoldCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalHoldCreated": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalHoldRelease": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "LegalHoldReleased": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClassificationRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClassificationView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClassificationReview": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ClassificationReviewed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyNotice": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyNoticeStatus": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyNoticeAck": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyNoticeAcked": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacySettings": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestLodge": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestLog": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestAssign": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestVerify": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestComplete": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyRequestRefuse": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyOverdueRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PrivacyExport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentFlags": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentFlagReviewed": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentInspect": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentInspectResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentReported": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentMine": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentQuestions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentAssess": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentContainment": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentRemindersRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IncidentClose": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HostingTopology": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AdminChainStatus": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AdminChainVerified": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PackCoverage": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PackRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PackBundle": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PackVerifyRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "PackVerification": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecurityAlertList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecurityAlertView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecurityAlertNote": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecurityAlertClose": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SecurityAlertSessionsEnded": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MonitorRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "MonitorStatus": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ComplianceView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ComplianceRun": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ComplianceRemediate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ComplianceRemediated": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessPolicyList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessPolicyCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessPolicyView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessPolicyReason": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessPolicySimulate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessPolicySimulation": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessTagList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessTagCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessTagView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "AccessTagRemoved": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SupplierBankView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OwnBankView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BankChangeRequest": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BankChangeView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BankChangeList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BankChangeConfirm": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "BankChangeReject": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SignatureLevelCard": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SignatureLevelOverride": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "SignatureEvidenceExport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentPacks": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentRefresh": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentRefreshResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentItems": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContentHints": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsgTargets": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsgTargetUpdate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsgException": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "EsgAcknowledge": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "UsageView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OperatorTenantList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OperatorTenantCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OperatorTenantCreated": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OperatorPlanChange": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "OperatorPlanChanged": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "ContractSignRequest": {
+    "type": "object",
+    "properties": {
+     "decision": {
+      "type": "string",
+      "enum": [
+       "APPROVE",
+       "REJECT"
+      ]
+     },
+     "comment": {
+      "type": "string"
+     },
+     "method": {
+      "type": "string",
+      "enum": [
+       "PASSWORD",
+       "PASSWORD_MFA"
+      ]
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 128
+     },
+     "mfaCode": {
+      "type": "string",
+      "maxLength": 10
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "decision"
+    ]
    }
   },
   "responses": {

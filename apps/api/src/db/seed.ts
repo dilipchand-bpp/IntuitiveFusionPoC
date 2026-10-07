@@ -22,6 +22,9 @@ import { createContractRecord } from '../modules/contract/record.js';
 import { demoPricingSchedule, demoTechnicalResponse } from './demo-documents.js';
 import { TENDER_FIELDS } from '../modules/tender/fields.js';
 import { sha256, type SealedStore } from '../modules/tender/files.js';
+import { encryptExistingBids } from '../modules/b11enc/bids.js';
+import { KeyVault } from '../modules/b11enc/vault.js';
+import { isKeyServiceConfigured } from '../modules/b11enc/keys.js';
 import { buildTenderPack } from '../modules/tender/pack.js';
 import { withSystem, type Database, type RequestContext, type Tx } from './client.js';
 import * as s from './schema.js';
@@ -1044,6 +1047,15 @@ export async function seedDatabase(
     ] as const)
       await tx.insert(s.template).values({ id, tenantId: TENANT_ID, type, name, version: '1.0', body });
   });
+
+  // The demonstration bids were written above under the single server key; move them (and any plaintext answers) under the
+  // tenant's BIDS key with envelope encryption (SEC-D03, SEC-D04). Safe to repeat.
+  // (skipped when no root key is configured yet, as in a test that seeds before it builds the app: POST /security/encrypt-existing does it later)
+  if (isKeyServiceConfigured())
+    await withSystem(database, async (tx: Tx) => {
+      if (opts.store) opts.store.useVault(new KeyVault(database, opts.clock));
+      await encryptExistingBids(tx, opts.store ?? null, opts.clock.now(), TENANT_ID);
+    });
 
   return { seeded: true, counts: await counts(database) };
 }

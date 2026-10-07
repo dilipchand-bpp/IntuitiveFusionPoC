@@ -20,6 +20,8 @@ export interface AuthRouteDeps extends GuardDeps {
 const loginBody = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(8).max(128),
+  /** The organisation to sign in to. Optional: the default organisation is used when it is left out (NFR-SC01). */
+  tenant: z.string().trim().toLowerCase().min(1).max(60).optional(),
 });
 const forgotBody = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
 
@@ -90,7 +92,7 @@ export function registerAuthRoutes(app: FastifyInstance, p: string, d: AuthRoute
     { config: { rateLimit: { max: d.loginRateLimitMax, timeWindow: '15 minutes' } } },
     async (req, reply: FastifyReply) => {
       const body = parse(loginBody, req.body);
-      const result = await idp.authenticate(body.email, body.password);
+      const result = await idp.authenticate(body.email, body.password, body.tenant);
       if (!result.ok) {
         if (result.tenantId) {
           const ctx = systemCtx(result.tenantId, result.userId, req.id);

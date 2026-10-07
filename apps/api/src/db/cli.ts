@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { configureKeyService } from '../modules/b11enc/keys.js';
 import { mkdirSync } from 'node:fs';
 import { loadConfig, systemClock } from '@if/shared';
 import { AuditService } from '../audit/audit-service.js';
@@ -30,6 +31,7 @@ try {
         // demo bid files are written sealed to the same storage the API reads from
         const config = loadConfig(process.env);
         const store = new SealedStore(config.STORAGE_DIR, config.SESSION_SECRET);
+        configureKeyService(config.SECRET_STORE_KEY ?? config.SESSION_SECRET); // the demo bids are sealed under the tenant bid key
         console.log(await seedDatabase(database, { clock: systemClock, store }));
       }
       break;

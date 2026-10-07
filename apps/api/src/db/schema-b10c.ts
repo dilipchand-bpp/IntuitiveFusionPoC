@@ -13,7 +13,7 @@ const id = () =>
 const tenantId = () => uuid('tenant_id').notNull();
 const ts = (name: string) => timestamp(name, { withTimezone: true });
 
-export const ESIGN_PROVIDERS = ['DOCUSIGN', 'ADOBE'] as const;
+export const ESIGN_PROVIDERS = ['DOCUSIGN', 'ADOBE', 'SIMULATED_QTSP'] as const;
 export const ENVELOPE_STATUSES = ['SENT', 'COMPLETED', 'DECLINED', 'VOIDED', 'EXPIRED'] as const;
 export const SIGNATORY_STATUSES = [
   'CREATED',
