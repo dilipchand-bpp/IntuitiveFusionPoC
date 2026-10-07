@@ -399,7 +399,10 @@ test.describe('the report', () => {
     await expect(panel.locator('[data-report-section="distribution"]')).toContainText('lowest');
     await panel.getByRole('button', { name: 'Generate report' }).click();
     await expect(panel).toContainText('Awaiting approval');
-    await expect(panel.getByTestId('routed-to')).toHaveText('Dana Okafor');
+    // the lowest authority that covers the value; an acting delegate named by the HR feed (b10b.spec, same database) may be listed too,
+    // but the executive, whose authority is higher, never is
+    await expect(panel.getByTestId('routed-to')).toContainText('Dana Okafor');
+    await expect(panel.getByTestId('routed-to')).not.toContainText('Elena Petrova');
     await expect(panel.getByRole('button', { name: 'Print' })).toBeVisible();
     // the PDF carries the audit information
     const [dl] = await Promise.all([

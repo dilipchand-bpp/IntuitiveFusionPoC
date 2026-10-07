@@ -121,6 +121,7 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     test(`${role}: navigation shows exactly the permitted items and every item opens a real page (no blank, no 403, no 404)`, async ({
       page,
     }) => {
+      test.setTimeout(150_000); // every page the role is offered is opened one after another
       await signIn(page, role);
       const expected = navFor([role]);
       // The supplier portal has no side menu (a supplier sees one tender, not the buying team's modules), so only

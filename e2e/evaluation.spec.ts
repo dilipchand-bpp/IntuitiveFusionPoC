@@ -1394,7 +1394,8 @@ test.describe('administration: users and roles, workflows, templates, and no pat
     await api.dispose();
     await signIn(page, 'probity');
     await page.goto('/app/audit?action=access.denied');
-    await expect(page.getByTestId('audit-row').first()).toContainText('access.denied');
-    await expect(page.getByTestId('audit-row').first()).toContainText('ADMIN');
+    // other roles' refusals (from parallel and earlier specs) may be newer: find the administrator's
+    const adminRow = page.getByTestId('audit-row').filter({ hasText: 'ADMIN' }).first();
+    await expect(adminRow).toContainText('access.denied');
   });
 });

@@ -15,6 +15,8 @@ async function signIn(page: Page, user: string) {
 }
 
 async function say(page: Page, text: string) {
+  // the assistant's greeting arrives first; counting before it is there would make the count race
+  await expect(page.locator('[data-role="ASSISTANT"]').first()).toBeVisible();
   const before = await page.locator('[data-role="ASSISTANT"]').count();
   await page.getByLabel('Describe what you need or answer the question').fill(text);
   await page.getByRole('button', { name: 'Send message' }).click();
