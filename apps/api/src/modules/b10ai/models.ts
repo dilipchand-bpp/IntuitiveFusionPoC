@@ -21,6 +21,8 @@ export interface DataHandling {
   usedForTraining: boolean;
   /** Whether processing stays inside the customer's country (NFR-R02). */
   inCountry: boolean;
+  /** The country or region code where the content is processed, compared with the elected hosting country (SEC-D09). */
+  region: string;
 }
 
 export interface AiCompletion {
@@ -38,6 +40,8 @@ export interface AiModel {
   /** Built-in models run inside the platform and need no approval. */
   builtIn: boolean;
   dataHandling: DataHandling;
+  /** The host the model is called on, checked against the egress allow-list (SEC-D05). Null for a built-in model: nothing is sent. */
+  endpointHost: string | null;
   complete(task: AiTask, input: Record<string, unknown>): Promise<AiCompletion>;
 }
 
@@ -66,7 +70,9 @@ const rulesModel: AiModel = {
     retained: false,
     usedForTraining: false,
     inCountry: true,
+    region: 'AU',
   },
+  endpointHost: null,
   async complete(task, input) {
     if (task === 'assistant-footer')
       return { text: 'Answered by fixed rules from this portal. Simulated; no external AI model was used.' };
@@ -91,7 +97,9 @@ const fastModel: AiModel = {
     retained: true,
     usedForTraining: false,
     inCountry: false,
+    region: 'US',
   },
+  endpointHost: 'fast.llm.simulated.test',
   async complete(task, input) {
     if (task === 'assistant-footer')
       return {
@@ -116,7 +124,9 @@ const carefulModel: AiModel = {
     retained: false,
     usedForTraining: false,
     inCountry: true,
+    region: 'AU',
   },
+  endpointHost: 'careful.llm.simulated.test',
   async complete(task, input) {
     if (task === 'assistant-footer')
       return {

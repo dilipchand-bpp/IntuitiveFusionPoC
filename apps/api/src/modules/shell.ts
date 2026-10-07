@@ -104,7 +104,14 @@ export function registerShellRoutes(app: FastifyInstance, p: string, d: GuardDep
       tx
         .select()
         .from(notification)
-        .where(and(eq(notification.tenantId, a.user.tenantId), eq(notification.userId, a.user.id)))
+        .where(
+          and(
+            eq(notification.tenantId, a.user.tenantId),
+            eq(notification.userId, a.user.id),
+            // nothing that names a restricted project outside the person's group (FR-0865)
+            sql`not b11_notification_hidden(${notification.link}, ${notification.title}, ${notification.body})`,
+          ),
+        )
         .orderBy(desc(notification.createdAt))
         .limit(50),
     );

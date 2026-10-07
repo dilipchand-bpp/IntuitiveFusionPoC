@@ -15,6 +15,7 @@ import { AppError, parse } from '../../http/errors.js';
 import { FIELD_BY_KEY } from '../intake/fields.js';
 import { sweepGrants } from '../admin/grants.js';
 import { assertSettable } from '../b10ai/service.js';
+import { refusable } from '../b11priv/outbound.js';
 import { EscalationService } from '../notify/dispatch.js';
 import {
   SECTIONS,
@@ -90,8 +91,17 @@ export function registerSettingsRoutes(app: FastifyInstance, p: string, d: Setti
   app.put(`${p}/admin/settings`, { preHandler: guard(d, ['ADMIN']) }, async (req) => {
     const a = req.auth!;
     const body = parse(updateBody, req.body);
-    return withContext(d.database, a.ctx, async (tx) => {
+    return refusable(d.database, a.ctx, async (tx) => {
       const current = await loadSettings(tx, a.user.tenantId);
+      // the hosting country and the egress allow-list change only on the residency page, with a reason (NFR-R02, SEC-D05)
+      for (const guarded of ['residency', 'egress'] as const)
+        if (body[guarded] !== undefined && JSON.stringify(body[guarded]) !== JSON.stringify(current[guarded]))
+          throw new AppError(
+            422,
+            'USE_RESIDENCY_PAGE',
+            'The hosting country, allowed regions and egress allow-list are changed on the Residency page, which asks for a reason',
+            [{ field: guarded, message: 'Change this on /admin/residency' }],
+          );
       const merged = {
         ...current,
         ...Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined)),
@@ -100,7 +110,7 @@ export function registerSettingsRoutes(app: FastifyInstance, p: string, d: Setti
       if (problems.length > 0)
         throw new AppError(422, 'VALIDATION_FAILED', 'Some settings are not valid', problems);
       // a third-party AI model can be named only once it is approved for this organisation (SEC-TP07)
-      if (body.ai) await assertSettable(tx, a.user.tenantId, body.ai);
+      if (body.ai) await assertSettable(tx, a.user.tenantId, body.ai, a.user.id);
       const { before, after } = await saveSettings(tx, a.user.tenantId, body as Partial<Settings>);
       // one audit event per changed section: who, which setting, the old and the new value (FR-0690)
       for (const name of SECTION_NAMES) {

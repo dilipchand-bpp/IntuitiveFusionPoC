@@ -12,7 +12,8 @@ import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext, withSystem, type RequestContext } from '../../db/client.js';
 import { contract, esignEnvelope, esignEvent, esignSignatory } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
-import { CANONICAL_KINDS } from './esign-adapters.js';
+import { ADAPTERS, CANONICAL_KINDS } from './esign-adapters.js';
+import { PROOF_HEADER, PROVIDER_HEADER, proofFor } from '../b11prod/eidas.js';
 import {
   ACTIVE_ENVELOPE,
   INTERNAL_HEADER,
@@ -277,6 +278,9 @@ export function registerEsign(app: FastifyInstance, p: string, d: EsignRouteDeps
         cookie: String(req.headers.cookie ?? ''),
         'x-csrf-token': String(req.headers['x-csrf-token'] ?? ''),
         'content-type': 'application/json',
+        // proof that this signature was made in the provider's ceremony, so the sign route can rate its level (NFR-L03)
+        [PROVIDER_HEADER]: env.provider,
+        [PROOF_HEADER]: proofFor(env.contractId, a.user.id, env.provider),
         ...(req.headers['x-step-up-code'] ? { 'x-step-up-code': String(req.headers['x-step-up-code']) } : {}),
       },
       payload: {
@@ -284,7 +288,7 @@ export function registerEsign(app: FastifyInstance, p: string, d: EsignRouteDeps
         ...(body.decision === 'DECLINE'
           ? { comment: body.reason }
           : {
-              comment: `Signed through the ${env.provider === 'DOCUSIGN' ? 'DocuSign' : 'Adobe Sign'} ceremony`,
+              comment: `Signed through the ${ADAPTERS[env.provider].label} ceremony`,
             }),
       },
     });

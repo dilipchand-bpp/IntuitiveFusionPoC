@@ -1,3 +1,4 @@
+import { openFieldRows } from '../b11enc/projects.js';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { Clock, RoleName } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
@@ -287,10 +288,15 @@ export class EvaluationService {
     const [rep] = await tx.select().from(evalReport).where(eq(evalReport.evaluationId, l.ev.id));
     const seeReport = rep && (processRole || chair);
     const reportFields = seeReport
-      ? await tx
-          .select()
-          .from(fieldValue)
-          .where(and(eq(fieldValue.ownerType, 'EVAL_REPORT'), eq(fieldValue.ownerId, rep.id)))
+      ? await openFieldRows(
+          tx,
+          l.ev.tenantId,
+          l.req.id,
+          await tx
+            .select()
+            .from(fieldValue)
+            .where(and(eq(fieldValue.ownerType, 'EVAL_REPORT'), eq(fieldValue.ownerId, rep.id))),
+        )
       : [];
     const [dec] = rep
       ? await tx

@@ -57,6 +57,22 @@ import {
   sweepSigningReminders,
 } from './b4-service.js';
 import { loadSettings } from '../settings/settings.js';
+import {
+  LEVEL_RANK,
+  PROOF_HEADER,
+  PROVIDER_HEADER,
+  contentDigest,
+  levelOf,
+  loadPolicy,
+  proofValid,
+  recordEvidence,
+  requiredLevelFor,
+  shortHash,
+  tooLowMessage,
+  verifyReauth,
+} from '../b11prod/eidas.js';
+import { isQualifiedProvider } from '../b10x/esign-adapters.js';
+import type { SignatureMethod } from '../../db/schema.js';
 import { addDays, addMonths, daysBetween, iso, termBars } from './dates.js';
 import { deviationBlockers, proposeRisk, type Risk } from './deviation.js';
 import { makeVariationCreator, registerContractExtras } from './extras.js';
@@ -79,6 +95,8 @@ export interface ContractDeps extends GuardDeps {
   store: SealedStore;
   registry?: VendorRegistry;
   sanctions?: SanctionsScreening;
+  /** For checking an authenticator code when a signature is made at the advanced level (NFR-L03). */
+  sessionSecret?: string;
 }
 
 const uuid = z.string().uuid();
@@ -119,7 +137,14 @@ const clauseBody = z
   })
   .strict();
 const signBody = z
-  .object({ decision: z.enum(['APPROVE', 'REJECT']), comment: z.string().trim().max(2000).optional() })
+  .object({
+    decision: z.enum(['APPROVE', 'REJECT']),
+    comment: z.string().trim().max(2000).optional(),
+    /** How the signer proves it is them (NFR-L03): nothing extra (signed in, SES), the password (SES), or password and authenticator code (AES). */
+    method: z.enum(['PASSWORD', 'PASSWORD_MFA']).optional(),
+    password: z.string().max(128).optional(),
+    mfaCode: z.string().max(10).optional(),
+  })
   .strict();
 const deleteBody = z.object({ reason: z.string().trim().min(10).max(1000) }).strict();
 
@@ -1218,6 +1243,24 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
     const a = req.auth!;
     const id = cid(req);
     const body = parse(signBody, req.body);
+    // how this signature is made, and so what level it reaches (NFR-L03)
+    const providerHdr = req.headers[PROVIDER_HEADER];
+    const viaProvider =
+      typeof providerHdr === 'string' && proofValid(id, a.user.id, providerHdr, req.headers[PROOF_HEADER])
+        ? providerHdr
+        : null;
+    let sigMethod: SignatureMethod = 'SESSION';
+    if (body.decision === 'APPROVE') {
+      if (viaProvider) sigMethod = isQualifiedProvider(viaProvider) ? 'QTSP' : 'PROVIDER';
+      else if (body.method) {
+        await verifyReauth(d.database, d.sessionSecret ?? '', d.clock, a.user.id, {
+          method: body.method,
+          password: body.password,
+          mfaCode: body.mfaCode,
+        });
+        sigMethod = body.method;
+      }
+    }
     const out = await withContext(d.database, a.ctx, async (tx) => {
       const c = await load(tx, a, id);
       if (c.locked) throw locked();
@@ -1322,16 +1365,47 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
         };
       }
 
-      await tx.insert(approval).values({
+      // The level this signature reaches against the level the contract needs (NFR-L03), and the hash of what is signed
+      const achieved = levelOf(sigMethod);
+      const needed = requiredLevelFor(
+        (await loadSettings(tx, a.user.tenantId)).signatures,
+        value,
+        await loadPolicy(tx, a.user.tenantId, id),
+      );
+      if (LEVEL_RANK[achieved] < LEVEL_RANK[needed.level])
+        return {
+          levelLow: { needed, achieved, message: tooLowMessage(needed, achieved) },
+        };
+      const digest = await contentDigest(tx, c);
+
+      const [signed] = await tx
+        .insert(approval)
+        .values({
+          tenantId: a.user.tenantId,
+          subjectType: 'CONTRACT',
+          subjectId: id,
+          userId: a.user.id,
+          role: slot.role,
+          decision: 'APPROVED',
+          comment: body.comment ?? null,
+          stamp: `${stamp('SIGNED')} · ${achieved} · hash ${shortHash(digest)}`,
+          decidedAt: now,
+        })
+        .returning({ id: approval.id });
+      await recordEvidence(tx, {
         tenantId: a.user.tenantId,
-        subjectType: 'CONTRACT',
-        subjectId: id,
-        userId: a.user.id,
-        role: slot.role,
-        decision: 'APPROVED',
-        comment: body.comment ?? null,
-        stamp: stamp('SIGNED'),
-        decidedAt: now,
+        contractId: id,
+        approvalId: signed!.id,
+        signerId: a.user.id,
+        signerRole: slot.role,
+        method: sigMethod,
+        level: achieved,
+        requiredLevel: needed.level,
+        provider: viaProvider,
+        docHash: digest,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        at: now,
       });
       await notifyRoles(
         tx,
@@ -1434,6 +1508,20 @@ export function registerContractRoutes(app: FastifyInstance, p: string, d: Contr
       return view(tx, a, await load(tx, a, id));
     });
     if ('blocked' in out && out.blocked) throw new AppError(409, out.blocked.code, out.blocked.message);
+    if ('levelLow' in out && out.levelLow) {
+      await d.audit.recordOutsideTx(d.database, a.ctx, {
+        action: 'contract.sign',
+        entityType: 'contract',
+        entityId: id,
+        after: {
+          reason: 'SIGNATURE_LEVEL_TOO_LOW',
+          required: out.levelLow.needed.level,
+          achieved: out.levelLow.achieved,
+        },
+        result: 'DENIED',
+      });
+      throw new AppError(422, 'SIGNATURE_LEVEL_TOO_LOW', out.levelLow.message);
+    }
     if ('denied' in out) {
       await d.audit.recordOutsideTx(d.database, a.ctx, {
         action: 'contract.sign',

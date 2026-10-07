@@ -18,6 +18,8 @@ import { parse } from '../../http/errors.js';
 import { visibleRequests } from '../reporting/scope.js';
 import { loadSettings } from '../settings/settings.js';
 import { tokensOf } from './buying.js';
+import { flagContent, neutralise } from '../b11priv/content-safety.js';
+import { assertOutbound, refusable } from '../b11priv/outbound.js';
 
 export const SEARCH_MODEL = 'rules-simulated-v1';
 
@@ -29,6 +31,9 @@ export interface ExternalHit {
 export interface ExternalSearch {
   readonly name: string;
   readonly simulated: boolean;
+  /** Where the provider processes the question (SEC-D09) and the host it is called on (SEC-D05). Defaults: AU and a simulated host. */
+  readonly region?: string;
+  readonly host?: string;
   search(query: string): Promise<ExternalHit[]>;
 }
 
@@ -108,6 +113,8 @@ const CORPUS: Array<ExternalHit & { tags: string[] }> = [
 export class SimulatedExternalSearch implements ExternalSearch {
   readonly name = 'Simulated web search';
   readonly simulated = true;
+  readonly region = 'AU';
+  readonly host = 'search.simulated.test';
   async search(query: string): Promise<ExternalHit[]> {
     const t = tokensOf(query);
     return CORPUS.map((c) => ({
@@ -185,7 +192,7 @@ export function registerSearch(app: FastifyInstance, p: string, d: SearchDeps): 
       const b = parse(searchBody, req.body);
       const roles = a.user.roles;
       const words = tokensOf(b.query);
-      return withContext(d.database, a.ctx, async (tx) => {
+      return refusable(d.database, a.ctx, async (tx) => {
         const s = await loadSettings(tx, a.user.tenantId);
         const hit = (...fields: Array<string | null | undefined>) => {
           const h = fields.join(' ').toLowerCase();
@@ -328,7 +335,44 @@ export function registerSearch(app: FastifyInstance, p: string, d: SearchDeps): 
               external.note =
                 'Nothing of the question was left once identifiers were withheld, so nothing was sent.';
             else {
-              const hits = await provider.search(clean.sent);
+              // SEC-D05 and SEC-D09: the question leaves the application, so the allow-list and the hosting country apply first
+              await assertOutbound(tx, a.user.tenantId, {
+                purpose: 'EXTERNAL_SEARCH',
+                target: {
+                  label: provider.name,
+                  host: provider.host ?? 'search.simulated.test',
+                  region: provider.region ?? 'AU',
+                },
+                actorId: a.user.id,
+                settings: s,
+              });
+              // SEC-AP08: what comes back is untrusted data: made inert, and flagged when it reads like instructions
+              const hits: Array<ExternalHit & { flagged?: boolean }> = [];
+              for (const h of await provider.search(clean.sent)) {
+                const n = neutralise(
+                  `${h.title}
+${h.snippet}`,
+                  'outside search',
+                );
+                if (n.flagged)
+                  await flagContent(tx, a.user.tenantId, {
+                    source: 'SEARCH_RESULT',
+                    entityType: 'search',
+                    text: `${h.title}
+${h.snippet}`,
+                    actorId: a.user.id,
+                  });
+                hits.push(
+                  n.flagged
+                    ? {
+                        title: neutralise(h.title).clean,
+                        snippet: neutralise(h.snippet).clean,
+                        source: h.source,
+                        flagged: true,
+                      }
+                    : h,
+                );
+              }
               await tx.insert(externalSearchLog).values({
                 tenantId: a.user.tenantId,
                 userId: a.user.id,

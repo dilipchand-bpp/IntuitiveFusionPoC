@@ -3,6 +3,7 @@
  * panel justifications, total cost of ownership and the value-for-money recommendation. Reads as the system (the
  * evaluators' comments are readable by the chair and probity only), so callers must already have checked who may ask.
  */
+import { sealField } from '../b11enc/projects.js';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Tx } from '../../db/client.js';
 import {
@@ -13,9 +14,11 @@ import {
   coiDeclaration,
   consensusItem,
   evalReport,
+  evaluation,
   fieldValue,
   panelSubstitution,
   score,
+  tender,
 } from '../../db/schema.js';
 import { gateRows, loadExtras, previousStages } from './b3-service.js';
 import { REPORT_SECTIONS, buildReport } from './report.js';
@@ -195,6 +198,12 @@ export async function storeReport(
       .values({ tenantId, evaluationId, status, generatedAt: now, ...extra })
       .returning();
   }
+  const [evT] = await tx
+    .select({ r: tender.requestId })
+    .from(evaluation)
+    .innerJoin(tender, eq(tender.id, evaluation.tenderId))
+    .where(eq(evaluation.id, evaluationId));
+  const reqId = evT!.r;
   for (const sec of REPORT_SECTIONS) {
     const [row] = await tx
       .select()
@@ -206,10 +215,18 @@ export async function storeReport(
           eq(fieldValue.key, sec.key),
         ),
       );
+    // a restricted project's report narrative is stored encrypted with its project key (FR-0865)
+    const sealed = await sealField(
+      tx,
+      tenantId,
+      reqId,
+      { type: 'EVAL_REPORT', id: rep!.id, key: sec.key },
+      text[sec.key] ?? '',
+    );
     if (row)
       await tx
         .update(fieldValue)
-        .set({ value: text[sec.key] ?? '', source: 'SYSTEM', updatedAt: now })
+        .set({ value: sealed, source: 'SYSTEM', updatedAt: now })
         .where(eq(fieldValue.id, row.id));
     else
       await tx.insert(fieldValue).values({
@@ -218,7 +235,7 @@ export async function storeReport(
         ownerId: rep!.id,
         key: sec.key,
         label: sec.label,
-        value: text[sec.key] ?? '',
+        value: sealed,
         source: 'SYSTEM',
         updatedAt: now,
       });

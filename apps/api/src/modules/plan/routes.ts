@@ -390,6 +390,10 @@ export function registerPlanRoutes(app: FastifyInstance, p: string, d: PlanDeps)
         });
         if (!sod.ok) throw new AppError(403, sod.code, sod.message);
         if (body.decision === 'APPROVE') {
+          // an ESG or socio-economic breach blocks approval until an exception is recorded and acknowledged (NFR-R05)
+          const esgGate = (await svc.evaluateGates(tx, l)).find((g) => g.key === 'ESG_CEILINGS');
+          if (esgGate?.status === 'REQUIRED')
+            throw new AppError(409, 'ESG_CEILINGS_BREACHED', esgGate.reason);
           const value = Number(l.req.estimatedValue ?? 0);
           const del = await checkDelegation(
             tx,

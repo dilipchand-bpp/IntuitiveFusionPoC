@@ -3,6 +3,7 @@
  * Visibility: a user whose only role is REQUESTER sees their own requests; other staff roles see the tenant.
  * A request that exists but is not visible looks exactly like one that does not exist (404, never 403).
  */
+import { assertAiConversationRegion, stampConversation } from '../b11priv/retention.js';
 import { SUPPORTED, isForeign } from '../b9/fx-rules.js';
 import { toBaseAmount } from '../b9/fx-routes.js';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
@@ -480,6 +481,8 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
     const body = parse(startBody, req.body);
     if (body.purpose !== 'INTAKE')
       throw new AppError(501, 'NOT_IMPLEMENTED', 'This assistant is coming soon');
+    // SEC-D06 and SEC-D09: a transcript is stored only when the tenant's AI region is an allowed region
+    await assertAiConversationRegion(d.database, a.ctx);
     const out = await withContext(d.database, a.ctx, async (tx) => {
       if (body.contextId) {
         const l = await visible(tx, a, body.contextId);
@@ -495,6 +498,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           simulated: d.ai.simulated,
         })
         .returning();
+      await stampConversation(tx, a.user.tenantId, conv!.id);
       const greeting = body.contextId
         ? 'Tell me what to change on this request, for example "make the term 24 months" or "the value is about $80k".'
         : 'Hi, I am the procurement assistant. Describe what you need in your own words, for example "Run an RFx for facilities cleaning, three-year term, about $1.2M".';
@@ -567,6 +571,7 @@ export function registerIntakeRoutes(app: FastifyInstance, p: string, d: IntakeD
           'Voice input is coming soon; please type your message',
         );
 
+      await assertAiConversationRegion(d.database, a.ctx);
       const started = nowMs();
       const result = await withContext(d.database, a.ctx, async (tx) => {
         const [c] = await tx

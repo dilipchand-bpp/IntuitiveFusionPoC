@@ -3,6 +3,8 @@
  * signing mode, invitations and questions, the risk summary, other signing documents, exports and amended drafts,
  * and clause comments. Every change is audited.
  */
+import { sealBank } from '../b11enc/fields.js';
+import { filePurposeFor, requestOfTender } from '../b11enc/projects.js';
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -33,6 +35,7 @@ import { AppError, parse } from '../../http/errors.js';
 import { loadSettings } from '../settings/settings.js';
 import { checkUpload, sha256 } from '../tender/files.js';
 import { buildRiskSummary, isProtected } from './b4-rules.js';
+import { submitSupplierBank } from '../b11audit/bank.js';
 import {
   checkRows,
   inviteSigners,
@@ -270,9 +273,28 @@ export function registerContractB4(
       req.body,
     );
     return withContext(d.database, a.ctx, async (tx) => {
+      // SEC-AC10: a change to details already in force waits for a finance person; the old details stay in force until then
+      const gate = await submitSupplierBank(tx, d, a, body);
+      const shown = `${'*'.repeat(Math.max(body.account.length - 3, 0))}${body.account.slice(-3)}`;
+      if (gate.mode === 'HELD')
+        return {
+          bsb: body.bsb,
+          account: shown,
+          accountName: body.accountName,
+          status: 'PENDING_FINANCE' as const,
+        };
       await tx
         .update(supplier)
-        .set({ bank: { ...body, recordedAt: d.clock.now().toISOString() } })
+        .set({
+          // encrypted before it is stored: the column never holds the account number (SEC-D01)
+          bank: await sealBank(
+            tx,
+            a.user.tenantId,
+            a.user.supplierId!,
+            { ...body, recordedAt: d.clock.now().toISOString() },
+            d.clock.now(),
+          ),
+        })
         .where(eq(supplier.id, a.user.supplierId!));
       // the audit trail records that details were given, not the numbers
       await d.audit.record(tx, a.ctx, {
@@ -285,6 +307,7 @@ export function registerContractB4(
         bsb: body.bsb,
         account: `${'*'.repeat(Math.max(body.account.length - 3, 0))}${body.account.slice(-3)}`,
         accountName: body.accountName,
+        status: 'IN_FORCE_UNCONFIRMED' as const,
       };
     });
   });
@@ -771,7 +794,10 @@ export function registerContractB4(
         const c = await x.load(tx, a, id);
         if (c.locked) throw new AppError(423, 'CONTRACT_LOCKED', 'This contract is executed and locked');
         const key = `${a.user.tenantId}/contract/${id}/${randomUUID()}`;
-        await x.store.put(key, bytes);
+        await x.store.put(key, bytes, {
+          tx,
+          purpose: await filePurposeFor(tx, await requestOfTender(tx, c.tenderId)),
+        });
         const prior = await tx.select().from(contractFile).where(eq(contractFile.contractId, id));
         const [f] = await tx
           .insert(contractFile)

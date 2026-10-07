@@ -4,6 +4,8 @@
  * rule can be tested without a database. Anything that stands in for an AI model or an outside service is labelled
  * `B8_MODEL` and has a swap point (docs/swap-points.md).
  */
+import { bankFingerprint } from '../b11audit/bank-fp.js';
+
 export const B8_MODEL = 'rules-simulated-v1';
 
 // ------------------------------------------------------------------ FR-0130 response schedules
@@ -206,6 +208,8 @@ export interface SupplierLite {
   company: string;
   abn: string;
   bank?: { bsb?: string; account?: string } | null;
+  /** A hash of the bank digits (SEC-AC10): duplicate detection compares this, so the numbers themselves need not be passed around. */
+  bankFp?: string | null;
   location?: { city?: string; state?: string } | null;
 }
 export interface DuplicatePair {
@@ -235,9 +239,9 @@ export function findDuplicates(
         reasons.push('Same ABN');
         score = 1;
       }
-      const ba = digits(a.bank?.bsb) + digits(a.bank?.account);
-      const bb = digits(b.bank?.bsb) + digits(b.bank?.account);
-      if (ba.length >= 6 && ba === bb) {
+      const ba = a.bankFp ?? bankFingerprint(a.bank) ?? '';
+      const bb = b.bankFp ?? bankFingerprint(b.bank) ?? '';
+      if (ba !== '' && ba === bb) {
         reasons.push('Same bank account');
         score = Math.max(score, 0.98);
       }

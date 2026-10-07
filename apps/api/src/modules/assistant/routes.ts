@@ -13,6 +13,7 @@ import { contract, delegation, invoice, notification, plan, supplier } from '../
 import { parse } from '../../http/errors.js';
 import { addDays, iso } from '../contract/dates.js';
 import { modelStamp, resolveModel } from '../b10ai/service.js';
+import { flagContent, injectionSignals } from '../b11priv/content-safety.js';
 import { parseQuestion } from '../reporting/b6-rules.js';
 import { visibleRequests } from '../reporting/scope.js';
 import {
@@ -63,6 +64,7 @@ async function gather(d: GuardDeps, tx: Tx, a: AuthContext): Promise<Facts> {
         eq(notification.tenantId, a.user.tenantId),
         eq(notification.userId, a.user.id),
         eq(notification.read, false),
+        sql`not b11_notification_hidden(${notification.link}, ${notification.title}, ${notification.body})`,
       ),
     );
   f.unread = n;
@@ -176,6 +178,17 @@ export function registerAssistantRoutes(app: FastifyInstance, p: string, d: Guar
     async (req) => {
       const a = req.auth!;
       const body = parse(chatBody, req.body);
+      // SEC-AP08: a question can quote supplier text; instruction-like wording is flagged, and the answer is still worked
+      // out by fixed rules from this person's own figures, never from what the text says
+      if (injectionSignals(body.message).length > 0)
+        await withContext(d.database, a.ctx, (tx) =>
+          flagContent(tx, a.user.tenantId, {
+            source: 'ASK_AI',
+            entityType: 'assistant',
+            text: body.message,
+            actorId: a.user.id,
+          }),
+        );
       const roles = a.user.roles;
       const supplierOnly = roles.includes('SUPPLIER');
       const canQueryData = !supplierOnly && roles.some((r) => REPORT_USERS.includes(r));

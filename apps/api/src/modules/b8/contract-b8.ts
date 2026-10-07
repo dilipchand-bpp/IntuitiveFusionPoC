@@ -4,6 +4,7 @@
  * platform (FR-0390); contracts that are never destroyed and can be brought back (NFR-L04); and a hard stop on further
  * changes while a statutory disclosure is overdue (NFR-L02).
  */
+import { flagContent } from '../b11priv/content-safety.js';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -139,6 +140,14 @@ export function registerContractB8(app: FastifyInstance, p: string, d: ContractD
           'The wording can only change before the contract is released for signature',
         );
       const rows = await ordered(tx, c);
+      // SEC-AP08: the instruction can quote supplier text; it is screened, and only a person's own apply step changes anything
+      await flagContent(tx, a.user.tenantId, {
+        source: 'LEGAL_EDIT',
+        entityType: 'contract',
+        entityId: id,
+        text: body.instruction,
+        actorId: a.user.id,
+      });
       const parsed = parseLegalEdit(
         body.instruction,
         rows.map((r) => ({ clauseId: r.clauseId, title: r.title })),

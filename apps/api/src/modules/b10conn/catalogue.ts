@@ -27,6 +27,12 @@ export interface ProviderEntry {
   description: string;
   /** Always true here: nothing in this build talks to the real product. */
   simulated: true;
+  /** Where the simulated vendor hosts the service: a country or region code, checked against the elected hosting country (NFR-R02, SEC-D09). */
+  region: string;
+  /** The simulated endpoint host, checked against the egress allow-list (SEC-D05). */
+  host: string;
+  /** An e-signature provider whose signatures reach the qualified level of eIDAS (NFR-L03). */
+  qualified?: boolean;
 }
 export interface KindEntry {
   kind: ConnectorKind;
@@ -35,12 +41,35 @@ export interface KindEntry {
   providers: ProviderEntry[];
 }
 
+/**
+ * Where each simulated vendor "hosts" its service. Most are in Australia so the demonstration works under the default
+ * hosting country; a few sit overseas so that blocking and explicit allow-listing can be shown and tested (SEC-D09).
+ */
+export const PROVIDER_REGION: Record<string, string> = {
+  ICERTIS: 'US',
+  HIGHQ: 'UK',
+  WORKDAY: 'US',
+  SAP_SUCCESSFACTORS: 'EU',
+  WORLDCHECK: 'UK',
+  ARIBA: 'EU',
+};
+/** Simulated hosts only: every endpoint name ends in .simulated.test, which never resolves on the public internet. */
+export const providerHost = (id: string) => `${id.toLowerCase().replace(/_/g, '-')}.simulated.test`;
+
 const p = (
   id: string,
   label: string,
   family: ProviderEntry['family'],
   description: string,
-): ProviderEntry => ({ id, label, family, description, simulated: true });
+): ProviderEntry => ({
+  id,
+  label,
+  family,
+  description,
+  simulated: true,
+  region: PROVIDER_REGION[id] ?? 'AU',
+  host: providerHost(id),
+});
 
 export const CATALOGUE: KindEntry[] = [
   {
@@ -146,6 +175,15 @@ export const CATALOGUE: KindEntry[] = [
         'SIGNATURE',
         'In-platform signing used for the demonstration.',
       ),
+      {
+        ...p(
+          'SIMULATED_QTSP',
+          'Simulated qualified trust service provider',
+          'SIGNATURE',
+          'A stand-in for a qualified provider: its signatures reach the qualified level (QES) of eIDAS.',
+        ),
+        qualified: true,
+      },
     ],
   },
   {
@@ -241,6 +279,12 @@ export const CATALOGUE: KindEntry[] = [
         'Simulated middleware',
         'MIDDLEWARE',
         'An in-process stand-in that signs and verifies messages.',
+      ),
+      p(
+        'SIMULATED_CONTENT',
+        'Simulated outside content source',
+        'CONTENT',
+        'Delivers the refreshed outside content packs (taxonomy, benchmarks, risk library) through the resilient call layer.',
       ),
     ],
   },

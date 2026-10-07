@@ -1,3 +1,4 @@
+import { openField, openFieldRows, sealField } from '../b11enc/projects.js';
 import { isForeign } from '../b9/fx-rules.js';
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, inArray } from 'drizzle-orm';
@@ -22,6 +23,7 @@ import { toView as requestView, valuesOf } from '../intake/service.js';
 import { loadSettings } from '../settings/settings.js';
 import { approvers, issueApprovalLinks } from '../b8/approval-links.js';
 import { applyLayout, loadLayout } from '../collab/routes.js';
+import { esgCeilingGate } from '../b11prod/esg-targets.js';
 import { PLAN_FIELDS, PLAN_FIELD_BY_KEY, splitParagraphs } from './fields.js';
 import { summarisePlan } from './summary.js';
 
@@ -62,10 +64,12 @@ export class PlanService {
       .select()
       .from(fieldValue)
       .where(and(eq(fieldValue.ownerType, 'REQUEST'), eq(fieldValue.ownerId, p.requestId)));
-    const planFields = await tx
+    const rawPlanFields = await tx
       .select()
       .from(fieldValue)
       .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, p.id)));
+    // a restricted project's plan text is stored encrypted with its project key (FR-0865)
+    const planFields = await openFieldRows(tx, tenantId, p.requestId, rawPlanFields);
     return { plan: p, req: req!, reqFields, planFields };
   }
 
@@ -121,7 +125,13 @@ export class PlanService {
           ownerId: p!.id,
           key: def.key,
           label: def.label,
-          value: draft[def.key] ?? '',
+          value: await sealField(
+            tx,
+            ctx.tenantId,
+            requestId,
+            { type: 'PLAN', id: p!.id, key: def.key },
+            draft[def.key] ?? '',
+          ),
           source: 'AI',
           aiDrafted: true,
           missing: false,
@@ -168,8 +178,21 @@ export class PlanService {
     );
   }
 
-  /** Which plan gates apply, whether each is met, and keeps the request's gate rows in step. */
+  /**
+   * Which plan gates apply and whether each is met. Besides the request's own gates this adds 'ESG ceilings' while any
+   * ESG or socio-economic metric of the plan is in breach (NFR-R05).
+   */
   async evaluateGates(
+    tx: Tx,
+    l: Loaded,
+  ): Promise<Array<{ key: string; label: string; reason: string; status: 'REQUIRED' | 'SATISFIED' }>> {
+    const base = await this.evaluateRequestGates(tx, l);
+    const esg = await esgCeilingGate(tx, l.plan);
+    return esg ? [...base, esg] : base;
+  }
+
+  /** Which of the request's plan gates apply, whether each is met, and keeps the request's gate rows in step. */
+  private async evaluateRequestGates(
     tx: Tx,
     l: Loaded,
   ): Promise<Array<{ key: string; label: string; reason: string; status: 'REQUIRED' | 'SATISFIED' }>> {
@@ -295,12 +318,16 @@ export class PlanService {
       ]);
     const existing = l.planFields.find((f) => f.key === key);
     const now = this.clock.now();
+    const owner = { type: 'PLAN', id: l.plan.id, key };
     const set = {
-      value,
+      value: await sealField(tx, ctx.tenantId, l.plan.requestId, owner, value),
       source,
       aiDrafted: source === 'AI',
       missing: false,
-      previousValue: existing?.value ?? null,
+      previousValue:
+        existing?.value === null || existing?.value === undefined
+          ? null
+          : await sealField(tx, ctx.tenantId, l.plan.requestId, owner, existing.value),
       updatedBy: source === 'AI' ? null : ctx.userId,
       updatedAt: now,
       label: def.label,
@@ -329,7 +356,13 @@ export class PlanService {
   ): Promise<string> {
     const token = randomUUID();
     const set = {
-      value: JSON.stringify({ token, ...snapshot }),
+      value: await sealField(
+        tx,
+        l.plan.tenantId,
+        l.plan.requestId,
+        { type: 'PLAN', id: l.plan.id, key: UNDO_KEY },
+        JSON.stringify({ token, ...snapshot }),
+      ),
       source: 'SYSTEM' as const,
       label: 'undo',
       updatedAt: this.clock.now(),
@@ -357,7 +390,18 @@ export class PlanService {
       .where(
         and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, planId), eq(fieldValue.key, UNDO_KEY)),
       );
-    return row?.value ? (JSON.parse(row.value) as never) : null;
+    if (!row?.value) return null;
+    const [pl] = await tx.select({ requestId: plan.requestId }).from(plan).where(eq(plan.id, planId));
+    const text = pl
+      ? await openField(
+          tx,
+          row.tenantId,
+          pl.requestId,
+          { type: 'PLAN', id: planId, key: UNDO_KEY },
+          row.value,
+        )
+      : row.value;
+    return JSON.parse(text ?? 'null') as never;
   }
 
   async clearUndo(tx: Tx, planId: string): Promise<void> {

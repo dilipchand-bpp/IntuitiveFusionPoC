@@ -6,7 +6,6 @@ import { fieldValue, notification, request, roleAssignment, tenant, workflow } f
 import { AppError } from '../../http/errors.js';
 import {
   WORKFLOW_NAMES,
-  classifyCategory,
   requiredEngagements,
   routeWorkflow,
   selectSubWorkflow,
@@ -26,6 +25,7 @@ import {
   type Settings,
 } from '../settings/settings.js';
 import { FIELDS, FIELD_BY_KEY, missingMandatory, type FieldMap } from './fields.js';
+import { suggestTaxonomy, type PopulationSource } from '../b11prod/content.js';
 
 type RequestRow = typeof request.$inferSelect;
 type FieldRow = typeof fieldValue.$inferSelect;
@@ -73,7 +73,7 @@ export interface RequestView {
   /** The system a migrated record came from; absent for records created here (FR-0670). */
   sourceSystem?: string;
   /** Preliminary classification in the tenant's scheme, confirmed or amended by a person (FR-0015). */
-  taxonomy?: { scheme: string; code: string; confirmed: boolean };
+  taxonomy?: { scheme: string; code: string; confirmed: boolean; source?: PopulationSource };
   /** The workflow this request follows and where it stands (FR-0705). */
   workflow?: { id: string; name: string; subWorkflow: string; steps: ProcessStepView[] };
   /** Secondary reviews the request needs, with the reason for each (FR-0030). */
@@ -99,6 +99,17 @@ export function valuesOf(r: RequestRow, rows: FieldRow[]): FieldMap {
   const out: FieldMap = { ...CORE_VALUE(r) };
   for (const f of rows) if (!f.key.startsWith('gate.') && f.value !== null) out[f.key] = f.value;
   return out;
+}
+
+function taxonomySourceOf(
+  raw: string | null | undefined,
+): { source: PopulationSource } | Record<string, never> {
+  if (!raw) return {};
+  try {
+    return { source: JSON.parse(raw) as PopulationSource };
+  } catch {
+    return {};
+  }
 }
 
 export function toView(r: RequestRow, rows: FieldRow[], settings: Settings = DEFAULTS): RequestView {
@@ -169,7 +180,14 @@ export function toView(r: RequestRow, rows: FieldRow[], settings: Settings = DEF
     budgetCheck: r.budgetCheck,
     ...(r.sourceSystem ? { sourceSystem: r.sourceSystem } : {}),
     ...(r.taxonomyCode
-      ? { taxonomy: { scheme: r.taxonomyScheme ?? '', code: r.taxonomyCode, confirmed: r.taxonomyConfirmed } }
+      ? {
+          taxonomy: {
+            scheme: r.taxonomyScheme ?? '',
+            code: r.taxonomyCode,
+            confirmed: r.taxonomyConfirmed,
+            ...taxonomySourceOf(byKey.get('taxonomy.source')?.value),
+          },
+        }
       : {}),
     ...(r.workflowId
       ? {
@@ -354,10 +372,34 @@ export class IntakeService {
     }).level;
     cols.intakeMode = intakeModeFor(value, settings.intake.selfServiceThresholdAud);
     // classification, workflow routing and required engagements follow whatever the request now says (FR-0015, FR-0705, FR-0030)
-    const taxonomy = classifyCategory(merged.category, settings.intake.taxonomy);
+    // the code comes from in-house rules and, when current, the outside UNSPSC pack; the source is kept beside it (NFR-R03)
+    const taxonomy = await suggestTaxonomy(
+      tx,
+      row.tenantId,
+      merged.category,
+      settings.intake.taxonomy,
+      this.clock.now(),
+      settings,
+    );
     if (taxonomy && !row.taxonomyConfirmed) {
       cols.taxonomyScheme = taxonomy.scheme;
       cols.taxonomyCode = taxonomy.code;
+      const src = {
+        value: JSON.stringify(taxonomy.source),
+        source: 'SYSTEM' as const,
+        label: 'Classification source',
+        updatedAt: this.clock.now(),
+      };
+      await tx
+        .insert(fieldValue)
+        .values({
+          tenantId: ctx.tenantId,
+          ownerType: 'REQUEST',
+          ownerId: requestId,
+          key: 'taxonomy.source',
+          ...src,
+        })
+        .onConflictDoUpdate({ target: [fieldValue.ownerType, fieldValue.ownerId, fieldValue.key], set: src });
     }
     const sub = selectSubWorkflow(merged.category, merged.title);
     cols.subWorkflow = sub.key;

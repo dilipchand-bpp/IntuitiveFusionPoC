@@ -435,7 +435,7 @@ describe('US-CON-03 release and sign under separate signing authority', () => {
     expect(c.locked).toBe(true);
     expect(c.signatures).toHaveLength(1);
     expect(c.signatures[0]!.stamp).toMatch(
-      /^SIGNED · Dana Okafor · DELEGATE · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/,
+      /^SIGNED · Dana Okafor · DELEGATE · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC · SES · hash [0-9a-f]{12}$/,
     );
     const alerts = await withSystem(database, (tx) =>
       tx.select().from(s.alert).where(eq(s.alert.contractId, d.c.id)),

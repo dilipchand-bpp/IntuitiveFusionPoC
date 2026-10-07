@@ -19,7 +19,7 @@ export const CANONICAL_KINDS: readonly CanonicalKind[] = [
   'voided',
   'expired',
 ];
-export type ProviderId = 'DOCUSIGN' | 'ADOBE';
+export type ProviderId = 'DOCUSIGN' | 'ADOBE' | 'SIMULATED_QTSP';
 
 export interface SignatorySpec {
   signatoryId: string;
@@ -64,6 +64,11 @@ export interface Callback {
 export interface EsignAdapter {
   id: ProviderId;
   label: string;
+  /**
+   * True for a qualified trust service provider: a signature made through it reaches the qualified level (QES) of eIDAS
+   * (NFR-L03). DocuSign and Adobe are simple e-signature services here, so they are not.
+   */
+  qualified: boolean;
   /** The body the platform would POST to the provider to create the envelope. */
   buildCreate(spec: EnvelopeSpec): Record<string, unknown>;
   /** The provider's answer to that request (simulated, deterministic). */
@@ -111,6 +116,7 @@ const DS_STATUS: Record<CanonicalKind, string> = {
 export const docusign: EsignAdapter = {
   id: 'DOCUSIGN',
   label: 'DocuSign',
+  qualified: false,
   buildCreate(spec) {
     return {
       emailSubject: `Please sign ${spec.contractNumber}`,
@@ -188,6 +194,7 @@ const AD_TYPES: Record<CanonicalKind, string> = {
 export const adobe: EsignAdapter = {
   id: 'ADOBE',
   label: 'Adobe Acrobat Sign',
+  qualified: false,
   buildCreate(spec) {
     return {
       name: `${spec.contractNumber} ${spec.title}`.slice(0, 255),
@@ -247,8 +254,43 @@ export const adobe: EsignAdapter = {
   externalIdOf: (data) => str(obj(data.agreement).id),
 };
 
-export const ADAPTERS: Record<ProviderId, EsignAdapter> = { DOCUSIGN: docusign, ADOBE: adobe };
-export const isEsignProvider = (p: string): p is ProviderId => p === 'DOCUSIGN' || p === 'ADOBE';
+// ------------------------------------------------------------------ simulated qualified trust service provider (NFR-L03)
+/**
+ * SIMULATED_QTSP: a stand-in for a qualified trust service provider. It speaks the same envelope vocabulary as DocuSign but
+ * declares `qualified: true`, so a signature made through it is recorded at the qualified level. Nothing here is a real
+ * qualified certificate; a real provider returns a signed container and certificate chain instead.
+ */
+export const qtsp: EsignAdapter = {
+  ...docusign,
+  id: 'SIMULATED_QTSP',
+  label: 'Simulated qualified trust service provider',
+  qualified: true,
+  buildCreate(spec) {
+    return {
+      ...docusign.buildCreate(spec),
+      signatureType: 'QUALIFIED',
+      trustService: { provider: 'SIMULATED_QTSP', level: 'QES', simulated: true },
+    };
+  },
+  createEnvelope(spec) {
+    const externalId = `QT-${digest(spec.tenantId, spec.contractId, spec.sequence, 'qtsp').slice(0, 12)}`;
+    return {
+      externalId,
+      status: 'sent',
+      recipients: spec.signatories.map((s, i) => ({ signatoryId: s.signatoryId, ref: String(i + 1) })),
+    };
+  },
+};
+
+export const ADAPTERS: Record<ProviderId, EsignAdapter> = {
+  DOCUSIGN: docusign,
+  ADOBE: adobe,
+  SIMULATED_QTSP: qtsp,
+};
+export const isEsignProvider = (p: string): p is ProviderId =>
+  p === 'DOCUSIGN' || p === 'ADOBE' || p === 'SIMULATED_QTSP';
+/** Whether a signature made through this provider id is qualified. */
+export const isQualifiedProvider = (p: string): boolean => isEsignProvider(p) && ADAPTERS[p].qualified;
 
 /** Finds the envelope id in a callback body of either provider's shape. */
 export const externalIdOfAny = (data: Record<string, unknown>): string | null =>

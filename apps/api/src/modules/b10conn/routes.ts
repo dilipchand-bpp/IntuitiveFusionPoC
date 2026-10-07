@@ -10,6 +10,8 @@ import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext, withSystem, type RequestContext } from '../../db/client.js';
 import { connector, integrationEvent, manualTask, supplier, syncRun, tenant } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
+import { assertOutbound, refusable } from '../b11priv/outbound.js';
+import { purposeForKind } from '../b11priv/region.js';
 import { deliver, eventView, type IntegrationDeps } from '../b8/integration.js';
 import { CONNECTOR_MODEL, kindEntry, providerEntry } from './catalogue.js';
 import { catalogueView, configSchema, connectorViews, getConnector, kindParam } from './connectors.js';
@@ -123,10 +125,20 @@ export function registerConnectors(app: FastifyInstance, p: string, d: Connector
             .join(', ')}`,
         },
       ]);
-    return withContext(d.database, a.ctx, async (tx) => {
+    return refusable(d.database, a.ctx, async (tx) => {
       const before = await getConnector(tx, a.user.tenantId, kind);
       const provider = body.provider ?? before?.provider ?? kindEntry(kind)!.providers[0]!.id;
       const mode = body.mode ?? before?.mode ?? 'UP';
+      // SEC-D09, SEC-D05: a connector that would send data outside the elected country, or to a host that is not on the
+      // egress allow-list, cannot be switched on or chosen. Checked before anything is written.
+      if ((body.enabled ?? before?.enabled ?? true) && (body.provider || body.enabled === true || !before)) {
+        const entry = providerEntry(kind, provider)!;
+        await assertOutbound(tx, a.user.tenantId, {
+          purpose: purposeForKind(kind),
+          target: { label: entry.label, host: entry.host, region: entry.region },
+          actorId: a.user.id,
+        });
+      }
       // putting a connector back UP is a person saying it works again: the breaker is closed
       const reset = before && before.mode === 'DOWN' && mode === 'UP';
       const values = {

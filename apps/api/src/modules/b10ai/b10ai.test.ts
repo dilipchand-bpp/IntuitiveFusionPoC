@@ -246,6 +246,12 @@ describe('NFR-M06 approved AI model changed through configuration, no restart', 
 
   it('a different model can be chosen for one task only', async () => {
     await approve('sim-llm-fast-v1');
+    // sim-llm-fast-v1 processes in the US: it can be named only once the US is explicitly allowed (SEC-D09)
+    await sys((tx) =>
+      tx.execute(
+        sql`update tenant set config = jsonb_set(config, '{settings}', coalesce(config->'settings', '{}'::jsonb) || '{"residency":{"country":"AU","allowedRegions":["US"],"aiRegion":"AU","logRegion":"AU"}}'::jsonb, true) where id = ${TENANT_ID}`,
+      ),
+    );
     expect((await activate('sim-llm-careful-v1', { 'assistant-footer': 'sim-llm-fast-v1' })).statusCode).toBe(
       200,
     );
@@ -261,6 +267,11 @@ describe('NFR-M06 approved AI model changed through configuration, no restart', 
       ).statusCode,
     ).toBe(400);
     expect((await activate('sim-llm-careful-v1')).statusCode).toBe(200);
+    await sys((tx) =>
+      tx.execute(
+        sql`update tenant set config = jsonb_set(config, '{settings}', (config->'settings') - 'residency', true) where id = ${TENANT_ID}`,
+      ),
+    );
   });
 
   it('revoking an approval falls the tenant back to the built-in model immediately, and audits it', async () => {

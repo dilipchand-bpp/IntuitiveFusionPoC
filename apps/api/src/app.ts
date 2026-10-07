@@ -51,6 +51,12 @@ import { registerB10ai } from './modules/b10ai/index.js';
 import { registerConnectors } from './modules/b10conn/routes.js';
 import { registerB10b } from './modules/b10erp/index.js';
 import { registerB10x } from './modules/b10x/index.js';
+import { registerB11a } from './modules/b11enc/routes.js';
+import { Tenancy, installThrottle, registerB11d } from './modules/b11prod/index.js';
+import { installUploadGate } from './modules/b11enc/upload-gate.js';
+import { KeyVault } from './modules/b11enc/vault.js';
+import { registerB11b } from './modules/b11priv/index.js';
+import { installB11auditHooks, registerB11audit } from './modules/b11audit/index.js';
 import { registerSpecStubs } from './spec-routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -89,7 +95,10 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     requestIdHeader: false,
     trustProxy: config.NODE_ENV === 'production',
   });
-  await app.register(helmet);
+  // HSTS for a year with sub-domains (SEC-D01); browsers ignore it over plain http, so it is safe to send in development too
+  await app.register(helmet, {
+    hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: config.NODE_ENV === 'production' },
+  });
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
 
@@ -97,6 +106,8 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   const idp = deps.idp ?? new MockIdentityProvider(deps.database, deps.clock, config.DEFAULT_TENANT_SLUG);
   const sessions = new SessionService(deps.database, deps.clock, idp, config.SESSION_SECRET);
   const guardDeps: GuardDeps = { database: deps.database, clock: deps.clock, audit, sessions };
+  // every upload is scanned by one hook added to every route registered after this line (SEC-AP04)
+  installUploadGate(app, { database: deps.database, audit, clock: deps.clock });
 
   app.addHook('onSend', async (req, reply) => {
     reply.header('x-correlation-id', req.id);
@@ -118,6 +129,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     }
     const status = err.statusCode && err.statusCode >= 400 && err.statusCode < 500 ? err.statusCode : 500;
     if (status >= 500) req.log.error({ err }, 'unhandled error');
+    if (status >= 500) (globalThis as { __lastErr?: unknown }).__lastErr = err;
     return problem(reply, status, {
       title: status >= 500 ? 'Internal error' : 'Request could not be processed',
       code: status >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_FAILED',
@@ -129,6 +141,14 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   );
 
   installAuth(app, guardDeps);
+  // Per-tenant request throttling and usage metering: signed-in calls take a token from their own tenant's bucket (NFR-SC01)
+  const tenancy = new Tenancy(deps.database, deps.clock);
+  installThrottle(app, tenancy, API_PREFIX);
+  if (config.NODE_ENV !== 'test') tenancy.start();
+  app.addHook('onClose', async () => tenancy.stop());
+  // B11c hooks (access log, access policy guard, compliance re-check after settings changes) go in before the routes they watch
+  const b11cDeps = { ...guardDeps, schedulerMinutes: deps.alertSchedulerMinutes };
+  const accessRecorder = installB11auditHooks(app, b11cDeps);
   // Retry-safe mutations: only for signed-in callers presenting a valid CSRF token (NFR-AV03).
   registerIdempotency(app, {
     database: deps.database,
@@ -160,6 +180,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   for (const k of registerIntakeRoutes(app, API_PREFIX, { ...guardDeps, ai, erp })) implemented.add(k);
   for (const k of registerPlanRoutes(app, API_PREFIX, { ...guardDeps, ai })) implemented.add(k);
   const store = new SealedStore(config.STORAGE_DIR, config.SESSION_SECRET);
+  store.useVault(new KeyVault(deps.database, deps.clock)); // new files are sealed per tenant with envelope encryption (SEC-D04)
   for (const k of registerTenderRoutes(app, API_PREFIX, {
     ...guardDeps,
     store,
@@ -202,6 +223,7 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     ...guardDeps,
     schedulerMinutes: deps.alertSchedulerMinutes,
     store,
+    sessionSecret: config.SESSION_SECRET,
   }))
     implemented.add(k);
   for (const k of registerReportingRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
@@ -272,6 +294,29 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
     schedulerMinutes: deps.alertSchedulerMinutes,
   }))
     implemented.add(k);
+  for (const k of registerB11a(app, API_PREFIX, {
+    ...guardDeps,
+    store,
+    config,
+    keyMaterial: config.SECRET_STORE_KEY ?? config.SESSION_SECRET,
+  }))
+    implemented.add(k);
+  for (const k of registerB11b(app, API_PREFIX, {
+    ...guardDeps,
+    defaultTenantSlug: config.DEFAULT_TENANT_SLUG,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+  }))
+    implemented.add(k);
+  for (const k of registerB11d(app, API_PREFIX, {
+    ...guardDeps,
+    ai,
+    config,
+    tenancy,
+    schedulerMinutes: deps.alertSchedulerMinutes,
+    operatorRateLimitMax: deps.loginRateLimitMax ?? 30,
+  }))
+    implemented.add(k);
+  for (const k of registerB11audit(app, API_PREFIX, b11cDeps, accessRecorder)) implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

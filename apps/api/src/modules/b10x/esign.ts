@@ -44,6 +44,7 @@ import { getConnector } from '../b10conn/connectors.js';
 import { callProvider } from '../b10conn/resilience.js';
 import { connectorSecretName, readSecret, setSecret } from '../b10conn/secrets.js';
 import { signedHeaders } from '../b10conn/signing.js';
+import { PROOF_HEADER, PROVIDER_HEADER, proofFor } from '../b11prod/eidas.js';
 import { requiredSigners } from '../contract/clauses.js';
 import {
   ADAPTERS,
@@ -445,7 +446,7 @@ export async function createEnvelopeFor(
       envelopeId: env!.id,
       eventId: `plat-${env!.id}-created`,
       type: 'sent',
-      providerType: conn.provider === 'DOCUSIGN' ? 'envelope-sent' : 'AGREEMENT_CREATED',
+      providerType: conn.provider === 'ADOBE' ? 'AGREEMENT_CREATED' : 'envelope-sent',
       source: 'PLATFORM',
       outcome: 'APPLIED',
       detail: `Envelope ${created.externalId} created with ${people.length} signatory(ies) pre-filled`,
@@ -787,6 +788,7 @@ async function decide(d: EsignDeps, plan: Plan) {
       sig,
       'APPROVE',
       `Signed through ${ADAPTERS[plan.env.provider].label} envelope ${plan.env.externalId}`,
+      plan.env.provider,
     );
   }
   // declined: the contract may already have gone back to legal
@@ -799,6 +801,7 @@ async function decide(d: EsignDeps, plan: Plan) {
     sig,
     'REJECT',
     reason.length >= 5 ? reason : `Declined at ${ADAPTERS[plan.env.provider].label}`,
+    plan.env.provider,
   );
 }
 
@@ -808,6 +811,7 @@ async function injectDecision(
   sig: SignatoryRow,
   decision: 'APPROVE' | 'REJECT',
   comment: string,
+  provider: string,
 ): Promise<{ ok: boolean; message: string; contractStatus?: string }> {
   const sess = await d.sessions.createFor(sig.userId, { userAgent: 'esign-provider-callback' });
   if (!sess) return { ok: false, message: 'The signatory has no active account' };
@@ -820,6 +824,9 @@ async function injectDecision(
         'x-csrf-token': sess.csrf,
         'content-type': 'application/json',
         [INTERNAL_HEADER]: '1',
+        // proof that a provider ceremony stands behind this signature, so the sign route can rate its level (NFR-L03)
+        [PROVIDER_HEADER]: provider,
+        [PROOF_HEADER]: proofFor(c.id, sig.userId, provider),
       },
       payload: { decision, comment },
     });

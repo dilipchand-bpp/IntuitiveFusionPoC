@@ -3,6 +3,7 @@
  * vendor target and socio-economic tags. They are stored against the plan, written into the plan's ESG section,
  * carried into the tender pack and counted in the ESG report.
  */
+import { openFieldRows } from '../b11enc/projects.js';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -98,10 +99,15 @@ export function registerEsgRoutes(app: FastifyInstance, p: string, d: EsgDeps): 
       .from(plan)
       .where(and(eq(plan.id, id), eq(plan.tenantId, tenantId)));
     if (!pl) throw new AppError(404, 'NOT_FOUND', 'Plan not found');
-    const rows = await tx
-      .select()
-      .from(fieldValue)
-      .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, id)));
+    const rows = await openFieldRows(
+      tx,
+      tenantId,
+      pl.requestId,
+      await tx
+        .select()
+        .from(fieldValue)
+        .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, id))),
+    );
     return { pl, rows };
   }
 

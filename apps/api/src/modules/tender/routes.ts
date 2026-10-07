@@ -3,6 +3,7 @@
  * State machine: STAGED -> (delegate permission) -> PUBLISHED -> CLOSED (automatic at the closing time).
  * A tender nobody may see is a 404, never a 403, so existence is not revealed.
  */
+import { openFieldRows } from '../b11enc/projects.js';
 import { isForeign } from '../b9/fx-rules.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { and, count, desc, eq, inArray, max } from 'drizzle-orm';
@@ -253,10 +254,15 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
         .select()
         .from(fieldValue)
         .where(and(eq(fieldValue.ownerType, 'REQUEST'), eq(fieldValue.ownerId, r.id)));
-      const planFields = await tx
-        .select()
-        .from(fieldValue)
-        .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, pl.id)));
+      const planFields = await openFieldRows(
+        tx,
+        a.user.tenantId,
+        r.id,
+        await tx
+          .select()
+          .from(fieldValue)
+          .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, pl.id))),
+      );
       const cfg = (org?.config ?? {}) as { statutoryMinDays?: number };
       const values = valuesOf(r, reqFields);
       const pack = buildTenderPack({
@@ -419,10 +425,15 @@ export function registerTenderRoutes(app: FastifyInstance, p: string, d: TenderD
         .from(fieldValue)
         .where(and(eq(fieldValue.ownerType, 'REQUEST'), eq(fieldValue.ownerId, r!.id)));
       const planFields = pl
-        ? await tx
-            .select()
-            .from(fieldValue)
-            .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, pl.id)))
+        ? await openFieldRows(
+            tx,
+            a.user.tenantId,
+            r!.id,
+            await tx
+              .select()
+              .from(fieldValue)
+              .where(and(eq(fieldValue.ownerType, 'PLAN'), eq(fieldValue.ownerId, pl.id))),
+          )
         : [];
       const cfg = (org?.config ?? {}) as { statutoryMinDays?: number };
       const values = valuesOf(r!, reqFields);

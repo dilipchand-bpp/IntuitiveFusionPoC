@@ -728,7 +728,7 @@ describe('US-SUP-03 upload, submit and receipt', () => {
       ['fake.pdf', Buffer.from('not really a pdf'), 400, 'FILE_CONTENT_MISMATCH'],
       ['empty.pdf', Buffer.alloc(0), 400, 'VALIDATION_FAILED'],
       ['huge.pdf', Buffer.concat([PDF, Buffer.alloc(10 * 1024 * 1024)]), 413, 'FILE_TOO_LARGE'],
-      ['virus.txt', Buffer.from('X5O!P%@AP EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'), 400, 'FILE_INFECTED'],
+      ['virus.txt', Buffer.from('X5O!P%@AP EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'), 422, 'VIRUS_DETECTED'],
     ];
     for (const [name, bytes, status, code] of cases) {
       const r = await upload(sup.key, t.id, name, bytes);

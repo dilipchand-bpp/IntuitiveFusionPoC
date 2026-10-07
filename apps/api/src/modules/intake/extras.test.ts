@@ -115,7 +115,9 @@ describe('classification, engagements, ECV and routing rules are pure and explai
 describe('classification (FR-0015)', () => {
   it('a preliminary code is assigned in the tenant scheme, can be confirmed or replaced, and then stays', async () => {
     const r = await request();
-    expect(r.taxonomy).toEqual({ scheme: 'UNSPSC', code: '76111500', confirmed: false });
+    // the source of the code is shown beside it (NFR-R03): in-house only while no outside pack is loaded
+    expect(r.taxonomy).toMatchObject({ scheme: 'UNSPSC', code: '76111500', confirmed: false });
+    expect(r.taxonomy.source).toMatchObject({ kind: 'IN_HOUSE', pack: null });
     await intake({ taxonomy: 'CPV' });
     const cpv = await request();
     expect(cpv.taxonomy).toMatchObject({ scheme: 'CPV', code: '90910000' });

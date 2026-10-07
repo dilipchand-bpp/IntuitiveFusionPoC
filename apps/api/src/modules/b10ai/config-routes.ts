@@ -183,6 +183,15 @@ export function registerConfigRoutes(app: FastifyInstance, p: string, d: ConfigD
             };
         parsed[n] = value;
       }
+      for (const guarded of ['residency', 'egress'] as const)
+        if (
+          parsed[guarded] !== undefined &&
+          JSON.stringify(parsed[guarded]) !== JSON.stringify(current[guarded])
+        )
+          errors.push({
+            field: `sections.${guarded}`,
+            message: 'Change this on the Residency page, which asks for a reason (NFR-R02, SEC-D05)',
+          });
       const merged = { ...current, ...parsed } as Settings;
       if (errors.length === 0) {
         for (const e of crossCheck(merged)) errors.push(e);

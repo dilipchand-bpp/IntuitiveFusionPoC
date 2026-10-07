@@ -9,6 +9,7 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { Tx } from '../../db/client.js';
 import { aiProviderApproval, appUser, type AiProviderApprovalRow } from '../../db/schema.js';
 import { AppError } from '../../http/errors.js';
+import { assertOutbound, checkOutbound } from '../b11priv/outbound.js';
 import { loadSettings, saveSettings, type Settings } from '../settings/settings.js';
 import { AI_TASKS, DEFAULT_MODEL_ID, MODELS, modelById, type AiModel, type AiTask } from './models.js';
 
@@ -62,6 +63,8 @@ export interface Resolved {
   model: AiModel;
   /** Why this model: the tenant's active model, a per-task override, or the fall-back because approval was withdrawn. */
   source: 'ACTIVE' | 'OVERRIDE' | 'FALLBACK';
+  /** Set when the model was refused for residency or egress (SEC-D09, SEC-D05) and the built-in model was used instead. */
+  refused?: string;
 }
 
 /** The model to use for a task, right now, for this tenant. Never returns a model that is not approved. */
@@ -78,6 +81,13 @@ export async function resolveModel(
   if (!model.builtIn) {
     const st = (await approvalStates(tx, tenantId)).get(model.id);
     if (!st || !isUsable(st.state)) return { model: modelById(DEFAULT_MODEL_ID)!, source: 'FALLBACK' };
+    // SEC-D09 and SEC-D05: the content would leave the application, so the hosting country and the egress allow-list apply
+    const refused = await checkOutbound(tx, tenantId, {
+      purpose: 'AI_MODEL',
+      target: { label: model.label, host: model.endpointHost, region: model.dataHandling.region },
+      settings: s,
+    });
+    if (refused) return { model: modelById(DEFAULT_MODEL_ID)!, source: 'FALLBACK', refused: refused.code };
   }
   const overridden =
     task !== undefined && s.ai.taskOverrides?.[task] === wanted && wanted !== s.ai.activeModel;
@@ -90,10 +100,16 @@ export const modelStamp = (r: Resolved) => ({
   modelLabel: r.model.label,
   modelSimulated: r.model.simulated,
   modelSource: r.source,
+  ...(r.refused ? { modelRefused: r.refused } : {}),
 });
 
 /** Refuses an `ai` setting that names an unknown model, an unknown task, or a third-party model that is not approved. */
-export async function assertSettable(tx: Tx, tenantId: string, ai: Settings['ai']): Promise<void> {
+export async function assertSettable(
+  tx: Tx,
+  tenantId: string,
+  ai: Settings['ai'],
+  actorId?: string,
+): Promise<void> {
   const states = await approvalStates(tx, tenantId);
   const problems: Array<{ field: string; message: string }> = [];
   const check = (field: string, id: string) => {
@@ -125,6 +141,17 @@ export async function assertSettable(tx: Tx, tenantId: string, ai: Settings['ai'
         : 'Some AI settings are not valid',
       problems,
     );
+  }
+  // SEC-D09 and SEC-D05: a model that would process content outside the elected country, or on a host that is not on the
+  // egress allow-list, cannot be named. The refusal is audited; the caller commits it (refusable) and answers 422.
+  for (const id of [ai.activeModel, ...Object.values(ai.taskOverrides ?? {})]) {
+    const m = modelById(id);
+    if (m && !m.builtIn)
+      await assertOutbound(tx, tenantId, {
+        purpose: 'AI_MODEL',
+        target: { label: m.label, host: m.endpointHost, region: m.dataHandling.region },
+        actorId: actorId ?? null,
+      });
   }
 }
 

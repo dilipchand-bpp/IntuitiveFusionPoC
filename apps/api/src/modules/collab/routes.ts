@@ -4,6 +4,7 @@
  * the draft risk assessment; summaries of supplier responses; the reference content corpus; moving a procurement on in
  * plain language, and detecting that a phase is complete.
  */
+import { openOwnerRows, openSnapshot, sealSnapshot } from '../b11enc/projects.js';
 import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -36,6 +37,7 @@ import {
 import { AppError, parse } from '../../http/errors.js';
 import { stepsFor } from '../reporting/scope.js';
 import { loadSettings } from '../settings/settings.js';
+import { libraryRisks, riskSources } from '../b11prod/content.js';
 import {
   B6_MODEL,
   PHASE_ORDER,
@@ -455,11 +457,16 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
     });
   });
 
-  const snapshotOf = async (tx: Tx, ownerType: Owner, id: string) => {
-    const rows = await tx
-      .select()
-      .from(fieldValue)
-      .where(and(eq(fieldValue.ownerType, ownerType), eq(fieldValue.ownerId, id)));
+  const snapshotOf = async (tx: Tx, tenantId: string, ownerType: Owner, id: string) => {
+    // what is shown and compared is plaintext; a restricted project's text is encrypted again before a version stores it (FR-0865)
+    const rows = await openOwnerRows(
+      tx,
+      tenantId,
+      await tx
+        .select()
+        .from(fieldValue)
+        .where(and(eq(fieldValue.ownerType, ownerType), eq(fieldValue.ownerId, id))),
+    );
     return Object.fromEntries(
       rows.filter((r) => !r.key.includes('.')).map((r) => [r.key, { label: r.label, value: r.value ?? '' }]),
     );
@@ -483,7 +490,13 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
         ownerId: id,
         number,
         label: body.label,
-        snapshot: await snapshotOf(tx, ownerType, id),
+        snapshot: await sealSnapshot(
+          tx,
+          a.user.tenantId,
+          ownerType,
+          id,
+          await snapshotOf(tx, a.user.tenantId, ownerType, id),
+        ),
         createdBy: a.user.id,
         createdAt: now(),
       });
@@ -540,7 +553,18 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
           ),
         );
       if (!v) throw new AppError(404, 'NOT_FOUND', 'Version not found');
-      return { number: v.number, label: v.label, at: v.createdAt.toISOString(), fields: v.snapshot };
+      return {
+        number: v.number,
+        label: v.label,
+        at: v.createdAt.toISOString(),
+        fields: await openSnapshot(
+          tx,
+          a.user.tenantId,
+          ownerType,
+          id,
+          v.snapshot as Record<string, { label: string; value: string }>,
+        ),
+      };
     });
   });
 
@@ -562,7 +586,10 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
       const ownerType = await docAccess(tx, a, type, id);
       const load = async (n: number | 'current') => {
         if (n === 'current')
-          return (await snapshotOf(tx, ownerType, id)) as Record<string, { label: string; value: string }>;
+          return (await snapshotOf(tx, a.user.tenantId, ownerType, id)) as Record<
+            string,
+            { label: string; value: string }
+          >;
         const [v] = await tx
           .select()
           .from(documentVersion)
@@ -574,7 +601,13 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
             ),
           );
         if (!v) throw new AppError(404, 'NOT_FOUND', `Version ${n} not found`);
-        return v.snapshot as Record<string, { label: string; value: string }>;
+        return openSnapshot(
+          tx,
+          a.user.tenantId,
+          ownerType,
+          id,
+          v.snapshot as Record<string, { label: string; value: string }>,
+        );
       };
       const from = await load(q.from);
       const to = await load(q.to === 'current' ? 'current' : Number(q.to));
@@ -614,10 +647,13 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
       .from(riskItem)
       .where(eq(riskItem.assessmentId, as.id))
       .orderBy(asc(riskItem.key));
+    const sourceOf = await riskSources(tx, as.tenantId);
     const rows = items.map((i) => {
       const rate = i.applicable ? riskRating(i.likelihood, i.impact) : null;
       return {
         key: i.key,
+        /** Where the statement came from: the platform's own rules or an outside content pack (NFR-R03). */
+        source: sourceOf(i.key),
         title: i.title,
         description: i.description,
         applicable: i.applicable,
@@ -678,6 +714,17 @@ export function registerCollabRoutes(app: FastifyInstance, p: string, d: CollabD
           workflow: r.workflowId,
           text: `${r.title} ${text}`,
         });
+        // standard risk statements from the outside risk library, when its pack is current (NFR-R03)
+        const lib = await libraryRisks(
+          tx,
+          a.user.tenantId,
+          { category: r.category ?? '', text: `${r.title} ${text}` },
+          now(),
+          await loadSettings(tx, a.user.tenantId),
+        );
+        for (const l of lib.risks)
+          if (!cands.some((c) => c.key === l.key))
+            cands.push({ key: l.key, title: l.title, description: l.description, options: l.options });
         const basis = `${r.workflowId ?? 'standard'} workflow, ${r.category ?? 'no category'}, estimated ${Number(r.estimatedValue ?? 0)} AUD over ${r.termMonths ?? 12} months`;
         const [as] = await tx
           .insert(riskAssessment)

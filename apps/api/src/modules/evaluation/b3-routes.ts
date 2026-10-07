@@ -9,6 +9,7 @@
  *  - the probity advisor's allocation, hold, plan and outcomes report (FR-0310, FR-0340).
  * Every change is audited. Scores stay hidden exactly as before: nothing here lets an evaluator see another's marks.
  */
+import { flagContent } from '../b11priv/content-safety.js';
 import { noteChange } from '../b9/artefacts.js';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -467,6 +468,14 @@ export function registerEvaluationB3(app: FastifyInstance, p: string, d: B3Deps,
           .update(clarification)
           .set({ status: 'ANSWERED', response: body.response, respondedBy: a.user.id, respondedAt: now })
           .where(eq(clarification.id, id));
+        // SEC-AP08: a supplier's answer is data; if it reads like instructions it is flagged for the reviewer, and nothing in it can change a score or result
+        await flagContent(tx, a.user.tenantId, {
+          source: 'CLARIFICATION_ANSWER',
+          entityType: 'clarification',
+          entityId: id,
+          text: body.response,
+          actorId: a.user.id,
+        });
         await d.audit.record(tx, a.ctx, {
           action: 'clarification.respond',
           entityType: 'evaluation',

@@ -13,6 +13,7 @@ import { ROLE_NAMES, type Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext } from '../../db/client.js';
+import { refusable } from '../b11priv/outbound.js';
 import { aiProviderApproval } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { loadSettings, saveSettings } from '../settings/settings.js';
@@ -267,12 +268,12 @@ export function registerAiRoutes(app: FastifyInstance, p: string, d: AiDeps): Se
   app.put(`${p}/ai/active-model`, { preHandler: guard(d, ['ADMIN']) }, async (req) => {
     const a = req.auth!;
     const b = parse(activeBody, req.body);
-    return withContext(d.database, a.ctx, async (tx) => {
+    return refusable(d.database, a.ctx, async (tx) => {
       const next = {
         activeModel: b.activeModel,
         ...(b.taskOverrides && Object.keys(b.taskOverrides).length ? { taskOverrides: b.taskOverrides } : {}),
       };
-      await assertSettable(tx, a.user.tenantId, next);
+      await assertSettable(tx, a.user.tenantId, next, a.user.id);
       const { before, after } = await saveSettings(tx, a.user.tenantId, { ai: next });
       if (JSON.stringify(before.ai) !== JSON.stringify(after.ai)) {
         await d.audit.record(tx, a.ctx, {

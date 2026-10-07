@@ -2,6 +2,7 @@
  * Evaluation, roadmap batch B3 (second half): evaluator substitution, conflict re-declaration, the report's own
  * conflict declarations, the probity advisor's portal, hold and documents, and plain-language scoring and ranking.
  */
+import { filePurposeFor } from '../b11enc/projects.js';
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -973,7 +974,7 @@ export function registerProbityRoutes(
       const out = await withContext(d.database, a.ctx, async (tx) => {
         const l = await visible(tx, a, id);
         const key = `${a.user.tenantId}/probity/${l.ev.id}/${randomUUID()}`;
-        await d.store.put(key, bytes);
+        await d.store.put(key, bytes, { tx, purpose: await filePurposeFor(tx, l.req.id) });
         const now = d.clock.now();
         const ex = await docOf(tx, id, kind);
         const values = {

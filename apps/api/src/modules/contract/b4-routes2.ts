@@ -3,6 +3,7 @@
  * risk acceptance, the negotiation strategy, native legal matters with review hours, contract lineage, time-bound
  * access grants with the shared project documents, and the supplier's own view of a contract out for signature.
  */
+import { openFieldRows } from '../b11enc/projects.js';
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -665,6 +666,12 @@ export function registerContractB4Part2(
     const a = req.auth!;
     const id = cid(req);
     return withContext(d.database, a.ctx, async (tx) => {
+      // a matter of another organisation is "not found", not an empty list (SEC-D10)
+      const [own] = await tx
+        .select({ id: legalMatter.id })
+        .from(legalMatter)
+        .where(and(eq(legalMatter.id, id), eq(legalMatter.tenantId, a.user.tenantId)));
+      if (!own) throw new AppError(404, 'NOT_FOUND', 'Matter not found');
       const rows = await tx
         .select()
         .from(legalTimeEntry)
@@ -925,10 +932,15 @@ export function registerContractB4Part2(
         if (!ev || !rep) throw new AppError(404, 'NOT_FOUND', 'There is no report yet');
         const [t] = await tx.select().from(tender).where(eq(tender.id, id));
         const [r] = await tx.select().from(request).where(eq(request.id, t!.requestId));
-        const fields = await tx
-          .select()
-          .from(fieldValue)
-          .where(and(eq(fieldValue.ownerType, 'EVAL_REPORT'), eq(fieldValue.ownerId, rep.id)));
+        const fields = await openFieldRows(
+          tx,
+          a.user.tenantId,
+          t!.requestId,
+          await tx
+            .select()
+            .from(fieldValue)
+            .where(and(eq(fieldValue.ownerType, 'EVAL_REPORT'), eq(fieldValue.ownerId, rep.id))),
+        );
         await d.audit.record(tx, a.ctx, {
           action: 'access.shared_view',
           entityType: 'evaluation',

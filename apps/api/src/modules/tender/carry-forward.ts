@@ -38,7 +38,7 @@ export async function carryForward(
   for (const f of before) {
     if (f.scan !== 'CLEAN' || covered.has(f.section) || already.has(f.id)) continue;
     const key = `${t.tenantId}/${submissionId}/${randomUUID()}`;
-    await store.put(key, await store.get(f.storageKey));
+    await store.put(key, await store.get(f.storageKey, { tx }), { tx, purpose: 'BIDS' });
     await tx.insert(fileObject).values({
       tenantId: f.tenantId,
       submissionId,

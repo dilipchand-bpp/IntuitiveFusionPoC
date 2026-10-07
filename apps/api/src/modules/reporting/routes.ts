@@ -23,6 +23,8 @@ import {
 import { AppError, parse } from '../../http/errors.js';
 import { visibleRequests, stepsFor } from './scope.js';
 import { toCsv } from './csv.js';
+import { assertOutbound, refusable } from '../b11priv/outbound.js';
+import { loadSettings } from '../settings/settings.js';
 import { registerReportingB6 } from './b6-routes.js';
 
 export interface ReportingDeps extends GuardDeps {
@@ -400,6 +402,10 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
     if (f.action) conds.push(sql`${auditEvent.action} like ${`${f.action.replace(/[%_\\]/g, '\\$&')}%`}`);
     if (f.from) conds.push(gte(auditEvent.at, new Date(`${f.from}T00:00:00Z`)));
     if (f.to) conds.push(lte(auditEvent.at, new Date(`${f.to}T23:59:59.999Z`)));
+    // events about a restricted project outside the person's group are not in the trail they read (FR-0865)
+    conds.push(
+      sql`(${auditEvent.entityId} is null or ${auditEvent.entityId} not in (select b11_hidden_entity_ids()))`,
+    );
     if (f.requestId) {
       const ids = await relatedEntityIds(tx, tenantId, f.requestId);
       conds.push(inArray(auditEvent.entityId, ids));
@@ -449,7 +455,15 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
   app.get(`${p}/audit-events/export`, { preHandler: guard(d, [...AUDIT_EXPORTERS]) }, async (req, reply) => {
     const a = req.auth!;
     const f = parse(auditQuery.omit({ limit: true, offset: true }), req.query);
-    const csv = await withContext(d.database, a.ctx, async (tx) => {
+    const csv = await refusable(d.database, a.ctx, async (tx) => {
+      // SEC-D09: an export goes to the nominated log region; refused when that region is not allowed
+      const s = await loadSettings(tx, a.user.tenantId);
+      await assertOutbound(tx, a.user.tenantId, {
+        purpose: 'LOG_EXPORT',
+        target: { label: 'Audit export', region: s.residency.logRegion },
+        actorId: a.user.id,
+        settings: s,
+      });
       const r = await auditRows(tx, a.user.tenantId, { ...f, limit: EXPORT_MAX, offset: 0 }, false);
       if (r.total > EXPORT_MAX)
         throw new AppError(

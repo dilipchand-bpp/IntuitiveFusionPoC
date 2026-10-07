@@ -608,7 +608,7 @@ export function registerSupplierRoutes(app: FastifyInstance, p: string, d: Suppl
           };
         }
         const key = `${a.user.tenantId}/${sub.id}/${randomUUID()}`;
-        await d.store.put(key, bytes);
+        await d.store.put(key, bytes, { tx, purpose: 'BIDS' }); // sealed with the tenant's bid key (SEC-D03)
         const [f] = await tx
           .insert(fileObject)
           .values({

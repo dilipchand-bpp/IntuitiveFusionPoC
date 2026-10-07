@@ -2,6 +2,7 @@
  * Roadmap batch B8, tender side: interactive response schedules (FR-0130), dual-witness opening of sealed bids (FR-0175)
  * and insurance certificates that are read and checked against the cover a tender requires (FR-0185).
  */
+import { flagContent } from '../b11priv/content-safety.js';
 import { randomUUID } from 'node:crypto';
 import { verify as argon2Verify } from '@node-rs/argon2';
 import { and, asc, eq, inArray, lt } from 'drizzle-orm';
@@ -24,6 +25,7 @@ import {
 } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { checkUpload, scanBytes, sha256, type SealedStore } from '../tender/files.js';
+import { answersOf, auditDecrypt, sealAnswer } from '../b11enc/bids.js';
 import { insuranceStatusFor } from '../tender/insurance.js';
 import { TenderService, type LoadedTender, type TenderRow } from '../tender/service.js';
 import { loadSettings } from '../settings/settings.js';
@@ -126,7 +128,11 @@ export async function submitBlockers(
   const items = await scheduleOf(tx, t.id);
   if (items.length) {
     const rows = await tx.select().from(responseAnswer).where(eq(responseAnswer.submissionId, submissionId));
-    const miss = missingAnswers(items, Object.fromEntries(rows.map((r) => [r.itemKey, r.value])));
+    const plain = await answersOf(tx, t.tenantId, rows);
+    const miss = missingAnswers(
+      items,
+      Object.fromEntries(rows.map((r) => [r.itemKey, plain.get(`${r.submissionId}|${r.itemKey}`) ?? ''])),
+    );
     if (miss.length)
       out.push({
         code: 'RESPONSE_INCOMPLETE',
@@ -307,7 +313,10 @@ export function registerTenderB8(app: FastifyInstance, p: string, d: B8Deps): Se
               ),
             )
         : [];
-      const by = new Map(answers.map((x) => [`${x.submissionId}|${x.itemKey}`, x.value]));
+      // answers are stored encrypted; reading them after close is itself audited (SEC-D03)
+      const by = await answersOf(tx, a.user.tenantId, answers);
+      if (answers.length)
+        await auditDecrypt(d.audit, tx, a.ctx, id, { kind: 'ANSWERS', count: answers.length });
       return {
         tenderId: id,
         suppliers: subs.map((s) => ({ supplierId: s.supplierId, company: s.company })),
@@ -522,7 +531,10 @@ export function registerSupplierB8(
       const rows = sub
         ? await tx.select().from(responseAnswer).where(eq(responseAnswer.submissionId, sub.id))
         : [];
-      const answers = Object.fromEntries(rows.map((r) => [r.itemKey, r.value]));
+      const plain = await answersOf(tx, a.user.tenantId, rows);
+      const answers = Object.fromEntries(
+        rows.map((r) => [r.itemKey, plain.get(`${r.submissionId}|${r.itemKey}`) ?? '']),
+      );
       const required = l.tender.requiredCover === null ? null : Number(l.tender.requiredCover);
       const c = await cover(tx, a.user.supplierId!, required);
       return {
@@ -575,22 +587,33 @@ export function registerSupplierB8(
           'ALREADY_SUBMITTED',
           'You have already submitted. Withdraw the bid to change your answers.',
         );
+      // SEC-AP08: a supplier's answer is data; instruction-like wording is flagged for reviewers and changes nothing
+      for (const [, v] of clean)
+        await flagContent(tx, a.user.tenantId, {
+          source: 'RESPONSE_ANSWER',
+          entityType: 'submission',
+          entityId: sub.id,
+          text: v,
+          actorId: a.user.id,
+        });
       const cleared = Object.entries(body.answers)
         .filter(([, v]) => v.trim() === '')
         .map(([k]) => k);
       for (const [k, v] of clean) {
+        // encrypted before it is written: the column never holds the answer itself (SEC-D03, SEC-D04)
+        const sealed = await sealAnswer(tx, a.user.tenantId, sub.id, k, v, d.clock.now());
         await tx
           .insert(responseAnswer)
           .values({
             tenantId: a.user.tenantId,
             submissionId: sub.id,
             itemKey: k,
-            value: v,
+            value: sealed,
             updatedAt: d.clock.now(),
           })
           .onConflictDoUpdate({
             target: [responseAnswer.submissionId, responseAnswer.itemKey],
-            set: { value: v, updatedAt: d.clock.now() },
+            set: { value: sealed, updatedAt: d.clock.now() },
           });
       }
       for (const k of cleared)
@@ -604,7 +627,10 @@ export function registerSupplierB8(
         after: { answered: clean.length, cleared: cleared.length },
       });
       const rows = await tx.select().from(responseAnswer).where(eq(responseAnswer.submissionId, sub.id));
-      const answers = Object.fromEntries(rows.map((r) => [r.itemKey, r.value]));
+      const plain = await answersOf(tx, a.user.tenantId, rows);
+      const answers = Object.fromEntries(
+        rows.map((r) => [r.itemKey, plain.get(`${r.submissionId}|${r.itemKey}`) ?? '']),
+      );
       return { saved: clean.length, answers, missing: missingAnswers(items, answers).map((m) => m.key) };
     });
   });
@@ -627,7 +653,7 @@ export function registerSupplierB8(
         const [s] = await tx.select().from(supplier).where(eq(supplier.id, a.user.supplierId!));
         if (!s) throw new AppError(404, 'NOT_FOUND', 'Supplier not found');
         const key = `${a.user.tenantId}/insurance/${s.id}/${randomUUID()}`;
-        await d.store.put(key, bytes);
+        await d.store.put(key, bytes, { tx });
         const file = {
           name: body.name,
           sha256: sha256(bytes),

@@ -158,5 +158,5 @@ export async function createEnv() {
     });
   }
 
-  return { app, database, clock, call, award, executed, draft, extraUser, withSystem };
+  return { app, database, clock, dir, call, award, executed, draft, extraUser, withSystem };
 }

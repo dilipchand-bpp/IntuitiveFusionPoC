@@ -3,6 +3,7 @@
  * ESG scoring with alternatives, carbon and diversity reporting and modern slavery checks (FR-0800), and lessons learned
  * with recall on comparable procurements (FR-0805).
  */
+import { flagContent } from '../b11priv/content-safety.js';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -25,6 +26,8 @@ import { AppError, parse } from '../../http/errors.js';
 import { supplierSignals, type Location } from '../reporting/b6-rules.js';
 import { visibleRequests } from '../reporting/scope.js';
 import { loadSettings } from '../settings/settings.js';
+import { bankFingerprint } from '../b11audit/bank-fp.js';
+import { openBank, type Bank } from '../b11enc/fields.js';
 import { usersWithRole } from '../notify/dispatch.js';
 import {
   B8_MODEL,
@@ -84,13 +87,20 @@ const closeBody = z
 
 const esgOf = (s: { onboarding: unknown }): EsgData =>
   ((s.onboarding as { esg?: EsgData } | null)?.esg ?? {}) as EsgData;
-const supplierLite = (s: typeof supplier.$inferSelect): SupplierLite => ({
+const supplierLite = (s: typeof supplier.$inferSelect, bank: Bank | null): SupplierLite => ({
   id: s.id,
   company: s.company,
   abn: s.abn,
-  bank: (s.bank as SupplierLite['bank']) ?? null,
+  // duplicate detection compares a hash of the bank digits, so the numbers themselves are not carried (SEC-AC10)
+  bankFp: bankFingerprint(bank),
   location: (s.location as SupplierLite['location']) ?? null,
 });
+/** The suppliers as duplicate detection sees them: bank details opened (they may be encrypted) and reduced to a hash. */
+const liteList = async (tx: Tx, tenantId: string, all: Array<typeof supplier.$inferSelect>) => {
+  const out: SupplierLite[] = [];
+  for (const s of all) out.push(supplierLite(s, await openBank(tx, tenantId, s.id, s.bank)));
+  return out;
+};
 const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
 /** At registration: tell procurement when the new supplier looks like one already on the master. */
@@ -101,7 +111,7 @@ export async function flagDuplicates(tx: Tx, tenantId: string, newSupplierId: st
       pairKey(x.supplierA, x.supplierB),
     ),
   );
-  const hits = findDuplicates(all.map(supplierLite), dismissed).filter(
+  const hits = findDuplicates(await liteList(tx, tenantId, all), dismissed).filter(
     (x) => x.a.id === newSupplierId || x.b.id === newSupplierId,
   );
   if (!hits.length) return 0;
@@ -239,6 +249,12 @@ export function registerSupplierB8Routes(app: FastifyInstance, p: string, d: Sup
       const a = req.auth!;
       const id = idOf(req);
       return withContext(d.database, a.ctx, async (tx) => {
+        // a supplier of another organisation is "not found", not an empty list (SEC-D10)
+        const [own] = await tx
+          .select({ id: supplier.id })
+          .from(supplier)
+          .where(and(eq(supplier.id, id), eq(supplier.tenantId, a.user.tenantId)));
+        if (!own) throw new AppError(404, 'NOT_FOUND', 'Supplier not found');
         const s = await loadSettings(tx, a.user.tenantId);
         const rows = await tx
           .select()
@@ -338,7 +354,7 @@ export function registerSupplierB8Routes(app: FastifyInstance, p: string, d: Sup
       return {
         model: B8_MODEL,
         checked: all.length,
-        pairs: findDuplicates(all.map(supplierLite), dismissed).map((x) => ({
+        pairs: findDuplicates(await liteList(tx, a.user.tenantId, all), dismissed).map((x) => ({
           a: { id: x.a.id, company: x.a.company, abn: x.a.abn },
           b: { id: x.b.id, company: x.b.company, abn: x.b.abn },
           score: x.score,
@@ -668,6 +684,14 @@ export function registerSupplierB8Routes(app: FastifyInstance, p: string, d: Sup
           createdAt: now(),
         })
         .returning();
+      // SEC-AP08: a lesson can quote supplier text and is recalled into AI-labelled summaries, so it is screened as data
+      await flagContent(tx, a.user.tenantId, {
+        source: 'LESSON',
+        entityType: 'lesson',
+        entityId: row!.id,
+        text: body.text,
+        actorId: a.user.id,
+      });
       await d.audit.record(tx, a.ctx, {
         action: 'lesson.capture',
         entityType: 'request',

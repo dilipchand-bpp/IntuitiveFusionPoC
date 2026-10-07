@@ -161,7 +161,7 @@ describe('NFR-C06 enterprise document repository (simulated SharePoint)', () => 
       'EICAR-STANDARD-ANTIVIRUS-TEST-FILE',
     );
     expect(eicar.statusCode).toBe(422);
-    expect(eicar.json().code).toBe('FILE_INFECTED');
+    expect(eicar.json().code).toBe('VIRUS_DETECTED');
     const big = await writeAs('procurement', p.id, 'General', 'big.txt', 'a'.repeat(2 * 1024 * 1024 + 10));
     expect(big.statusCode).toBe(413);
     const folder = await call('procurement', 'GET', `${base(p.id)}/files?folder=Secret`);

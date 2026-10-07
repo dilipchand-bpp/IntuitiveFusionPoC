@@ -18,6 +18,9 @@ export const FUNCTIONS = ['IT', 'LEGAL', 'CYBER', 'FINANCE', 'RISK'] as const;
 export const CHANNELS = ['IN_APP', 'EMAIL', 'SLACK', 'TEAMS'] as const;
 export const EVENTS = ['BUDGET_BREACH', 'DELEGATE_ACTION', 'APPROVAL_TIMEOUT'] as const;
 export const TAXONOMIES = ['UNSPSC', 'CPV', 'NAICS'] as const;
+/** Hosting countries and regions the residency controls know about (NFR-R02, SEC-D09). */
+export const COUNTRIES = ['AU', 'NZ', 'UK', 'EU', 'US', 'CA', 'SG', 'JP'] as const;
+export type Country = (typeof COUNTRIES)[number];
 
 const label = z.string().trim().min(1).max(60);
 const keyName = z
@@ -307,10 +310,149 @@ export const SECTIONS = {
       taskOverrides: z.record(z.string().max(40), z.string().trim().min(1).max(60)).optional(),
     })
     .strict(),
+  uploadScanning: z
+    .object({
+      /** The simulated malware scanner connector: DOWN holds every upload as PENDING_SCAN until it is back (SEC-AP04). */
+      scannerMode: z.enum(['UP', 'DOWN']),
+    })
+    .strict(),
   performance: z
     .object({
       /** Target for the budget check inside the intake conversation, in milliseconds (NFR-P04). */
       budgetCheckMs: z.number().int().min(50).max(60_000),
+    })
+    .strict(),
+  residency: z
+    .object({
+      /** The hosting country the customer elected (NFR-R02). Changed only on the residency page, with a reason. */
+      country: z.enum(COUNTRIES),
+      /** Other countries or regions that are allowed explicitly; anything not listed (and not the country) is refused (SEC-D09). */
+      allowedRegions: z.array(z.enum(COUNTRIES)).max(10),
+      /** Where AI processing and AI conversation transcripts are held. */
+      aiRegion: z.enum(COUNTRIES),
+      /** Where logs and audit exports go. */
+      logRegion: z.enum(COUNTRIES),
+    })
+    .strict(),
+  egress: z
+    .object({
+      /** Hosts the application may call. The default holds only simulated hosts; nothing public (SEC-D05). */
+      allowedHosts: z.array(z.string().trim().toLowerCase().min(4).max(120)).max(50),
+    })
+    .strict(),
+  privacy: z
+    .object({
+      /** Collection notice shown where personal information is collected (SEC-D08). */
+      noticeVersion: z.string().trim().min(1).max(30),
+      noticeText: z.string().trim().min(20).max(4000),
+      /** The people who manage Privacy Act requests and receive escalations. */
+      officerRole: z.enum(['ADMIN', 'LEGAL', 'PROBITY']),
+      /** Calendar days to respond to an access or correction request. */
+      responseDays: z.number().int().min(1).max(90),
+    })
+    .strict(),
+  retention: z
+    .object({
+      /** Days an AI conversation transcript is kept before it is anonymised (SEC-D06). At least 30. */
+      aiConversationDays: z.number().int().min(30).max(3650),
+    })
+    .strict(),
+  /** Signature levels aligned to eIDAS (NFR-L03): the level a contract needs, by value, unless Legal sets one on the contract. */
+  signatures: z
+    .object({
+      defaultLevel: z.enum(['SES', 'AES', 'QES']),
+      requiredLevelByValue: z
+        .array(
+          z.object({ fromAud: z.number().min(0).max(1e10), level: z.enum(['SES', 'AES', 'QES']) }).strict(),
+        )
+        .max(6)
+        .refine((a) => new Set(a.map((t) => t.fromAud)).size === a.length, 'Each value tier can appear once'),
+    })
+    .strict(),
+  /** Outside content packs (NFR-R03): how often they refresh and how long one stays usable after a refresh. */
+  content: z
+    .object({
+      refreshDays: z.number().int().min(1).max(365),
+      validDays: z.number().int().min(1).max(730),
+      /** Off: every field is populated from in-house data only. */
+      useOutsideContent: z.boolean(),
+    })
+    .strict()
+    .refine(
+      (c) => c.validDays >= c.refreshDays,
+      'A pack must stay valid at least as long as the refresh interval',
+    ),
+  /** Organisation defaults for the ESG and socio-economic metrics of a plan (NFR-R05). Percent of contract value unless stated. */
+  esgPlan: z
+    .object({
+      /** A result this close to its limit, on the safe side, is AT RISK. */
+      atRiskBandPct: z.number().min(0).max(50),
+      /** The most a plan may relax an organisation limit, even with a reason and an approver note. */
+      maxRelaxationPct: z.number().min(0).max(100),
+      limits: z
+        .object({
+          INDIGENOUS_SPEND_PCT: z.number().min(0).max(100),
+          SOCIAL_ENTERPRISE_SPEND_PCT: z.number().min(0).max(100),
+          DISABILITY_EMPLOYMENT_SPEND_PCT: z.number().min(0).max(100),
+          LOCAL_CONTENT_PCT: z.number().min(0).max(100),
+          SUPPLIER_DIVERSITY_PCT: z.number().min(0).max(100),
+          SME_PANEL_PCT: z.number().min(0).max(100),
+          CARBON_INTENSITY_T_PER_M: z.number().min(0).max(1e6),
+          MODERN_SLAVERY_RISK: z.number().min(1).max(3),
+          SINGLE_SUPPLIER_SHARE_PCT: z.number().min(0).max(100),
+        })
+        .strict(),
+    })
+    .strict(),
+  securityMonitor: z
+    .object({
+      /** The access-event monitor (SEC-L06): deterministic rules over who read, was refused, exported and signed in. */
+      enabled: z.boolean(),
+      /** The person alerts go to. Empty: the first probity officer, else the first administrator. */
+      ownerUserId: z.string().uuid().nullable(),
+      viewBurstCount: z.number().int().min(2).max(100_000),
+      viewBurstMinutes: z.number().int().min(1).max(1440),
+      deniedBurstCount: z.number().int().min(2).max(100_000),
+      deniedBurstMinutes: z.number().int().min(1).max(1440),
+      exportBurstCount: z.number().int().min(1).max(10_000),
+      exportBurstMinutes: z.number().int().min(1).max(1440),
+      failedLoginsBeforeSuccess: z.number().int().min(1).max(100),
+      mfaFailureCount: z.number().int().min(1).max(100),
+      mfaWindowMinutes: z.number().int().min(1).max(1440),
+      newDeviceCheck: z.boolean(),
+      /** Off by default so a demonstration at any hour is not flagged; turn on with the hours below. */
+      outOfHoursCheck: z.boolean(),
+      businessHoursStart: z.number().int().min(0).max(23),
+      businessHoursEnd: z.number().int().min(1).max(24),
+      timeZone: z
+        .string()
+        .trim()
+        .min(3)
+        .max(60)
+        .refine((tz) => {
+          try {
+            new Intl.DateTimeFormat('en-AU', { timeZone: tz });
+            return true;
+          } catch {
+            return false;
+          }
+        }, 'Use a time zone name such as Australia/Sydney'),
+      /** A new or acknowledged-late alert goes to the executives after this many minutes without acknowledgement. */
+      escalateAfterMinutes: z.number().int().min(1).max(10_080),
+      accessLogRetentionDays: z.number().int().min(1).max(365),
+    })
+    .strict(),
+  compliancePolicy: z
+    .object({
+      /** Thresholds the configuration compliance checks use (SEC-L08). */
+      secretMaxAgeDays: z.number().int().min(1).max(3650),
+      keyMaxAgeDays: z.number().int().min(1).max(3650),
+      breakerMaxHours: z.number().int().min(1).max(8760),
+      delegationReviewAud: z.number().min(0).max(1e10),
+      delegationReviewDays: z.number().int().min(1).max(3650),
+      approvalLinkMaxHours: z.number().int().min(1).max(336),
+      dormantDays: z.number().int().min(1).max(3650),
+      minPasswordLength: z.number().int().min(8).max(64),
     })
     .strict(),
   workflowRouting: z
@@ -456,7 +598,69 @@ export const DEFAULTS: Settings = {
   security: { requireMfa: false, enforceSso: false, stepUpApprovals: false },
   erpFieldMap: [],
   ai: { activeModel: 'rules-simulated-v1' },
+  uploadScanning: { scannerMode: 'UP' },
   performance: { budgetCheckMs: 2000 },
+  residency: { country: 'AU', allowedRegions: [], aiRegion: 'AU', logRegion: 'AU' },
+  egress: { allowedHosts: ['*.simulated.test'] },
+  privacy: {
+    noticeVersion: '2026-10',
+    noticeText:
+      'We collect your name, work email and the records you create so that procurement can be run and audited. ' +
+      'We use them for that purpose only and disclose them only to people with a role that needs them or where the law requires. ' +
+      'You can ask to see the personal information we hold about you, or to correct it, from the Privacy page. ' +
+      'This is a demonstration notice with synthetic wording.',
+    officerRole: 'ADMIN',
+    responseDays: 30,
+  },
+  retention: { aiConversationDays: 365 },
+  signatures: { defaultLevel: 'SES', requiredLevelByValue: [] },
+  content: { refreshDays: 30, validDays: 45, useOutsideContent: true },
+  esgPlan: {
+    atRiskBandPct: 10,
+    maxRelaxationPct: 50,
+    limits: {
+      INDIGENOUS_SPEND_PCT: 3,
+      SOCIAL_ENTERPRISE_SPEND_PCT: 2,
+      DISABILITY_EMPLOYMENT_SPEND_PCT: 1,
+      LOCAL_CONTENT_PCT: 20,
+      SUPPLIER_DIVERSITY_PCT: 5,
+      SME_PANEL_PCT: 30,
+      CARBON_INTENSITY_T_PER_M: 120,
+      MODERN_SLAVERY_RISK: 2,
+      SINGLE_SUPPLIER_SHARE_PCT: 60,
+    },
+  },
+  securityMonitor: {
+    enabled: true,
+    ownerUserId: null,
+    // generous, so ordinary use (and the end-to-end tests) is never flagged; tests set low values on purpose
+    viewBurstCount: 300,
+    viewBurstMinutes: 10,
+    deniedBurstCount: 20,
+    deniedBurstMinutes: 10,
+    exportBurstCount: 10,
+    exportBurstMinutes: 60,
+    failedLoginsBeforeSuccess: 3,
+    mfaFailureCount: 5,
+    mfaWindowMinutes: 30,
+    newDeviceCheck: true,
+    outOfHoursCheck: false,
+    businessHoursStart: 7,
+    businessHoursEnd: 19,
+    timeZone: 'Australia/Sydney',
+    escalateAfterMinutes: 60,
+    accessLogRetentionDays: 14,
+  },
+  compliancePolicy: {
+    secretMaxAgeDays: 180,
+    keyMaxAgeDays: 365,
+    breakerMaxHours: 24,
+    delegationReviewAud: 5_000_000,
+    delegationReviewDays: 365,
+    approvalLinkMaxHours: 72,
+    dormantDays: 90,
+    minPasswordLength: 12,
+  },
   workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },
 };
 

@@ -2,6 +2,7 @@
  * Contract award and legal, roadmap batch B4: database helpers shared by the contract routes. The checks recorded
  * against a contract, the endorsements and signing invitations, who may sign now, and time-bound access grants.
  */
+import { openBank } from '../b11enc/fields.js';
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { RoleName } from '@if/shared';
 import type { VendorRegistry } from '../../adapters/vendor-registry.js';
@@ -149,7 +150,12 @@ export async function runPreflight(
     company: s.company,
     abn: s.abn,
     registry: reg,
-    bank: (s.bank ?? null) as { bsb?: string; account?: string; accountName?: string } | null,
+    // the column holds an envelope-encrypted record (SEC-D01); the preflight needs the digits to check them
+    bank: (await openBank(tx, c.tenantId, s.id, s.bank)) as {
+      bsb?: string;
+      account?: string;
+      accountName?: string;
+    } | null,
     requireBank: settings.contractRules.requireBankDetails,
   }).map((r) => ({ key: r.key, label: r.label, result: r.result, detail: r.detail }));
   await store(tx, c, 'VENDOR_PREFLIGHT', results, now);

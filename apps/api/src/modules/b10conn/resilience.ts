@@ -13,6 +13,9 @@ import { eq, and } from 'drizzle-orm';
 import { ManualClock, type Clock } from '@if/shared';
 import type { Tx } from '../../db/client.js';
 import { connector } from '../../db/schema.js';
+import { checkOutbound } from '../b11priv/outbound.js';
+import { purposeForKind } from '../b11priv/region.js';
+import { providerEntry } from './catalogue.js';
 
 export const BREAKER = { failureThreshold: 3, cooldownMs: 60_000 } as const;
 export const DEFAULTS = { timeoutMs: 3000, retries: 2, backoffMs: 100 } as const;
@@ -23,7 +26,8 @@ export interface ResilienceDeps {
   sleep?: (ms: number) => Promise<void>;
 }
 export type BreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
-export type FailureReason = 'DISABLED' | 'DOWN' | 'BREAKER_OPEN' | 'TIMEOUT' | 'ERROR';
+export type FailureReason =
+  'DISABLED' | 'DOWN' | 'BREAKER_OPEN' | 'TIMEOUT' | 'ERROR' | 'RESIDENCY_VIOLATION' | 'EGRESS_BLOCKED';
 
 export type CallOutcome<T> =
   | { ok: true; value: T; attempts: number; breaker: BreakerState }
@@ -90,6 +94,17 @@ export async function callProvider<T>(
     }
   }
   if (!row.enabled) return fail('DISABLED', `The ${kind} connector is switched off`, 0, row.breakerState);
+
+  // SEC-D05 and SEC-D09: the call leaves the application, so the egress allow-list and the hosting country are checked first.
+  // A refusal is audited and counted (b11priv/outbound.ts) and answered like any other failure, with the caller's fallback.
+  const entry = providerEntry(kind, row.provider);
+  if (entry) {
+    const refused = await checkOutbound(tx, tenantId, {
+      purpose: purposeForKind(kind),
+      target: { label: entry.label, host: entry.host, region: entry.region },
+    });
+    if (refused) return fail(refused.code as FailureReason, refused.message, 0, row.breakerState);
+  }
 
   let state: BreakerState = row.breakerState;
   if (state === 'OPEN') {

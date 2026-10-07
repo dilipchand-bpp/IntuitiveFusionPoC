@@ -57,8 +57,18 @@ export const SECTION_EDITORS: Record<SectionName, SectionEditor> = {
   security: { screen: S, panel: 'Sign-in security', roles: ADMIN },
   erpFieldMap: { screen: S, panel: 'ERP field names', roles: ADMIN },
   workflowRouting: { screen: S, panel: 'Workflow routing', roles: ADMIN },
+  residency: { screen: '/admin/residency', panel: 'Hosting country and allowed regions', roles: ADMIN },
+  egress: { screen: '/admin/residency', panel: 'Outbound allow-list', roles: ADMIN },
+  privacy: { screen: '/app/privacy/manage', panel: 'Collection notice and request handling', roles: ADMIN },
+  retention: { screen: '/app/privacy/manage', panel: 'AI conversation retention', roles: ADMIN },
   ai: { screen: '/admin/ai-models', panel: 'Active model and approvals', roles: ADMIN },
   performance: { screen: '/admin/performance', panel: 'Budget check target', roles: ADMIN },
+  securityMonitor: { screen: '/app/security-alerts', panel: 'Monitor settings', roles: ADMIN },
+  compliancePolicy: { screen: '/app/compliance', panel: 'Check thresholds', roles: ADMIN },
+  uploadScanning: { screen: '/admin/quarantine', panel: 'Malware scanner connector', roles: ADMIN },
+  signatures: { screen: S, panel: 'Signature levels (eIDAS)', roles: ADMIN },
+  content: { screen: S, panel: 'Outside content packs', roles: ADMIN },
+  esgPlan: { screen: S, panel: 'ESG and socio-economic limits', roles: ADMIN },
 };
 
 export interface FieldInfo {

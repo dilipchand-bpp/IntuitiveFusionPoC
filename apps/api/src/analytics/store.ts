@@ -16,6 +16,7 @@ import {
   fieldValue,
   invoice,
   request,
+  restrictedProject,
   supplier,
   tender,
 } from '../db/schema.js';
@@ -128,17 +129,33 @@ const num = (v: string | number | null | undefined) => Number(v ?? 0);
 const COUNTED = ['MATCHED', 'EXCEPTION', 'PAID'] as const;
 
 async function readFacts(tx: Tx, tenantId: string): Promise<Array<[string, string[], Row[]]>> {
-  const roots = await tx
-    .select()
-    .from(contract)
-    .where(
-      and(
-        eq(contract.tenantId, tenantId),
-        eq(contract.status, 'EXECUTED'),
-        isNull(contract.deletedAt),
-        isNull(contract.parentId),
-      ),
-    );
+  // a restricted project (FR-0865) is left out of the analytics store: it is read by roles that are not in its sourcing group
+  const restricted = (
+    await tx
+      .select({ id: restrictedProject.requestId })
+      .from(restrictedProject)
+      .where(eq(restrictedProject.tenantId, tenantId))
+  ).map((r) => r.id);
+  const hiddenTenders = new Set(
+    restricted.length
+      ? (await tx.select({ id: tender.id }).from(tender).where(inArray(tender.requestId, restricted))).map(
+          (t) => t.id,
+        )
+      : [],
+  );
+  const roots = (
+    await tx
+      .select()
+      .from(contract)
+      .where(
+        and(
+          eq(contract.tenantId, tenantId),
+          eq(contract.status, 'EXECUTED'),
+          isNull(contract.deletedAt),
+          isNull(contract.parentId),
+        ),
+      )
+  ).filter((c) => !c.tenderId || !hiddenTenders.has(c.tenderId));
   const ids = roots.map((c) => c.id);
   const kids = ids.length
     ? await tx

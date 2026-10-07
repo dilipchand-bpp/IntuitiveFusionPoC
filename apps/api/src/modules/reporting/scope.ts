@@ -10,6 +10,7 @@ import { and, eq, inArray, notInArray } from 'drizzle-orm';
 import type { AuthContext } from '../../auth/guard.js';
 import type { Tx } from '../../db/client.js';
 import { contract, evaluation, panelMember, plan, request, tender } from '../../db/schema.js';
+import { applyViewPolicies } from '../b11audit/policy-engine.js';
 
 export const PORTFOLIO_ROLES = [
   'PROCUREMENT',
@@ -32,8 +33,28 @@ export function scopeOf(roles: readonly string[]): Scope {
 
 type RequestRow = typeof request.$inferSelect;
 
-/** The requests this person may see in reports. */
+/**
+ * The requests this person may see in reports: the role rules (`baseVisibleRequests`) with the access policies applied on top
+ * (SEC-AC09): a DENY hides a procurement from someone the role rules would show it to, an ALLOW shows one the role rules hide.
+ */
 export async function visibleRequests(tx: Tx, a: AuthContext): Promise<{ scope: Scope; rows: RequestRow[] }> {
+  const base = await baseVisibleRequests(tx, a);
+  const rows = await applyViewPolicies(
+    tx,
+    a.ctx,
+    { id: a.user.id, roles: a.user.roles, mfaVerified: a.mfaState === 'VERIFIED' },
+    a.user.tenantId,
+    base.rows,
+    () => tx.select().from(request).where(eq(request.tenantId, a.user.tenantId)),
+  );
+  return { scope: base.scope, rows };
+}
+
+/** The role rules alone, before any access policy. */
+export async function baseVisibleRequests(
+  tx: Tx,
+  a: Pick<AuthContext, 'user'>,
+): Promise<{ scope: Scope; rows: RequestRow[] }> {
   const scope = scopeOf(a.user.roles);
   const all = await tx.select().from(request).where(eq(request.tenantId, a.user.tenantId));
   if (scope === 'PORTFOLIO') return { scope, rows: all };
