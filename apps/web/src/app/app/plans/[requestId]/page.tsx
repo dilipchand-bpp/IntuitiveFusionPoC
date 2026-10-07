@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
 import { DocumentTools } from '@/components/collab/doc-tools';
+import { ContentHintsCard } from '@/components/b11/content-hints-card';
 import { EsgCard, type EsgData } from '@/components/plan/esg-card';
+import { EsgTargetsCard } from '@/components/plan/esg-targets-card';
 import { PlanWorkspace } from '@/components/plan/plan-workspace';
 import type { PlanView } from '@/components/plan/types';
 import { apiGet, apiGetResult, getSessionUser } from '@/lib/session';
@@ -40,6 +42,8 @@ export default async function PlanPage({ params }: { params: Promise<{ requestId
               canEdit={user.roles.includes('PROCUREMENT') || user.roles.includes('REQUESTER')}
             />
           )}
+          <EsgTargetsCard planId={res.data.id} csrf={user.csrfToken} />
+          <ContentHintsCard requestId={requestId} />
         </>
       ) : res.code === 'REQUEST_NOT_SUBMITTED' ? (
         <EmptyState

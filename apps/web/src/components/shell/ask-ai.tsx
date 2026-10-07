@@ -3,8 +3,11 @@ import { Bot, Send, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { AiBadge } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { message as problem } from '@/components/contract/b5-shared';
+import { appendSpoken, useDictation } from '../voice/use-dictation';
+import { VoiceButton, VoiceStatus } from '../voice/voice-button';
 
 interface Reply {
   answer: string;
@@ -36,6 +39,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState('');
+  const voice = useDictation((spoken) => setText((cur) => appendSpoken(cur, spoken)));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -99,17 +103,19 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
           data-testid="ask-ai-panel"
           className="flex h-[min(34rem,calc(100vh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
         >
-          <header className="flex items-center gap-2 bg-brand-gradient px-4 py-3 text-white">
-            <Bot className="size-5" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <h2 className="text-base font-bold leading-tight">Ask AI</h2>
-              <p className="text-xs opacity-90">Simulated assistant · answers from the portal's own rules</p>
-            </div>
+          <header className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold text-text">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-white">
+              <Bot className="size-5" aria-hidden="true" />
+            </span>
+            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">
+              Procurement assistant
+            </h2>
+            <AiBadge />
             {turns.length > 0 && (
               <button
                 type="button"
                 onClick={() => setTurns([])}
-                className="min-h-[32px] rounded-md px-2 text-xs font-semibold text-white underline"
+                className="min-h-[32px] rounded-md px-2 text-xs font-semibold text-accent underline"
               >
                 Clear
               </button>
@@ -118,7 +124,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
               type="button"
               aria-label="Close assistant"
               onClick={() => setOpen(false)}
-              className="flex size-8 items-center justify-center rounded-md hover:bg-white/20"
+              className="flex size-8 items-center justify-center rounded-md text-text hover:bg-surface-alt"
             >
               <X className="size-4" aria-hidden="true" />
             </button>
@@ -132,21 +138,21 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
             {turns.length === 0 && (
               <p className="text-sm text-text-muted">
                 Hello. Ask me how the portal works, who can approve what, what needs your attention, or what
-                you should fix. I can also take you to a page.
+                you should fix. I can also take you to a page. Type or speak your question.
               </p>
             )}
             {turns.map((t, i) =>
               t.from === 'you' ? (
                 <p
                   key={i}
-                  className="ml-auto max-w-[85%] rounded-lg bg-accent px-3 py-2 text-sm text-accent-fg"
+                  className="ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-brand-gradient px-3 py-2 text-sm shadow-sm"
                 >
                   {t.text}
                 </p>
               ) : (
                 <div
                   key={i}
-                  className="max-w-[92%] rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm"
+                  className="max-w-[92%] rounded-lg rounded-bl-sm bg-surface-alt px-3 py-2 text-sm text-text"
                   data-testid="ai-answer"
                 >
                   <p>{t.text}</p>
@@ -209,7 +215,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
             ))}
           </div>
           <form
-            className="flex items-center gap-2 p-3"
+            className="flex flex-wrap items-center gap-2 p-3"
             onSubmit={(e) => {
               e.preventDefault();
               void ask(text);
@@ -224,9 +230,10 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
               value={text}
               onChange={(e) => setText(e.target.value)}
               maxLength={500}
-              placeholder="Ask about the portal…"
-              className="min-h-[44px] min-w-0 flex-1 rounded-md border border-border-strong bg-surface px-3 text-sm"
+              placeholder="Type or speak your question…"
+              className="min-h-[44px] min-w-0 flex-1 rounded-md border border-border-strong bg-surface px-3 text-sm text-text placeholder:text-text-muted"
             />
+            <VoiceButton state={voice.state} onStart={voice.start} onStop={voice.stop} />
             <button
               type="submit"
               aria-label="Send"
@@ -235,6 +242,12 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
             >
               <Send className="size-4" aria-hidden="true" />
             </button>
+            <VoiceStatus
+              className="basis-full"
+              state={voice.state}
+              interim={voice.interim}
+              error={voice.error}
+            />
           </form>
         </section>
       )}

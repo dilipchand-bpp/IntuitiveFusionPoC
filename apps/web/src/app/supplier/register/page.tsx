@@ -1,6 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Logo, ThemeToggle } from '@if/ui';
+import { PrivacyNotice } from '@/components/b11/privacy';
 import { RegisterForm } from './register-form';
 
 export const metadata = { title: 'Register as a supplier – Intuitive Fusion' };
@@ -60,6 +61,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
               {...(invitation ? { email: invitation.email, company: invitation.company } : {})}
             />
           )}
+          <PrivacyNotice context="SUPPLIER_REGISTRATION" />
           <p className="flex items-start gap-2 text-sm text-text-muted">
             <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             Your company is screened against watchlists when you register. Already registered?{' '}

@@ -3,6 +3,7 @@ import { has } from './b5-shared';
 import { LegalToolsCard } from './b8-legal';
 import { LegalSyncCard } from '../b10/legal-sync';
 import { EnvelopeCard } from './envelope-card';
+import { SignatureLevelCard } from './signature-level-card';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -648,6 +649,14 @@ export function ContractWorkspace({
           </Card>
           <SigningCard c={c} csrf={csrf} roles={roles} onChange={setC} />
           <EnvelopeCard contractId={c.id} status={c.status} csrf={csrf} roles={roles} />
+          <SignatureLevelCard
+            contractId={c.id}
+            status={c.status}
+            csrf={csrf}
+            roles={roles}
+            canSign={p.canSign}
+            onChange={() => void reload()}
+          />
           <RiskSummaryCard c={c} csrf={csrf} roles={roles} onChange={setC} />
           <QuestionsCard c={c} csrf={csrf} roles={roles} onChange={setC} />
         </aside>

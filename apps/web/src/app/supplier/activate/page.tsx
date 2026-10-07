@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo, ThemeToggle } from '@if/ui';
+import { PrivacyNotice } from '@/components/b11/privacy';
 import { ActivateForm } from './activate-form';
 
 export const metadata = { title: 'Activate your account – Intuitive Fusion' };
@@ -48,7 +49,10 @@ export default async function ActivatePage({ searchParams }: { searchParams: Pro
             )}
           </div>
           {info && token ? (
-            <ActivateForm token={token} name={info.name} email={info.email} />
+            <>
+              <PrivacyNotice context="USER_ACTIVATION" />
+              <ActivateForm token={token} name={info.name} email={info.email} />
+            </>
           ) : (
             <p
               role="alert"

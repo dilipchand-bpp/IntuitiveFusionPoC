@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
+import { SourceChip, type PopulationSource } from '../b11/source-chip';
 import type { RequestView } from './types';
 
 export interface ExtrasData {
@@ -56,7 +57,7 @@ export interface ExtrasData {
   }>;
 }
 export interface ExtendedView extends RequestView {
-  taxonomy?: { scheme: string; code: string; confirmed: boolean };
+  taxonomy?: { scheme: string; code: string; confirmed: boolean; source?: PopulationSource };
   workflow?: {
     id: string;
     name: string;
@@ -269,6 +270,11 @@ function ClassificationCard({ view, csrf, canEdit }: { view: ExtendedView; csrf:
           {t.confirmed ? 'Confirmed' : 'Suggested, please confirm'}
         </Badge>
       </p>
+      {t.source && (
+        <p className="mt-1 text-sm" data-testid="taxonomy-source">
+          <SourceChip source={t.source} />
+        </p>
+      )}
       {canEdit && (
         <div className="mt-3 flex flex-wrap items-end gap-2">
           {!t.confirmed && (

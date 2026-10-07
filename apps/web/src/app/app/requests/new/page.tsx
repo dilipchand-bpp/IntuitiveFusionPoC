@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PrivacyNotice } from '@/components/b11/privacy';
 import { IntakeChat } from '@/components/requests/intake-chat';
 import { getSessionUser } from '@/lib/session';
 
@@ -36,6 +37,7 @@ export default async function NewRequestPage({
           cannot work out. You can change anything before you submit.
         </p>
       </header>
+      <PrivacyNotice context="REQUEST_INTAKE" csrf={user.csrfToken} />
       <IntakeChat csrf={user.csrfToken} requestId={validId} />
     </div>
   );

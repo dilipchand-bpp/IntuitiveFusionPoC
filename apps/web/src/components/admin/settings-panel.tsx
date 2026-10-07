@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { B11dSettings } from '@/components/b11/settings-sections';
 import { ApiError, api } from '@/lib/api-client';
 
 /** The colour palettes an organisation can choose (the same names the theme defines). */
@@ -1862,6 +1863,8 @@ export function SettingsPanel({
           </p>
         )}
       </Section>
+
+      <B11dSettings csrf={csrf} />
     </div>
   );
 }
