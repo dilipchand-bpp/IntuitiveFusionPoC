@@ -232,3 +232,52 @@ Everything below is simulated, labelled so on screen, and sits behind the connec
 | Signature levels (NFR-L03) | Password re-entry is SES, password plus authenticator code is AES, and the simulated provider `SIMULATED_QTSP` is QES. A real qualified trust service provider replaces the adapter and returns its signature container and certificate |
 | Tenant throttling (NFR-SC01) | In-process token buckets per tenant using the clock, with `usage_counter` for metering and an operator API guarded by `OPERATOR_TOKEN`. Behind several instances an API gateway usage plan or a shared store such as Redis does the throttling |
 | Hosting topology (SEC-D11) | Design only: `docs/design/hosting-topology.md` and `/app/hosting-topology`. Nothing is built |
+
+## Procurement Copilot (BCP)
+
+All Copilot "AI" is simulated and rules-based (`rules-simulated-v1`, shown as SIMULATED).
+
+### Agent runtime (CP-01, CP-02, CP-03, CP-06)
+
+| | |
+| --- | --- |
+| Decision engine | `decide()` in `modules/cpagent/stages.ts`: fixed rules over the observed state of the procurement, no model. A language model (for example Amazon Bedrock) can replace the rule choice and the repair choice, but must keep the contract: it proposes a next action from the allowed tool list, every action still goes through the tool adapter, and gates stay human |
+| Tool adapter | `ToolClient` in `modules/cpagent/tools.ts` calls the application's own routes with `app.inject` and a short-lived session of the run's user, so guards, segregation of duties and audit apply. Swap `inject` for HTTP calls to the same routes if the runtime moves to its own service; the per-agent tool allow-list in `agents.ts` stays |
+| State observation | `observe()` reads status fields read-only and tenant-scoped (it works for a user who may not read every record); it is the one place the agent does not use a route |
+| Timer | `COPILOT_TICK_SECONDS` (default 15, 0 = off, always off in tests); a queue or scheduler calling `POST /copilot/runs/{id}/advance` replaces it. A lock on the run row stops two ticks overlapping |
+| Supplier simulation | `modules/cpagent/simulate.ts`, manual button only, bids labelled SIMULATED through the supplier-portal routes. Real suppliers replace it; nothing else changes |
+| Optional modules | Drafting (`/copilot/draft*`) and contract OCR (`/contract-ingest/*`) are called when present; a 404 or 501 is recorded as "capability not available" and the run carries on (the intake assistant fills in for drafting) |
+
+### Historical import (CP-07, `modules/cphist`)
+
+| | |
+| --- | --- |
+| Spreadsheet reader | `cphist/sheet.ts` reads `.xlsx` by parsing the zip (`cphist/zip.ts`, with limits on entries, expanded size and compression ratio) and its XML parts directly, so no spreadsheet library (and none of its advisories) is added. Values only: formulas are never calculated, macros are never opened, entity declarations are refused. A maintained library such as exceljs would replace `readXlsx` and keep `parseTable`'s result shape; `.xls` is not read |
+| Column mapping suggestion | `cphist/mapping.ts`: header similarity against a synonym list plus what the column's values look like, labelled `rules-simulated-v1`. A language model or a learned matcher replaces `suggestMapping`; saved mappings per source system (`hist_mapping`) stay |
+| Row validation and duplicate detection | `cphist/validate.ts` and `names.ts` (built on the B8 supplier-duplicate rules): dates in several formats, amounts, ABN check digits, allowed values, duplicates against suppliers, contracts, catalogue and the file. Pure functions; a data-quality service would replace them |
+| Upload gate | `POST /history-import/uploads` takes the file as `contentBase64` in JSON, so it passes the one malware gate (SEC-AP04) like every upload; the upload-route enumeration test lists `cphist/routes.ts`. There is no multipart plugin in this API |
+| Historical spend | Loaded into `hist_spend_line` and copied into the analytics store table `fact_history_spend` on refresh (immediately after a commit or rollback); `GET /history-import/spend` reads the store and `GET /reports/spend` carries a `historical` section. A warehouse load replaces the copy; the SQL stays |
+| Rollback | `hist_created` records what a batch made or changed. Imported contracts are executed and locked, so a rollback only deletes them logically (NFR-L04) and cancels their reminders, and only while untouched. A supplier a retained contract still needs is kept and reported |
+| Contract files | A zip of contract files is handed to the contract OCR module's `POST /contract-ingest/uploads` (multipart, the caller's own session); 404 is shown as "OCR capability not available" and the batch report shows the OCR batch's results |
+
+### Contract OCR and extraction (CP-07, `modules/cpocr`)
+
+| | |
+| --- | --- |
+| OCR engine adapter | `cpocr/engine.ts` defines `OcrEngine` (input: file bytes and kind; output: `OcrPage[]` with page number, text and page confidence). Two engines sit behind it. `PdfTextLayerEngine` is real: it reads the text layer of a PDF with `unpdf` 1.8.1 (pdf.js, pure JavaScript, no network, nothing downloaded at run time). `SimulatedOcrEngine` is SIMULATED and labelled so on screen and in the API: for PNG, JPG, TIFF and scanned PDFs (no text layer) it does not look at pixels; it reads synthetic text from a fixture that travels with the file (appended between `IF-SIMULATED-OCR-BEGIN` and `IF-SIMULATED-OCR-END`, or a sidecar `<file name>.ocr.json`) with the page confidence the fixture states. A file with no fixture fails with a clear message. |
+| Swap point | Replace `SimulatedOcrEngine` with a class that sends the page images to a cloud document-intelligence service and maps its result to `OcrPage[]`. Extraction, review, commit and the report only see `OcrPage[]`, so nothing else changes. Fields from a pictured page get their confidence from the page confidence the service reports. |
+| Extraction and clause detection | Rules only (`extract.ts`, `clauselib.ts`), engine label `rules-simulated-v1`: 20 fields, each with a rule confidence times the page confidence and the exact source span (page and offsets in the stored page text). Clauses are found by keywords in the tenant's clause library (`GET/PUT /contract-ingest/clause-library`, built on the standard services wording) and compared with the standard wording by cosine similarity. A language model could replace the rules behind the same field and span shape. |
+| Review gate | Fields below the tenant's threshold (default 80%, `PUT /contract-ingest/config`) and required fields not found must be reviewed (corrected or accepted) before commit; corrections keep before and after and are audited. |
+| Commit | Creates an executed, locked contract with key dates, notice period, extension options and clauses, and the reminders through `createContractRecord` (the existing alert engine). Supplier matched by ABN, then name; a similar name needs confirmation. An existing contract can be linked but never rewritten (executed contracts are locked, FR-0455). A foreign-currency value is converted with the platform's FX rates (`toBaseAmount`). |
+| Upload gate and zips | `POST /contract-ingest/uploads` takes `contentBase64` in JSON, so it passes the one malware gate (SEC-AP04); each zip entry is scanned again one by one. The zip reader (`cpocr/zip.ts`) refuses path traversal, too many entries, implausible compression ratios and entries that expand past their declared size, and never writes to disk. The upload-route enumeration test lists `cpocr/routes.ts`. |
+| Not done here | The original file is not stored (only its hash and the extracted text); the document repository is not written to. Reports are computed on read, not in the analytics store. |
+
+### Drafting from voice or text (CP-04, CP-05, `modules/cpdraft`)
+
+| | |
+| --- | --- |
+| Language understanding and drafting | Fixed rules only, engine label `rules-simulated-v1`, shown as SIMULATED on every draft. `lang.ts` reads text (spoken numbers, money, term, dates, quantity, category, requirement and risk flags, each with its text span), `generate.ts` fills a structured document per kind from that, the record, in-house history, the catalogue and written policy, and `library.ts` holds the approved wording (requirements, risks, clauses, criteria, category profiles). A language model replaces `generateDraft` and the choosing of wording; the document model (`model.ts`), the source citations, the revisions and `apply` stay as they are |
+| Plain-language adjustment | `adjust.ts`: a documented list of instruction patterns (`ADJUST_PATTERNS`, returned by the API) applied to the structured document, each giving a field-level before/after diff. An instruction outside the patterns is answered "I could not apply that" with examples, never guessed. A model that returns the same structured edit operations can replace the pattern matching; the diff, revisions and undo stay |
+| Speech | The API takes text with `source` `TEXT` or `VOICE` and treats both identically. Speech to text is the browser's own recogniser in the existing dictation hook (`components/voice/use-dictation.ts`); a cloud speech service would replace that hook and nothing server-side changes |
+| Apply | `service.ts` calls the application's own routes through `app.inject` with the person's own session (request create and patch, plan field writes, tender field writes, repository file write), so role guards, record states and the audit trail apply unchanged; each apply also writes `cp_draft_apply` and a `copilot.draft_apply` audit event. A repository write that the repository cannot take is queued as a manual task by the repository route |
+| Not done here | Drafts are private to their author (no sharing). Tone change is document-wide. The job specification and contract draft are filed as Word documents rather than written into a dedicated record type; evaluation criteria apply to the tender pack's criteria text, not to the scored criteria of a running evaluation |

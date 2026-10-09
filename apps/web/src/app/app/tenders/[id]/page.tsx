@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
 import { DocumentTools } from '@/components/collab/doc-tools';
 import { InstructBox, ResponseSummaries } from '@/components/collab/ai-panels';
+import { DraftPanel } from '@/components/copilot/draft-panel';
 import type { TenderView } from '@/components/tender/types';
 import { TenderWorkspace } from '@/components/tender/tender-workspace';
 import { apiGetResult, getSessionUser } from '@/lib/session';
@@ -44,6 +45,15 @@ export default async function TenderPage({ params }: { params: Promise<{ id: str
             )}
           {user.roles.some((r) => ['PROCUREMENT', 'LEGAL'].includes(r)) && (
             <DocumentTools type="tender" id={res.data.id} csrf={user.csrfToken} />
+          )}
+          {user.roles.some((r) => ['PROCUREMENT', 'LEGAL'].includes(r)) && (
+            <DraftPanel
+              csrf={user.csrfToken}
+              kinds={['TENDER_DOC', 'EVAL_CRITERIA', 'JOB_SPEC', 'CONTRACT_DRAFT']}
+              procurementId={res.data.requestId}
+              heading="Draft with AI"
+              idPrefix="aidraft"
+            />
           )}
         </>
       ) : (

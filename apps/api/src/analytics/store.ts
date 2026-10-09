@@ -14,6 +14,7 @@ import {
   contractExtension,
   contractRate,
   fieldValue,
+  histSpendLine,
   invoice,
   request,
   restrictedProject,
@@ -31,9 +32,17 @@ CREATE TABLE IF NOT EXISTS fact_extension (tenant_id text, contract_id text, mon
 CREATE TABLE IF NOT EXISTS fact_rate (tenant_id text, contract_id text, supplier_id text, supplier text, item text, unit text, unit_price numeric);
 CREATE TABLE IF NOT EXISTS fact_line (tenant_id text, contract_id text, supplier_id text, supplier text, item text, qty numeric, unit_price numeric, invoice_date date, status text);
 CREATE TABLE IF NOT EXISTS fact_category_tender (tenant_id text, category text, tenders integer);
+CREATE TABLE IF NOT EXISTS fact_history_spend (tenant_id text, id text, batch_id text, supplier_id text, supplier text, category text, business_unit text, cost_centre text, amount numeric, currency text, spend_date date, reference text);
 CREATE TABLE IF NOT EXISTS refresh_log (tenant_id text PRIMARY KEY, refreshed_at timestamptz, ms integer, rows jsonb);
 `;
-const TABLES = ['fact_contract', 'fact_extension', 'fact_rate', 'fact_line', 'fact_category_tender'] as const;
+const TABLES = [
+  'fact_contract',
+  'fact_extension',
+  'fact_rate',
+  'fact_line',
+  'fact_category_tender',
+  'fact_history_spend',
+] as const;
 
 export interface RefreshInfo {
   asOf: string | null;
@@ -242,6 +251,7 @@ async function readFacts(tx: Tx, tenantId: string): Promise<Array<[string, strin
         i.status,
       ]);
   }
+  const histLines = await tx.select().from(histSpendLine).where(eq(histSpendLine.tenantId, tenantId));
   const perCategory = new Map<string, number>();
   for (const t of tenders) {
     if (!['CLOSED', 'EVALUATING', 'AWARDED'].includes(t.status)) continue;
@@ -311,6 +321,38 @@ async function readFacts(tx: Tx, tenantId: string): Promise<Array<[string, strin
       'fact_category_tender',
       ['tenant_id', 'category', 'tenders'],
       [...perCategory.entries()].map(([c, n]) => [tenantId, c, n]),
+    ],
+    // historical spend loaded by the historical import (CP-07), so reports and spend views show it
+    [
+      'fact_history_spend',
+      [
+        'tenant_id',
+        'id',
+        'batch_id',
+        'supplier_id',
+        'supplier',
+        'category',
+        'business_unit',
+        'cost_centre',
+        'amount',
+        'currency',
+        'spend_date',
+        'reference',
+      ],
+      histLines.map((h) => [
+        tenantId,
+        h.id,
+        h.batchId,
+        h.supplierId,
+        h.supplierName,
+        h.category,
+        h.businessUnit,
+        h.costCentre,
+        num(h.amount),
+        h.currency,
+        h.spendDate,
+        h.reference,
+      ]),
     ],
   ];
 }

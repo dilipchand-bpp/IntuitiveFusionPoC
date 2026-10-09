@@ -75,6 +75,12 @@ export default async function ReportsPage() {
             >
               Contract alerts
             </Link>
+            <Link
+              href="/app/contracts/ingest/report"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              Ingested contracts (clauses, caps, notice)
+            </Link>
           </nav>
         )}
       </header>

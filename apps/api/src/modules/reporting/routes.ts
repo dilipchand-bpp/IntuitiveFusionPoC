@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
+import { historicalSpend } from '../cphist/spend.js';
 import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext, type Tx } from '../../db/client.js';
 import {
@@ -258,6 +259,8 @@ export function registerReportingRoutes(app: FastifyInstance, p: string, d: Repo
         totalPipeline: byCategory.reduce((s, x) => s + x.pipeline, 0),
         totalCommitted: byCategory.reduce((s, x) => s + x.committed, 0),
         totalOffContract: offContract.reduce((s, x) => s + x.value, 0),
+        // spend loaded from historical extracts (CP-07); empty until something has been imported
+        historical: await historicalSpend(tx, a.user.tenantId),
         note: 'Pipeline is the estimated value of active requests; committed is the value of executed contracts, including variations; off-contract is a purchase that reached delivery or was closed with no executed contract.',
       };
     });

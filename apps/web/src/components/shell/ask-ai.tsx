@@ -199,6 +199,24 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
                 {error}
               </p>
             )}
+            {!supplier && turns.some((t) => t.from === 'you') && (
+              <p className="text-sm">
+                <Link
+                  href={`/app/copilot?text=${encodeURIComponent(
+                    [...turns]
+                      .reverse()
+                      .find((t) => t.from === 'you')!
+                      .text.slice(0, 500),
+                  )}`}
+                  onClick={() => setOpen(false)}
+                  data-testid="run-for-me"
+                  className="font-semibold text-accent underline"
+                >
+                  Run this for me
+                </Link>{' '}
+                <span className="text-text-muted">(the Procurement Copilot, simulated)</span>
+              </p>
+            )}
             <div ref={end} />
           </div>
           <div className="flex flex-wrap gap-2 border-t border-border px-4 pt-3">

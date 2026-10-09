@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { EmptyState } from '@if/ui';
 import { MigrationPanel, type MigrationBatch } from '@/components/admin/migration-panel';
 import { apiGet, getSessionUser } from '@/lib/session';
@@ -15,6 +16,13 @@ export default async function MigrationPage() {
           cannot be read, and duplicates. Nothing is loaded until every exception has been corrected or set
           aside with a reason. Loaded records are marked with their source system, linked to their originating
           procurement and given alerts.
+        </p>
+        <p className="mt-2 text-sm">
+          Spreadsheets, suppliers, spend and catalogue prices, with a dry run and rollback:{' '}
+          <Link href="/admin/migration/import" className="font-semibold underline">
+            open the Import wizard
+          </Link>
+          .
         </p>
       </header>
       {!me || !batches ? (

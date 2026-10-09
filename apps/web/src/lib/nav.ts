@@ -90,6 +90,28 @@ export const NAV: readonly NavItem[] = [
       'Auto-populated plan with instruction-based editing, conflict-of-interest declarations and delegate approval.',
   },
   {
+    href: '/app/copilot',
+    label: 'Procurement Copilot',
+    icon: 'workflows',
+    roles: STAFF_ALL,
+    section: 'Procure',
+    module: 'Procurement Copilot',
+    requirements: ['CP-01', 'CP-02', 'CP-03', 'CP-06'],
+    blurb:
+      'An agent that carries a procurement from request to contract, stopping at every gate a person must decide (simulated).',
+  },
+  {
+    href: '/app/copilot/draft',
+    label: 'Draft with AI',
+    icon: 'templates',
+    roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'EXEC'],
+    section: 'Procure',
+    module: 'Drafting from voice or text',
+    requirements: ['CP-04', 'CP-05'],
+    blurb:
+      'Describe a need by typing or speaking and get a request, plan, job specification, tender document, contract draft or evaluation criteria; change it in plain language with a before and after (simulated).',
+  },
+  {
     href: '/app/approvals',
     label: 'Approvals',
     icon: 'approvals',
@@ -139,6 +161,17 @@ export const NAV: readonly NavItem[] = [
     module: 'Contract award & management',
     requirements: ['FR-0380', 'FR-0395', 'FR-0455', 'FR-0490', 'FR-0505', 'FR-0640'],
     blurb: 'Draft from template, sign with separate signing authority, then manage obligations and alerts.',
+  },
+  {
+    href: '/app/contracts/ingest',
+    label: 'Contract ingestion',
+    icon: 'contracts',
+    roles: ['LEGAL', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'],
+    section: 'Contracts',
+    module: 'Contract OCR and extraction',
+    requirements: ['CP-07'],
+    blurb:
+      'Read existing contracts: extract dates, value, parties and clauses with confidence, review, then create the record and reminders.',
   },
   {
     href: '/app/envelopes',

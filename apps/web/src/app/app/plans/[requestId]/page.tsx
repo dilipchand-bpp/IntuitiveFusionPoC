@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { EmptyState } from '@if/ui';
 import { DocumentTools } from '@/components/collab/doc-tools';
 import { ContentHintsCard } from '@/components/b11/content-hints-card';
+import { DraftPanel } from '@/components/copilot/draft-panel';
 import { EsgCard, type EsgData } from '@/components/plan/esg-card';
 import { EsgTargetsCard } from '@/components/plan/esg-targets-card';
 import { PlanWorkspace } from '@/components/plan/plan-workspace';
@@ -44,6 +45,15 @@ export default async function PlanPage({ params }: { params: Promise<{ requestId
           )}
           <EsgTargetsCard planId={res.data.id} csrf={user.csrfToken} />
           <ContentHintsCard requestId={requestId} />
+          {user.roles.some((r) => r === 'PROCUREMENT' || r === 'REQUESTER') && (
+            <DraftPanel
+              csrf={user.csrfToken}
+              kinds={['PLAN']}
+              procurementId={requestId}
+              heading="Draft plan sections with AI"
+              idPrefix="aidraft"
+            />
+          )}
         </>
       ) : res.code === 'REQUEST_NOT_SUBMITTED' ? (
         <EmptyState

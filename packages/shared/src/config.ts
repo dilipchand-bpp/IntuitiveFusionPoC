@@ -15,6 +15,8 @@ export const envSchema = z.object({
   SECRET_STORE_KEY: z.string().min(32, 'SECRET_STORE_KEY must be at least 32 characters').optional(),
   /** Platform operator token (NFR-SC01). Unset: the operator endpoints do not exist (404). Sent as X-Operator-Token. */
   OPERATOR_TOKEN: z.string().min(24, 'OPERATOR_TOKEN must be at least 24 characters').optional(),
+  /** Seconds between background ticks of the Procurement Copilot (BCP). 0 switches the timer off; it is always off when NODE_ENV is test. */
+  COPILOT_TICK_SECONDS: z.coerce.number().int().min(0).max(3600).default(15),
   AI_PROVIDER: z.enum(['mock']).default('mock'),
   IDENTITY_PROVIDER: z.enum(['mock']).default('mock'),
 });

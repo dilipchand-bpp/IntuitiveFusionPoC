@@ -20,6 +20,7 @@ import { registerSettingsRoutes } from './modules/settings/routes.js';
 import { registerIntakeExtras } from './modules/intake/extras-routes.js';
 import { registerEsgRoutes } from './modules/plan/esg.js';
 import { registerMigrationRoutes } from './modules/migration/routes.js';
+import { registerHistoryImportRoutes } from './modules/cphist/routes.js';
 import { registerTenderB8 } from './modules/b8/tender-b8.js';
 import { AnalyticsStore } from './analytics/store.js';
 import { registerAnalytics } from './modules/b9/analytics-routes.js';
@@ -57,6 +58,9 @@ import { installUploadGate } from './modules/b11enc/upload-gate.js';
 import { KeyVault } from './modules/b11enc/vault.js';
 import { registerB11b } from './modules/b11priv/index.js';
 import { installB11auditHooks, registerB11audit } from './modules/b11audit/index.js';
+import { registerCpAgent } from './modules/cpagent/index.js';
+import { registerCpOcr } from './modules/cpocr/routes.js';
+import { registerCpDraft } from './modules/cpdraft/index.js';
 import { registerSpecStubs } from './spec-routes.js';
 
 export const API_PREFIX = '/api/v1';
@@ -73,6 +77,8 @@ export interface AppDeps {
   erp?: ErpBudgetService;
   /** The separate store reports read from (NFR-P05). Defaults to a new in-memory one. */
   analytics?: AnalyticsStore;
+  /** Milliseconds between Procurement Copilot timer ticks (BCP). Off in tests unless a test sets it. */
+  copilotTickMs?: number;
 }
 
 const problem = (reply: FastifyReply, status: number, body: Record<string, unknown>) =>
@@ -268,6 +274,9 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   for (const k of registerIntakeExtras(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerEsgRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
   for (const k of registerMigrationRoutes(app, API_PREFIX, guardDeps)) implemented.add(k);
+  // CP-07 historical import: spreadsheet imports, saved mappings, dry run, commit and rollback (extends the CSV migration above)
+  for (const k of registerHistoryImportRoutes(app, API_PREFIX, { ...guardDeps, analytics }))
+    implemented.add(k);
   for (const k of registerSettingsRoutes(app, API_PREFIX, {
     ...guardDeps,
     schedulerMinutes: deps.alertSchedulerMinutes,
@@ -317,6 +326,16 @@ export async function buildApp(config: AppConfig, deps: AppDeps): Promise<Fastif
   }))
     implemented.add(k);
   for (const k of registerB11audit(app, API_PREFIX, b11cDeps, accessRecorder)) implemented.add(k);
+  // BCP cpdraft: drafting from voice or text and plain-language adjustment (CP-04, CP-05)
+  for (const k of registerCpDraft(app, API_PREFIX, guardDeps)) implemented.add(k);
+  // BCP cpocr: contract OCR and extraction (CP-07)
+  for (const k of registerCpOcr(app, API_PREFIX, guardDeps)) implemented.add(k);
+  // BCP: the Procurement Copilot runtime; it calls the routes above through app.inject as the person who started a run
+  for (const k of registerCpAgent(app, API_PREFIX, {
+    ...guardDeps,
+    tickMs: deps.copilotTickMs ?? (config.NODE_ENV === 'test' ? 0 : config.COPILOT_TICK_SECONDS * 1000),
+  }).done)
+    implemented.add(k);
   registerSpecStubs(app, API_PREFIX, guardDeps, implemented);
   return app;
 }

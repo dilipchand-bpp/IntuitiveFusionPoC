@@ -7,6 +7,7 @@ import { openDatabase } from './client.js';
 import { migrateDownLast, migrateUp, resetDatabase } from './migrate.js';
 import { SealedStore } from '../modules/tender/files.js';
 import { TENANT_ID, seedDatabase } from './seed.js';
+import { seedDemoIngest } from '../modules/cpocr/seed-demo.js';
 
 const dataDir = (process.env.DATABASE_URL ?? 'pglite://./var/db').replace(/^pglite:\/\//, '');
 if (dataDir && !dataDir.startsWith('memory:')) mkdirSync(dataDir, { recursive: true });
@@ -32,7 +33,10 @@ try {
         const config = loadConfig(process.env);
         const store = new SealedStore(config.STORAGE_DIR, config.SESSION_SECRET);
         configureKeyService(config.SECRET_STORE_KEY ?? config.SESSION_SECRET); // the demo bids are sealed under the tenant bid key
-        console.log(await seedDatabase(database, { clock: systemClock, store }));
+        const seeded = await seedDatabase(database, { clock: systemClock, store });
+        console.log(seeded);
+        if (seeded.seeded)
+          console.log('demo contract ingest documents:', await seedDemoIngest(database, systemClock));
       }
       break;
     case 'verify-audit': {

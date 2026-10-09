@@ -206,6 +206,18 @@
   },
   {
    "name": "Tenants"
+  },
+  {
+   "name": "Copilot"
+  },
+  {
+   "name": "HistoricalImport"
+  },
+  {
+   "name": "CopilotDrafting"
+  },
+  {
+   "name": "ContractIngest"
   }
  ],
  "security": [
@@ -32383,6 +32395,2784 @@
      }
     }
    }
+  },
+  "/copilot/runs": {
+   "post": {
+    "operationId": "startCopilotRun",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Start a Procurement Copilot run from plain text (typed or dictated) or for an existing procurement. The agent acts as the caller through the application's own routes, so it can never do more than the caller can; it stops at every approval, signature, declaration and scoring gate. SIMULATED, rules-based (rules-simulated-v1)",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 when no procurement is named and the caller may not raise a request; 404 for a procurement the caller cannot see. Unless autoAdvance is false the first tick runs before the response",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CopilotRunStart"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listCopilotRuns",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "The caller's runs; managers (procurement, executive, administrator) see every run in the organisation",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/runs/{id}": {
+   "get": {
+    "operationId": "getCopilotRun",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "One run: status, stage timeline, steps with the agent, tool, reason and rule, open and closed gates (who it is waiting for), problems with repairs tried, specialist agents and hand-offs",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "A run that is not the caller's looks like one that does not exist, unless the caller is a manager"
+   }
+  },
+  "/copilot/runs/{id}/events": {
+   "get": {
+    "operationId": "getCopilotRunEvents",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "The live activity feed after a cursor (after = the last seq seen); the run page polls this every 3 seconds",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotEvents"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/runs/{id}/problems": {
+   "get": {
+    "operationId": "getCopilotRunProblems",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Issues found, the repairs tried in order (at most 3 attempts) and the outcome: repaired, or escalated to a named person",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotProblems"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/runs/{id}/advance": {
+   "post": {
+    "operationId": "advanceCopilotRun",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Run one tick now. A tick reads the current state, so a step that is done is never repeated; on a run waiting for a person it also tries a problem again",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 unless the caller started the run (or is an administrator); 409 when paused or finished"
+   }
+  },
+  "/copilot/runs/{id}/pause": {
+   "post": {
+    "operationId": "pauseCopilotRun",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Pause the run; nothing more happens until it is resumed",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 unless the caller started the run (or is an administrator); 409 when already paused or finished"
+   }
+  },
+  "/copilot/runs/{id}/resume": {
+   "post": {
+    "operationId": "resumeCopilotRun",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Resume a paused run",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 unless the caller started the run (or is an administrator); 409 when not paused"
+   }
+  },
+  "/copilot/runs/{id}/cancel": {
+   "post": {
+    "operationId": "cancelCopilotRun",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Cancel the run and close its gates; what was already done on the procurement stays",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 unless the caller started the run (or is an administrator); 409 when finished"
+   }
+  },
+  "/copilot/runs/{id}/simulate-suppliers": {
+   "post": {
+    "operationId": "simulateCopilotSuppliers",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Demonstration only: the seeded demo supplier contacts each submit a bid labelled SIMULATED through the supplier-portal routes with their own sessions. Never automatic",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 unless the caller started the run (or is an administrator); 409 TENDER_NOT_OPEN when the run has no open tender"
+   }
+  },
+  "/copilot/runs/{id}/simulate-close": {
+   "post": {
+    "operationId": "simulateCopilotClose",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "Demonstration only: moves the closing time of the run's open tender to now, skipping the statutory open period, so the run can go on to evaluation. Labelled SIMULATED, audited, refused in production. Never automatic",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRunView"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "403 unless the caller started the run (or is an administrator); 409 TENDER_NOT_OPEN when the run has no open tender; 409 NO_BIDS_TO_CLOSE when no bid has been submitted"
+   }
+  },
+  "/copilot/agents": {
+   "get": {
+    "operationId": "listCopilotAgents",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "The specialist registry (orchestrator, intake and drafting, compliance, workflow, document filling, contract data): purpose, the tools each owns with the roles their routes allow, and what each may not do",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotAgents"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/summary": {
+   "get": {
+    "operationId": "getCopilotSummary",
+    "tags": [
+     "Copilot"
+    ],
+    "summary": "The dashboard card: runs active, waiting for a person, problems repaired, completed, and how many gates wait for the caller",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "EVALUATOR",
+     "CHAIR",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROBITY",
+     "FINANCE",
+     "ADMIN",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotSummary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/entities": {
+   "get": {
+    "operationId": "listHistImportEntities",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "The entities that can be imported and the fields of each: label, whether required, type and allowed values",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HistImportEntity"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/templates/{entity}": {
+   "get": {
+    "operationId": "downloadHistImportTemplate",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "A template file for an entity (header row of field names and one example row), as CSV or xlsx (?format=csv|xlsx)",
+    "parameters": [
+     {
+      "name": "entity",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Returns the file; 422 for an unknown entity"
+   }
+  },
+  "/history-import/samples": {
+   "get": {
+    "operationId": "listHistImportSamples",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "The synthetic sample files (a 200-row legacy contract register, a supplier extract, a spend extract, catalogue prices) with the source system each stands for",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HistImportSample"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/samples/{file}": {
+   "get": {
+    "operationId": "downloadHistImportSample",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Download one sample file (name.xlsx or name.csv). Invented data with planted defects, for trying the import",
+    "parameters": [
+     {
+      "name": "file",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Returns the file; 404 for an unknown sample"
+   }
+  },
+  "/history-import/uploads": {
+   "post": {
+    "operationId": "uploadHistImport",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Upload an .xlsx or .csv for one entity (JSON with contentBase64; passes the malware upload gate). Reads values only: formulas are not calculated, macros are ignored, zip bombs and oversized files are refused. Returns the batch with a suggested column mapping (or the one saved for the source system). A zip of historical contract files (entity CONTRACT_FILES) is handed to POST /contract-ingest/uploads with the caller's session",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 FILE_TOO_LARGE, FILE_UNSAFE, FILE_TYPE_UNSUPPORTED, FILE_DAMAGED, TOO_MANY_ROWS, NO_DATA; 422 VIRUS_DETECTED from the upload gate; for CONTRACT_FILES the batch says 'OCR capability not available' when the contract ingestion module is not installed",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HistImportUpload"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/history-import/batches": {
+   "get": {
+    "operationId": "listHistImportBatches",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Import batches, newest first, with status and how many rows were loaded",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HistImportBatchSummary"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/batches/{id}": {
+   "get": {
+    "operationId": "getHistImportBatch",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "One batch: mapping, suggestion, dry-run summary, commit and rollback summary, whether a rollback is still possible, and rows (?rows=none|problems|all&limit&offset). A batch of contract files shows the OCR module's current results",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "rows",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/batches/{id}/errors.csv": {
+   "get": {
+    "operationId": "downloadHistImportErrors",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "The error report of a dry run as CSV: each error, duplicate and warning with its row, rule, field, value and the source values",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    },
+    "description": "Returns CSV; audited"
+   }
+  },
+  "/history-import/batches/{id}/mapping": {
+   "put": {
+    "operationId": "setHistImportMapping",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Set (edit) the column mapping, the duplicate rule, and optionally save the mapping for this source system. A changed mapping clears the dry run",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 BATCH_CLOSED once loaded; 422 for an unknown field, a missing column, a column used twice or a missing required field",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HistImportMapping"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/history-import/mappings": {
+   "get": {
+    "operationId": "listHistImportMappings",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Saved column mappings per source system (?entity=)",
+    "parameters": [
+     {
+      "name": "entity",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/HistImportMappingSaved"
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/mappings/{id}": {
+   "delete": {
+    "operationId": "deleteHistImportMapping",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Delete a saved mapping",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "204": {
+      "description": "Success"
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/history-import/batches/{id}/dry-run": {
+   "post": {
+    "operationId": "dryRunHistImport",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Check every row (types, dates in several formats including DD/MM/YYYY, amounts, required fields, ABN check digits, allowed values) and duplicates against suppliers, contracts, catalogue and the file itself. Writes only the batch's own results; no contract, supplier, reminder, catalogue or spend row is created",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 BATCH_CLOSED once loaded; 422 when the mapping is incomplete",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HistImportDryRun"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/history-import/batches/{id}/commit": {
+   "post": {
+    "operationId": "commitHistImport",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Load the valid rows (skipping or merging duplicates by the chosen rule), create key-date reminders for imported contracts, add historical spend to the analytics store, and record what was created so a rollback can remove exactly that. Rows are checked again on the live data",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 DRY_RUN_REQUIRED, BATCH_CLOSED, NOTHING_TO_LOAD",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HistImportCommit"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/history-import/batches/{id}/rollback": {
+   "post": {
+    "operationId": "rollbackHistImport",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Remove exactly what the batch created: suppliers and catalogue items deleted (a supplier a retained contract needs is kept), merges put back, spend lines deleted, imported contracts logically deleted (NFR-L04) with their reminders cancelled. Refused while any imported contract has been edited or used",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "ADMIN"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 ROLLBACK_BLOCKED with what was touched; 409 INVALID_STATE unless the batch is loaded",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HistImportRollback"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/history-import/spend": {
+   "get": {
+    "operationId": "getHistImportSpend",
+    "tags": [
+     "HistoricalImport"
+    ],
+    "summary": "Historical spend as the analytics store holds it: totals by financial year, category, supplier and business unit",
+    "parameters": [],
+    "x-roles": [
+     "ADMIN",
+     "CONTRACT_MGR",
+     "EXEC",
+     "FINANCE",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HistImportSpend"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/draft": {
+   "post": {
+    "operationId": "createCopilotDraft",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "Draft a request, plan, job specification, tender document, contract draft or evaluation criteria from typed or dictated text (source TEXT or VOICE; both behave identically). Rules-based, SIMULATED (rules-simulated-v1); every field cites the text, record, history, catalogue or policy it came from",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotDraft"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "404 when procurementId is not visible to the caller",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CopilotDraftCreate"
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "operationId": "listCopilotDrafts",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "The caller's own recent drafts",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotDraftList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/draft/{id}": {
+   "get": {
+    "operationId": "getCopilotDraft",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "A draft at its current (or a named) revision: fields, structured document, readable content, sources, what is missing, and the adjustment examples. Only its author can read it (404 otherwise)",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "name": "revision",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotDraft"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/draft/{id}/revisions": {
+   "get": {
+    "operationId": "listCopilotDraftRevisions",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "Every revision with the instruction, a summary and the field-level before/after diff",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotRevisions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/copilot/draft/{id}/adjust": {
+   "post": {
+    "operationId": "adjustCopilotDraft",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "Apply a plain-language instruction (weights, add/remove/replace a requirement, clause, criterion or risk, budget, dates, quantity, shorten/expand, tone, reorder). Returns the new revision with a before/after diff; an instruction it does not support returns applied=false, a clear message and examples, never a guess",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotDraft"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CopilotAdjust"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/copilot/draft/{id}/undo": {
+   "post": {
+    "operationId": "undoCopilotDraft",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "Undo the latest change: a new revision that restores the previous content, with the diff",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotDraft"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 NOTHING_TO_UNDO on the first version"
+   }
+  },
+  "/copilot/draft/{id}/apply": {
+   "post": {
+    "operationId": "applyCopilotDraft",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "Write the draft into the real record through the normal routes as the acting user: request fields, plan sections, tender pack sections, or a Word document in the repository. Refused with the route's own error when the role or the record's state does not allow it; every apply is audited",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotApplyResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     },
+     "423": {
+      "$ref": "#/components/responses/E423"
+     }
+    },
+    "description": "403 for a role the target route refuses; 409 REQUEST_NOT_EDITABLE or PLAN_NOT_EDITABLE or NO_TENDER or REPOSITORY_OFF; 423 PLAN_LOCKED or TENDER_LOCKED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CopilotApply"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/copilot/prepopulate": {
+   "post": {
+    "operationId": "copilotPrepopulate",
+    "tags": [
+     "CopilotDrafting"
+    ],
+    "summary": "Suggested values for the fields of a request, plan or tender pack of a procurement the caller can see, each with a reason and its source (text, record, in-house history, catalogue, policy). Nothing is written",
+    "parameters": [],
+    "x-roles": [
+     "REQUESTER",
+     "PROCUREMENT",
+     "DELEGATE",
+     "LEGAL",
+     "CONTRACT_MGR",
+     "EXEC"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CopilotSuggestions"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "404 when the procurement is not visible",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CopilotPrepopulate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/uploads": {
+   "post": {
+    "operationId": "uploadIngestContracts",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Upload contracts (PDF, PNG, JPG, TIFF, or a zip of them) as base64 JSON. Creates a batch and reads each document: PDF text layers are read for real, images and scanned PDFs by the SIMULATED recognition engine (synthetic fixtures only); then fields with confidence and source span, clauses against the library, and findings",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "Every file, and every zip entry, goes through the malware scan (422 VIRUS_DETECTED). 422 ZIP_PATH_TRAVERSAL, ZIP_BOMB, ZIP_TOO_MANY_ENTRIES, ZIP_INVALID for an unsafe archive; 422 NO_DOCUMENTS when nothing readable is found",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestUpload"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/samples": {
+   "get": {
+    "operationId": "listIngestSamples",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "The built-in synthetic sample contracts (services agreement, SaaS subscription, office licence, a scanned image and a scanned PDF)",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestSamples"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "post": {
+    "operationId": "ingestSamples",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Ingest built-in synthetic samples through the same pipeline (labelled SAMPLE)",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "201": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "404 for an unknown sample key",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestSampleRequest"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/batches": {
+   "get": {
+    "operationId": "listIngestBatches",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Ingest batches, newest first, with counts by document status",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestBatchList"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contract-ingest/batches/{id}": {
+   "get": {
+    "operationId": "getIngestBatch",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "One batch with a summary of each document and what was skipped",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestBatch"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contract-ingest/documents/{id}": {
+   "get": {
+    "operationId": "getIngestDocument",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "A document: page text with confidence, extracted fields (confidence, rule confidence, source page and offsets, whether review is needed), clauses with similarity to the standard wording, findings, corrections, and the supplier and contract matches",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestDocument"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
+  },
+  "/contract-ingest/documents/{id}/review": {
+   "post": {
+    "operationId": "reviewIngestDocument",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Human review: correct fields (value validated, before and after kept and audited) and accept low-confidence values as read",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestDocument"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "422 CORRECTION_INVALID; 422 CANNOT_ACCEPT_MISSING for a required field that was not found; 409 INVALID_STATE once committed or rejected",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestReview"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/documents/{id}/commit": {
+   "post": {
+    "operationId": "commitIngestDocument",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Commit a reviewed document: create the executed contract record (key dates, value, notice period, extension options, clauses) and its reminders through the contract alert engine, matching the supplier by ABN then name; or LINK it to an existing contract",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestCommitResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "description": "409 REVIEW_REQUIRED while fields below the threshold, or required fields, are unreviewed; 409 DUPLICATE_FILE; 409 DUPLICATE_CONTRACT; 409 SUPPLIER_CONFIRM_NEEDED for a merely similar supplier name; 409 ALREADY_COMMITTED",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestCommit"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/documents/{id}/reject": {
+   "post": {
+    "operationId": "rejectIngestDocument",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Reject a document that is not wanted, with a reason; it leaves the report",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestDocument"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestReject"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/clause-library": {
+   "get": {
+    "operationId": "getIngestClauseLibrary",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "The clause types used to read contracts: keywords, standard wording to compare against, mandatory flag and risk (built-in defaults until a manager replaces them)",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestClauseLibrary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "putIngestClauseLibrary",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Replace the tenant's clause library (audited)",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestClauseLibrary"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestClauseLibraryUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/config": {
+   "get": {
+    "operationId": "getIngestConfig",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "The review threshold (fields read with less confidence must be reviewed before commit)",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestConfig"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   },
+   "put": {
+    "operationId": "putIngestConfig",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Set the review threshold for documents uploaded from now on (audited)",
+    "parameters": [],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestConfig"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     },
+     "409": {
+      "$ref": "#/components/responses/E409"
+     },
+     "422": {
+      "$ref": "#/components/responses/E422"
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IngestConfigUpdate"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/contract-ingest/report": {
+   "get": {
+    "operationId": "getIngestReport",
+    "tags": [
+     "ContractIngest"
+    ],
+    "summary": "Reporting across ingested contracts: renewals due in N days, notice windows, liability caps, missing clauses and concentration by supplier",
+    "parameters": [
+     {
+      "name": "days",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "scope",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "x-roles": [
+     "LEGAL",
+     "CONTRACT_MGR",
+     "PROCUREMENT",
+     "EXEC",
+     "FINANCE",
+     "PROBITY"
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IngestReport"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/E400"
+     },
+     "401": {
+      "$ref": "#/components/responses/E401"
+     },
+     "403": {
+      "$ref": "#/components/responses/E403"
+     },
+     "404": {
+      "$ref": "#/components/responses/E404"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -41410,6 +44200,632 @@
     "additionalProperties": false,
     "required": [
      "decision"
+    ]
+   },
+   "CopilotRunStart": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4000
+     },
+     "procurementId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "FULL",
+       "ASSISTED"
+      ]
+     },
+     "autoAdvance": {
+      "type": "boolean"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "TEXT",
+       "VOICE"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "CopilotRunView": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotRunList": {
+    "type": "object",
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "MINE",
+       "ALL"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "items",
+     "scope"
+    ]
+   },
+   "CopilotEvents": {
+    "type": "object",
+    "properties": {
+     "events": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "seq": {
+         "type": "integer"
+        },
+        "at": {
+         "type": "string",
+         "format": "date-time"
+        },
+        "kind": {
+         "type": "string",
+         "enum": [
+          "STEP",
+          "GATE",
+          "PROBLEM",
+          "REPAIR",
+          "HANDOFF",
+          "STATUS",
+          "NOTE"
+         ]
+        },
+        "agent": {
+         "type": "string"
+        },
+        "agentLabel": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "detail": {
+         "type": "string"
+        },
+        "data": {
+         "type": "object",
+         "additionalProperties": true
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "seq",
+        "at",
+        "kind",
+        "agent",
+        "title"
+       ]
+      }
+     },
+     "cursor": {
+      "type": "integer"
+     },
+     "status": {
+      "type": "string"
+     },
+     "stage": {
+      "type": "string"
+     },
+     "currentAgent": {
+      "type": "string"
+     },
+     "currentAgentLabel": {
+      "type": "string"
+     },
+     "currentAction": {
+      "type": "string"
+     },
+     "waitingFor": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "events",
+     "cursor",
+     "status",
+     "stage"
+    ]
+   },
+   "CopilotProblems": {
+    "type": "object",
+    "properties": {
+     "maxAttempts": {
+      "type": "integer"
+     },
+     "problems": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "maxAttempts",
+     "problems"
+    ]
+   },
+   "CopilotAgents": {
+    "type": "object",
+    "properties": {
+     "engine": {
+      "type": "string"
+     },
+     "simulated": {
+      "type": "boolean"
+     },
+     "agents": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     },
+     "principles": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "engine",
+     "simulated",
+     "agents"
+    ]
+   },
+   "CopilotSummary": {
+    "type": "object",
+    "properties": {
+     "engine": {
+      "type": "string"
+     },
+     "simulated": {
+      "type": "boolean"
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "MINE",
+       "ALL"
+      ]
+     },
+     "total": {
+      "type": "integer"
+     },
+     "active": {
+      "type": "integer"
+     },
+     "running": {
+      "type": "integer"
+     },
+     "waitingForPerson": {
+      "type": "integer"
+     },
+     "needsHuman": {
+      "type": "integer"
+     },
+     "repaired": {
+      "type": "integer"
+     },
+     "completed": {
+      "type": "integer"
+     },
+     "waitingOnMe": {
+      "type": "integer"
+     },
+     "recent": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "engine",
+     "total",
+     "active",
+     "waitingForPerson",
+     "repaired",
+     "completed"
+    ]
+   },
+   "HistImportUpload": {
+    "type": "object",
+    "properties": {
+     "entity": {
+      "type": "string",
+      "enum": [
+       "CONTRACTS",
+       "SUPPLIERS",
+       "SPEND",
+       "CATALOGUE",
+       "CONTRACT_FILES"
+      ]
+     },
+     "filename": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+     },
+     "sourceSystem": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 60
+     },
+     "contentBase64": {
+      "type": "string",
+      "description": "The .xlsx or .csv (or, for CONTRACT_FILES, a zip of contract files), base64-encoded, at most 10 MB decoded"
+     },
+     "sheet": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "entity",
+     "filename",
+     "sourceSystem",
+     "contentBase64"
+    ]
+   },
+   "HistImportMapping": {
+    "type": "object",
+    "properties": {
+     "mapping": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "string",
+       "nullable": true
+      },
+      "description": "Field key to the column header it is read from, or null"
+     },
+     "duplicateRule": {
+      "type": "string",
+      "enum": [
+       "SKIP",
+       "MERGE"
+      ]
+     },
+     "saveForSource": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "mapping"
+    ]
+   },
+   "HistImportDryRun": {
+    "type": "object",
+    "properties": {
+     "duplicateRule": {
+      "type": "string",
+      "enum": [
+       "SKIP",
+       "MERGE"
+      ]
+     }
+    },
+    "additionalProperties": false
+   },
+   "HistImportCommit": {
+    "type": "object",
+    "properties": {
+     "confirm": {
+      "type": "boolean",
+      "enum": [
+       true
+      ]
+     },
+     "duplicateRule": {
+      "type": "string",
+      "enum": [
+       "SKIP",
+       "MERGE"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "confirm"
+    ]
+   },
+   "HistImportRollback": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 500
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "HistImportBatch": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HistImportBatchSummary": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HistImportEntity": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HistImportMappingSaved": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HistImportSample": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "HistImportSpend": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotDraftCreate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotDraft": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotDraftList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotRevisions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotAdjust": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotApply": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotApplyResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotPrepopulate": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "CopilotSuggestions": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestBatch": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestBatchList": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestDocument": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestSamples": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestCommitResult": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestClauseLibrary": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestConfig": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestReport": {
+    "type": "object",
+    "additionalProperties": true
+   },
+   "IngestUpload": {
+    "type": "object",
+    "properties": {
+     "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+       "type": "object",
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "contentBase64": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "name",
+        "contentBase64"
+       ]
+      }
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "files"
+    ]
+   },
+   "IngestSampleRequest": {
+    "type": "object",
+    "properties": {
+     "keys": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "keys"
+    ]
+   },
+   "IngestReview": {
+    "type": "object",
+    "properties": {
+     "corrections": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "value": {},
+        "reason": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "key"
+       ]
+      }
+     },
+     "accept": {
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      ]
+     }
+    },
+    "additionalProperties": false
+   },
+   "IngestCommit": {
+    "type": "object",
+    "properties": {
+     "mode": {
+      "type": "string",
+      "enum": [
+       "AUTO",
+       "CREATE",
+       "LINK"
+      ]
+     },
+     "contractId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "supplierId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "createSupplier": {
+      "type": "boolean"
+     },
+     "allowDuplicate": {
+      "type": "boolean"
+     },
+     "ownerId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false
+   },
+   "IngestReject": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason"
+    ]
+   },
+   "IngestClauseLibraryUpdate": {
+    "type": "object",
+    "properties": {
+     "clauses": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": true
+      }
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "clauses"
+    ]
+   },
+   "IngestConfigUpdate": {
+    "type": "object",
+    "properties": {
+     "reviewThreshold": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 0.99
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reviewThreshold"
     ]
    }
   },

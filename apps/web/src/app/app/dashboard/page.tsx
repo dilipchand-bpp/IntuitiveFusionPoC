@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Activity, AlarmClock, Banknote, Check, Hourglass, ListChecks, Minus } from 'lucide-react';
 import { Badge, EmptyState, KpiCard, Table, Td, Th, type BadgeTone } from '@if/ui';
+import type { CopilotSummary } from '@/components/copilot/copilot';
 import { Dashboards } from '@/components/reports/b6-reports';
 import { SpendChart } from '@/components/reports/spend-chart';
 import type { ProcurementTable, SpendReport } from '@/components/reports/types';
@@ -61,10 +62,11 @@ export default async function Dashboard({
   // a request title links to the request only for people whose menu offers Requests (an administrator's does not)
   const canOpenRequests = navFor(user?.roles ?? []).some((n) => n.href === '/app/requests');
   const seesSpend = user?.roles.some((r) => ['EXEC', 'FINANCE', 'PROCUREMENT'].includes(r)) ?? false;
-  const [k, table, spend] = await Promise.all([
+  const [k, table, spend, copilot] = await Promise.all([
     apiGet<Kpis>('/dashboard/kpis'),
     apiGet<ProcurementTable>(`/reports/procurements${qs ? `?${qs}` : ''}`),
     seesSpend ? apiGet<SpendReport>('/reports/spend') : Promise.resolve(null),
+    apiGet<CopilotSummary>('/copilot/summary'),
   ]);
   if (!k) {
     return (
@@ -127,6 +129,33 @@ export default async function Dashboard({
           />
         </Link>
       </section>
+
+      {copilot && (
+        <section
+          aria-labelledby="copilot-card"
+          data-testid="copilot-card"
+          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        >
+          <h2 id="copilot-card" className="font-heading text-lg font-semibold">
+            <Link href="/app/copilot">Procurement Copilot</Link> <Badge tone="info">SIMULATED</Badge>
+          </h2>
+          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ['Runs active', copilot.active],
+                ['Waiting for a person', copilot.waitingForPerson],
+                ['Problems repaired', copilot.repaired],
+                ['Completed', copilot.completed],
+              ] as const
+            ).map(([l, v]) => (
+              <div key={l}>
+                <dt className="text-sm text-text-muted">{l}</dt>
+                <dd className="text-2xl font-extrabold">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
       <section aria-labelledby="by-phase" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="min-w-0 rounded-lg border border-border bg-surface p-6 shadow-sm">

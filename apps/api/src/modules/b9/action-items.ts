@@ -18,6 +18,7 @@ import {
   request,
   tender,
 } from '../../db/schema.js';
+import { copilotActionItems } from '../cpagent/action-gates.js';
 
 export interface ActionItem {
   key: string;
@@ -213,6 +214,13 @@ export async function actionItemsFor(tx: Tx, a: AuthContext, now: Date): Promise
         detail: `Was due ${r.dueOn}`,
         link: '/app/risk',
       });
+  }
+
+  // BCP: where the Procurement Copilot is waiting for this person (a gate whose screen an item above already links to is not repeated)
+  const shown = new Set(out.map((i) => i.link));
+  for (const c of await copilotActionItems(tx, a)) {
+    if (!c.needsHuman && shown.has(c.link)) continue;
+    out.push({ key: c.key, kind: c.kind, title: c.title, detail: c.detail, link: c.link });
   }
   return out;
 }

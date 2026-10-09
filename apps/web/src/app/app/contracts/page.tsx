@@ -66,6 +66,12 @@ export default async function ContractsPage() {
               </Link>
             )}
             <Link
+              href="/app/contracts/ingest"
+              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
+            >
+              Contract ingestion (read from documents)
+            </Link>
+            <Link
               href="/app/contracts/disclosures"
               className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
             >

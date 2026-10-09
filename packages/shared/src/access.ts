@@ -103,6 +103,11 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
   },
   { prefix: '/app/connectors', roles: ['ADMIN', 'PROCUREMENT', 'FINANCE', 'LEGAL', 'EXEC'] },
   { prefix: '/app/content', roles: ['ADMIN', 'PROCUREMENT', 'LEGAL', 'EXEC'] },
+  // BCP cpdraft: drafting from voice or text (CP-04, CP-05)
+  {
+    prefix: '/app/copilot/draft',
+    roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'EXEC'],
+  },
   {
     prefix: '/app/repository',
     roles: ['REQUESTER', 'PROCUREMENT', 'DELEGATE', 'LEGAL', 'CONTRACT_MGR', 'PROBITY', 'FINANCE', 'EXEC'],
@@ -134,6 +139,11 @@ export const ROUTE_RULES: ReadonlyArray<{ prefix: string; roles: readonly RoleNa
   { prefix: '/app/contracts/expiring', roles: ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'] },
   { prefix: '/app/contracts/alerts', roles: ['CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC'] },
   { prefix: '/app/contracts/invoices', roles: ['FINANCE', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC'] },
+  // BCP cpocr (CP-07): contract ingestion; the same roles as the /contract-ingest routes
+  {
+    prefix: '/app/contracts/ingest',
+    roles: ['LEGAL', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC', 'FINANCE', 'PROBITY'],
+  },
   { prefix: '/app/contracts/disclosures', roles: ['PROCUREMENT', 'LEGAL', 'CONTRACT_MGR', 'EXEC'] },
   {
     prefix: '/app/envelopes',

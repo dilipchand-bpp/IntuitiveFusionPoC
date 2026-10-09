@@ -990,3 +990,15 @@ OP_NOTE = "Public as far as sessions go: no cookie and no CSRF token. The only c
 ep("GET", "/operator/tenants", "operatorListTenants", TN, "Platform operator: every tenant with its plan, active users and today's use, and the available usage plans", None, None, "OperatorTenantList", note=OP_NOTE)
 ep("POST", "/operator/tenants", "operatorCreateTenant", TN, "Platform operator: create a tenant with its short name, a first ADMIN user and a usage plan. The first administrator's one-time password is in the response once; only its hash is kept", None, "OperatorTenantCreate", "OperatorTenantCreated", 201, note=OP_NOTE + "; 409 TENANT_EXISTS; 422 UNKNOWN_PLAN")
 ep("PATCH", "/operator/tenants/{id}/plan", "operatorChangeTenantPlan", TN, "Platform operator: move a tenant to another usage plan; the new limits apply to the next request and the change is audited in the tenant's log", None, "OperatorPlanChange", "OperatorPlanChanged", note=OP_NOTE + "; 404 unknown tenant; 422 UNKNOWN_PLAN (also for a plan made for another tenant)")
+
+# BCP: Procurement Copilot agent runtime (CP-01, CP-02, CP-03, CP-06)
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "openapi_cpa.py"), encoding="utf8").read())
+
+# BCP: Procurement Copilot historical import (CP-07)
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "openapi_cpd.py"), encoding="utf8").read())
+
+# BCP: Procurement Copilot drafting from voice or text (CP-04, CP-05)
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "openapi_cpb.py"), encoding="utf8").read())
+
+# BCP cpocr (CP-07): contract OCR and extraction
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'openapi_cpc.py'), encoding='utf8').read())

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PrivacyNotice } from '@/components/b11/privacy';
 import { IntakeChat } from '@/components/requests/intake-chat';
+import { DraftPanel } from '@/components/copilot/draft-panel';
 import { getSessionUser } from '@/lib/session';
 
 export const metadata = { title: 'New request – Intuitive Fusion' };
@@ -39,6 +40,13 @@ export default async function NewRequestPage({
       </header>
       <PrivacyNotice context="REQUEST_INTAKE" csrf={user.csrfToken} />
       <IntakeChat csrf={user.csrfToken} requestId={validId} />
+      <DraftPanel
+        csrf={user.csrfToken}
+        kinds={['REQUEST']}
+        procurementId={validId}
+        heading="Draft the whole request with AI"
+        idPrefix="aidraft"
+      />
     </div>
   );
 }
