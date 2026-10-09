@@ -1,0 +1,16 @@
+# BCP module cpdraft: drafting from voice or text and plain-language adjustment (CP-04, CP-05).
+# Executed inside gen_openapi.py's namespace (appended to openapi_ext.py by an exec line).
+schemas.update({n: OBJ for n in [
+    "CopilotDraftCreate", "CopilotDraft", "CopilotDraftList", "CopilotRevisions", "CopilotAdjust", "CopilotApply",
+    "CopilotApplyResult", "CopilotPrepopulate", "CopilotSuggestions",
+]})
+CPD = "CopilotDrafting"
+CP_DRAFTERS = ["REQUESTER", "PROCUREMENT", "DELEGATE", "LEGAL", "CONTRACT_MGR", "EXEC"]
+ep("POST", "/copilot/draft", "createCopilotDraft", CPD, "Draft a request, plan, job specification, tender document, contract draft or evaluation criteria from typed or dictated text (source TEXT or VOICE; both behave identically). Rules-based, SIMULATED (rules-simulated-v1); every field cites the text, record, history, catalogue or policy it came from", CP_DRAFTERS, "CopilotDraftCreate", "CopilotDraft", 201, note="404 when procurementId is not visible to the caller")
+ep("GET", "/copilot/draft", "listCopilotDrafts", CPD, "The caller's own recent drafts", CP_DRAFTERS, None, "CopilotDraftList")
+ep("GET", "/copilot/draft/{id}", "getCopilotDraft", CPD, "A draft at its current (or a named) revision: fields, structured document, readable content, sources, what is missing, and the adjustment examples. Only its author can read it (404 otherwise)", CP_DRAFTERS, None, "CopilotDraft", query=["revision"])
+ep("GET", "/copilot/draft/{id}/revisions", "listCopilotDraftRevisions", CPD, "Every revision with the instruction, a summary and the field-level before/after diff", CP_DRAFTERS, None, "CopilotRevisions")
+ep("POST", "/copilot/draft/{id}/adjust", "adjustCopilotDraft", CPD, "Apply a plain-language instruction (weights, add/remove/replace a requirement, clause, criterion or risk, budget, dates, quantity, shorten/expand, tone, reorder). Returns the new revision with a before/after diff; an instruction it does not support returns applied=false, a clear message and examples, never a guess", CP_DRAFTERS, "CopilotAdjust", "CopilotDraft")
+ep("POST", "/copilot/draft/{id}/undo", "undoCopilotDraft", CPD, "Undo the latest change: a new revision that restores the previous content, with the diff", CP_DRAFTERS, None, "CopilotDraft", note="409 NOTHING_TO_UNDO on the first version")
+ep("POST", "/copilot/draft/{id}/apply", "applyCopilotDraft", CPD, "Write the draft into the real record through the normal routes as the acting user: request fields, plan sections, tender pack sections, or a Word document in the repository. Refused with the route's own error when the role or the record's state does not allow it; every apply is audited", CP_DRAFTERS, "CopilotApply", "CopilotApplyResult", note="403 for a role the target route refuses; 409 REQUEST_NOT_EDITABLE or PLAN_NOT_EDITABLE or NO_TENDER or REPOSITORY_OFF; 423 PLAN_LOCKED or TENDER_LOCKED")
+ep("POST", "/copilot/prepopulate", "copilotPrepopulate", CPD, "Suggested values for the fields of a request, plan or tender pack of a procurement the caller can see, each with a reason and its source (text, record, in-house history, catalogue, policy). Nothing is written", CP_DRAFTERS, "CopilotPrepopulate", "CopilotSuggestions", note="404 when the procurement is not visible")

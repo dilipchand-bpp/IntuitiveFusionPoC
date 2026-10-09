@@ -1,0 +1,39 @@
+# Procurement Copilot (batch BCP) - evidence
+
+**Batch:** BCP, the Procurement Copilot agent layer. Seven requirements, CP-01 to CP-07, added by the owner on 9 Oct 2026 and built before B12. They are additions to the requirements register, so they are tracked here, in `docs/design/copilot-agent-layer.md` and by tests that cite the ids; the roadmap page revision (later) will list them. Everything described as "AI" is simulated and rules-based (engine `rules-simulated-v1`, SIMULATED on screen); each outside dependency has a swap point in `docs/swap-points.md` (section "Procurement Copilot (BCP)").
+
+## What was built
+| Id | Requirement | Result |
+| --- | --- | --- |
+| CP-01 | An agent carries a procurement from request to completion; people act only at gate approvals | `/app/copilot`: type or dictate a request and start a run. The agent acts as the person who started it, through the application's own routes, so role guards, segregation of duties and audit apply unchanged. Each tick reads the current state of the procurement and does the next step, so it is idempotent and resumes by itself after a person acts. A test drives a seeded tenant from a short text to an executed contract; people act only at: plan approval, tender publish permission, panel conflict declarations, scoring and consensus, award approval, legal release and contract signature. The agent never approves. |
+| CP-02 | The agent resolves problems on the way | Each step has a validator and ordered repairs (fill a missing field from the profile, move a closing time out of the statutory 25-day window, retry with backoff). At most 3 attempts, then the run goes to "needs a person" with an action item naming the owner and what was tried. Tested: a missing contract owner repaired, a closing time moved by the compliance repair, a request with no value escalated after 3 repairs and resumed when the person set it, a tender with no bids escalated. |
+| CP-03 | Progress is visible | The run page has a stage timeline (request, plan, tender, evaluation, award, contract), a live activity feed (polls every 3 s), "waiting for" cards naming the person and linking to the action, a problems-and-repairs panel, and pause, resume, cancel, advance now. A Copilot summary card is on the dashboard. Gates appear in `/app/actions` and in the Waiting-for-you count. |
+| CP-04 | Voice or text pre-populates and creates documents | `/app/copilot/draft` and a "Draft with AI" panel on the new-request, plan and tender pages. Six kinds: request, plan, job specification, tender document, contract draft, evaluation criteria. Every field cites its source (text span, record, in-house history, catalogue, policy, template, your instruction). Dictated text behaves exactly like typed text, including spoken numbers. Applying writes through the normal routes as the user, and the route's own refusal (role, record state) comes through unchanged. |
+| CP-05 | Content adjusts to plain-language requests | 24 documented instruction patterns (weights, add or remove requirements, clauses and risks, budget, dates, term, notice period, shorten or expand, tone, reordering, paragraph edits). Each creates a new revision with a field-level before and after, and undo walks back. Weights always sum to 100 and mandatory clauses cannot be removed. An instruction outside the patterns gets "I could not apply that" with examples; nothing is guessed. |
+| CP-06 | Multiple specialist agents | A registry of six: orchestrator, intake and drafting, compliance, workflow, document filling, contract data, each with the tools it owns and the roles those routes allow (`GET /copilot/agents`). Hand-offs between them are recorded and shown on the run page. |
+| CP-07 | OCR contract ingestion, extraction for reporting and reminders, historical import | **OCR** (`/app/contracts/ingest`): PDF text layers are read for real (`unpdf`, offline); images and scanned PDFs go through a SIMULATED engine that reads synthetic fixtures. 20 fields (parties, dates, term, renewal, notice, value, payment terms, governing law, liability cap, and more) each with a confidence and the source span; clauses are matched against the clause library with missing mandatory clauses and deviations flagged. Low-confidence fields need human review before commit (409 until reviewed). Commit creates or links the contract record with key dates and creates the renewal, notice and expiry reminders. A report shows renewals due, notice windows, liability caps, missing clauses and supplier concentration. **Import** (`/admin/migration/import`): `.xlsx` and `.csv`, four entity types (contracts, suppliers, historical spend, catalogue prices), suggested column mapping, saved mappings, a read-only dry run with row-level checks and duplicate detection, commit, per-batch rollback, templates and samples. A zip of historical contract files is handed to the OCR route. |
+
+## Demonstration controls (labelled SIMULATED, never automatic)
+- **Simulate supplier responses**: the seeded demo supplier contacts submit bids through the supplier portal routes.
+- **Simulate closing time**: the statutory open period (25 days) cannot pass during a demo, so a person can bring the tender's closing time forward. It needs at least one bid, only the run's owner can use it, it is audited, and it is refused in production. Added after the owner found a run waiting at the tender stage with no way to continue.
+
+## Tests run
+| Area | Result |
+| --- | --- |
+| Agent runtime (`cpagent.test.ts`) | 16 tests |
+| Drafting (`cpdraft.test.ts`) | 26 tests |
+| Contract OCR (`core.test.ts`, `cpocr.test.ts`) | 40 tests |
+| Historical import (`cphist-parse.test.ts`, `cphist.test.ts`) | 50 tests |
+| Whole project (`npm run ci`: format, lint, typecheck, tests, build) | 100 files, 1639 tests passed; build compiled |
+| OpenAPI | 640 operations; authorisation matrix and drift tests pass |
+| End-to-end (own ports, temp config) | Full suite once: 334 passed, 10 failed, 10 skipped. The failures were a test-id clash between the new draft panel and the intake panel (renamed), legitimate screenshot changes on the new-request and requests pages (4 snapshots refreshed), one ambiguous locator in the drafting spec (scoped) and 3 crawler runs that timed out. After the fixes the intake (24), crawler, skeleton and `bcp-draft` specs were re-run and pass; the whole suite was not re-run in one go after the fixes. `bcp-agent` 3, `bcp-draft` 5, `bcp-ocr` 3, `bcp-history` 2 with accessibility scans |
+
+## Known limits
+- Language understanding, drafting and mapping are rules. Free-form instructions outside the supported patterns are refused.
+- Scanned documents are read by a simulated engine from synthetic fixtures; a real OCR service is the swap point. A scan without a fixture fails with a clear message. The original file is not stored, only its hash and extracted text.
+- The agent reads state through a read-only, tenant-scoped query; every action goes through routes.
+- The only simulated supplier in the seed is one demo contact with a bid (Brightwave); Copilot-created tenders are open access so that contact can see them.
+- The contract date and clause repairs are written but not tested. A clause repair needs the Legal role, so on a procurement run it escalates.
+- OCR commit modes are CREATE and LINK; an executed contract is locked and cannot be rewritten by ingestion. Corrections to renewal, liability cap, service levels and insurance are accepted in the UI but edited through the API.
+- Import: no `.xls`; 5000 rows and 10 MB per file; MERGE applies to suppliers and catalogue prices only; non-AUD amounts are loaded as stated; commit and rollback are administrator only. Uploads are JSON with base64 content (the API has no multipart parser), which keeps them behind the malware gate.
+- The run from historical contract files through OCR was not tested end to end across the two modules.
