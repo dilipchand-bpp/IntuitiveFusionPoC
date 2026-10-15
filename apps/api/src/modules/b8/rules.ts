@@ -313,7 +313,8 @@ export interface RiskFactor {
   weight: number;
   note: string;
 }
-const HIGH_RISK_CATEGORIES = /clean|security|construction|garment|agricultur|mining|labour|catering|textile/i;
+export const HIGH_RISK_CATEGORIES =
+  /clean|security|construction|garment|agricultur|mining|labour|catering|textile/i;
 
 /** The modern slavery screen: a supplier in a higher-risk category with no statement is sent for review. */
 export function modernSlaverySignal(categories: string[], esg: EsgData): 'CLEAR' | 'REVIEW' {

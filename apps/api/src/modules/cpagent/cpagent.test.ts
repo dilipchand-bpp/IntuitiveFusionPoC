@@ -216,7 +216,7 @@ describe('self-repair (CP-02)', () => {
     ).toBe(200);
     await env.app.copilotEngine.tick(v.run.id, { source: 'timer' });
     const after = await view('procurement', v.run.id);
-    expect(after.run.status).toBe('WAITING_GATE');
+    expect(after.run.status, JSON.stringify([after.problems, open(after)])).toBe('WAITING_GATE');
     expect(open(after)[0]!.kind).toBe('PLAN_APPROVAL');
     expect((after.problems as Json[]).find((p) => p.id === prob.id)!.status).toBe('RESOLVED');
   });
@@ -229,6 +229,52 @@ describe('self-repair (CP-02)', () => {
     });
     const r = await call('procurement', 'GET', `/copilot/runs/${v.run.id}/problems`);
     expect(r.json().maxAttempts).toBe(3);
+  });
+  it('CP-02 a mandatory custom field (Modern Day Slavery Risk) is suggested from the category, flagged as an assumption, and a field no rule covers goes to a person', async () => {
+    const put = (customFields: unknown[]) => call('admin', 'PUT', '/admin/settings', { customFields });
+    expect(
+      (
+        await put([
+          { key: 'modernSlaveryRisk', label: 'Modern Day Slavery Risk', type: 'TEXT', mandatory: true },
+        ])
+      ).statusCode,
+    ).toBe(200);
+    try {
+      const v = await start('procurement', {
+        text: 'We need commercial cleaning for head office for two years. Around ninety thousand dollars. It is for Facilities.',
+      });
+      const p = (v.problems as Json[]).find((x) =>
+        (x.attempts as Json[]).some((a) => a.repair === 'FILL_FROM_PROFILE' && a.outcome === 'FIXED'),
+      );
+      expect(p, JSON.stringify(v.problems)).toBeDefined();
+      const rq = (await call('procurement', 'GET', `/requests/${v.run.requestId}`)).json();
+      const f = (rq.fields as Json[]).find((x) => x.key === 'modernSlaveryRisk')!;
+      expect(f.value).toMatch(/^Higher: /);
+      expect(f.missing).toBe(false);
+      expect(v.run.stage).not.toBe('REQUEST');
+
+      // a custom field no rule can justify is never invented: the owner is asked, naming it
+      expect(
+        (
+          await put([
+            {
+              key: 'modernSlaveryRisk',
+              label: 'Modern Day Slavery Risk',
+              type: 'TEXT',
+              mandatory: true,
+            },
+            { key: 'siteContact', label: 'Site contact', type: 'TEXT', mandatory: true },
+          ])
+        ).statusCode,
+      ).toBe(200);
+      const w = await start('procurement', {
+        text: 'We need security guards for the depot, 60k for a year. Facilities.',
+      });
+      expect(w.run.status).toBe('NEEDS_HUMAN');
+      expect(open(w)[0]!.title).toMatch(/siteContact/);
+    } finally {
+      await put([]);
+    }
   });
   it('CP-02 a tender with no bids is handed to procurement, not retried', async () => {
     const ids = await withSystem(env.database, async (tx) => {

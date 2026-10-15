@@ -8,6 +8,7 @@ import { routeApproval } from '../evaluation/b3-service.js';
 import { FIELD_BY_KEY } from '../intake/fields.js';
 import { PLAN_FIELDS } from '../plan/fields.js';
 import { classifyText, warningFor } from '../b11priv/classify.js';
+import { suggestCustomField } from './custom-fields.js';
 import { parseRequestText } from './parse.js';
 import {
   asString,
@@ -258,6 +259,31 @@ const FIELD_LABEL: Record<string, string> = {
   contractOwner: 'contract owner',
 };
 
+/** Values a rule can justify for the mandatory custom fields still missing (for example Modern Day Slavery Risk from the category). */
+async function customFieldSuggestions(
+  ctx: Ctx,
+): Promise<{ values: Record<string, string>; notes: string[] }> {
+  const values: Record<string, string> = {};
+  const notes: string[] = [];
+  const g = await ctx.tool.call('INTAKE', 'get_request', {
+    params: { id: ctx.obs.request!.id },
+    stepKey: ctx.stepKey,
+  });
+  if (!g.ok) return { values, notes };
+  const rq = ctx.obs.request!;
+  for (const f of (g.json as { fields?: Array<Record<string, unknown>> }).fields ?? []) {
+    if (f.custom !== true || f.missing !== true) continue;
+    const sug = suggestCustomField(
+      { key: asString(f.key), label: asString(f.label), type: f.type as 'TEXT' | 'FLAG' | 'NUMBER' },
+      { title: rq.title, category: rq.category, sourceText: ctx.run.sourceText },
+    );
+    if (!sug) continue;
+    values[asString(f.key)] = sug.value;
+    notes.push(`${asString(f.label)}: ${sug.value.slice(0, 80)} (${sug.reason})`);
+  }
+  return { values, notes };
+}
+
 /** Fixed order of repairs for a request that is missing mandatory fields (each is tried once, in this order). */
 function requestRepairs(): readonly Repair[] {
   const patch = async (ctx: Ctx, body: Record<string, unknown>) => {
@@ -296,23 +322,42 @@ function requestRepairs(): readonly Repair[] {
     },
     {
       key: 'FILL_FROM_PROFILE',
-      label: 'Fill from the profile of the person who started the run',
+      label:
+        'Fill from the profile of the person who started the run, and mandatory custom fields a rule can justify',
       agent: 'INTAKE',
       async apply(ctx) {
         const o = ctx.obs.request!;
         const body: Record<string, unknown> = {};
-        if (o.missing.includes('businessUnit') && ctx.profile.unitName)
+        const used: string[] = [];
+        if (o.missing.includes('businessUnit') && ctx.profile.unitName) {
           body.businessUnit = ctx.profile.unitName;
-        if (o.missing.includes('contractOwner')) body.fields = { contractOwner: ctx.profile.name };
+          used.push('business unit');
+        }
+        const fields: Record<string, string> = {};
+        if (o.missing.includes('contractOwner')) {
+          fields.contractOwner = ctx.profile.name;
+          used.push('contract owner');
+        }
+        const custom = await customFieldSuggestions(ctx);
+        Object.assign(fields, custom.values);
+        if (Object.keys(fields).length > 0) body.fields = fields;
         if (Object.keys(body).length === 0)
           return { applied: false, note: 'The profile does not help with what is still missing' };
         const r = await patch(ctx, body);
-        return r.ok
-          ? {
-              applied: true,
-              note: `Used the profile for ${[...(body.businessUnit ? ['business unit'] : []), ...(body.fields ? ['contract owner'] : [])].join(' and ')}`,
-            }
-          : { applied: false, note: `The change was refused: ${r.title ?? r.status}` };
+        if (!r.ok) return { applied: false, note: `The change was refused: ${r.title ?? r.status}` };
+        if (custom.notes.length > 0) {
+          const prev = (ctx.context.assumptions as string[] | undefined) ?? [];
+          await ctx.setContext({ assumptions: [...prev, ...custom.notes.map((n) => `Suggested ${n}`)] });
+        }
+        return {
+          applied: true,
+          note: [
+            used.length ? `Used the profile for ${used.join(' and ')}` : '',
+            custom.notes.length ? `Suggested ${custom.notes.join('; ')}. A person should confirm` : '',
+          ]
+            .filter(Boolean)
+            .join('. '),
+        };
       },
     },
     {
@@ -366,7 +411,7 @@ function completeRequest(ctx: Ctx): Action {
       ownerGate(c, {
         key: `fields:${c.obs.request!.id}`,
         stage: 'REQUEST',
-        title: `Copilot needs from you: ${c.obs.request!.missing.map((k) => FIELD_LABEL[k] ?? k).join(', ')}`,
+        title: `Copilot needs from you: ${(f.errors.length ? f.errors.map((e) => e.field) : c.obs.request!.missing).map((k) => FIELD_LABEL[k] ?? k).join(', ')}`,
         reason: `${f.message} The text did not give it and it is not something the Copilot may assume.`,
         link: L.request(c.obs.request!.id),
       }),
