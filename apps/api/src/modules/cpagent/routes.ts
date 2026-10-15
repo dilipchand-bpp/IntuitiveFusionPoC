@@ -3,6 +3,7 @@
  * routes as the person who started the run; these routes start and watch runs. All of it is simulated and rules-based
  * (engine rules-simulated-v1).
  */
+import { whatToDo, whatToDoForProblem } from './guidance.js';
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -168,6 +169,15 @@ export function registerCopilotRuntime(app: FastifyInstance, p: string, d: Copil
         createdAt: g.createdAt.toISOString(),
         resolvedAt: g.resolvedAt?.toISOString() ?? null,
         resolution: g.resolution,
+        whatToDo: whatToDo({
+          kind: g.kind,
+          gateKey: g.gateKey,
+          title: g.title,
+          reason: g.reason,
+          link: g.link,
+          roles: g.assigneeRoles as string[],
+          names: g.assigneeNames as string[],
+        }),
       })),
       agents: AGENTS.map((ag) => ({
         key: ag.key,
@@ -184,7 +194,14 @@ export function registerCopilotRuntime(app: FastifyInstance, p: string, d: Copil
         toLabel: agentLabel(h.toAgent),
         reason: h.reason,
       })),
-      problems: problems.map(problemView),
+      problems: problems.map((x) => ({
+        ...problemView(x),
+        whatToDo: whatToDoForProblem(
+          x,
+          gates.find((g) => g.kind === 'NEEDS_HUMAN')?.link ??
+            (req ? `/app/requests/${req.id}` : '/app/copilot'),
+        ),
+      })),
       assumptions: ((r.context as { assumptions?: string[] }).assumptions ?? []) as string[],
     };
   }

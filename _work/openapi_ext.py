@@ -504,7 +504,8 @@ ep("POST", "/evaluations/{id}/committee/instruct", "instructCommittee", CB, "Add
 
 # ---------------------------------------------------------------- X01: conversational assistant
 schemas.update({
-    "AssistantMessage": obj({"message": S, "page": S}, ["message"]),
+    "AssistantContext": obj({"path": S, "entityType": S, "entityId": S, "gateId": UUID}, ["path"]),
+    "AssistantMessage": obj({"message": S, "page": S, "context": ref("AssistantContext")}, ["message"]),
     "AssistantReply": OBJ,
 })
 ep("POST", "/assistant/chat", "assistantChat", "Assistant", "Ask the assistant about the workflow, roles and approvals, what needs attention or what to fix, or give a simple instruction (rules-simulated)", STAFF_ALL + ["SUPPLIER"], "AssistantMessage", "AssistantReply")

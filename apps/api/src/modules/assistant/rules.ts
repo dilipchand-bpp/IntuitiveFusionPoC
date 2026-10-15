@@ -4,8 +4,14 @@
  * point is `answer` (see docs/swap-points.md). Everything it says about who may do what comes from the same tables the
  * portal enforces (route rules, role names), or from rules written out below that mirror the guards in the API.
  */
-import { ROLE_NAMES, rolesForPath, type RoleName } from '@if/shared';
+import { ROLE_NAMES, rolesForPath, type PageContext, type RoleName } from '@if/shared';
 
+import { ROLE_LABEL } from './labels.js';
+import { HOWTO_CUE, matchHowTo, type HowTo } from './howto.js';
+import { findMeaning } from './meanings.js';
+import { howToReply, meaningReply, pageReply } from './pagehelp.js';
+
+export { ROLE_LABEL };
 export const ASSISTANT_MODEL = 'rules-simulated-v1';
 
 export interface Action {
@@ -18,22 +24,13 @@ export interface Reply {
   bullets: string[];
   actions: Action[];
   followUps: string[];
+  /** Numbered steps (how to do something, or what to do about a waiting Copilot run). */
+  steps?: string[];
+  /** Where the answer came from, so it can be checked: "From: page guide", "From: this request", "From: policy". */
+  from?: string;
+  /** false when the signed-in role cannot do what was asked (the answer then says who can). */
+  allowed?: boolean;
 }
-
-const ROLE_LABEL: Record<RoleName, string> = {
-  REQUESTER: 'Requester',
-  PROCUREMENT: 'Procurement team',
-  DELEGATE: 'Delegate (approver)',
-  EVALUATOR: 'Evaluator',
-  CHAIR: 'Evaluation chair',
-  LEGAL: 'Legal',
-  CONTRACT_MGR: 'Contract manager',
-  PROBITY: 'Probity and risk officer',
-  FINANCE: 'Finance',
-  ADMIN: 'Administrator',
-  EXEC: 'Executive',
-  SUPPLIER: 'Supplier',
-};
 
 const ROLE_DOES: Record<RoleName, string> = {
   REQUESTER: 'Raises procurement requests and tracks them. Sees only their own requests.',
@@ -306,75 +303,6 @@ const TARGETS: Target[] = [
   { label: 'Administration', href: '/admin', words: ['admin', 'administration', 'settings'] },
 ];
 
-const PAGES: Array<{ prefix: string; text: string }> = [
-  {
-    prefix: '/app/requests/new',
-    text: 'Raise a request: give the title, category, value and term. Fields the portal can work out are suggested, and it checks the budget before you submit.',
-  },
-  {
-    prefix: '/app/requests',
-    text: 'Procurement requests. Open one to see its phase, documents and the plan, tender and contract that follow from it.',
-  },
-  {
-    prefix: '/app/approvals',
-    text: 'Everything waiting for your decision. A plan above your sourcing limit is refused with the reason, and you cannot approve your own work.',
-  },
-  {
-    prefix: '/app/plans',
-    text: 'Procurement plans. Sections can be edited together, with presence and tracked changes; an approved plan is locked until reopened.',
-  },
-  {
-    prefix: '/app/tenders',
-    text: 'Tender packs and supplier responses. Publishing needs a delegate’s permission from someone other than the pack author.',
-  },
-  {
-    prefix: '/app/evaluations',
-    text: 'Evaluation panels and scoring. Scores are sealed until the panel finishes, and probity releases the result.',
-  },
-  {
-    prefix: '/app/contracts/invoices',
-    text: 'Invoices are matched three ways against the purchase order and what was received. Blocked invoices need finance to resolve or override.',
-  },
-  {
-    prefix: '/app/contracts/expiring',
-    text: 'Contracts approaching their end, so you can renew, extend or let them lapse in time.',
-  },
-  {
-    prefix: '/app/contracts/alerts',
-    text: 'Contract alerts. Countdown, insurance and spend alerts are fixed and cannot be muted; others follow your preferences.',
-  },
-  {
-    prefix: '/app/contracts',
-    text: 'Contracts you can see: draft, legal review, signature and executed. Open one for obligations, variations, spend and alerts.',
-  },
-  { prefix: '/app/suppliers', text: 'The supplier directory: onboarding status, sanctions and insurance.' },
-  {
-    prefix: '/app/connectors',
-    text: 'The systems the platform connects to (all simulated here): health, secrets, deliveries, reconciliation and manual tasks for when a system is down.',
-  },
-  {
-    prefix: '/app/reports',
-    text: 'Portfolio reports. You only see procurements your role is allowed to see.',
-  },
-  {
-    prefix: '/app/dashboard',
-    text: 'Your starting point: what needs attention, and the view for your role.',
-  },
-  { prefix: '/app/audit', text: 'The audit trail: who did what and when. It cannot be edited.' },
-  {
-    prefix: '/app/roadmap',
-    text: 'What is built and what is still coming, with the requirement each belongs to.',
-  },
-  {
-    prefix: '/admin',
-    text: 'Administration: users and roles, delegations of authority, workflows, templates and settings.',
-  },
-  {
-    prefix: '/supplier',
-    text: 'The supplier portal: tenders you were invited to, your profile and your contracts.',
-  },
-];
-
 const ROLE_ALIASES: Array<[RegExp, RoleName]> = [
   [/\brequesters?\b/, 'REQUESTER'],
   [/\bprocurement\b/, 'PROCUREMENT'],
@@ -401,12 +329,21 @@ export type Intent =
   | { kind: 'role-info'; role: RoleName }
   | { kind: 'glossary'; entry: number }
   | { kind: 'page' }
+  | { kind: 'howto'; how: HowTo }
+  | { kind: 'meaning'; text: string }
+  | { kind: 'record' }
+  | { kind: 'copilot-help' }
   | { kind: 'navigate'; target: Target }
   | { kind: 'attention' }
   | { kind: 'review' }
   | { kind: 'mark-read' }
   | { kind: 'data' }
   | { kind: 'unknown' };
+
+const COPILOT_CUE =
+  /\b(what (do|should|must|can|shall) i do|where (do|should|must|can) i (go|do|click)|what'?s? (it |the copilot |this )?(is )?(waiting|stuck|stopped|blocking|needed)|what is (it |the copilot |this )?(waiting|stuck|stopped|blocking)|why (is|has|did) (it|the (run|copilot)|this) (waiting|stopped|stuck|pause)|what (does|is) the copilot (need|wait)|(copilot|run) (needs|is waiting|stopped|got stuck)|how do i (fix|resolve|unblock|clear) (this|it|the)|what happens next|who (must|has to|needs to|should)|next step|what now|steps)\b/;
+const RECORD_CUE =
+  /\b(status|state|missing|waiting|stuck|blocked|progress|summary|where is (this|it)|what('?s| is) (next|left|blocking|holding)|what happens next|next step|who (has|is|must|needs)|what do i need|what('?s| is) (it |this )?(waiting|stopped)|how far|why)\b/;
 
 const norm = (s: string) =>
   s
@@ -428,13 +365,28 @@ function approvalTopic(m: string): Topic | null {
 }
 
 /** Works out what the person is asking. The order matters: the most specific questions come first. */
-export function classify(message: string, canQueryData: boolean): Intent {
+export function classify(message: string, canQueryData: boolean, ctx: PageContext | null = null): Intent {
   const m = norm(message);
   if (/^(hi|hello|hey|g'?day|good (morning|afternoon|evening))\b/.test(m) && m.split(' ').length <= 4)
     return { kind: 'greeting' };
   if (/^(thanks|thank you|cheers|great|perfect)\b/.test(m)) return { kind: 'thanks' };
   if (/mark (all )?(my )?notifications? (as )?read|clear (my )?notifications/.test(m))
     return { kind: 'mark-read' };
+  // a Copilot run that is waiting: where to go and what to do (on a run page, or when asked about the Copilot)
+  if (
+    COPILOT_CUE.test(m) &&
+    (ctx?.entityType === 'copilot-run' ||
+      /\b(copilot|the run|this run|agent|waiting for me|waiting on me|gate|card)\b/.test(m))
+  )
+    return { kind: 'copilot-help' };
+  if (HOWTO_CUE.test(m)) {
+    const how = matchHowTo(m);
+    if (how) return { kind: 'howto', how };
+  }
+  if (findMeaning(m)) return { kind: 'meaning', text: m };
+  // the record the person is looking at: status, what is missing, who it is waiting for
+  if (ctx?.entityType && RECORD_CUE.test(m))
+    return { kind: ctx.entityType === 'copilot-run' ? 'copilot-help' : 'record' };
   if (/\b(my|what('?s| is) my)\b.*\b(limit|authority|delegation)\b|how much can i (approve|sign)/.test(m))
     return { kind: 'my-authority' };
   if (
@@ -443,6 +395,7 @@ export function classify(message: string, canQueryData: boolean): Intent {
     /\bapproval (process|chain|rules?)\b/.test(m)
   )
     return { kind: 'who-approves', topic: approvalTopic(m) };
+  if (/\bwhat (can|do|should) i do (here|on this)\b/.test(m)) return { kind: 'page' };
   if (/\b(what can i do|my role|my permissions?|my access|what am i allowed|what do i have access)\b/.test(m))
     return { kind: 'my-role' };
   if (
@@ -456,7 +409,11 @@ export function classify(message: string, canQueryData: boolean): Intent {
   const g = GLOSSARY.findIndex((x) => x.re.test(m));
   if (g >= 0 && /\b(what|explain|mean|means|define|how does|why)\b/.test(m))
     return { kind: 'glossary', entry: g };
-  if (/\b(this page|where am i|what is this|what can i do here|explain this|help with this)\b/.test(m))
+  if (
+    /\b(this page|this screen|where am i|what is this|what (can|do|should) i do (here|on this)|explain this|help with this|purpose of this)\b/.test(
+      m,
+    )
+  )
     return { kind: 'page' };
   if (
     /\b(workflow|work flow|process|stages|phases|lifecycle|end to end|how does (the )?(portal|procurement|it) work|steps)\b/.test(
@@ -531,7 +488,12 @@ export function followUpsFor(roles: readonly string[]): string[] {
 }
 
 /** Answers that need no live data. Live-data intents are completed by the caller with `attentionReply` / `reviewReply`. */
-export function answer(intent: Intent, who: Who, page: string | null): Reply | null {
+export function answer(
+  intent: Intent,
+  who: Who,
+  page: string | null,
+  ctx: PageContext | null = page ? { path: page } : null,
+): Reply | null {
   const supplier = who.roles.includes('SUPPLIER');
   switch (intent.kind) {
     case 'greeting':
@@ -621,22 +583,12 @@ export function answer(intent: Intent, who: Who, page: string | null): Reply | n
         followUps: ['How does the workflow work?', 'Who can approve a plan?'],
       });
     }
-    case 'page': {
-      const p = page
-        ? [...PAGES]
-            .sort((a, b) => b.prefix.length - a.prefix.length)
-            .find((x) => page === x.prefix || page.startsWith(x.prefix + '/'))
-        : undefined;
-      return base(
-        'page',
-        p
-          ? p.text
-          : 'I cannot tell which page you are on. Ask about a specific page, for example "what is the approvals page?".',
-        {
-          followUps: ['What needs my attention?', 'Who can approve a plan?'],
-        },
-      );
-    }
+    case 'page':
+      return pageReply(ctx ?? (page ? { path: page } : null), who.roles);
+    case 'howto':
+      return howToReply(intent.how, who.roles);
+    case 'meaning':
+      return meaningReply(intent.text);
     case 'navigate': {
       const t = intent.target;
       if (!canOpen(who.roles, t.href))

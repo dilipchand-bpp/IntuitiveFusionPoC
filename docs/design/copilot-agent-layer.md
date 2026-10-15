@@ -76,7 +76,7 @@ Paths are under the API prefix (`/api/v1`). Bodies are JSON unless stated. Each 
 
 ## Progress display (CP-03)
 
-`/app/copilot` lists runs with a status chip (RUNNING, WAITING_GATE, NEEDS_HUMAN, PAUSED, COMPLETED, FAILED, CANCELLED). The run page shows: the stage timeline (request, plan, tender, evaluation, award, contract) with the current stage highlighted; a live activity feed (what the agent just did, which agent, how long); "Waiting for" cards naming the person and the action, with a link; a "Problems and repairs" panel; pause, resume, cancel, advance now. It polls the events route every 3 seconds. The dashboard shows a Copilot summary card. Ask AI offers "Run this for me" for a request typed or dictated.
+`/app/copilot` lists runs with a status chip (RUNNING, WAITING_GATE, NEEDS_HUMAN, PAUSED, COMPLETED, FAILED, CANCELLED). The run page shows: the stage timeline (request, plan, tender, evaluation, award, contract) with the current stage highlighted; a live activity feed (what the agent just did, which agent, how long); "Waiting for" cards naming the person and the action, with a link; a "Problems and repairs" panel; pause, resume, cancel, advance now. It polls the events route every 3 seconds. The dashboard shows a Copilot summary card. Ask offers "Run this for me" for a request typed or dictated.
 
 ## Out of scope and honest limits (to be restated in the evidence document)
 

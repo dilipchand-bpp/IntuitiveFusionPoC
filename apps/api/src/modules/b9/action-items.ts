@@ -26,6 +26,10 @@ export interface ActionItem {
   title: string;
   detail: string;
   link: string;
+  /** For a Procurement Copilot item: one line saying where to go and what to do, and the ids Ask needs to explain it. */
+  whatToDo?: string;
+  runId?: string;
+  gateId?: string;
 }
 const DAY = 86_400_000;
 
@@ -219,8 +223,22 @@ export async function actionItemsFor(tx: Tx, a: AuthContext, now: Date): Promise
   // BCP: where the Procurement Copilot is waiting for this person (a gate whose screen an item above already links to is not repeated)
   const shown = new Set(out.map((i) => i.link));
   for (const c of await copilotActionItems(tx, a)) {
-    if (!c.needsHuman && shown.has(c.link)) continue;
-    out.push({ key: c.key, kind: c.kind, title: c.title, detail: c.detail, link: c.link });
+    if (!c.needsHuman && shown.has(c.link)) {
+      // the same screen is already listed: not repeated, but the existing item gains the Copilot's "what to do" and the run to ask about
+      const dup = out.find((i) => i.link === c.link && !i.runId);
+      if (dup) Object.assign(dup, { whatToDo: c.whatToDo, runId: c.runId, gateId: c.gateId });
+      continue;
+    }
+    out.push({
+      key: c.key,
+      kind: c.kind,
+      title: c.title,
+      detail: c.detail,
+      link: c.link,
+      whatToDo: c.whatToDo,
+      runId: c.runId,
+      gateId: c.gateId,
+    });
   }
   return out;
 }

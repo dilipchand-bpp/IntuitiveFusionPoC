@@ -7,6 +7,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import type { AuthContext } from '../../auth/guard.js';
 import type { Tx } from '../../db/client.js';
 import { cpGate, cpRun } from '../../db/schema.js';
+import { whatToDo, type WhatToDo } from './guidance.js';
 
 export interface CopilotItem {
   key: string;
@@ -16,6 +17,14 @@ export interface CopilotItem {
   link: string;
   /** True when the gate is a problem handed to a person (not the usual wait for an approval). */
   needsHuman: boolean;
+  /** One line: where to go, what to do, then what happens (the same guidance Ask gives in steps). */
+  whatToDo: string;
+  /** The Copilot run this item belongs to, so Ask can be opened with its context. */
+  runId: string;
+  /** The gate, so Ask can be opened on exactly this card. */
+  gateId: string;
+  /** The full guidance: where to go, numbered steps, who, what happens next. */
+  guide: WhatToDo;
 }
 
 export const gateIsFor = (
@@ -36,12 +45,27 @@ export async function copilotActionItems(tx: Tx, a: AuthContext): Promise<Copilo
     .orderBy(asc(cpGate.createdAt));
   return rows
     .filter((r) => r.runStatus !== 'CANCELLED' && gateIsFor(r.g, a.user))
-    .map((r) => ({
-      key: `copilot:${r.g.id}`,
-      kind: r.g.kind === 'NEEDS_HUMAN' ? 'Copilot needs you' : 'Copilot is waiting',
-      title: r.g.title,
-      detail: r.g.reason.length > 220 ? `${r.g.reason.slice(0, 217)}...` : r.g.reason,
-      link: r.g.link,
-      needsHuman: r.g.kind === 'NEEDS_HUMAN',
-    }));
+    .map((r) => {
+      const w = whatToDo({
+        kind: r.g.kind,
+        gateKey: r.g.gateKey,
+        title: r.g.title,
+        reason: r.g.reason,
+        link: r.g.link,
+        roles: (r.g.assigneeRoles as string[] | null) ?? [],
+        names: (r.g.assigneeNames as string[] | null) ?? [],
+      });
+      return {
+        key: `copilot:${r.g.id}`,
+        kind: r.g.kind === 'NEEDS_HUMAN' ? 'Copilot needs you' : 'Copilot is waiting',
+        title: r.g.title,
+        detail: r.g.reason.length > 220 ? `${r.g.reason.slice(0, 217)}...` : r.g.reason,
+        link: r.g.link,
+        needsHuman: r.g.kind === 'NEEDS_HUMAN',
+        whatToDo: w.line,
+        guide: w,
+        runId: r.g.runId,
+        gateId: r.g.id,
+      };
+    });
 }

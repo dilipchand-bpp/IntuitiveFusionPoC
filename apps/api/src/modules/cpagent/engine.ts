@@ -4,6 +4,7 @@
  * attempts, each followed by a re-check) and otherwise stops at a gate or hands the problem to a named person. A step that is
  * already recorded is never repeated, and two ticks can never run at once on one run (a lock on the run row).
  */
+import { whatToDo } from './guidance.js';
 import { and, asc, desc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { withSystem } from '../../db/client.js';
@@ -551,7 +552,9 @@ export class CopilotEngine {
       'PROBLEM',
       'ORCHESTRATOR',
       `Needs a person: ${spec.title}`,
-      `${f.message}.${tried} Raised to ${assignees.names.slice(0, 4).join(', ') || assignees.roles.join(', ')}.`,
+      `${f.message}.${tried} Raised to ${assignees.names.slice(0, 4).join(', ') || assignees.roles.join(', ')}. ${
+        whatToDo({ ...withTried, kind: 'NEEDS_HUMAN', names: assignees.names }, { problemCode: f.code }).line
+      }`,
       { code: f.code },
     );
     await this.applyGates(
@@ -636,7 +639,7 @@ export class CopilotEngine {
         'GATE',
         s.agent,
         s.kind === 'NEEDS_HUMAN' ? `Needs a person: ${s.title}` : `Waiting: ${s.title}`,
-        `${s.reason} Rule: ${s.rule}. Waiting for ${a.names.slice(0, 5).join(', ') || s.roles.join(', ')}.`,
+        `${s.reason} Rule: ${s.rule}. Waiting for ${a.names.slice(0, 5).join(', ') || s.roles.join(', ')}. ${whatToDo({ ...s, names: a.names }).line}`,
         { gateKey: s.key, kind: s.kind },
       );
       // a note in the notification list of each person asked (the same text as the action item)
@@ -647,7 +650,7 @@ export class CopilotEngine {
               tenantId: run.tenantId,
               userId,
               title: `Procurement Copilot is waiting for you: ${s.title}`.slice(0, 200),
-              body: s.reason.slice(0, 400),
+              body: `${s.reason.slice(0, 220)} ${whatToDo({ ...s, names: a.names }).line}`.slice(0, 480),
               link: s.link,
             })),
           ),

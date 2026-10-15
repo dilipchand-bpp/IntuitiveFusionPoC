@@ -42683,6 +42683,28 @@
     "type": "object",
     "additionalProperties": true
    },
+   "AssistantContext": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "entityType": {
+      "type": "string"
+     },
+     "entityId": {
+      "type": "string"
+     },
+     "gateId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "path"
+    ]
+   },
    "AssistantMessage": {
     "type": "object",
     "properties": {
@@ -42691,6 +42713,9 @@
      },
      "page": {
       "type": "string"
+     },
+     "context": {
+      "$ref": "#/components/schemas/AssistantContext"
      }
     },
     "additionalProperties": false,

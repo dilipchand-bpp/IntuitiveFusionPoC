@@ -4,3 +4,4 @@ export * from './access.js';
 export * from './baseline.js';
 export const PRODUCT_NAME = 'Intuitive Fusion';
 export * from './roadmap.js';
+export * from './page-guide.js';

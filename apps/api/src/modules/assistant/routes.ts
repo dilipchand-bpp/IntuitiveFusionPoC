@@ -6,7 +6,7 @@
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { ROLE_NAMES, type RoleName } from '@if/shared';
+import { parsePageContext, ROLE_NAMES, type PageContext, type RoleName } from '@if/shared';
 import { guard, type AuthContext, type GuardDeps } from '../../auth/guard.js';
 import { withContext, type Tx } from '../../db/client.js';
 import { contract, delegation, invoice, notification, plan, supplier } from '../../db/schema.js';
@@ -14,8 +14,10 @@ import { parse } from '../../http/errors.js';
 import { addDays, iso } from '../contract/dates.js';
 import { modelStamp, resolveModel } from '../b10ai/service.js';
 import { flagContent, injectionSignals } from '../b11priv/content-safety.js';
+import { copilotActionItems } from '../cpagent/action-gates.js';
 import { parseQuestion } from '../reporting/b6-rules.js';
 import { visibleRequests } from '../reporting/scope.js';
+import { copilotReply, myGatesReply, recordReply, type RecordRead, type RunDetail } from './pagehelp.js';
 import {
   answer,
   askLink,
@@ -34,7 +36,34 @@ const REPORT_USERS = ['EXEC', 'FINANCE', 'PROCUREMENT', 'CONTRACT_MGR', 'DELEGAT
 const chatBody = z.object({
   message: z.string().trim().min(1).max(500),
   page: z.string().max(200).optional(),
+  /** What the person is looking at. The type and id are worked out again here from the path; a claimed type is never trusted. */
+  context: z
+    .object({
+      path: z.string().max(300),
+      entityType: z.string().max(30).optional(),
+      entityId: z.string().max(60).optional(),
+      /** A waiting card on a Copilot run (the "What do I do?" button). */
+      gateId: z.string().uuid().optional(),
+    })
+    .optional(),
 });
+
+const fromFor = (topic: string): string =>
+  ({
+    greeting: 'From: policy',
+    thanks: 'From: policy',
+    help: 'From: policy',
+    workflow: 'From: policy (the lifecycle rules)',
+    approval: 'From: policy (delegation of authority and the role rules)',
+    role: 'From: the role rules',
+    glossary: 'From: policy (glossary)',
+    navigate: 'From: page guide',
+    attention: 'From: your own data (read as you)',
+    review: 'From: your own data (read as you)',
+    authority: 'From: your own delegations',
+    data: 'From: the report rules',
+    instruction: 'From: your own data (read as you)',
+  })[topic] ?? 'From: policy';
 
 async function gather(d: GuardDeps, tx: Tx, a: AuthContext): Promise<Facts> {
   const roles = a.user.roles;
@@ -169,6 +198,51 @@ async function gather(d: GuardDeps, tx: Tx, a: AuthContext): Promise<Facts> {
 export function registerAssistantRoutes(app: FastifyInstance, p: string, d: GuardDeps): Set<string> {
   const done = new Set<string>();
   done.add('POST /assistant/chat');
+  /** One GET through the normal routes with the caller's own cookie. Null when the route refuses or finds nothing. */
+  async function readJson(cookie: string, path: string): Promise<unknown | null> {
+    const res = await app.inject({ method: 'GET', url: `${p}${path}`, headers: { cookie } });
+    if (res.statusCode < 200 || res.statusCode >= 300) return null;
+    try {
+      return JSON.parse(res.body) as unknown;
+    } catch {
+      return null;
+    }
+  }
+  async function readRecord(
+    cookie: string,
+    type: PageContext['entityType'],
+    id: string,
+  ): Promise<RecordRead | null> {
+    switch (type) {
+      case 'request': {
+        const json = await readJson(cookie, `/requests/${id}`);
+        return json ? { json, extra: await readJson(cookie, `/requests/${id}/progress`) } : null;
+      }
+      case 'plan': {
+        const list = await readJson(cookie, '/plans');
+        return list ? { json: list, extra: list } : null;
+      }
+      case 'tender': {
+        const json = await readJson(cookie, `/tenders/${id}`);
+        return json ? { json } : null;
+      }
+      case 'evaluation': {
+        const json = await readJson(cookie, `/evaluations/${id}`);
+        return json ? { json } : null;
+      }
+      case 'contract': {
+        // the signing route is read only; the contract route itself records that a signatory has opened it
+        const json = await readJson(cookie, `/contracts/${id}/signing`);
+        return json ? { json } : null;
+      }
+      case 'supplier': {
+        const json = await readJson(cookie, `/suppliers/${id}`);
+        return json ? { json } : null;
+      }
+      default:
+        return null;
+    }
+  }
   app.post(
     `${p}/assistant/chat`,
     {
@@ -193,10 +267,42 @@ export function registerAssistantRoutes(app: FastifyInstance, p: string, d: Guar
       const supplierOnly = roles.includes('SUPPLIER');
       const canQueryData = !supplierOnly && roles.some((r) => REPORT_USERS.includes(r));
       const who = { roles, name: a.user.name };
-      const intent = classify(body.message, canQueryData);
-      let reply: Reply | null = answer(intent, who, body.page ?? null);
+      const ctx: PageContext | null = parsePageContext(body.context?.path ?? body.page);
+      const intent = classify(body.message, canQueryData, ctx);
+      let reply: Reply | null = answer(intent, who, body.page ?? null, ctx);
       let done_: string | null = null;
 
+      if (!reply && intent.kind === 'record' && ctx?.entityType) {
+        // the facts come from the same routes the page itself uses, called with this person's own session, so what they may see is
+        // exactly what they are told, and a record in another organisation answers like one that does not exist
+        const read = supplierOnly
+          ? null
+          : await readRecord(req.headers.cookie ?? '', ctx.entityType, ctx.entityId!);
+        reply = recordReply({ type: ctx.entityType, id: ctx.entityId! }, read, roles);
+      }
+      if (!reply && intent.kind === 'copilot-help' && !supplierOnly) {
+        if (ctx?.entityType === 'copilot-run') {
+          const run = (await readJson(
+            req.headers.cookie ?? '',
+            `/copilot/runs/${ctx.entityId}`,
+          )) as RunDetail | null;
+          if (run) reply = copilotReply(run, who, body.context?.gateId ?? null);
+          else {
+            // not the person's own run and not a manager: a person a gate is waiting for may still be told about that gate,
+            // because it is already on their own action list (the same items, nothing more)
+            const items = await withContext(d.database, a.ctx, (tx) => copilotActionItems(tx, a));
+            const mine = items.filter(
+              (i) => i.runId === ctx.entityId && (!body.context?.gateId || i.gateId === body.context.gateId),
+            );
+            reply = mine.length
+              ? myGatesReply(mine.map((i) => ({ title: i.title, whatToDo: i.guide, runId: i.runId })))
+              : copilotReply(null, who);
+          }
+        } else {
+          const items = await withContext(d.database, a.ctx, (tx) => copilotActionItems(tx, a));
+          reply = myGatesReply(items.map((i) => ({ title: i.title, whatToDo: i.guide, runId: i.runId })));
+        }
+      }
       if (!reply && !supplierOnly) {
         if (intent.kind === 'attention' || intent.kind === 'review' || intent.kind === 'my-authority') {
           const facts = await withContext(d.database, a.ctx, (tx) => gather(d, tx, a));
@@ -244,6 +350,7 @@ export function registerAssistantRoutes(app: FastifyInstance, p: string, d: Guar
         }
       }
       if (!reply) reply = unknownReply(who);
+      reply.from ??= fromFor(reply.topic);
       // keep only links this person may open, and never anything outside the portal
       reply.actions = reply.actions.filter((x) => x.href.startsWith('/') && canOpen(roles, x.href));
       // the tenant's active model words the footer, so switching models by configuration is visible on every answer (NFR-C01, NFR-M06)
