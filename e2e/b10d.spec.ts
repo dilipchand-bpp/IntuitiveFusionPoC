@@ -58,7 +58,7 @@ test.describe('NFR-C01, NFR-M06 and SEC-TP07 AI models', () => {
     await card(page, MODEL).getByRole('button', { name: 'Approve', exact: true }).click();
     await expect(card(page, MODEL).getByTestId('approval-state')).toHaveAttribute('data-state', 'APPROVED');
 
-    // the administrator switches by configuration; Ask AI shows which model answered
+    // the administrator switches by configuration; Ask shows which model answered
     await signIn(page, 'admin');
     await page.goto('/admin/ai-models');
     await card(page, MODEL).getByRole('button', { name: 'Make active' }).click();

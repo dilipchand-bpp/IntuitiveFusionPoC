@@ -3,6 +3,7 @@ import { Bot, Send, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { guideFor, parsePageContext } from '@if/shared';
 import { AiBadge } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { message as problem } from '@/components/contract/b5-shared';
@@ -19,6 +20,11 @@ interface Reply {
   modelSimulated?: boolean;
   footer?: string;
   footerNote?: string;
+  /** Numbered steps (how to do something, or what to do about a waiting Copilot run). */
+  steps?: string[];
+  /** Where the answer came from: "From: page guide", "From: this request", "From: policy". */
+  from?: string;
+  allowed?: boolean;
 }
 interface Turn {
   from: 'you' | 'ai';
@@ -26,14 +32,38 @@ interface Turn {
   reply?: Reply;
 }
 const KEY = 'if-ask-ai';
-const START = [
-  'What needs my attention?',
-  'How does the workflow work?',
-  'Who can approve a plan?',
-  'Anything I should fix?',
-];
+/** What Ask is told about the page: the path and, where the path has one, the record's id (the server works the type out again). */
+export function askContext(path: string | null, gateId?: string) {
+  const c = parsePageContext(path);
+  if (!c) return undefined;
+  return {
+    path: c.path,
+    ...(c.entityType ? { entityType: c.entityType, entityId: c.entityId } : {}),
+    ...(gateId ? { gateId } : {}),
+  };
+}
 
-/** The "Ask AI" button at the bottom right of every page, and the conversation it opens (FR-X01). */
+/** Questions that fit the page the person is on, so the first thing they see is useful here. */
+export function startersFor(path: string | null, supplier: boolean): string[] {
+  const c = parsePageContext(path);
+  if (supplier) return ['How do I respond to a tender?', 'What is this page?', 'What can I do here?'];
+  const out = ['What is this page?', 'What can I do here?'];
+  if (c?.entityType === 'copilot-run') out.unshift('What do I do?');
+  else if (c?.entityType) out.push('What is the status and who is it waiting for?');
+  out.push('How do I create a request?', 'What needs my attention?');
+  return out;
+}
+
+/** An event other parts of the app send to open Ask with a question about what is on screen (the Copilot "What do I do?" button). */
+export const ASK_EVENT = 'if-ask';
+export interface AskEventDetail {
+  question: string;
+  gateId?: string;
+  /** Ask about this page instead of the one on screen (for example the Copilot run a list item belongs to). */
+  path?: string;
+}
+
+/** The "Ask" button at the bottom right of every page, and the conversation it opens (FR-X01). */
 export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boolean }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
@@ -69,7 +99,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  async function ask(q: string) {
+  async function ask(q: string, gateId?: string, asPath?: string) {
     const t = q.trim();
     if (!t || busy) return;
     setText('');
@@ -80,7 +110,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
       const r = await api<Reply>('/assistant/chat', {
         method: 'POST',
         csrf,
-        body: { message: t, page: path },
+        body: { message: t, page: path, context: askContext(asPath ?? path, gateId) },
       });
       setTurns((x) => [...x, { from: 'ai', text: r.answer, reply: r }]);
     } catch (e) {
@@ -89,9 +119,20 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
       setBusy(false);
     }
   }
-  const starts = supplier
-    ? ['How do I respond to a tender?', 'What is a conflict of interest?', 'What can I do here?']
-    : START;
+  const starts = startersFor(path, supplier);
+  const pageTitle = guideFor(path)?.title ?? null;
+  const askRef = useRef(ask);
+  askRef.current = ask;
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const d = (e as CustomEvent<AskEventDetail>).detail;
+      if (!d?.question) return;
+      setOpen(true);
+      void askRef.current(d.question, d.gateId, d.path);
+    };
+    window.addEventListener(ASK_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_EVENT, onAsk);
+  }, []);
   const last = [...turns].reverse().find((t) => t.reply)?.reply;
 
   return (
@@ -99,7 +140,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
       {open && (
         <section
           role="dialog"
-          aria-label="Ask AI assistant"
+          aria-label="Ask"
           data-testid="ask-ai-panel"
           className="flex h-[min(34rem,calc(100vh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
         >
@@ -107,9 +148,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
             <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-white">
               <Bot className="size-5" aria-hidden="true" />
             </span>
-            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">
-              Procurement assistant
-            </h2>
+            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">Ask</h2>
             <AiBadge />
             {turns.length > 0 && (
               <button
@@ -129,6 +168,11 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
               <X className="size-4" aria-hidden="true" />
             </button>
           </header>
+          {pageTitle && (
+            <p className="border-b border-border px-4 py-1.5 text-xs text-text-muted" data-testid="ask-page">
+              Asking about: <strong className="text-text">{pageTitle}</strong>
+            </p>
+          )}
           <div
             className="flex-1 space-y-3 overflow-y-auto p-4"
             aria-live="polite"
@@ -137,8 +181,9 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
           >
             {turns.length === 0 && (
               <p className="text-sm text-text-muted">
-                Hello. Ask me how the portal works, who can approve what, what needs your attention, or what
-                you should fix. I can also take you to a page. Type or speak your question.
+                Hello. Ask me what this page is, what you can do here, how to do anything in the portal, what
+                a status means, or what to do when the Procurement Copilot is waiting. I answer from the page
+                guide and the records you may see. Type or speak your question.
               </p>
             )}
             {turns.map((t, i) =>
@@ -156,12 +201,24 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
                   data-testid="ai-answer"
                 >
                   <p>{t.text}</p>
+                  {t.reply?.steps && t.reply.steps.length > 0 && (
+                    <ol className="mt-2 list-decimal space-y-1 pl-5" data-testid="ai-steps">
+                      {t.reply.steps.map((st, j) => (
+                        <li key={j}>{st}</li>
+                      ))}
+                    </ol>
+                  )}
                   {t.reply && t.reply.bullets.length > 0 && (
                     <ul className="mt-2 list-disc space-y-1 pl-5">
                       {t.reply.bullets.map((b, j) => (
                         <li key={j}>{b}</li>
                       ))}
                     </ul>
+                  )}
+                  {t.reply?.from && (
+                    <p className="mt-2 text-xs text-text-muted" data-testid="ai-from">
+                      {t.reply.from}
+                    </p>
                   )}
                   {t.reply?.footer && (
                     <p
@@ -277,7 +334,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
         className="flex min-h-[48px] items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-bold text-white shadow-lg hover:brightness-110"
       >
         <Bot className="size-5" aria-hidden="true" />
-        Ask AI
+        Ask
       </button>
     </div>
   );

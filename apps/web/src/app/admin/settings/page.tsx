@@ -10,12 +10,17 @@ import { apiGet, getSessionUser } from '@/lib/session';
 export const metadata = { title: 'Settings – Intuitive Fusion' };
 
 export default async function SettingsPage() {
-  const [me, settings, log, emails] = await Promise.all([
+  const [me, settings, log, emails, users] = await Promise.all([
     getSessionUser(),
     apiGet<SettingsData>('/admin/settings'),
     apiGet<LogEntry[]>('/admin/notification-log'),
     apiGet<EmailEntry[]>('/admin/email-log'),
+    apiGet<Array<{ id: string; name: string; roles: string[]; active: boolean }>>('/admin/users'),
   ]);
+  // only procurement managers carry a workload, so only they can be given their own capacity
+  const managers = (users ?? [])
+    .filter((u) => u.active && u.roles.includes('PROCUREMENT'))
+    .map((u) => ({ id: u.id, name: u.name }));
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <header>
@@ -28,7 +33,13 @@ export default async function SettingsPage() {
       {!settings || !me ? (
         <EmptyState title="Settings are unavailable" body="Please refresh the page." />
       ) : (
-        <SettingsPanel initial={settings} log={log ?? []} emails={emails ?? []} csrf={me.csrfToken} />
+        <SettingsPanel
+          initial={settings}
+          log={log ?? []}
+          emails={emails ?? []}
+          managers={managers}
+          csrf={me.csrfToken}
+        />
       )}
     </div>
   );

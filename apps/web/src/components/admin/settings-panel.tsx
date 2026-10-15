@@ -4,6 +4,32 @@ import { useState, type ReactNode } from 'react';
 import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
 import { B11dSettings } from '@/components/b11/settings-sections';
 import { ApiError, api } from '@/lib/api-client';
+import {
+  CapacityEditor,
+  ClausesEditor,
+  RecipientsEditor,
+  RegistersEditor,
+  ReviewRulesEditor,
+  RoutingRulesEditor,
+  SpendAlertsEditor,
+  newReviewRule,
+  newRoutingRule,
+  type ManagerOption,
+} from './settings-lists';
+import {
+  LIST_LIMITS,
+  checkClauses,
+  checkOverrides,
+  checkRecipients,
+  checkRegisters,
+  checkReviewRules,
+  checkRoutingRules,
+  checkSpendAlerts,
+  type CapacityOverride,
+  type Recipient,
+  type Register,
+  type RoutingRule,
+} from './settings-list-rules';
 
 /** The colour palettes an organisation can choose (the same names the theme defines). */
 const PALETTE_NAMES = ['INDIGO', 'TEAL', 'CRIMSON', 'FOREST', 'SLATE'] as const;
@@ -35,6 +61,7 @@ export interface SettingsData {
     channels: Array<'IN_APP' | 'EMAIL' | 'SLACK' | 'TEAMS'>;
     escalationHours: number;
     rules: Array<{ event: 'BUDGET_BREACH' | 'DELEGATE_ACTION' | 'APPROVAL_TIMEOUT'; enabled: boolean }>;
+    extraRecipients: Recipient[];
   };
   security: { requireMfa: boolean; enforceSso: boolean; stepUpApprovals: boolean };
   onboardingQuestions: Array<{
@@ -44,12 +71,7 @@ export interface SettingsData {
     mandatory: boolean;
     flagIf?: 'YES' | 'NO';
   }>;
-  publicRegisters: Array<{
-    register: 'AusTender' | 'SAM.gov' | 'TED';
-    jurisdiction: string;
-    minValueAud: number;
-    enabled: boolean;
-  }>;
+  publicRegisters: Register[];
   contractRules: {
     requireBankDetails: boolean;
     requireRiskSummaryReview: boolean;
@@ -58,7 +80,12 @@ export interface SettingsData {
     negotiationLockDays: number;
     signingReminderHours: number;
   };
-  dashboards: { visibility: 'HIERARCHY' | 'BROAD'; capacityPerManager: number; referenceRefreshDays: number };
+  dashboards: {
+    visibility: 'HIERARCHY' | 'BROAD';
+    capacityPerManager: number;
+    referenceRefreshDays: number;
+    capacityOverrides: CapacityOverride[];
+  };
   tenderRules: { dualWitnessThresholdAud: number; witnessWindowMinutes: number };
   ratings: { supplierSeesRatings: boolean; staffSeeSupplierRatings: boolean };
   legalPlatform: { enabled: boolean; name: string; webhookSecret: string; simulateOutage: boolean };
@@ -88,6 +115,7 @@ export interface SettingsData {
     disclosureDays: number;
     highValueAud: number;
     spendAlertPct: number;
+    extraSpendAlertPcts: number[];
     planTemplates: Array<{
       kind: 'CMP' | 'RMP';
       name: string;
@@ -107,7 +135,7 @@ export interface SettingsData {
     clarificationDays: number;
   };
   erpFieldMap: Array<{ erpName: string; platformKey: string }>;
-  workflowRouting: { simpleBelow: number; intermediateBelow: number };
+  workflowRouting: { simpleBelow: number; intermediateBelow: number; rules: RoutingRule[] };
 }
 export interface EmailEntry {
   id: string;
@@ -171,7 +199,19 @@ const message = (e: unknown) =>
         .join(' ')
     : 'Something went wrong. Please try again.';
 
-function Section({
+/**
+ * What a section can offer beside Save. A list section passes `add` and gets an "Add ..." button that sits next to
+ * Save, shows how many of the allowed items are used, and stops at the limit. A section of fixed values passes
+ * `fixed`, a short reason, and says so under its blurb. A new section picks one of the two.
+ */
+export interface SectionAdd {
+  label: string;
+  onClick: () => void;
+  count: number;
+  max: number;
+}
+
+export function Section({
   id,
   title,
   blurb,
@@ -180,6 +220,8 @@ function Section({
   busy,
   saved,
   error,
+  add,
+  fixed,
 }: {
   id: string;
   title: string;
@@ -189,23 +231,41 @@ function Section({
   busy: boolean;
   saved: boolean;
   error: string | null;
+  add?: SectionAdd;
+  fixed?: string;
 }) {
+  const full = add ? add.count >= add.max : false;
   return (
     <Card role="region" aria-labelledby={`${id}-h`} data-testid={`settings-${id}`}>
       <h2 id={`${id}-h`} className="font-heading text-xl font-bold">
         {title}
       </h2>
       <p className="mt-1 max-w-prose text-sm text-text-muted">{blurb}</p>
+      {!add && fixed && (
+        <p className="mt-1 max-w-prose text-xs text-text-muted" data-testid={`settings-${id}-fixed`}>
+          This section holds fixed values, so it only has Save. {fixed}
+        </p>
+      )}
       <div className="mt-4 flex flex-col gap-3">{children}</div>
       {error && (
         <p role="alert" className="mt-3 text-sm font-medium text-error">
           {error}
         </p>
       )}
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button loading={busy} onClick={onSave} aria-label={`Save ${title.toLowerCase()}`}>
           Save
         </Button>
+        {add && (
+          <Button variant="secondary" disabled={full} onClick={add.onClick} data-testid={`${id}-add`}>
+            {add.label}
+          </Button>
+        )}
+        {add && (
+          <span className="text-xs text-text-muted" data-testid={`${id}-count`}>
+            {full ? `Limit reached: ${add.max}` : `${add.count} of ${add.max} used`}
+          </span>
+        )}
         {saved && (
           <span role="status" className="text-sm font-medium text-success">
             Saved and recorded in the audit trail
@@ -221,11 +281,14 @@ export function SettingsPanel({
   initial,
   log,
   emails = [],
+  managers = [],
   csrf,
 }: {
   initial: SettingsData;
   log: LogEntry[];
   emails?: EmailEntry[];
+  /** Procurement managers, for the capacity overrides. */
+  managers?: ManagerOption[];
   csrf: string;
 }) {
   const router = useRouter();
@@ -260,6 +323,15 @@ export function SettingsPanel({
       setBusy(null);
     }
   }
+  /** Saves a list section after the plain-sentence checks; the API still checks everything again. */
+  async function saveChecked(name: string, value: unknown, issues: string[]) {
+    if (issues.length > 0) {
+      setSaved(null);
+      setErrors((e) => ({ ...e, [name]: issues.join(' ') }));
+      return;
+    }
+    await save(name, value);
+  }
   const sec = (id: string) => ({
     id,
     busy: busy === id,
@@ -271,6 +343,7 @@ export function SettingsPanel({
     <div className="flex min-w-0 flex-col gap-6">
       <Section
         {...sec('numbering')}
+        fixed="One format applies to every request, so there is nothing to add."
         title="Procurement numbers"
         blurb="The format of the number every new request receives. The sequence continues within the year or financial year."
         onSave={() => void save('numbering', s.numbering)}
@@ -324,6 +397,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('fieldLabels')}
+        fixed="Every built-in field already has a box above, and a field you create carries its own label under Custom fields."
         title="Field labels"
         blurb="Use your own wording for the built-in request fields. Leave a box empty to keep the standard label."
         onSave={() =>
@@ -351,6 +425,16 @@ export function SettingsPanel({
         title="Custom fields"
         blurb="Add your own fields to every request, for example an Indigenous procurement flag. A mandatory field blocks submission until it is filled."
         onSave={() => void save('customFields', s.customFields)}
+        add={{
+          label: 'Add a field',
+          count: s.customFields.length,
+          max: LIST_LIMITS.customFields,
+          onClick: () =>
+            setS({
+              ...s,
+              customFields: [...s.customFields, { key: '', label: '', type: 'TEXT', mandatory: false }],
+            }),
+        }}
       >
         {s.customFields.map((f, i) => (
           <div
@@ -425,24 +509,11 @@ export function SettingsPanel({
             </Button>
           </div>
         ))}
-        <div>
-          <Button
-            variant="secondary"
-            disabled={s.customFields.length >= 20}
-            onClick={() =>
-              setS({
-                ...s,
-                customFields: [...s.customFields, { key: '', label: '', type: 'TEXT', mandatory: false }],
-              })
-            }
-          >
-            Add a field
-          </Button>
-        </div>
       </Section>
 
       <Section
         {...sec('checkpoints')}
+        fixed="The three checkpoints are fixed steps in the process; each can only be kept or relaxed."
         title="Mandatory checkpoints"
         blurb="Steps the platform enforces by default. An enterprise may relax one; every time a relaxed checkpoint is used it is recorded in the audit trail."
         onSave={() => void save('checkpoints', s.checkpoints)}
@@ -474,7 +545,23 @@ export function SettingsPanel({
         {...sec('intake')}
         title="Intake rules"
         blurb="Who may self-serve, what happens when the budget is exceeded, which classification scheme is used, which layout each role starts with, and which reviews a request triggers."
-        onSave={() => void save('intake', s.intake)}
+        onSave={() => void saveChecked('intake', s.intake, checkReviewRules(s.intake.engagementRules))}
+        add={{
+          label: 'Add a review rule',
+          count: s.intake.engagementRules.length,
+          max: LIST_LIMITS.reviewRules,
+          onClick: () =>
+            setS({
+              ...s,
+              intake: {
+                ...s.intake,
+                engagementRules: [
+                  ...s.intake.engagementRules,
+                  newReviewRule(s.intake.engagementRules.map((r) => r.id)),
+                ],
+              },
+            }),
+        }}
       >
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Self-service below (AUD)" hint="Larger requests are team-led">
@@ -540,101 +627,35 @@ export function SettingsPanel({
             ))}
           </div>
         </fieldset>
-        <div className="flex flex-col gap-2" aria-label="Review rules">
-          <h3 className="text-sm font-semibold">Reviews a request triggers</h3>
-          {s.intake.engagementRules.map((r, i) => (
-            <div
-              key={r.id}
-              className="grid items-end gap-3 sm:grid-cols-[2fr_1fr_2fr_auto]"
-              data-testid="engagement-rule"
-            >
-              <Field label={`Rule ${i + 1}`}>
-                <Input
-                  value={r.label}
-                  onChange={(e) =>
-                    setS({
-                      ...s,
-                      intake: {
-                        ...s.intake,
-                        engagementRules: s.intake.engagementRules.map((x, j) =>
-                          j === i ? { ...x, label: e.target.value } : x,
-                        ),
-                      },
-                    })
-                  }
-                />
-              </Field>
-              <Field label={`Function ${i + 1}`}>
-                <Select
-                  value={r.function}
-                  onChange={(e) =>
-                    setS({
-                      ...s,
-                      intake: {
-                        ...s.intake,
-                        engagementRules: s.intake.engagementRules.map((x, j) =>
-                          j === i ? { ...x, function: e.target.value as 'IT' } : x,
-                        ),
-                      },
-                    })
-                  }
-                >
-                  {['IT', 'LEGAL', 'CYBER', 'FINANCE', 'RISK'].map((f) => (
-                    <option key={f} value={f}>
-                      {f.charAt(0) + f.slice(1).toLowerCase()}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label={`Words ${i + 1} (comma separated)`}>
-                <Input
-                  value={r.keywords.join(', ')}
-                  onChange={(e) =>
-                    setS({
-                      ...s,
-                      intake: {
-                        ...s.intake,
-                        engagementRules: s.intake.engagementRules.map((x, j) =>
-                          j === i
-                            ? {
-                                ...x,
-                                keywords: e.target.value
-                                  .split(',')
-                                  .map((k) => k.trim().toLowerCase())
-                                  .filter(Boolean),
-                              }
-                            : x,
-                        ),
-                      },
-                    })
-                  }
-                />
-              </Field>
-              <Button
-                variant="ghost"
-                aria-label={`Remove rule ${i + 1}`}
-                onClick={() =>
-                  setS({
-                    ...s,
-                    intake: {
-                      ...s.intake,
-                      engagementRules: s.intake.engagementRules.filter((_, j) => j !== i),
-                    },
-                  })
-                }
-              >
-                Remove
-              </Button>
-            </div>
-          ))}
-        </div>
+        <ReviewRulesEditor
+          rules={s.intake.engagementRules}
+          onChange={(engagementRules) => setS({ ...s, intake: { ...s.intake, engagementRules } })}
+        />
       </Section>
 
       <Section
         {...sec('notifications')}
         title="Notifications"
         blurb="Which channels notifications go to, which events notify, and how long an approval may wait before it is escalated to the approver's manager."
-        onSave={() => void save('notifications', s.notifications)}
+        onSave={() =>
+          void saveChecked('notifications', s.notifications, checkRecipients(s.notifications.extraRecipients))
+        }
+        add={{
+          label: 'Add a recipient',
+          count: s.notifications.extraRecipients.length,
+          max: LIST_LIMITS.recipients,
+          onClick: () =>
+            setS({
+              ...s,
+              notifications: {
+                ...s.notifications,
+                extraRecipients: [
+                  ...s.notifications.extraRecipients,
+                  { event: 'BUDGET_BREACH', role: 'FINANCE' },
+                ],
+              },
+            }),
+        }}
       >
         <fieldset className="flex flex-wrap gap-4">
           <legend className="sr-only">Channels</legend>
@@ -693,6 +714,12 @@ export function SettingsPanel({
             Notify when: {EVENT_LABEL[r.event]}
           </label>
         ))}
+        <RecipientsEditor
+          rows={s.notifications.extraRecipients}
+          onChange={(extraRecipients) =>
+            setS({ ...s, notifications: { ...s.notifications, extraRecipients } })
+          }
+        />
         <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="secondary"
@@ -780,6 +807,19 @@ export function SettingsPanel({
         title="Supplier onboarding questions"
         blurb="Questions every new supplier answers when they register, for example about modern slavery or sustainability. A yes or no answer can be flagged so procurement looks at it before the supplier bids."
         onSave={() => void save('onboardingQuestions', s.onboardingQuestions)}
+        add={{
+          label: 'Add a question',
+          count: s.onboardingQuestions.length,
+          max: LIST_LIMITS.questions,
+          onClick: () =>
+            setS({
+              ...s,
+              onboardingQuestions: [
+                ...s.onboardingQuestions,
+                { id: '', label: '', type: 'YESNO', mandatory: true },
+              ],
+            }),
+        }}
       >
         {s.onboardingQuestions.map((q, i) => (
           <div
@@ -879,75 +919,38 @@ export function SettingsPanel({
             </Button>
           </div>
         ))}
-        <div>
-          <Button
-            variant="secondary"
-            disabled={s.onboardingQuestions.length >= 15}
-            onClick={() =>
-              setS({
-                ...s,
-                onboardingQuestions: [
-                  ...s.onboardingQuestions,
-                  { id: '', label: '', type: 'YESNO', mandatory: true },
-                ],
-              })
-            }
-          >
-            Add a question
-          </Button>
-        </div>
       </Section>
 
       <Section
         {...sec('publicRegisters')}
         title="Public registers"
         blurb="A public-sector tender at or above a register's value is sent to that register when it is published. Registers are simulated in the proof of concept."
-        onSave={() => void save('publicRegisters', s.publicRegisters)}
+        onSave={() =>
+          void saveChecked('publicRegisters', s.publicRegisters, checkRegisters(s.publicRegisters))
+        }
+        add={{
+          label: 'Add a register',
+          count: s.publicRegisters.length,
+          max: LIST_LIMITS.registers,
+          onClick: () =>
+            setS({
+              ...s,
+              publicRegisters: [
+                ...s.publicRegisters,
+                { register: '', jurisdiction: '', minValueAud: 0, enabled: true },
+              ],
+            }),
+        }}
       >
-        {s.publicRegisters.map((r, i) => (
-          <div
-            key={r.register}
-            className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]"
-          >
-            <label className="flex min-h-[44px] items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                className="size-5 accent-[var(--if-color-accent)]"
-                checked={r.enabled}
-                onChange={(e) =>
-                  setS({
-                    ...s,
-                    publicRegisters: s.publicRegisters.map((x, j) =>
-                      j === i ? { ...x, enabled: e.target.checked } : x,
-                    ),
-                  })
-                }
-                aria-label={`Send to ${r.register}`}
-              />
-              {r.register}
-            </label>
-            <span className="text-sm text-text-muted">{r.jurisdiction}</span>
-            <Field label={`${r.register} from (AUD)`}>
-              <Input
-                type="number"
-                min={0}
-                value={r.minValueAud}
-                onChange={(e) =>
-                  setS({
-                    ...s,
-                    publicRegisters: s.publicRegisters.map((x, j) =>
-                      j === i ? { ...x, minValueAud: Number(e.target.value) } : x,
-                    ),
-                  })
-                }
-              />
-            </Field>
-          </div>
-        ))}
+        <RegistersEditor
+          rows={s.publicRegisters}
+          onChange={(publicRegisters) => setS({ ...s, publicRegisters })}
+        />
       </Section>
 
       <Section
         {...sec('evaluationRules')}
+        fixed="These are single limits and switches the evaluation code reads; criteria to choose from are added in the Criteria library below."
         title="Evaluation rules"
         blurb="How evaluations run: the compliance gate, when ranking may replace scoring, and how often reminders go out."
         onSave={() => void save('evaluationRules', s.evaluationRules)}
@@ -1018,7 +1021,22 @@ export function SettingsPanel({
         {...sec('contractRules')}
         title="Contract rules"
         blurb="What must happen before a contract is released for signing, which clauses are non-negotiable, and how long a negotiation may run."
-        onSave={() => void save('contractRules', s.contractRules)}
+        onSave={() =>
+          void saveChecked('contractRules', s.contractRules, checkClauses(s.contractRules.protectedClauses))
+        }
+        add={{
+          label: 'Add a protected clause',
+          count: s.contractRules.protectedClauses.length,
+          max: LIST_LIMITS.clauses,
+          onClick: () =>
+            setS({
+              ...s,
+              contractRules: {
+                ...s.contractRules,
+                protectedClauses: [...s.contractRules.protectedClauses, ''],
+              },
+            }),
+        }}
       >
         {(
           [
@@ -1063,23 +1081,12 @@ export function SettingsPanel({
             </label>
           ))}
         </fieldset>
-        <Field label="Non-negotiable clause ids (comma separated)">
-          <Input
-            value={s.contractRules.protectedClauses.join(', ')}
-            onChange={(e) =>
-              setS({
-                ...s,
-                contractRules: {
-                  ...s.contractRules,
-                  protectedClauses: e.target.value
-                    .split(',')
-                    .map((x) => x.trim().toUpperCase())
-                    .filter(Boolean),
-                },
-              })
-            }
-          />
-        </Field>
+        <ClausesEditor
+          ids={s.contractRules.protectedClauses}
+          onChange={(protectedClauses) =>
+            setS({ ...s, contractRules: { ...s.contractRules, protectedClauses } })
+          }
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Lock signing after this many days of negotiation">
             <Input
@@ -1116,7 +1123,25 @@ export function SettingsPanel({
         {...sec('dashboards')}
         title="Dashboards and workload"
         blurb="Who sees whose procurements on a dashboard, how many procurements one manager can carry, and how often the reference content is refreshed."
-        onSave={() => void save('dashboards', s.dashboards)}
+        onSave={() =>
+          void saveChecked('dashboards', s.dashboards, checkOverrides(s.dashboards.capacityOverrides))
+        }
+        add={{
+          label: 'Add a capacity override',
+          count: s.dashboards.capacityOverrides.length,
+          max: LIST_LIMITS.overrides,
+          onClick: () =>
+            setS({
+              ...s,
+              dashboards: {
+                ...s.dashboards,
+                capacityOverrides: [
+                  ...s.dashboards.capacityOverrides,
+                  { userId: '', capacity: s.dashboards.capacityPerManager },
+                ],
+              },
+            }),
+        }}
       >
         <Field
           label="Dashboard visibility"
@@ -1159,10 +1184,17 @@ export function SettingsPanel({
             />
           </Field>
         </div>
+        <CapacityEditor
+          rows={s.dashboards.capacityOverrides}
+          managers={managers}
+          shared={s.dashboards.capacityPerManager}
+          onChange={(capacityOverrides) => setS({ ...s, dashboards: { ...s.dashboards, capacityOverrides } })}
+        />
       </Section>
 
       <Section
         {...sec('tenderRules')}
+        fixed="There is one rule here (when a tender needs two witnesses), so there is no list to extend."
         title="Opening high-value bids"
         blurb="A tender at or above this value stays sealed after it closes until two independent witnesses confirm. A single tender can also be marked this way when its pack is prepared."
         onSave={() => void save('tenderRules', s.tenderRules)}
@@ -1200,6 +1232,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('ratings')}
+        fixed="The rating questions are fixed by the platform; these two switches only decide who sees the results."
         title="Supplier ratings"
         blurb="Who can see the ratings the enterprise and its suppliers give each other."
         onSave={() => void save('ratings', s.ratings)}
@@ -1228,6 +1261,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('approvalLinks')}
+        fixed="These are single switches and one time limit for the approval link."
         title="Approve from a link"
         blurb="Approvers are sent a one-time link that lets them decide without signing in. The same limits and checks still apply."
         onSave={() => void save('approvalLinks', s.approvalLinks)}
@@ -1268,6 +1302,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('currency')}
+        fixed="The base currency is fixed, and exchange rates are entered by Finance on the Currencies page, not here."
         title="Currency and exchange rates"
         blurb="Every total is kept in Australian dollars. Annual mode uses one rate per currency for each financial year (1 July to 30 June), set by finance. Live mode uses the latest rate from the rates feed."
         onSave={() => void save('currency', s.currency)}
@@ -1291,6 +1326,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('artefacts')}
+        fixed="One update mode applies to every report and plan."
         title="Reports and plans following changes"
         blurb="How fast the evaluation report and the contract management plans catch up when the records behind them change."
         onSave={() => void save('artefacts', s.artefacts)}
@@ -1329,6 +1365,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('buying')}
+        fixed="One switch and one limit, so there is nothing to list."
         title="Buying assistant"
         blurb="Recommended purchases can be drafted as requests for the buyer. Up to the limit the platform may draft without a procurement officer starting it."
         onSave={() => void save('buying', s.buying)}
@@ -1358,6 +1395,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('externalSearch')}
+        fixed="A single on or off switch."
         title="Outside AI search"
         blurb="Allow a search to also ask an outside AI source. Only the words of the question go out; nothing from the organisation's records."
         onSave={() => void save('externalSearch', s.externalSearch)}
@@ -1375,6 +1413,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('branding')}
+        fixed="The name, tagline, palette and support email are one value each."
         title="Branding"
         blurb="The name, tagline and colours people see. A change shows on the next page load."
         onSave={() => void save('branding', s.branding)}
@@ -1424,6 +1463,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('analytics')}
+        fixed="Each threshold is a single number the dashboards read."
         title="Analytics"
         blurb="How often dashboards refresh and the thresholds that flag a saving, a variance or drift."
         onSave={() => void save('analytics', s.analytics)}
@@ -1485,6 +1525,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('legalPlatform')}
+        fixed="One legal platform connection per organisation."
         title="Legal platform"
         blurb="If the organisation runs an enterprise legal platform, each new legal matter is raised there, and its stage and redlines come back to the contract. Here the platform is simulated."
         onSave={() => void save('legalPlatform', s.legalPlatform)}
@@ -1538,7 +1579,26 @@ export function SettingsPanel({
         {...sec('contractManagement')}
         title="Contract management"
         blurb="How spend is guarded, how a variation is measured and disclosed, and when a contract gets management and risk plans."
-        onSave={() => void save('contractManagement', s.contractManagement)}
+        onSave={() =>
+          void saveChecked(
+            'contractManagement',
+            s.contractManagement,
+            checkSpendAlerts(s.contractManagement.extraSpendAlertPcts, s.contractManagement.spendAlertPct),
+          )
+        }
+        add={{
+          label: 'Add a spend alert',
+          count: s.contractManagement.extraSpendAlertPcts.length,
+          max: LIST_LIMITS.spendAlerts,
+          onClick: () =>
+            setS({
+              ...s,
+              contractManagement: {
+                ...s.contractManagement,
+                extraSpendAlertPcts: [...s.contractManagement.extraSpendAlertPcts, 50],
+              },
+            }),
+        }}
       >
         <label className="flex min-h-[44px] items-center gap-3 text-sm">
           <input
@@ -1676,6 +1736,12 @@ export function SettingsPanel({
             />
           </Field>
         </div>
+        <SpendAlertsEditor
+          points={s.contractManagement.extraSpendAlertPcts}
+          onChange={(extraSpendAlertPcts) =>
+            setS({ ...s, contractManagement: { ...s.contractManagement, extraSpendAlertPcts } })
+          }
+        />
       </Section>
 
       <Section
@@ -1712,6 +1778,7 @@ export function SettingsPanel({
 
       <Section
         {...sec('security')}
+        fixed="Three fixed switches for how staff sign in."
         title="Sign-in security"
         blurb="How staff prove who they are. Suppliers sign in separately and are not affected."
         onSave={() => void save('security', s.security)}
@@ -1746,7 +1813,22 @@ export function SettingsPanel({
         {...sec('workflowRouting')}
         title="Workflow routing"
         blurb="Which workflow a new request follows, by value. Critical-rated work always follows the governance workflow."
-        onSave={() => void save('workflowRouting', s.workflowRouting)}
+        onSave={() =>
+          void saveChecked('workflowRouting', s.workflowRouting, checkRoutingRules(s.workflowRouting.rules))
+        }
+        add={{
+          label: 'Add a routing rule',
+          count: s.workflowRouting.rules.length,
+          max: LIST_LIMITS.routingRules,
+          onClick: () =>
+            setS({
+              ...s,
+              workflowRouting: {
+                ...s.workflowRouting,
+                rules: [...s.workflowRouting.rules, newRoutingRule(s.workflowRouting.rules.map((r) => r.id))],
+              },
+            }),
+        }}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Simple workflow below (AUD)">
@@ -1773,6 +1855,10 @@ export function SettingsPanel({
             />
           </Field>
         </div>
+        <RoutingRulesEditor
+          rules={s.workflowRouting.rules}
+          onChange={(rules) => setS({ ...s, workflowRouting: { ...s.workflowRouting, rules } })}
+        />
       </Section>
 
       <Section
@@ -1780,6 +1866,12 @@ export function SettingsPanel({
         title="ERP field names"
         blurb="Map your ERP's field names to the platform's, in both directions, so reports show one consistent label."
         onSave={() => void save('erpFieldMap', s.erpFieldMap)}
+        add={{
+          label: 'Add a mapping',
+          count: s.erpFieldMap.length,
+          max: LIST_LIMITS.mappings,
+          onClick: () => setS({ ...s, erpFieldMap: [...s.erpFieldMap, { erpName: '', platformKey: '' }] }),
+        }}
       >
         {s.erpFieldMap.map((m, i) => (
           <div key={i} className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
@@ -1819,12 +1911,6 @@ export function SettingsPanel({
           </div>
         ))}
         <div className="grid items-end gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
-          <Button
-            variant="secondary"
-            onClick={() => setS({ ...s, erpFieldMap: [...s.erpFieldMap, { erpName: '', platformKey: '' }] })}
-          >
-            Add a mapping
-          </Button>
           <Field label="Try it on a record">
             <Input value={preview.text} onChange={(e) => setPreview({ ...preview, text: e.target.value })} />
           </Field>

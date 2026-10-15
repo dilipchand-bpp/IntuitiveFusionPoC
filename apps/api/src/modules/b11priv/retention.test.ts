@@ -46,7 +46,7 @@ describe('SEC-D06 AI conversations are held under the same retention and residen
       aiRegionAllowed: true,
     });
     expect(r.conversations).toMatchObject({ total: 2, stamped: 2, anonymised: 0 });
-    expect(r.scope).toMatch(/Ask AI box answers and stores nothing/);
+    expect(r.scope).toMatch(/Ask box answers and stores nothing/);
   });
 
   it('the retention setting has a floor of 30 days and is audited when it changes', async () => {

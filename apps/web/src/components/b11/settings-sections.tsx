@@ -2,6 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Card, Checkbox, Field, Input, Select } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
+import { LIST_LIMITS } from '@/components/admin/settings-list-rules';
 
 type Level = 'SES' | 'AES' | 'QES';
 interface Signatures {
@@ -48,6 +49,8 @@ function Block({
   onSave,
   busy,
   messages,
+  add,
+  fixed,
 }: {
   id: string;
   title: string;
@@ -56,19 +59,39 @@ function Block({
   onSave: () => void;
   busy: boolean;
   messages: ReactNode;
+  /** The same "Add ..." button the other settings sections have, beside Save. */
+  add?: { label: string; onClick: () => void; count: number; max: number };
+  /** For a section of fixed values: why there is no list. */
+  fixed?: string;
 }) {
+  const full = add ? add.count >= add.max : false;
   return (
     <Card role="region" aria-labelledby={`${id}-h`} data-testid={`settings-${id}`}>
       <h2 id={`${id}-h`} className="font-heading text-xl font-bold">
         {title}
       </h2>
       <p className="mt-1 max-w-prose text-sm text-text-muted">{blurb}</p>
+      {!add && fixed && (
+        <p className="mt-1 max-w-prose text-xs text-text-muted" data-testid={`settings-${id}-fixed`}>
+          This section holds fixed values, so it only has Save. {fixed}
+        </p>
+      )}
       <div className="mt-4 flex flex-col gap-3">{children}</div>
       {messages}
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button loading={busy} onClick={onSave} aria-label={`Save ${title.toLowerCase()}`}>
           Save
         </Button>
+        {add && (
+          <Button variant="secondary" disabled={full} onClick={add.onClick} data-testid={`${id}-add`}>
+            {add.label}
+          </Button>
+        )}
+        {add && (
+          <span className="text-xs text-text-muted" data-testid={`${id}-count`}>
+            {full ? `Limit reached: ${add.max}` : `${add.count} of ${add.max} used`}
+          </span>
+        )}
       </div>
     </Card>
   );
@@ -107,6 +130,16 @@ export function B11dSettings({ csrf }: { csrf: string }) {
         busy={sig.busy === 'signatures'}
         messages={sig.messages}
         onSave={() => void save(sig, 'signatures', s)}
+        add={{
+          label: 'Add a value tier',
+          count: s.requiredLevelByValue.length,
+          max: LIST_LIMITS.tiers,
+          onClick: () =>
+            setS({
+              ...s,
+              requiredLevelByValue: [...s.requiredLevelByValue, { fromAud: 100000, level: 'AES' }],
+            }),
+        }}
       >
         <Field label="Default level">
           <Select
@@ -163,20 +196,6 @@ export function B11dSettings({ csrf }: { csrf: string }) {
             </Button>
           </div>
         ))}
-        <div>
-          <Button
-            variant="secondary"
-            disabled={s.requiredLevelByValue.length >= 6}
-            onClick={() =>
-              setS({
-                ...s,
-                requiredLevelByValue: [...s.requiredLevelByValue, { fromAud: 100000, level: 'AES' }],
-              })
-            }
-          >
-            Add a value tier
-          </Button>
-        </div>
       </Block>
 
       <Block
@@ -186,6 +205,7 @@ export function B11dSettings({ csrf }: { csrf: string }) {
         busy={con.busy === 'content'}
         messages={con.messages}
         onSave={() => void save(con, 'content', c)}
+        fixed="The reference packs are the five the platform fetches, so only their timing and use can be set."
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Refresh every (days)">
@@ -221,6 +241,7 @@ export function B11dSettings({ csrf }: { csrf: string }) {
         busy={esg.busy === 'esgPlan'}
         messages={esg.messages}
         onSave={() => void save(esg, 'esgPlan', e)}
+        fixed="The nine ESG metrics are computed by the platform from bids and awards, so only their limits can be set."
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="At risk within (% of the limit)" hint="0 to 50">

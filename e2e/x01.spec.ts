@@ -2,10 +2,10 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { signIn } from './helpers';
 
-/** FR-X01: the Ask AI button on every page, and the conversation behind it. */
+/** FR-X01: the Ask button on every page, and the conversation behind it. */
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
-test.describe('FR-X01 Ask AI', () => {
+test.describe('FR-X01 Ask', () => {
   test('is on every page, answers about approvals, and takes a person to a page', async ({ page }) => {
     await signIn(page, 'requester');
     for (const path of ['/app/requests', '/app/requests/new', '/app/roadmap']) {

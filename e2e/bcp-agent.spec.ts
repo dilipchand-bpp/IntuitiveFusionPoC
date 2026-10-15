@@ -87,7 +87,7 @@ test.describe('CP-01 CP-02 CP-03 CP-06 Procurement Copilot', () => {
     await scan(page);
   });
 
-  test('Ask AI offers to run the request for me', async ({ page }) => {
+  test('Ask offers to run the request for me', async ({ page }) => {
     await signIn(page, 'procurement');
     await page.goto('/app/dashboard');
     await page.getByTestId('ask-ai-button').click();

@@ -87,6 +87,7 @@ interface Spend {
   blockedAmount: number;
   term: { pct: number; start: string; end: string; elapsedDays: number; totalDays: number };
   configuredPct: number;
+  extraPcts?: number[];
   raised: Array<{ kind: string; threshold: number; raisedAt: string }>;
 }
 interface Commercial {
@@ -579,8 +580,12 @@ function SpendTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
           <Bar label={`Paid: ${aud.format(s.paid)}`} pct={s.paidPct} limit={false} />
           <Bar label={`Committed on purchase orders: ${aud.format(s.committed)}`} pct={s.committedPct} />
           <p className="text-sm text-text-muted">
-            {aud.format(s.remaining)} left. You are told at {s.configuredPct}% and, always, at 80%, 90% and
-            100% of the limit.
+            {aud.format(s.remaining)} left. You are told at{' '}
+            {[s.configuredPct, ...(s.extraPcts ?? [])]
+              .sort((a, b) => a - b)
+              .map((n) => `${n}%`)
+              .join(', ')}{' '}
+            and, always, at 80%, 90% and 100% of the limit.
             {s.blockedCount > 0 &&
               ` ${s.blockedCount} blocked invoice(s) worth ${aud.format(s.blockedAmount)} are not counted.`}
           </p>

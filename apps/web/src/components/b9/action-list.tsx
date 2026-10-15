@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { Badge, EmptyState } from '@if/ui';
+import { Badge, Button, EmptyState } from '@if/ui';
+import { ASK_EVENT, type AskEventDetail } from '@/components/shell/ask-ai';
 import { useData } from '@/components/contract/b5-shared';
 
 interface Item {
@@ -9,6 +10,10 @@ interface Item {
   title: string;
   detail: string;
   link: string;
+  /** For a Procurement Copilot item: where to go and what to do, and the ids Ask needs. */
+  whatToDo?: string;
+  runId?: string;
+  gateId?: string;
 }
 
 /** The items behind the dashboard card "Waiting for you" (GET /action-items), each linking to where the action is taken. */
@@ -28,7 +33,7 @@ export function ActionList() {
   return (
     <ul className="flex flex-col gap-3" aria-label="Actions waiting for you" data-testid="action-list">
       {data.items.map((i) => (
-        <li key={i.key}>
+        <li key={i.key} className="flex flex-col gap-2">
           <Link
             href={i.link}
             className="flex min-h-[44px] flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 text-text no-underline shadow-sm hover:bg-surface-alt"
@@ -39,6 +44,28 @@ export function ActionList() {
               <span className="block text-sm text-text-muted">{i.detail}</span>
             </span>
           </Link>
+          {i.whatToDo && i.runId && (
+            <p className="flex flex-wrap items-center gap-3 px-1 text-sm" data-testid="action-what-to-do">
+              <span className="min-w-0 flex-1">{i.whatToDo.replace(/ Open \/\S+$/, '')}</span>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent<AskEventDetail>(ASK_EVENT, {
+                      detail: {
+                        question: 'What do I do?',
+                        path: `/app/copilot/${i.runId}`,
+                        ...(i.gateId ? { gateId: i.gateId } : {}),
+                      },
+                    }),
+                  )
+                }
+              >
+                What do I do?
+              </Button>
+            </p>
+          )}
         </li>
       ))}
     </ul>

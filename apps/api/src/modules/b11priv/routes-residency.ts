@@ -315,7 +315,7 @@ export function registerResidencyRoutes(app: FastifyInstance, p: string, d: B11D
         anonymised: metas.filter((m) => m.anonymisedAt).length,
       },
       scope:
-        'Intake chat transcripts. The Ask AI box answers and stores nothing, so it has no transcript to retain.',
+        'Intake chat transcripts. The Ask box answers and stores nothing, so it has no transcript to retain.',
       holds: holds.map((h) => ({
         id: h.id,
         entityType: h.entityType,

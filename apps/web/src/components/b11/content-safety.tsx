@@ -36,7 +36,7 @@ const SOURCE: Record<string, string> = {
   LESSON: 'Lesson learned',
   LEGAL_EDIT: 'Legal edit instruction',
   SEARCH_RESULT: 'Outside search result',
-  ASK_AI: 'Ask AI question',
+  ASK_AI: 'Ask question',
 };
 
 /** The marker reviewers see next to supplier text that reads like instructions to an AI (SEC-AP08). */

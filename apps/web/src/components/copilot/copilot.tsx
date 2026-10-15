@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AiBadge, Badge, Button, EmptyState, Field, Textarea, type BadgeTone } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { message as problemText } from '@/components/contract/b5-shared';
+import { ASK_EVENT, type AskEventDetail } from '../shell/ask-ai';
 import { appendSpoken, useDictation } from '../voice/use-dictation';
 import { VoiceButton, VoiceStatus } from '../voice/voice-button';
 
@@ -191,6 +192,14 @@ interface Step {
   durationMs: number;
   at: string;
 }
+interface WhatToDo {
+  line: string;
+  short: string;
+  steps: string[];
+  who: string;
+  next: string;
+  why?: string;
+}
 interface Gate {
   id: string;
   kind: string;
@@ -200,6 +209,7 @@ interface Gate {
   roles: string[];
   names: string[];
   status: string;
+  whatToDo?: WhatToDo;
 }
 interface Attempt {
   n: number;
@@ -213,6 +223,7 @@ interface Problem {
   status: string;
   attempts: Attempt[];
   escalatedTo: string[];
+  whatToDo?: WhatToDo;
 }
 interface Detail {
   run: RunBrief & {
@@ -446,12 +457,33 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
               <li key={g.id} className="rounded-lg border border-warning bg-warning-bg p-4 text-text">
                 <p className="font-semibold">{g.title}</p>
                 <p className="text-sm">{g.reason}</p>
+                {g.whatToDo && (
+                  <p className="mt-1 text-sm" data-testid="what-to-do-line">
+                    {g.whatToDo.short}
+                  </p>
+                )}
                 <p className="mt-1 text-sm">
                   <strong>Who:</strong> {g.names.length ? g.names.join(', ') : g.roles.join(', ')}
                   {g.roles.length && g.names.length ? ` (${g.roles.join(', ').toLowerCase()})` : ''} ·{' '}
                   <Link href={g.link} className="font-semibold underline">
                     Open where it is done
                   </Link>
+                </p>
+                <p className="mt-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    data-testid="what-do-i-do"
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent<AskEventDetail>(ASK_EVENT, {
+                          detail: { question: 'What do I do?', gateId: g.id },
+                        }),
+                      )
+                    }
+                  >
+                    What do I do?
+                  </Button>
                 </p>
               </li>
             ))}
@@ -519,6 +551,21 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
                     ))}
                   </ol>
                   {p.status === 'ESCALATED' && <p className="mt-2">Raised to {p.escalatedTo.join(', ')}.</p>}
+                  {p.status === 'ESCALATED' && p.whatToDo && (
+                    <div className="mt-2" data-testid="problem-what-to-do">
+                      <p>
+                        <strong>Why it stopped:</strong> {p.whatToDo.why}
+                      </p>
+                      <p className="mt-1">
+                        <strong>The fix:</strong>
+                      </p>
+                      <ol className="list-decimal pl-5">
+                        {p.whatToDo.steps.map((st, i) => (
+                          <li key={i}>{st}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
