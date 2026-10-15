@@ -881,6 +881,8 @@ export function registerReportingB6(
     return withContext(d.database, a.ctx, async (tx) => {
       const s = await loadSettings(tx, a.user.tenantId);
       const cap = s.dashboards.capacityPerManager;
+      const capOf = (id: string) =>
+        s.dashboards.capacityOverrides.find((o) => o.userId === id)?.capacity ?? cap;
       const { rows } = await visibleRequests(tx, a);
       const active = rows.filter(ACTIVE);
       const team = await tx
@@ -902,8 +904,9 @@ export function registerReportingB6(
             name: who.get(id) ?? 'Unknown',
             procurements: rs.length,
             exposure,
-            utilisation: r1((rs.length / cap) * 100),
-            overloaded: rs.length > cap,
+            capacity: capOf(id),
+            utilisation: r1((rs.length / capOf(id)) * 100),
+            overloaded: rs.length > capOf(id),
             items: rs.map((r) => ({
               id: r.id,
               number: r.number,
@@ -928,7 +931,7 @@ export function registerReportingB6(
         })),
         suggestion:
           out.some((m) => m.overloaded) && spare
-            ? `Move work to ${spare.name}, who has the most room (${spare.procurements} of ${cap}).`
+            ? `Move work to ${spare.name}, who has the most room (${spare.procurements} of ${spare.capacity}).`
             : null,
       };
     });

@@ -405,7 +405,12 @@ export class IntakeService {
     cols.subWorkflow = sub.key;
     const varied = (row.processVariations as unknown[]).length > 0;
     if (!varied) {
-      const routed = routeWorkflow(settings.workflowRouting, value, cols.complexity);
+      const routed = routeWorkflow(
+        settings.workflowRouting,
+        value,
+        cols.complexity,
+        `${merged.title ?? ''} ${merged.category ?? ''}`,
+      );
       cols.workflowId = routed.workflowId;
       const [wf] = await tx.select().from(workflow).where(eq(workflow.id, routed.workflowId));
       cols.processSteps = ((wf?.steps ?? []) as ProcessStep[]).map((x) => ({

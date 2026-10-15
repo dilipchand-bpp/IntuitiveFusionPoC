@@ -229,12 +229,18 @@ export function evaluateRebate(r: RebateInput, spend: number, today: string): Re
 /** Fixed notice points for a breach of the authorised limit: not configurable and not mutable. */
 export const MANDATORY_SPEND_PCTS = [80, 90, 100] as const;
 
-export function spendCrossings(spentPct: number, configuredPct: number, already: Set<string>) {
+export function spendCrossings(
+  spentPct: number,
+  configured: number | readonly number[],
+  already: Set<string>,
+) {
   const out: Array<{ kind: 'MANDATORY' | 'CONFIGURED'; threshold: number }> = [];
   for (const t of MANDATORY_SPEND_PCTS)
     if (spentPct >= t && !already.has(`MANDATORY:${t}`)) out.push({ kind: 'MANDATORY', threshold: t });
-  if (spentPct >= configuredPct && !already.has(`CONFIGURED:${configuredPct}`))
-    out.push({ kind: 'CONFIGURED', threshold: configuredPct });
+  for (const t of [...new Set(typeof configured === 'number' ? [configured] : configured)].sort(
+    (x, y) => x - y,
+  ))
+    if (spentPct >= t && !already.has(`CONFIGURED:${t}`)) out.push({ kind: 'CONFIGURED', threshold: t });
   return out;
 }
 

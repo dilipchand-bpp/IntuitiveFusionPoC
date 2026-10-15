@@ -45,7 +45,12 @@ export interface DispatchInput {
 export async function dispatch(tx: Tx, input: DispatchInput, settings: Settings): Promise<number> {
   const rule = input.event ? settings.notifications.rules.find((r) => r.event === input.event) : undefined;
   if (rule && !rule.enabled) return 0;
-  const unique = [...new Set(input.recipients)];
+  // roles the administrator added for this event are told as well (Settings, Notifications)
+  const extraRoles = input.event
+    ? settings.notifications.extraRecipients.filter((r) => r.event === input.event).map((r) => r.role)
+    : [];
+  const extra = extraRoles.length > 0 ? await usersWithRole(tx, input.tenantId, extraRoles) : [];
+  const unique = [...new Set([...input.recipients, ...extra])];
   for (const userId of unique) {
     const [n] = await tx
       .insert(notification)

@@ -3,14 +3,14 @@
  * Administrators change the rules here; every change is audited with the section, who changed it and the old and new
  * values. Administrators change policy only: this module has no path to bid content (SEC-AC13).
  */
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { ROLE_NAMES, primaryRole, type Clock } from '@if/shared';
 import type { AuditService } from '../../audit/audit-service.js';
 import { guard, type GuardDeps } from '../../auth/guard.js';
 import { withContext } from '../../db/client.js';
-import { appUser, notification, notificationDelivery } from '../../db/schema.js';
+import { appUser, notification, notificationDelivery, roleAssignment } from '../../db/schema.js';
 import { AppError, parse } from '../../http/errors.js';
 import { FIELD_BY_KEY } from '../intake/fields.js';
 import { sweepGrants } from '../admin/grants.js';
@@ -20,6 +20,7 @@ import { EscalationService } from '../notify/dispatch.js';
 import {
   SECTIONS,
   SECTION_NAMES,
+  changeSummary,
   formatNumber,
   loadSettings,
   mapRecord,
@@ -109,6 +110,32 @@ export function registerSettingsRoutes(app: FastifyInstance, p: string, d: Setti
       const problems = crossCheck(merged as Settings);
       if (problems.length > 0)
         throw new AppError(422, 'VALIDATION_FAILED', 'Some settings are not valid', problems);
+      // a capacity override names a procurement manager of this organisation, not any id
+      if (body.dashboards && body.dashboards.capacityOverrides.length > 0) {
+        const ids = body.dashboards.capacityOverrides.map((o) => o.userId);
+        const known = new Set(
+          (
+            await tx
+              .select({ id: roleAssignment.userId })
+              .from(roleAssignment)
+              .where(
+                and(
+                  eq(roleAssignment.tenantId, a.user.tenantId),
+                  eq(roleAssignment.role, 'PROCUREMENT'),
+                  inArray(roleAssignment.userId, ids),
+                ),
+              )
+          ).map((r) => r.id),
+        );
+        const unknown = ids.filter((i) => !known.has(i));
+        if (unknown.length > 0)
+          throw new AppError(422, 'VALIDATION_FAILED', 'Some settings are not valid', [
+            {
+              field: 'dashboards.capacityOverrides',
+              message: 'Choose a procurement manager of this organisation',
+            },
+          ]);
+      }
       // a third-party AI model can be named only once it is approved for this organisation (SEC-TP07)
       if (body.ai) await assertSettable(tx, a.user.tenantId, body.ai, a.user.id);
       const { before, after } = await saveSettings(tx, a.user.tenantId, body as Partial<Settings>);
@@ -116,12 +143,17 @@ export function registerSettingsRoutes(app: FastifyInstance, p: string, d: Setti
       for (const name of SECTION_NAMES) {
         if (body[name] === undefined) continue;
         if (JSON.stringify(before[name]) === JSON.stringify(after[name])) continue;
+        const changes = changeSummary(name, before[name], after[name]);
         await d.audit.record(tx, a.ctx, {
           action: `settings.${name}`,
           entityType: 'tenant',
           entityId: a.user.tenantId,
           before: { [name]: before[name] },
-          after: { [name]: after[name] },
+          // the sentences make an added or removed list item readable in the change log without comparing two blobs
+          after: {
+            [name]: after[name],
+            ...(changes.length > 0 ? { changes } : {}),
+          },
         });
       }
       return view(after, d.clock.now());

@@ -22,6 +22,24 @@ export const TAXONOMIES = ['UNSPSC', 'CPV', 'NAICS'] as const;
 export const COUNTRIES = ['AU', 'NZ', 'UK', 'EU', 'US', 'CA', 'SG', 'JP'] as const;
 export type Country = (typeof COUNTRIES)[number];
 
+/** Staff roles a notification can also be sent to (every role except the external supplier). */
+export const RECIPIENT_ROLES = [
+  'REQUESTER',
+  'PROCUREMENT',
+  'DELEGATE',
+  'EVALUATOR',
+  'CHAIR',
+  'LEGAL',
+  'CONTRACT_MGR',
+  'PROBITY',
+  'FINANCE',
+  'EXEC',
+  'ADMIN',
+] as const;
+export const WORKFLOW_IDS = ['wf-simple', 'wf-intermediate', 'wf-complex', 'wf-board'] as const;
+/** Fixed spend notice points (FR-0510): an extra alert cannot repeat one of these. */
+export const FIXED_SPEND_PCTS = [80, 90, 100] as const;
+
 const label = z.string().trim().min(1).max(60);
 const keyName = z
   .string()
@@ -76,7 +94,10 @@ export const SECTIONS = {
       budgetCap: z.enum(['HARD', 'SOFT']),
       taxonomy: z.enum(TAXONOMIES),
       layouts: z.record(z.string(), z.enum(LAYOUTS)),
-      engagementRules: z.array(engagementRuleSchema).max(30),
+      engagementRules: z
+        .array(engagementRuleSchema)
+        .max(30)
+        .refine((a) => new Set(a.map((r) => r.id)).size === a.length, 'Review rule ids must be unique'),
     })
     .strict(),
   notifications: z
@@ -84,6 +105,15 @@ export const SECTIONS = {
       channels: z.array(z.enum(CHANNELS)).min(1).max(4),
       escalationHours: z.number().int().min(1).max(720),
       rules: z.array(z.object({ event: z.enum(EVENTS), enabled: z.boolean() }).strict()).max(10),
+      /** Roles that are also told when the event happens, besides the people it concerns. */
+      extraRecipients: z
+        .array(z.object({ event: z.enum(EVENTS), role: z.enum(RECIPIENT_ROLES) }).strict())
+        .max(20)
+        .default([])
+        .refine(
+          (a) => new Set(a.map((r) => `${r.event}:${r.role}`)).size === a.length,
+          'Each role can be added once for an event',
+        ),
     })
     .strict(),
   onboardingQuestions: z
@@ -105,14 +135,18 @@ export const SECTIONS = {
     .array(
       z
         .object({
-          register: z.enum(['AusTender', 'SAM.gov', 'TED']),
+          register: z.string().trim().min(2).max(40),
           jurisdiction: z.string().trim().min(2).max(60),
           minValueAud: z.number().min(0).max(1e10),
           enabled: z.boolean(),
         })
         .strict(),
     )
-    .max(6),
+    .max(8)
+    .refine(
+      (a) => new Set(a.map((r) => r.register.toLowerCase())).size === a.length,
+      'Each register can appear once',
+    ),
   criteriaLibrary: z
     .array(
       z
@@ -173,6 +207,16 @@ export const SECTIONS = {
       highValueAud: z.number().min(0).max(1e10),
       /** Alert when this share of the contract value has been spent, besides the fixed 80, 90 and 100 (FR-0580). */
       spendAlertPct: z.number().int().min(1).max(100),
+      /** More alert points of the customer's own, up to five (FR-0580). The fixed 80, 90 and 100 cannot be repeated. */
+      extraSpendAlertPcts: z
+        .array(z.number().int().min(1).max(99))
+        .max(5)
+        .default([])
+        .refine((a) => new Set(a).size === a.length, 'Each alert point can appear once')
+        .refine(
+          (a) => a.every((n) => !(FIXED_SPEND_PCTS as readonly number[]).includes(n)),
+          'The fixed notices at 80, 90 and 100 per cent already exist',
+        ),
       /** Plan templates the customer uploaded; the standard ones are used where there is none (FR-0555). */
       planTemplates: z
         .array(
@@ -206,6 +250,12 @@ export const SECTIONS = {
       capacityPerManager: z.number().int().min(1).max(200),
       /** Days between refreshes of the reference content corpus (FR-0765). */
       referenceRefreshDays: z.number().int().min(1).max(365),
+      /** A different capacity for one named manager, for example a part-time officer. */
+      capacityOverrides: z
+        .array(z.object({ userId: z.string().uuid(), capacity: z.number().int().min(1).max(200) }).strict())
+        .max(30)
+        .default([])
+        .refine((a) => new Set(a.map((o) => o.userId)).size === a.length, 'Each manager can appear once'),
     })
     .strict(),
   tenderRules: z
@@ -459,6 +509,22 @@ export const SECTIONS = {
     .object({
       simpleBelow: z.number().min(0).max(1e10),
       intermediateBelow: z.number().min(0).max(1e10),
+      /** Rules checked before the value limits: the first whose words appear in the title or category (and whose value is reached) decides. Critical-rated work still goes to governance. */
+      rules: z
+        .array(
+          z
+            .object({
+              id: keyName,
+              label,
+              words: z.array(z.string().trim().toLowerCase().min(2).max(40)).min(1).max(10),
+              minValue: z.number().min(0).max(1e10).optional(),
+              workflow: z.enum(WORKFLOW_IDS),
+            })
+            .strict(),
+        )
+        .max(10)
+        .default([])
+        .refine((a) => new Set(a.map((r) => r.id)).size === a.length, 'Rule ids must be unique'),
     })
     .strict()
     .refine(
@@ -521,6 +587,7 @@ export const DEFAULTS: Settings = {
   notifications: {
     channels: ['IN_APP', 'EMAIL'],
     escalationHours: 48,
+    extraRecipients: [],
     rules: [
       { event: 'BUDGET_BREACH', enabled: true },
       { event: 'DELEGATE_ACTION', enabled: true },
@@ -582,9 +649,10 @@ export const DEFAULTS: Settings = {
     disclosureDays: 42,
     highValueAud: 1_000_000,
     spendAlertPct: 70,
+    extraSpendAlertPcts: [],
     planTemplates: [],
   },
-  dashboards: { visibility: 'BROAD', capacityPerManager: 6, referenceRefreshDays: 90 },
+  dashboards: { visibility: 'BROAD', capacityPerManager: 6, referenceRefreshDays: 90, capacityOverrides: [] },
   tenderRules: { dualWitnessThresholdAud: 5_000_000, witnessWindowMinutes: 30 },
   ratings: { supplierSeesRatings: false, staffSeeSupplierRatings: true },
   legalPlatform: { enabled: false, name: 'Legal platform', webhookSecret: '', simulateOutage: false },
@@ -661,8 +729,106 @@ export const DEFAULTS: Settings = {
     dormantDays: 90,
     minPasswordLength: 12,
   },
-  workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000 },
+  workflowRouting: { simpleBelow: 50_000, intermediateBelow: 1_000_000, rules: [] },
 };
+
+// ---------------------------------------------------------------- change log wording for list sections
+interface ListSpec {
+  noun: string;
+  items: (v: any) => unknown[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  key: (x: any) => string; // eslint-disable-line @typescript-eslint/no-explicit-any
+  show: (x: any) => string; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+const LIST_SPECS: Partial<Record<SectionName, ListSpec>> = {
+  customFields: {
+    noun: 'custom field',
+    items: (v) => v,
+    key: (x) => x.key,
+    show: (x) => `${x.label} (${x.key})`,
+  },
+  onboardingQuestions: {
+    noun: 'onboarding question',
+    items: (v) => v,
+    key: (x) => x.id,
+    show: (x) => x.label,
+  },
+  erpFieldMap: {
+    noun: 'ERP field mapping',
+    items: (v) => v,
+    key: (x) => String(x.erpName).toLowerCase(),
+    show: (x) => `${x.erpName} to ${x.platformKey}`,
+  },
+  criteriaLibrary: {
+    noun: 'library criterion',
+    items: (v) => v,
+    key: (x) => String(x.name).toLowerCase(),
+    show: (x) => x.name,
+  },
+  publicRegisters: {
+    noun: 'public register',
+    items: (v) => v,
+    key: (x) => String(x.register).toLowerCase(),
+    show: (x) => `${x.register} (${x.jurisdiction}, from AUD ${x.minValueAud})`,
+  },
+  signatures: {
+    noun: 'signature value tier',
+    items: (v) => v.requiredLevelByValue,
+    key: (x) => String(x.fromAud),
+    show: (x) => `from AUD ${x.fromAud}: ${x.level}`,
+  },
+  intake: {
+    noun: 'review rule',
+    items: (v) => v.engagementRules,
+    key: (x) => x.id,
+    show: (x) => `${x.label} (${x.function})`,
+  },
+  notifications: {
+    noun: 'extra recipient',
+    items: (v) => v.extraRecipients,
+    key: (x) => `${x.event}:${x.role}`,
+    show: (x) => `${x.role} for ${x.event}`,
+  },
+  workflowRouting: {
+    noun: 'routing rule',
+    items: (v) => v.rules,
+    key: (x) => x.id,
+    show: (x) => `${x.label} to ${x.workflow}`,
+  },
+  contractManagement: {
+    noun: 'spend alert point',
+    items: (v) => v.extraSpendAlertPcts,
+    key: (x) => String(x),
+    show: (x) => `${x}%`,
+  },
+  dashboards: {
+    noun: 'capacity override',
+    items: (v) => v.capacityOverrides,
+    key: (x) => x.userId,
+    show: (x) => `${x.userId} at ${x.capacity}`,
+  },
+  contractRules: {
+    noun: 'protected clause',
+    items: (v) => v.protectedClauses,
+    key: (x) => String(x),
+    show: (x) => String(x),
+  },
+};
+
+/** Plain sentences naming what a save added, removed or changed in a list section; empty for a section without a list. */
+export function changeSummary(name: SectionName, before: unknown, after: unknown): string[] {
+  const spec = LIST_SPECS[name];
+  if (!spec) return [];
+  const b = new Map(spec.items(before).map((x) => [spec.key(x), x]));
+  const a = new Map(spec.items(after).map((x) => [spec.key(x), x]));
+  const out: string[] = [];
+  for (const [k, x] of a) {
+    if (!b.has(k)) out.push(`Added ${spec.noun}: ${spec.show(x)}`);
+    else if (JSON.stringify(b.get(k)) !== JSON.stringify(x))
+      out.push(`Changed ${spec.noun}: ${spec.show(x)}`);
+  }
+  for (const [k, x] of b) if (!a.has(k)) out.push(`Removed ${spec.noun}: ${spec.show(x)}`);
+  return out;
+}
 
 interface RawConfig {
   settings?: Partial<Record<SectionName, unknown>>;

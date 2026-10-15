@@ -203,6 +203,8 @@ export function routeWorkflow(
   routing: Settings['workflowRouting'],
   value: number,
   complexity: Complexity,
+  /** Title and category of the request, which the tenant's own routing rules look for words in. */
+  text = '',
 ): RoutedWorkflow {
   if (complexity === 'CRITICAL')
     return {
@@ -210,6 +212,12 @@ export function routeWorkflow(
       reason:
         'Critical-rated work follows the governance workflow with board endorsement and external probity.',
     };
+  const haystack = text.toLowerCase();
+  for (const r of routing.rules ?? []) {
+    const hit = r.words.find((w) => haystack.includes(w));
+    if (hit && (r.minValue === undefined || value >= r.minValue))
+      return { workflowId: r.workflow, reason: `Routing rule "${r.label}": the request mentions "${hit}".` };
+  }
   if (value < routing.simpleBelow)
     return {
       workflowId: 'wf-simple',

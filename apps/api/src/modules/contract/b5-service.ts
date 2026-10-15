@@ -103,6 +103,7 @@ export async function spendSummary(tx: Tx, c: ContractRow, settings: Settings, t
     blockedAmount: r2(blocked.reduce((s, i) => s + num(i.amount), 0)),
     term: { start, end, totalDays: total, elapsedDays: elapsed, pct: r2((elapsed / total) * 100) },
     configuredPct: settings.contractManagement.spendAlertPct,
+    extraPcts: settings.contractManagement.extraSpendAlertPcts,
     mandatoryPcts: [80, 90, 100],
     raised: raised
       .map((a) => ({
@@ -138,7 +139,11 @@ export async function raiseSpendAlerts(
 ) {
   const s = await spendSummary(tx, c, settings, iso(now));
   const have = new Set(s.raised.map((r) => `${r.kind}:${r.threshold}`));
-  const fresh = spendCrossings(s.spentPct, settings.contractManagement.spendAlertPct, have);
+  const fresh = spendCrossings(
+    s.spentPct,
+    [settings.contractManagement.spendAlertPct, ...settings.contractManagement.extraSpendAlertPcts],
+    have,
+  );
   for (const f of fresh) {
     await tx.insert(spendAlert).values({
       tenantId: c.tenantId,

@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@': src('./apps/web/src'),
       '@if/shared': src('./packages/shared/src/index.ts'),
       '@if/ui/theme': src('./packages/ui/src/theme.ts'),
       '@if/ui': src('./packages/ui/src/index.ts'),
