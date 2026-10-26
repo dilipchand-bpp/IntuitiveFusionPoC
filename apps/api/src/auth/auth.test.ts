@@ -126,7 +126,11 @@ describe('session', () => {
     const { cookie } = await session('probity');
     const res = await me(cookie);
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ role: 'PROBITY', homePath: '/app/audit' });
+    expect(res.json()).toMatchObject({
+      role: 'PROBITY',
+      homePath: '/app/audit',
+      tenantName: 'Meridian Group (demo)',
+    });
     expect((await app.inject({ method: 'GET', url: '/api/v1/auth/me' })).statusCode).toBe(401);
   });
 

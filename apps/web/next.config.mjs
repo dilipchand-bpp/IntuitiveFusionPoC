@@ -2,6 +2,8 @@ const API_URL = process.env.API_URL ?? 'http://localhost:4000';
 
 /** @type {import('next').NextConfig} */
 export default {
+  // A second build can be kept apart from the running one (NEXT_DIST_DIR), for example while testing next to a live demo.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   reactStrictMode: true,
   devIndicators: false,
   poweredByHeader: false,

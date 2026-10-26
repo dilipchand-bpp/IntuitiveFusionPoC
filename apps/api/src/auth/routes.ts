@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { ROLE_HOME, type AppConfig } from '@if/shared';
@@ -7,6 +8,7 @@ import { AppError, parse } from '../http/errors.js';
 import { guard, type GuardDeps } from './guard.js';
 import type { AuthenticatedUser, IdentityProvider } from './identity-provider.js';
 import { withSystem } from '../db/client.js';
+import { tenant } from '../db/schema.js';
 import { loadSettings } from '../modules/settings/settings.js';
 import { mfaState, signMfaToken } from './mfa.js';
 import { COOKIE_NAMES, type MfaState } from './session-service.js';
@@ -192,10 +194,17 @@ export function registerAuthRoutes(app: FastifyInstance, p: string, d: AuthRoute
 
   // GET /auth/me
   reg('GET', '/auth/me');
-  app.get(`${p}/auth/me`, { preHandler: guard(d, 'any') }, async (req) => ({
-    ...publicUser(req.auth!.user),
-    csrfToken: req.auth!.csrfToken,
-  }));
+  app.get(`${p}/auth/me`, { preHandler: guard(d, 'any') }, async (req) => {
+    // the organisation's name, for the workspace chip in the page header
+    const [t] = await withSystem(database, (tx) =>
+      tx.select({ name: tenant.name }).from(tenant).where(eq(tenant.id, req.auth!.user.tenantId)),
+    );
+    return {
+      ...publicUser(req.auth!.user),
+      ...(t ? { tenantName: t.name } : {}),
+      csrfToken: req.auth!.csrfToken,
+    };
+  });
 
   // POST /auth/access-denied  (the web route guard reports blocked page visits so they are audited: US-PLT-03)
   reg('POST', '/auth/access-denied');
