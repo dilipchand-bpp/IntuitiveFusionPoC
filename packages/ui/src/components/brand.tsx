@@ -27,7 +27,10 @@ export function Logo({
       />
       {withName && (
         <span
-          className={cn('whitespace-nowrap font-heading text-lg font-bold', compact && 'hidden sm:inline')}
+          className={cn(
+            'whitespace-nowrap font-heading text-lg font-medium tracking-[var(--if-heading-tracking)]',
+            compact && 'hidden sm:inline',
+          )}
         >
           Intuitive Fusion
         </span>

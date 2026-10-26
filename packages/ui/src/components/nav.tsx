@@ -23,14 +23,14 @@ export function Tabs({
 }) {
   return (
     <RadixTabs.Root defaultValue={defaultValue ?? items[0]?.value}>
-      <RadixTabs.List aria-label={label} className="flex gap-1 overflow-x-auto border-b border-border">
+      <RadixTabs.List aria-label={label} className="flex gap-5 overflow-x-auto border-b border-border">
         {items.map((t) => (
           <RadixTabs.Trigger
             key={t.value}
             value={t.value}
             className={cn(
-              'min-h-[44px] shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 text-sm font-semibold text-text-muted',
-              'data-[state=active]:border-accent data-[state=active]:text-text',
+              '-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b border-transparent px-1 text-sm font-medium text-text-muted hover:text-text',
+              'data-[state=active]:border-text data-[state=active]:text-text',
               'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
             )}
           >
@@ -56,10 +56,11 @@ export type ThemeChoice = 'light' | 'dark';
 function currentTheme(): ThemeChoice {
   const attr = document.documentElement.getAttribute('data-theme');
   if (attr === 'light' || attr === 'dark') return attr;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'dark'; // dark is the default colour mode
 }
 
-export function ThemeToggle() {
+/** Current colour mode and a way to flip it. Dark until the person chooses light; the choice is stored when storage allows. */
+export function useThemeChoice() {
   const [theme, setTheme] = useState<ThemeChoice | null>(null);
   useEffect(() => setTheme(currentTheme()), []);
   const next: ThemeChoice = theme === 'dark' ? 'light' : 'dark';
@@ -72,6 +73,11 @@ export function ThemeToggle() {
     }
     setTheme(next);
   };
+  return { theme, next, toggle };
+}
+
+export function ThemeToggle() {
+  const { theme, next, toggle } = useThemeChoice();
   return (
     <Button
       variant="ghost"

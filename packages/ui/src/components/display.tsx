@@ -34,7 +34,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-sm border px-2 py-0.5 text-xs font-medium',
         cls,
         className,
       )}
@@ -47,12 +47,7 @@ export function Badge({
 
 // ---------------- Card ----------------
 export function Card({ className, ...p }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn('rounded-lg border border-border bg-surface p-6 text-text shadow-sm', className)}
-      {...p}
-    />
-  );
+  return <div className={cn('rounded-lg border border-border bg-surface p-6 text-text', className)} {...p} />;
 }
 
 // ---------------- Table (semantic; caption required for a name) ----------------
@@ -64,7 +59,7 @@ export function Table({
 }: TableHTMLAttributes<HTMLTableElement> & { caption: string }) {
   return (
     <div
-      className="w-full overflow-x-auto rounded-lg border border-border bg-surface shadow-sm"
+      className="w-full overflow-x-auto rounded-lg border border-border bg-surface"
       tabIndex={0}
       role="region"
       aria-label={caption}
@@ -88,7 +83,7 @@ export const Th = ({ className, ...p }: HTMLAttributes<HTMLTableCellElement>) =>
   <th
     scope="col"
     className={cn(
-      'bg-surface-alt px-4 py-3 text-xs font-bold uppercase tracking-wide text-text-muted',
+      'border-b border-border bg-transparent px-4 py-3 text-[11px] font-medium uppercase tracking-[0.12em] text-text-muted',
       className,
     )}
     {...p}
@@ -100,7 +95,7 @@ export const Td = ({ className, label, ...p }: HTMLAttributes<HTMLTableCellEleme
     className={cn(
       'border-t border-border px-4 py-3.5 text-text',
       'max-md:flex max-md:items-start max-md:justify-between max-md:gap-4 max-md:border-t-0 max-md:px-3 max-md:py-1.5 max-md:text-right',
-      'max-md:before:shrink-0 max-md:before:text-left max-md:before:text-xs max-md:before:font-bold max-md:before:uppercase max-md:before:tracking-wide max-md:before:text-text-muted max-md:before:content-[attr(data-label)]',
+      'max-md:before:shrink-0 max-md:before:text-left max-md:before:text-xs max-md:before:font-medium max-md:before:uppercase max-md:before:tracking-wide max-md:before:text-text-muted max-md:before:content-[attr(data-label)]',
       className,
     )}
     {...p}

@@ -38,18 +38,18 @@ export type ColorTokens = {
 };
 
 export const light: ColorTokens = {
-  bg: '#F6F7FA',
+  bg: '#F5F7FA',
   surface: '#FFFFFF',
-  surfaceAlt: '#EEF0F5',
-  border: '#CED2DF',
-  borderStrong: '#717888',
-  text: '#1B1F27',
-  textMuted: '#5A6172',
-  primary: '#2A303C',
+  surfaceAlt: '#EEF1F5',
+  border: '#DCE1E9',
+  borderStrong: '#6F7A8B',
+  text: '#141A22',
+  textMuted: '#4F5B6B',
+  primary: '#1A2230',
   primaryFg: '#FFFFFF',
-  primaryHover: '#3D4351',
-  secondary: '#717888',
-  silver: '#CED2DF',
+  primaryHover: '#2D384A',
+  secondary: '#6F7A8B',
+  silver: '#D3D9E2',
   accent: '#4254C5',
   accentFg: '#FFFFFF',
   accentHover: '#3646A8',
@@ -65,56 +65,63 @@ export const light: ColorTokens = {
   gradientFrom: '#4254C5',
   gradientTo: '#7A45D6',
   gradientFg: '#FFFFFF',
-  overlay: 'rgba(20, 23, 30, 0.55)',
+  overlay: 'rgba(15, 20, 28, 0.5)',
 };
 
+/** The default colour mode: near-black blue-grey, hairline slate borders, one restrained accent. */
 export const dark: ColorTokens = {
-  bg: '#14171E',
-  surface: '#1D212B',
-  surfaceAlt: '#262B37',
-  border: '#343A48',
-  borderStrong: '#7C8394',
-  text: '#E8EAF0',
-  textMuted: '#A4ABB9',
-  primary: '#CED2DF',
-  primaryFg: '#14171E',
-  primaryHover: '#E1E4EC',
-  secondary: '#9AA1B1',
-  silver: '#434957',
+  bg: '#0B0F14',
+  surface: '#10151C',
+  surfaceAlt: '#161D27',
+  border: '#222B37',
+  borderStrong: '#6C7889',
+  text: '#E7EBF1',
+  textMuted: '#9AA5B4',
+  primary: '#E4E8EE',
+  primaryFg: '#0B0F14',
+  primaryHover: '#FFFFFF',
+  secondary: '#8E99A9',
+  silver: '#3A4452',
   accent: '#8C9BFF',
-  accentFg: '#14171E',
-  accentHover: '#A6B2FF',
+  accentFg: '#0B0F14',
+  accentHover: '#A9B5FF',
   ring: '#8C9BFF',
   success: '#4CC38A',
-  successBg: '#12301F',
-  warning: '#F5B04C',
-  warningBg: '#3A2A10',
-  error: '#FF8A80',
-  errorBg: '#3F1A17',
+  successBg: '#0F2219',
+  warning: '#EBB05A',
+  warningBg: '#2B2010',
+  error: '#FF8F86',
+  errorBg: '#301917',
   info: '#6CB4FF',
-  infoBg: '#132B44',
+  infoBg: '#0F2336',
   gradientFrom: '#8C9BFF',
   gradientTo: '#B79CFF',
   gradientFg: '#10132B',
-  overlay: 'rgba(0, 0, 0, 0.65)',
+  overlay: 'rgba(3, 6, 10, 0.7)',
 };
 
 export const typography = {
   heading: "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif",
   body: "'Inter Variable', 'Inter', system-ui, sans-serif",
   mono: "ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace",
-  // size / line-height pairs (px)
+  // size / line-height pairs (px). Light and airy: body text is 14px, captions 12-13px (eyebrows are set in the kit).
   scale: {
     xs: ['12px', '16px'],
-    sm: ['14px', '20px'],
-    base: ['16px', '24px'],
-    lg: ['18px', '28px'],
-    xl: ['20px', '28px'],
-    '2xl': ['24px', '32px'],
-    '3xl': ['30px', '36px'],
-    '4xl': ['36px', '44px'],
-    '5xl': ['48px', '56px'],
+    sm: ['13px', '20px'],
+    base: ['14px', '22px'],
+    lg: ['16px', '24px'],
+    xl: ['18px', '26px'],
+    '2xl': ['22px', '30px'],
+    '3xl': ['28px', '34px'],
+    '4xl': ['34px', '40px'],
+    '5xl': ['44px', '50px'],
   },
+  // Utilities such as font-semibold / font-extrabold resolve to these, so headings stay light across the whole product.
+  weights: { medium: '450', semibold: '550', bold: '600', extrabold: '500' },
+  /** Headings are set tight. */
+  headingTracking: '-0.015em',
+  /** Small uppercase labels above titles and figures. */
+  eyebrowTracking: '0.14em',
 } as const;
 
 export const spacing = {
@@ -130,12 +137,13 @@ export const spacing = {
   24: '96px',
 } as const;
 
-export const radius = { sm: '8px', md: '12px', lg: '20px', full: '999px' } as const;
+export const radius = { sm: '3px', md: '5px', lg: '6px', full: '999px' } as const;
 
+/** Almost none: structure comes from hairline borders. Only floating layers (menus, dialogs) lift. */
 export const shadow = {
-  sm: '0 1px 2px rgba(31, 41, 90, 0.06), 0 1px 3px rgba(31, 41, 90, 0.05)',
-  md: '0 4px 14px rgba(31, 41, 90, 0.08), 0 2px 4px rgba(31, 41, 90, 0.05)',
-  lg: '0 18px 44px rgba(31, 41, 90, 0.16), 0 4px 10px rgba(31, 41, 90, 0.06)',
+  sm: '0 0 0 transparent',
+  md: '0 6px 18px rgba(0, 0, 0, 0.16)',
+  lg: '0 14px 36px rgba(0, 0, 0, 0.28)',
 } as const;
 
 export const breakpoints = { sm: '640px', md: '768px', lg: '1024px', xl: '1280px' } as const;
@@ -240,17 +248,13 @@ const paletteCss = (): string =>
           .map(([k, val]) => `${indent}--if-color-${kebabCase(k)}: ${val};`)
           .join('\n');
       const sel = `:root[data-palette='${n}']`;
+      // dark is the default mode, so a palette's dark values apply unless the light theme is chosen
       return [
-        `${sel}:not([data-theme='dark']) {`,
-        vars(PALETTES[n].light, '  '),
-        '}',
-        '@media (prefers-color-scheme: dark) {',
-        `  ${sel}:not([data-theme='light']) {`,
-        vars(PALETTES[n].dark, '    '),
-        '  }',
-        '}',
-        `${sel}[data-theme='dark'] {`,
+        `${sel}:not([data-theme='light']) {`,
         vars(PALETTES[n].dark, '  '),
+        '}',
+        `${sel}[data-theme='light'] {`,
+        vars(PALETTES[n].light, '  '),
         '}',
       ].join('\n');
     })
@@ -274,6 +278,9 @@ export function themeToCss(): string {
   const sp = Object.entries(spacing)
     .map(([k, v]) => `  --if-space-${k}: ${v};`)
     .join('\n');
+  const wt = Object.entries(typography.weights)
+    .map(([k, v]) => `  --if-weight-${k}: ${v};`)
+    .join('\n');
   const rd = Object.entries(radius)
     .map(([k, v]) => `  --if-radius-${k}: ${v};`)
     .join('\n');
@@ -283,13 +290,23 @@ export function themeToCss(): string {
   const tailwindColors = Object.keys(light)
     .map((k) => `  --color-${kebab(k)}: var(--if-color-${kebab(k)});`)
     .join('\n');
+  const tailwindText = Object.keys(typography.scale)
+    .map((k) => `  --text-${k}: var(--if-text-${k});\n  --text-${k}--line-height: var(--if-leading-${k});`)
+    .join('\n');
+  const tailwindWeights = Object.keys(typography.weights)
+    .map((k) => `  --font-weight-${k}: var(--if-weight-${k});`)
+    .join('\n');
   return `/* GENERATED from src/theme.ts by scripts/build-theme.ts - do not edit by hand. */
+/* Dark is the default colour mode; the light theme is chosen with data-theme='light' (see theme-script.ts). */
 :root {
-${colorVars(light)}
+${colorVars(dark)}
   --if-font-heading: ${typography.heading};
   --if-font-body: ${typography.body};
   --if-font-mono: ${typography.mono};
+  --if-heading-tracking: ${typography.headingTracking};
+  --if-eyebrow-tracking: ${typography.eyebrowTracking};
 ${scale}
+${wt}
 ${sp}
 ${rd}
 ${sh}
@@ -298,17 +315,11 @@ ${sh}
   --if-motion-slow: ${motion.slow};
   --if-motion-easing: ${motion.easing};
   --if-touch-target: ${touchTarget};
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-${colorVars(dark, '    ')}
-    color-scheme: dark;
-  }
-}
-:root[data-theme='dark'] {
-${colorVars(dark)}
   color-scheme: dark;
+}
+:root[data-theme='light'] {
+${colorVars(light)}
+  color-scheme: light;
 }
 ${paletteCss()}
 @media (prefers-reduced-motion: reduce) {
@@ -326,6 +337,8 @@ ${paletteCss()}
 }
 @theme inline {
 ${tailwindColors}
+${tailwindText}
+${tailwindWeights}
   --font-heading: var(--if-font-heading);
   --font-sans: var(--if-font-body);
   --font-mono: var(--if-font-mono);

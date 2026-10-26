@@ -5,18 +5,17 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from './cn';
 
 export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger';
-export type ButtonSize = 'md' | 'lg' | 'icon';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const variants: Record<ButtonVariant, string> = {
-  primary:
-    'bg-brand-gradient shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0',
-  accent:
-    'bg-brand-gradient shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0',
-  secondary: 'bg-surface text-text border border-border-strong shadow-sm hover:bg-surface-alt',
+  primary: 'bg-primary text-primary-fg hover:bg-primary-hover',
+  accent: 'bg-accent text-accent-fg hover:bg-accent-hover',
+  secondary: 'border border-border-strong bg-transparent text-text hover:bg-surface-alt',
   ghost: 'bg-transparent text-text hover:bg-surface-alt',
-  danger: 'bg-error text-surface hover:opacity-90',
+  danger: 'bg-error text-bg hover:opacity-90',
 };
 const sizes: Record<ButtonSize, string> = {
+  sm: 'min-h-[36px] px-3 text-sm',
   md: 'min-h-[44px] px-4 text-sm',
   lg: 'min-h-[48px] px-6 text-base',
   icon: 'min-h-[44px] min-w-[44px] p-2',
@@ -52,7 +51,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       disabled={asChild ? undefined : disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-200',
+        'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors duration-200',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variants[variant],

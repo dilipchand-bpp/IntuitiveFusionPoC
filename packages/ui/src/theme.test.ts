@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { THEME_INIT_SCRIPT, THEME_STORAGE_KEY } from './components/theme-script';
 import {
   CONTRAST_PAIRS,
   PALETTES,
@@ -7,7 +8,10 @@ import {
   contrastRatio,
   dark,
   light,
+  radius,
+  shadow,
   themeToCss,
+  typography,
   withPalette,
 } from './theme';
 
@@ -56,13 +60,49 @@ describe('white labelling palettes (FR-0855)', () => {
       }
     }
   }
-  it('emits a block for each palette, for light, the system dark setting and the manual dark setting', () => {
+  it('emits a block for each palette: dark by default, light only when the light theme is chosen', () => {
     const css = themeToCss();
     for (const n of Object.keys(PALETTES)) {
-      expect(css).toContain(`:root[data-palette='${n}']:not([data-theme='dark'])`);
       expect(css).toContain(`:root[data-palette='${n}']:not([data-theme='light'])`);
-      expect(css).toContain(`:root[data-palette='${n}'][data-theme='dark']`);
+      expect(css).toContain(`:root[data-palette='${n}'][data-theme='light']`);
     }
+  });
+});
+
+describe('dark is the default colour mode', () => {
+  it('the root block carries the dark tokens and the light tokens only apply with data-theme=light', () => {
+    const css = themeToCss();
+    const root = css.slice(css.indexOf(':root {'), css.indexOf(":root[data-theme='light']"));
+    expect(root).toContain(`--if-color-bg: ${dark.bg};`);
+    expect(root).toContain('color-scheme: dark;');
+    expect(css).toContain(`:root[data-theme='light'] {`);
+    expect(css).toContain(`--if-color-bg: ${light.bg};`);
+  });
+
+  it('does not follow the operating system setting (an owner choice: dark unless the person picks light)', () => {
+    expect(themeToCss()).not.toContain('prefers-color-scheme');
+  });
+
+  it('the start-up script falls back to dark and honours a stored choice', () => {
+    expect(THEME_INIT_SCRIPT).toContain(`localStorage.getItem('${THEME_STORAGE_KEY}')`);
+    expect(THEME_INIT_SCRIPT).toContain("'dark'");
+  });
+});
+
+describe('the quiet look', () => {
+  it('radii are small (4-6px) and shadows almost absent', () => {
+    expect(parseInt(radius.md, 10)).toBeLessThanOrEqual(6);
+    expect(parseInt(radius.lg, 10)).toBeLessThanOrEqual(6);
+    expect(shadow.sm).toBe('0 0 0 transparent');
+  });
+  it('body text is 13-14px and headings are light (weight 400-550)', () => {
+    expect(['13px', '14px']).toContain(typography.scale.base[0]);
+    expect(Number(typography.weights.extrabold)).toBeLessThanOrEqual(550);
+  });
+  it('type scale and weights reach Tailwind utilities through the emitted theme', () => {
+    const css = themeToCss();
+    expect(css).toContain('--text-base: var(--if-text-base);');
+    expect(css).toContain('--font-weight-extrabold: var(--if-weight-extrabold);');
   });
 });
 

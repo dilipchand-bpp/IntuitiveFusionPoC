@@ -4,7 +4,7 @@ import * as RadixDialog from '@radix-ui/react-dialog';
 import * as RadixDropdown from '@radix-ui/react-dropdown-menu';
 import * as RadixPopover from '@radix-ui/react-popover';
 import { ChevronDown, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Button } from './button';
 import { cn } from './cn';
 
@@ -20,11 +20,20 @@ export function Drawer({
   title: string;
   children: ReactNode;
 }) {
+  // controlled (no Radix Trigger): remember the opener and give focus back to it on close
+  const opener = useRef<HTMLElement | null>(null);
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
         <RadixDialog.Content
+          onOpenAutoFocus={() => {
+            opener.current = document.activeElement as HTMLElement | null;
+          }}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            opener.current?.focus();
+          }}
           className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] flex-col gap-2 border-r border-border bg-surface p-4 text-text shadow-lg"
           aria-describedby={undefined}
         >
@@ -65,7 +74,7 @@ export function Popover({
           align={align}
           sideOffset={8}
           aria-label={label}
-          className="z-50 w-[min(24rem,calc(100vw-24px))] rounded-md border border-border bg-surface p-2 text-text shadow-lg"
+          className="z-50 w-[min(24rem,calc(100vw-24px))] rounded-md border border-border bg-surface p-2 text-text shadow-md"
         >
           {children}
         </RadixPopover.Content>
@@ -96,7 +105,7 @@ export function Menu({
         <RadixDropdown.Content
           align="end"
           sideOffset={8}
-          className="z-50 min-w-56 rounded-md border border-border bg-surface p-1 text-text shadow-lg"
+          className="z-50 min-w-56 rounded-md border border-border bg-surface p-1 text-text shadow-md"
         >
           {header && <div className="border-b border-border px-3 py-2 text-sm">{header}</div>}
           {actions.map((a) => (
@@ -158,7 +167,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-fg',
+        'inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-alt text-xs font-medium text-text',
         className,
       )}
     >
@@ -180,13 +189,12 @@ export function KpiCard({
   icon?: ReactNode;
 }) {
   return (
-    <div className="card-lift relative flex flex-col gap-1 overflow-hidden rounded-lg border border-border bg-surface p-5 text-text shadow-sm">
-      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" />
-      <div className="flex items-center justify-between gap-2 text-sm font-semibold text-text-muted">
+    <div className="relative flex flex-col gap-1 rounded-lg border border-border bg-surface p-5 text-text">
+      <div className="flex items-center justify-between gap-2 text-sm font-medium text-text-muted">
         <span>{label}</span>
-        {icon && <span className="icon-tile !size-9 shrink-0">{icon}</span>}
+        {icon && <span className="shrink-0 text-text-muted">{icon}</span>}
       </div>
-      <p className="mt-1 break-words font-heading text-3xl font-extrabold tracking-tight">{value}</p>
+      <p className="mt-1 break-words font-heading text-3xl font-medium tracking-tight">{value}</p>
       {hint && <p className="text-sm text-text-muted">{hint}</p>}
     </div>
   );

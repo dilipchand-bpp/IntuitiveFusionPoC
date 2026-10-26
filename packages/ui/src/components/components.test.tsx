@@ -21,6 +21,16 @@ import {
   ThemeToggle,
   ToastProvider,
   useToast,
+  ActivityRow,
+  KpiCell,
+  KpiStrip,
+  ListRow,
+  PageHeader,
+  Panel,
+  RowList,
+  SectionHeader,
+  UiLinkProvider,
+  padNumber,
 } from '../index';
 
 describe('Button', () => {
@@ -174,18 +184,119 @@ describe('Toast', () => {
 });
 
 describe('ThemeToggle', () => {
-  it('sets data-theme and remembers the choice', async () => {
-    window.matchMedia ??= ((q: string) => ({
-      matches: false,
-      media: q,
-      addEventListener() {},
-      removeEventListener() {},
-    })) as never;
+  it('starts in dark (the default) and switches to light, remembering the choice', async () => {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.clear();
     render(<ThemeToggle />);
-    await userEvent.click(await screen.findByRole('button', { name: /Switch to dark mode/ }));
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    expect(localStorage.getItem('if-theme')).toBe('dark');
-    expect(screen.getByRole('button', { name: /Switch to light mode/ })).toBeVisible();
+    // dark is the default even when nothing is stored and the operating system says nothing
+    await userEvent.click(await screen.findByRole('button', { name: /Switch to light mode/ }));
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(localStorage.getItem('if-theme')).toBe('light');
+    expect(screen.getByRole('button', { name: /Switch to dark mode/ })).toBeVisible();
+  });
+  it('honours a theme already set on the page', async () => {
+    document.documentElement.setAttribute('data-theme', 'light');
+    render(<ThemeToggle />);
+    expect(await screen.findByRole('button', { name: /Switch to dark mode/ })).toBeVisible();
+    document.documentElement.removeAttribute('data-theme');
+  });
+});
+
+describe('page pattern primitives', () => {
+  it('PageHeader shows eyebrow, a single h1, subtitle and actions', () => {
+    render(
+      <PageHeader
+        eyebrow="NORTHLINE / TUESDAY"
+        title="Good morning, Alex."
+        subtitle="Your work, in perspective."
+        actions={<Button>New request</Button>}
+      />,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Alex.' })).toBeVisible();
+    expect(screen.getByText('NORTHLINE / TUESDAY')).toBeVisible();
+    expect(screen.getByText('Your work, in perspective.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'New request' })).toBeVisible();
+  });
+  it('SectionHeader renders the title at the level asked for', () => {
+    render(<SectionHeader eyebrow="Across the business" title="Recent activity" as="h3" />);
+    expect(screen.getByRole('heading', { level: 3, name: 'Recent activity' })).toBeVisible();
+  });
+  it('padNumber zero-pads and shows a dash for anything that is not a number', () => {
+    expect(padNumber(8)).toBe('08');
+    expect(padNumber(12)).toBe('12');
+    expect(padNumber(123)).toBe('123');
+    expect(padNumber(0)).toBe('00');
+    expect(padNumber(null)).toBe('–');
+    expect(padNumber(Number.NaN)).toBe('–');
+  });
+  it('KpiStrip is a named region; a KpiCell link is named and only exists when given an href', () => {
+    render(
+      <KpiStrip label="Key figures">
+        <KpiCell label="Awaiting decisions" value="03" caption="3 assigned to you" href="/app/actions" />
+        <KpiCell label="Active agreements" value="05" caption="Contract register" />
+      </KpiStrip>,
+    );
+    const region = screen.getByRole('region', { name: 'Key figures' });
+    expect(region).toHaveTextContent('03');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Awaiting decisions: 3 assigned to you' })).toHaveAttribute(
+      'href',
+      '/app/actions',
+    );
+  });
+  it('ListRow is a link with caption, title, subtitle and tag; without href it is plain text', () => {
+    render(
+      <RowList aria-label="Queue">
+        <ListRow
+          href="/app/contracts/1"
+          accent="warning"
+          caption="Contract"
+          title="Quarterly review"
+          subtitle="Energy supply"
+          tag="Overdue"
+        />
+        <ListRow title="Plain row" />
+      </RowList>,
+    );
+    const link = screen.getByRole('link', { name: /Quarterly review/ });
+    expect(link).toHaveTextContent('Overdue');
+    expect(link).toHaveTextContent('Contract');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByText('Plain row')).toBeVisible();
+  });
+  it('ActivityRow shows the initial and the muted meta line', () => {
+    render(
+      <RowList>
+        <ActivityRow who="Sam Khan" text="Approved the plan" meta="Sam Khan · 26 Oct 2026" />
+      </RowList>,
+    );
+    expect(screen.getByText('SK')).toBeInTheDocument();
+    expect(screen.getByText('Sam Khan · 26 Oct 2026')).toBeVisible();
+  });
+  it('rows use the router link an app provides', () => {
+    const Fake = ({ href, children, ...r }: { href: string; children?: React.ReactNode }) => (
+      <a href={href} data-router="yes" {...r}>
+        {children}
+      </a>
+    );
+    render(
+      <UiLinkProvider component={Fake}>
+        <RowList>
+          <ListRow href="/x" title="Go" />
+        </RowList>
+      </UiLinkProvider>,
+    );
+    expect(screen.getByRole('link', { name: /Go/ })).toHaveAttribute('data-router', 'yes');
+  });
+  it('Panel is a bordered section with no fill', () => {
+    render(
+      <Panel aria-label="Since you were last here">
+        <p>Body</p>
+      </Panel>,
+    );
+    const panel = screen.getByRole('region', { name: 'Since you were last here' });
+    expect(panel.className).toContain('border');
+    expect(panel.className).not.toContain('bg-surface');
   });
 });
 
