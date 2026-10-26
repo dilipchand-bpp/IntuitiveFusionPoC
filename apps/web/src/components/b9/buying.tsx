@@ -101,7 +101,7 @@ export function BuyingView({ csrf, roles }: { csrf: string; roles: readonly stri
             onClick={() => setTab(k)}
             className={`min-h-[44px] rounded-md border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
               tab === k
-                ? 'border-accent bg-accent text-white'
+                ? 'border-accent bg-accent text-accent-fg'
                 : 'border-border-strong bg-surface text-text hover:bg-surface-alt'
             }`}
           >

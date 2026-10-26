@@ -47,26 +47,15 @@ export function CommandPalette({ items }: { items: NavItem[] }) {
 
   return (
     <>
-      <span className="hidden lg:block">
-        <Button
-          variant="secondary"
-          className="min-w-[13rem] justify-between text-text-muted"
-          onClick={() => setOpen(true)}
-          aria-label="Jump to a page (Control K)"
-        >
-          <span className="flex items-center gap-2 font-medium">
-            <Search className="size-4" aria-hidden="true" /> Jump to…
-          </span>
-          <kbd className="rounded-sm border border-border bg-surface-alt px-1.5 py-0.5 font-mono text-xs">
-            Ctrl K
-          </kbd>
-        </Button>
-      </span>
-      <span className="lg:hidden">
-        <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label="Jump to a page">
-          <Search className="size-5" aria-hidden="true" />
-        </Button>
-      </span>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpen(true)}
+        aria-label="Jump to a page (Control K)"
+        title="Search pages (Ctrl K)"
+      >
+        <Search className="size-[18px]" aria-hidden="true" />
+      </Button>
       <Dialog
         open={open}
         onOpenChange={(o) => {

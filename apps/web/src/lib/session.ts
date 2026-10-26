@@ -8,6 +8,8 @@ export interface SessionUser {
   roles: string[];
   homePath: string;
   external?: boolean;
+  /** The organisation's name (shown in the workspace chip). */
+  tenantName?: string;
   csrfToken: string;
 }
 

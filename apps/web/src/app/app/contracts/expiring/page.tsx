@@ -33,7 +33,7 @@ export default async function ExpiringPage({ searchParams }: { searchParams: Pro
               aria-current={w === days ? 'page' : undefined}
               className={
                 w === days
-                  ? 'rounded-full bg-brand-gradient px-4 py-2 text-sm font-semibold text-white no-underline'
+                  ? 'rounded-full bg-brand-gradient px-4 py-2 text-sm font-semibold text-gradient-fg no-underline'
                   : 'rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline'
               }
             >

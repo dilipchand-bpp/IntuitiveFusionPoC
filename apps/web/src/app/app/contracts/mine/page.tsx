@@ -68,7 +68,7 @@ export default async function MyContractsPage({
         {within && <input type="hidden" name="within" value={within} />}
         <button
           type="submit"
-          className="min-h-[44px] rounded-md bg-brand-gradient px-5 text-sm font-semibold text-white"
+          className="min-h-[44px] rounded-md bg-brand-gradient px-5 text-sm font-semibold text-gradient-fg"
         >
           Search
         </button>

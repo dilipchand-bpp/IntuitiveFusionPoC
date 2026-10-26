@@ -23,6 +23,7 @@
   h4 {
     font-family: var(--if-font-heading);
     line-height: 1.2;
+    letter-spacing: var(--if-heading-tracking);
   }
   a {
     color: var(--if-color-accent);
@@ -46,19 +47,17 @@
     background-clip: text;
     color: transparent;
   }
+  /* The page background: near-flat with a very faint accent glow at the top. */
   .bg-hero-mesh {
     background-color: var(--if-color-bg);
     background-image:
       radial-gradient(
-        60rem 28rem at 85% -10%,
-        color-mix(in srgb, var(--if-color-gradient-to) 22%, transparent),
+        70rem 22rem at 50% -12%,
+        color-mix(in srgb, var(--if-color-accent) 7%, transparent),
         transparent 70%
       ),
-      radial-gradient(
-        48rem 26rem at 0% 0%,
-        color-mix(in srgb, var(--if-color-gradient-from) 20%, transparent),
-        transparent 70%
-      );
+      linear-gradient(180deg, transparent, color-mix(in srgb, var(--if-color-surface) 60%, transparent));
+    background-attachment: fixed;
   }
   .bg-grid {
     background-image:
@@ -71,31 +70,28 @@
     background: color-mix(in srgb, var(--if-color-surface) 78%, transparent);
     backdrop-filter: blur(14px) saturate(1.4);
   }
+  /* Cards stay still: hover only sharpens the hairline border. */
   .card-lift {
-    transition:
-      transform var(--if-motion-base) var(--if-motion-easing),
-      box-shadow var(--if-motion-base) var(--if-motion-easing),
-      border-color var(--if-motion-base) var(--if-motion-easing);
+    transition: border-color var(--if-motion-base) var(--if-motion-easing);
   }
   .card-lift:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--if-shadow-lg);
-    border-color: color-mix(in srgb, var(--if-color-accent) 40%, var(--if-color-border));
+    border-color: var(--if-color-border-strong);
   }
   .icon-tile {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
     border-radius: var(--if-radius-md);
-    color: var(--if-color-accent);
-    background: color-mix(in srgb, var(--if-color-accent) 12%, var(--if-color-surface));
+    color: var(--if-color-text-muted);
+    border: 1px solid var(--if-color-border);
+    background: var(--if-color-surface);
   }
   @keyframes if-rise {
     from {
       opacity: 0;
-      transform: translateY(18px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
@@ -120,7 +116,7 @@
     }
   }
   .reveal {
-    animation: if-rise 0.7s var(--if-motion-easing) both;
+    animation: if-rise 0.4s var(--if-motion-easing) both;
     animation-delay: var(--d, 0ms);
   }
   .float {

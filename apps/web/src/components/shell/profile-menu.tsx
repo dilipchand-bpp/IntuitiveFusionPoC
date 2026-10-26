@@ -1,7 +1,7 @@
 'use client';
-import { ChevronDown, LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Avatar, Button, Menu } from '@if/ui';
+import { Avatar, Menu, useThemeChoice } from '@if/ui';
 
 export function ProfileMenu({
   name,
@@ -15,6 +15,7 @@ export function ProfileMenu({
   csrfToken: string;
 }) {
   const router = useRouter();
+  const { next, toggle } = useThemeChoice();
   async function signOut() {
     await fetch('/api/v1/auth/logout', { method: 'POST', headers: { 'x-csrf-token': csrfToken } }).catch(
       () => undefined,
@@ -42,17 +43,29 @@ export function ProfileMenu({
               },
             ]),
         {
+          label: `Switch to ${next} mode`,
+          onSelect: toggle,
+          icon:
+            next === 'light' ? (
+              <Sun className="size-4" aria-hidden="true" />
+            ) : (
+              <Moon className="size-4" aria-hidden="true" />
+            ),
+        },
+        {
           label: 'Sign out',
           onSelect: () => void signOut(),
           icon: <LogOut className="size-4" aria-hidden="true" />,
         },
       ]}
       trigger={
-        <Button variant="ghost" aria-label={`Account menu for ${name}`} className="gap-2 px-2">
-          <Avatar name={name} />
-          <span className="hidden max-w-32 truncate text-sm font-semibold sm:inline">{name}</span>
-          <ChevronDown className="size-4" aria-hidden="true" />
-        </Button>
+        <button
+          type="button"
+          aria-label={`Account menu for ${name}`}
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <Avatar name={name} className="size-8 bg-surface-alt" />
+        </button>
       }
     />
   );

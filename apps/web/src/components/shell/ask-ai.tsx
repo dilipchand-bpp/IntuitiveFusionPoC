@@ -1,5 +1,5 @@
 'use client';
-import { Bot, Send, X } from 'lucide-react';
+import { Send, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -142,11 +142,11 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
           role="dialog"
           aria-label="Ask"
           data-testid="ask-ai-panel"
-          className="flex h-[min(34rem,calc(100vh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+          className="flex h-[min(34rem,calc(100vh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
         >
           <header className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold text-text">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-white">
-              <Bot className="size-5" aria-hidden="true" />
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-text-muted">
+              <Sparkles className="size-4" aria-hidden="true" />
             </span>
             <h2 className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">Ask</h2>
             <AiBadge />
@@ -190,7 +190,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
               t.from === 'you' ? (
                 <p
                   key={i}
-                  className="ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-brand-gradient px-3 py-2 text-sm shadow-sm"
+                  className="ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-accent px-3 py-2 text-sm text-accent-fg"
                 >
                   {t.text}
                 </p>
@@ -313,7 +313,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
               type="submit"
               aria-label="Send"
               disabled={busy || !text.trim()}
-              className="flex size-11 items-center justify-center rounded-md bg-brand-gradient text-white disabled:opacity-50"
+              className="flex size-11 items-center justify-center rounded-md bg-accent text-accent-fg disabled:opacity-50"
             >
               <Send className="size-4" aria-hidden="true" />
             </button>
@@ -331,9 +331,9 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         data-testid="ask-ai-button"
-        className="flex min-h-[48px] items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-bold text-white shadow-lg hover:brightness-110"
+        className="flex min-h-[44px] items-center gap-2 rounded-full border border-border-strong bg-surface px-4 text-sm font-medium text-text shadow-md hover:bg-surface-alt"
       >
-        <Bot className="size-5" aria-hidden="true" />
+        <Sparkles className="size-4" aria-hidden="true" />
         Ask
       </button>
     </div>

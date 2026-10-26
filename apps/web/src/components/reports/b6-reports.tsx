@@ -164,7 +164,7 @@ export function ScheduleGantt({ csrf }: { csrf: string }) {
                           role="img"
                           aria-label={`${PHASE_NAME[s.phase]}: ${s.startDate} to ${s.endDate}`}
                           title={`${PHASE_NAME[s.phase]} ${s.startDate} to ${s.endDate}${data.canMove ? ' (drag to move)' : ''}`}
-                          className={`absolute top-0 flex h-8 items-center overflow-hidden rounded-sm border border-surface text-[10px] font-semibold text-white ${PHASE_FILL[k % PHASE_FILL.length]} ${data.canMove ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          className={`absolute top-0 flex h-8 items-center overflow-hidden rounded-sm border border-surface text-[10px] font-semibold text-bg ${PHASE_FILL[k % PHASE_FILL.length]} ${data.canMove ? 'cursor-grab active:cursor-grabbing' : ''}`}
                           style={{
                             left: `${pct(ms(s.startDate))}%`,
                             width: `${Math.max(1, pct(ms(s.endDate)) - pct(ms(s.startDate)))}%`,

@@ -90,7 +90,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
         className="flex min-h-[28rem] min-w-0 flex-col rounded-md border border-border bg-surface"
       >
         <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-white">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-gradient-fg">
             <Bot className="size-5" aria-hidden="true" />
           </span>
           <h2 id="chat-h" className="font-heading text-lg font-semibold">

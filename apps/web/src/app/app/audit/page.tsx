@@ -101,7 +101,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               <a
                 href={`/api/v1/audit-events/export${query.size ? `?${query}` : ''}`}
                 download
-                className="ml-auto inline-flex min-h-[44px] items-center rounded-md bg-brand-gradient px-4 text-sm font-semibold text-white no-underline"
+                className="ml-auto inline-flex min-h-[44px] items-center rounded-md bg-brand-gradient px-4 text-sm font-semibold text-gradient-fg no-underline"
               >
                 Export CSV
               </a>

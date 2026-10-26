@@ -6,9 +6,18 @@ import {
   Button,
   Card,
   Checkbox,
+  ActivityRow,
   ComingSoon,
   Dialog,
   EmptyState,
+  KpiCell,
+  KpiStrip,
+  ListRow,
+  PageHeader,
+  Panel,
+  RowList,
+  SectionHeader,
+  padNumber,
   Field,
   Input,
   Logo,
@@ -84,12 +93,78 @@ export function Gallery() {
           <p className="text-sm text-text-muted">Muted small text for secondary information.</p>
         </section>
 
+        <section aria-labelledby="h-pattern" className="flex flex-col gap-6">
+          <h2 id="h-pattern" className="text-2xl font-semibold">
+            Page pattern
+          </h2>
+          <PageHeader
+            eyebrow="Northline / Tuesday 27 October"
+            title="Good morning, Alex."
+            subtitle="A page header: eyebrow, light title, muted subtitle and the page actions."
+            actions={<Button size="sm">New request</Button>}
+          />
+          <KpiStrip label="Sample key figures">
+            <KpiCell
+              label="Active procurements"
+              value={padNumber(8)}
+              caption="$1,665,000 in pipeline"
+              href="/ui-kit"
+            />
+            <KpiCell
+              label="Awaiting decisions"
+              value={padNumber(3)}
+              caption="3 assigned to you"
+              href="/ui-kit"
+            />
+            <KpiCell label="Active agreements" value={padNumber(5)} caption="Contract register" />
+            <KpiCell label="Expiring within 90 days" value={padNumber(2)} caption="Renewal planning" />
+          </KpiStrip>
+          <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
+            <section aria-labelledby="h-sample-queue">
+              <SectionHeader id="h-sample-queue" eyebrow="Attention & action" title="List rows" as="h3" />
+              <RowList className="mt-3" aria-label="Sample list rows">
+                <ListRow
+                  href="/ui-kit"
+                  accent="warning"
+                  caption="Contract · Alex Lee"
+                  title="Quarterly service and risk review"
+                  subtitle="Energy supply agreement"
+                  tag="Overdue"
+                />
+                <ListRow
+                  href="/ui-kit"
+                  accent="info"
+                  caption="Planning · Alex Lee"
+                  title="Complete the plan and request approval"
+                  subtitle="Service desk platform"
+                />
+              </RowList>
+            </section>
+            <Panel aria-labelledby="h-sample-activity">
+              <SectionHeader id="h-sample-activity" eyebrow="Across the business" title="Panel" as="h3" />
+              <RowList className="mt-3 border-b-0" aria-label="Sample activity">
+                <ActivityRow
+                  who="System"
+                  text="Tender closed at the closing time"
+                  meta="System · 26 Oct 2026"
+                />
+                <ActivityRow
+                  who="Jamie Morgan"
+                  text="Requested approval to approach the market"
+                  meta="Jamie Morgan · 21 Oct 2026"
+                />
+              </RowList>
+            </Panel>
+          </div>
+        </section>
+
         <section aria-labelledby="h-buttons" className="flex flex-col gap-3">
           <h2 id="h-buttons" className="text-2xl font-semibold">
             Buttons
           </h2>
           <div className="flex flex-wrap gap-3">
             <Button>Primary</Button>
+            <Button size="sm">Small</Button>
             <Button variant="accent">Accent</Button>
             <Button variant="secondary">Secondary</Button>
             <Button variant="ghost">Ghost</Button>

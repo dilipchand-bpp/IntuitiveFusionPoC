@@ -129,9 +129,11 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
       const frame = role === 'SUPPLIER' ? 'supplier-shell' : 'shell';
       if (role !== 'SUPPLIER') {
         const nav = page.getByRole('navigation', { name: 'Main' });
-        // every page is in the document, including the ones under a collapsed heading
-        const links = await nav.locator('a[href]').evaluateAll((as) => as.map((a) => a.textContent ?? ''));
-        expect(links.map((l) => l.trim()).sort()).toEqual(expected.map((n) => n.label).sort());
+        // every page is in the document, including the ones inside a closed tab menu
+        const links = await nav
+          .locator('a[href]')
+          .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
+        expect(links.sort()).toEqual(expected.map((n) => n.href).sort());
       }
       for (const item of expected) {
         const res = await page.goto(item.href);
@@ -224,6 +226,8 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     await signIn(page, 'ADMIN');
     await page.goto('/admin/users');
     const nav = page.getByRole('navigation', { name: 'Main' });
+    await expect(nav.getByRole('button', { name: 'Admin' })).toHaveAttribute('aria-current', 'true');
+    await nav.getByRole('button', { name: 'Admin' }).click();
     await expect(nav.getByRole('link', { name: 'Users & roles' })).toHaveAttribute('aria-current', 'page');
     await expect(nav.getByRole('link', { name: 'Admin overview' })).not.toHaveAttribute(
       'aria-current',
@@ -239,16 +243,15 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
     const kpis = page.getByRole('region', { name: 'Key figures' });
     for (const label of [
       'Active procurements',
-      'Value in flight',
-      'Avg. cycle time',
-      'Alerts due',
-      'Waiting for you',
+      'Awaiting decisions',
+      'Active agreements',
+      'Expiring within 90 days',
     ]) {
       await expect(kpis).toContainText(label);
     }
     // The seed alone puts $6,648,000 in flight across 4 active procurements; other tests only add to it.
     const hint = await kpis
-      .getByText(/^\$[\d,]{7,}$/)
+      .getByText(/^\$[\d,]{7,} in pipeline$/)
       .first()
       .innerText();
     expect(Number(hint.replace(/[^\d]/g, ''))).toBeGreaterThanOrEqual(6_648_000);
@@ -267,38 +270,17 @@ test.describe('US-PLT-03/04 signed-in shell', () => {
 });
 
 test.describe('US-PLT-05 responsive and themes', () => {
-  test('phone layout: sidebar becomes a drawer that opens, navigates and closes', async ({ page }) => {
+  test('phone layout: the top tabs become a drawer that opens, navigates and closes', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await signIn(page, 'PROCUREMENT');
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
     await page.getByRole('button', { name: 'Open menu' }).click();
-    const nav = page.getByRole('navigation', { name: 'Main' });
+    const nav = page.getByRole('navigation', { name: 'Pages' });
     await expect(nav).toBeVisible();
-    // the headings start closed except the first and the current page's, so open the one holding Tenders
-    await nav.getByRole('button', { name: 'Procure' }).click();
+    await nav.getByRole('button', { name: 'Sourcing' }).click();
     await nav.getByRole('link', { name: 'Tenders' }).click();
     await expect(page).toHaveURL(/\/app\/tenders$/);
     await expect(nav).toBeHidden(); // drawer closed after navigating
-  });
-
-  test('menu headings collapse and expand, hide their pages, and the choice is remembered', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1400, height: 1000 });
-    await signIn(page, 'PROCUREMENT');
-    const nav = page.getByRole('navigation', { name: 'Main' });
-    const insight = nav.getByRole('button', { name: 'Insight' });
-    await expect(insight).toHaveAttribute('aria-expanded', 'false');
-    await expect(nav.getByRole('link', { name: 'Reports' })).toBeHidden();
-    await insight.click();
-    await expect(insight).toHaveAttribute('aria-expanded', 'true');
-    await expect(nav.getByRole('link', { name: 'Reports' })).toBeVisible();
-    await page.reload();
-    await expect(nav.getByRole('button', { name: 'Insight' })).toHaveAttribute('aria-expanded', 'true');
-    await nav.getByRole('button', { name: 'Collapse all' }).click();
-    await expect(nav.getByRole('link', { name: 'Reports' })).toBeHidden();
-    await nav.getByRole('button', { name: 'Expand all' }).click();
-    await expect(nav.getByRole('link', { name: 'Reports' })).toBeVisible();
   });
 
   for (const vp of VIEWPORTS) {
@@ -336,9 +318,11 @@ test.describe('US-PLT-05 responsive and themes', () => {
     await signIn(page, 'REQUESTER');
     for (const path of ['/admin', '/app/nope']) {
       await page.goto(path);
+      // reduced motion turns every style change into a 0.01 ms transition; let it finish so axe reads settled colours
+      await page.evaluate(() => Promise.all(document.getAnimations().map((x) => x.finished)));
       const r = await new AxeBuilder({ page }).withTags(WCAG).analyze();
       expect(
-        r.violations.map((v) => v.id),
+        r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join('|')}`),
         path,
       ).toEqual([]);
     }
@@ -370,8 +354,9 @@ test.describe('visual regression @visual', () => {
       });
     }
   }
-  test('signed-in shell chrome (header and sidebar), light desktop', async ({ page }) => {
+  test('signed-in shell chrome (top bar and tabs), light desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
+    await page.addInitScript(() => localStorage.setItem('if-theme', 'light'));
     await signIn(page, 'EXEC');
     await page.goto('/app/dashboard');
     await page.evaluate(() => document.fonts.ready);
@@ -380,7 +365,7 @@ test.describe('visual regression @visual', () => {
     await expect(shell.locator('header').first()).toHaveScreenshot('shell-header-light.png', {
       maxDiffPixelRatio: 0.02,
     });
-    await expect(shell.locator('aside')).toHaveScreenshot('shell-sidebar-exec-light.png', {
+    await expect(shell.locator('header nav')).toHaveScreenshot('shell-tabs-exec-light.png', {
       maxDiffPixelRatio: 0.02,
     });
   });

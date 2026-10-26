@@ -359,6 +359,7 @@ test.describe('accessibility and layout', () => {
 test.describe('visual regression @visual', () => {
   test('requests list header and search form, light desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
+    await page.addInitScript(() => localStorage.setItem('if-theme', 'light'));
     await signIn(page, 'procurement');
     await page.goto('/app/requests');
     await page.evaluate(() => document.fonts.ready);
@@ -372,6 +373,7 @@ test.describe('visual regression @visual', () => {
   });
   test('intake chat with a drafted request, light desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
+    await page.addInitScript(() => localStorage.setItem('if-theme', 'light'));
     await signIn(page, 'requester');
     await page.goto('/app/requests/new');
     await say(page, HEADLINE);

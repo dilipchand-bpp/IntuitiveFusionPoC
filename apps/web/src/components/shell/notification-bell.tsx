@@ -53,14 +53,13 @@ export function NotificationBell({ csrfToken }: { csrfToken: string }) {
           aria-label={`Notifications, ${unread} unread`}
           className="relative"
         >
-          <Bell className="size-5" aria-hidden="true" />
+          <Bell className="size-[18px]" aria-hidden="true" />
           {unread > 0 && (
             <span
               aria-hidden="true"
-              className="absolute right-1 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-bold text-accent-fg"
-            >
-              {unread}
-            </span>
+              data-testid="bell-dot"
+              className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-accent"
+            />
           )}
         </Button>
       }

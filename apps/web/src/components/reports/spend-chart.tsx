@@ -12,10 +12,7 @@ const compact = new Intl.NumberFormat('en-AU', {
 export function SpendChart({ report }: { report: SpendReport }) {
   const max = Math.max(1, ...report.byCategory.map((c) => c.pipeline + c.committed));
   return (
-    <div
-      className="min-w-0 rounded-lg border border-border bg-surface p-6 shadow-sm"
-      data-testid="spend-chart"
-    >
+    <div className="min-w-0 rounded-lg border border-border p-6" data-testid="spend-chart">
       <h2 id="spend-h" className="font-heading text-lg font-semibold">
         Spend by category
       </h2>
@@ -34,10 +31,7 @@ export function SpendChart({ report }: { report: SpendReport }) {
                   <strong className="shrink-0">{compact.format(c.pipeline + c.committed)}</strong>
                 </div>
                 <div className="mt-1.5 flex h-2.5 overflow-hidden rounded-full bg-surface-alt">
-                  <div
-                    className="bg-brand-gradient h-2.5"
-                    style={{ width: `${(c.committed / max) * 100}%` }}
-                  />
+                  <div className="h-2.5 bg-accent" style={{ width: `${(c.committed / max) * 100}%` }} />
                   <div className="h-2.5 bg-border-strong" style={{ width: `${(c.pipeline / max) * 100}%` }} />
                 </div>
               </li>

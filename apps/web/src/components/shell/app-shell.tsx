@@ -24,6 +24,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         homePath: user.homePath,
       }}
       brand={{ productName: brand.productName, tagline: brand.tagline }}
+      workspace={user.tenantName}
       items={navFor(user.roles, Boolean(user.external))}
     >
       {mustEnrol && mfa ? <MfaPanel status={mfa} csrf={user.csrfToken} gate /> : children}

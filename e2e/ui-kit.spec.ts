@@ -38,7 +38,7 @@ for (const theme of themes) {
       test('theme applied from tokens', async ({ page }) => {
         await open(page, theme, vp);
         const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-        expect(bg).toBe(theme === 'light' ? 'rgb(246, 247, 250)' : 'rgb(20, 23, 30)');
+        expect(bg).toBe(theme === 'light' ? 'rgb(245, 247, 250)' : 'rgb(11, 15, 20)');
       });
 
       test('@visual snapshot', async ({ page }) => {
@@ -81,14 +81,22 @@ test('keyboard: dialog opens, traps focus, Escape closes and returns focus', asy
   await expect(trigger).toBeFocused();
 });
 
-test('theme toggle switches and persists across reload', async ({ page }) => {
+test('dark is the default, even when the operating system prefers light', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/ui-kit');
-  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(bg).toBe('rgb(11, 15, 20)');
+});
+
+test('theme toggle switches to light and persists across reload', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/ui-kit');
+  await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });
 
 test('reduced motion is respected', async ({ page }) => {
