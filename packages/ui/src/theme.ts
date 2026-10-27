@@ -101,19 +101,19 @@ export const dark: ColorTokens = {
 };
 
 export const typography = {
-  heading: "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif",
-  body: "'Inter Variable', 'Inter', system-ui, sans-serif",
+  heading: "'Manrope Variable', 'Manrope', system-ui, sans-serif",
+  body: "'Manrope Variable', 'Manrope', system-ui, sans-serif",
   mono: "ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace",
-  // size / line-height pairs (px). Light and airy: body text is 14px, captions 12-13px (eyebrows are set in the kit).
+  // size / line-height pairs (px). One family (Manrope) throughout: body text is 13px, captions 12px (eyebrows are set in the kit).
   scale: {
     xs: ['12px', '16px'],
     sm: ['13px', '20px'],
-    base: ['14px', '22px'],
+    base: ['13px', '20px'],
     lg: ['16px', '24px'],
     xl: ['18px', '26px'],
-    '2xl': ['22px', '30px'],
+    '2xl': ['20px', '28px'],
     '3xl': ['28px', '34px'],
-    '4xl': ['34px', '40px'],
+    '4xl': ['36px', '43px'],
     '5xl': ['44px', '50px'],
   },
   // Utilities such as font-semibold / font-extrabold resolve to these, so headings stay light across the whole product.
@@ -121,7 +121,7 @@ export const typography = {
   /** Headings are set tight. */
   headingTracking: '-0.015em',
   /** Small uppercase labels above titles and figures. */
-  eyebrowTracking: '0.14em',
+  eyebrowTracking: '0.1em',
 } as const;
 
 export const spacing = {

@@ -1,12 +1,12 @@
 # Design system (phase 1 foundation)
 
-The product has one look: near-black blue-grey (dark, the default) with a light variant of the same character, hairline borders, light airy type and one restrained accent. This page is the contract for everyone building or restyling a page. Phase 1 built the foundation described here; phase 2 moves the remaining pages onto it.
+The product has one look: near-black blue-grey (dark, the default) with a light variant of the same character, hairline borders, light airy type and one restrained accent. This page is the contract for everyone building or restyling a page. Phase 1 built the foundation described here; phase 2 has since moved the remaining pages onto it (the supplier portal now uses the top-bar pattern). Landing and login keep their marketing look until the owner decides.
 
 ## 1. Where styling lives
 
 - **All tokens** are in `packages/ui/src/theme.ts` (colours for `dark` and `light`, type scale and weights, spacing, radius, shadow, motion). `npm run theme:build -w @if/ui` regenerates `packages/ui/src/theme.css`; a test fails if the two differ.
 - No component or page may contain a `#hex` or `rgb()` literal (a test enforces it). Use token classes: `bg-bg`, `bg-surface`, `bg-surface-alt`, `border-border`, `border-border-strong`, `text-text`, `text-text-muted`, `bg-primary text-primary-fg`, `bg-accent text-accent-fg`, `text-success|warning|error|info` (+ `-bg`).
-- Tailwind's `text-sm`, `text-base` and the `font-medium|semibold|bold|extrabold` utilities resolve to the theme scale, so existing classes already follow the light look: body 14px, `sm` 13px, `xs` 12px; `extrabold` is weight 500, `semibold` 550, `bold` 600.
+- Tailwind's `text-sm`, `text-base` and the `font-medium|semibold|bold|extrabold` utilities resolve to the theme scale, so existing classes already follow the light look: one font (Manrope Variable); body and `sm` 13px, `xs` 12px, section titles `xl` 18px, page title `4xl` 36px with tight heading tracking; `extrabold` is weight 500, `semibold` 550, `bold` 600.
 
 ## 2. Colour modes
 
@@ -26,7 +26,7 @@ The product has one look: near-black blue-grey (dark, the default) with a light 
 | `Panel` | bordered block, no fill, no shadow |
 | `RowList` + `ListRow` | hairline list; row = left accent bar, caption, title, subtitle, tag, arrow |
 | `ActivityRow` | small round initials, one line of text, muted "who · when" |
-| `Button` | `primary`, `accent`, `secondary`, `ghost`, `danger`; sizes `sm` (36px), `md` (44px, default), `lg`, `icon` |
+| `Button` | `primary` (accent-filled), `accent`, `secondary`, `ghost`, `danger`; sizes `sm` (36px), `md` (44px, default), `lg`, `icon` |
 | `Field`, `Input`, `Select`, `Textarea`, `Checkbox` | controls keep a 44px target and a `border-strong` edge (WCAG 1.4.11) |
 | `Badge`, `AiBadge`, `Stepper`, `Stamp`, `Table/Th/Td`, `Tabs`, `Dialog`, `Drawer`, `Popover`, `Menu`, `Toast`, `Skeleton`, `EmptyState`, `ComingSoon`, `Avatar`, `KpiCard` | unchanged APIs, restyled |
 | `UiLinkProvider` | the web app gives the kit the Next.js `Link`, so rows and cells navigate without a page load |

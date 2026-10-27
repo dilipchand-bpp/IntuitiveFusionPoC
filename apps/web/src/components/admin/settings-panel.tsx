@@ -240,7 +240,7 @@ export function Section({
       <SectionHeader id={`${id}-h`} title={<>{title}</>} />
       <p className="mt-1 max-w-prose text-sm text-text-muted">{blurb}</p>
       {!add && fixed && (
-        <p className="mt-1 max-w-prose text-xs text-text-muted" data-testid={`settings-${id}-fixed`}>
+        <p className="mt-1 max-w-prose text-sm text-text-muted" data-testid={`settings-${id}-fixed`}>
           This section holds fixed values, so it only has Save. {fixed}
         </p>
       )}

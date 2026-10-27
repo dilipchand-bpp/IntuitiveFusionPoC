@@ -86,9 +86,9 @@ export function Gallery() {
           <h2 id="h-type" className="text-2xl font-semibold">
             Typography
           </h2>
-          <p className="font-heading text-4xl font-bold">Plus Jakarta Sans – headings</p>
+          <p className="font-heading text-4xl font-bold">Manrope – headings</p>
           <p className="text-base">
-            Inter – body text. The quick brown fox jumps over the lazy dog 0123456789.
+            Manrope – body text. The quick brown fox jumps over the lazy dog 0123456789.
           </p>
           <p className="text-sm text-text-muted">Muted small text for secondary information.</p>
         </section>

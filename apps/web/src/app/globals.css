@@ -1,6 +1,5 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/manrope';
 /* Generated tokens + Tailwind @theme mapping: edit packages/ui/src/theme.ts, never this file. */
 @import '../../../../packages/ui/src/theme.css';
 @source '../../../../packages/ui/src';
