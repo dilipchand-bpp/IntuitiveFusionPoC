@@ -2,7 +2,17 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AiBadge, Badge, Button, EmptyState, Field, Textarea, type BadgeTone } from '@if/ui';
+import {
+  AiBadge,
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  Textarea,
+  type BadgeTone,
+  PageHeader,
+  SectionHeader,
+} from '@if/ui';
 import { api } from '@/lib/api-client';
 import { message as problemText } from '@/components/contract/b5-shared';
 import { ASK_EVENT, type AskEventDetail } from '../shell/ask-ai';
@@ -91,11 +101,9 @@ export function CopilotHome({ csrf, initialText = '' }: { csrf: string; initialT
 
   return (
     <div className="flex flex-col gap-8">
-      <section aria-labelledby="start" className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+      <section aria-labelledby="start" className="rounded-lg border border-border bg-surface p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 id="start" className="font-heading text-lg font-semibold">
-            Run this for me
-          </h2>
+          <SectionHeader id="start" title="Run this for me" />
           <AiBadge />
           <Badge tone="info">SIMULATED · rules-simulated-v1</Badge>
         </div>
@@ -146,9 +154,10 @@ export function CopilotHome({ csrf, initialText = '' }: { csrf: string; initialT
       </section>
 
       <section aria-labelledby="runs">
-        <h2 id="runs" className="font-heading text-lg font-semibold">
-          {scope === 'ALL' ? 'All runs in the organisation' : 'My runs'}
-        </h2>
+        <SectionHeader
+          id="runs"
+          title={<>{scope === 'ALL' ? 'All runs in the organisation' : 'My runs'}</>}
+        />
         {runs === null ? (
           <p className="mt-2 text-text-muted">Loading…</p>
         ) : runs.length === 0 ? (
@@ -159,7 +168,7 @@ export function CopilotHome({ csrf, initialText = '' }: { csrf: string; initialT
               <li key={r.id}>
                 <Link
                   href={`/app/copilot/${r.id}`}
-                  className="flex min-h-[44px] flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 text-text no-underline shadow-sm hover:bg-surface-alt"
+                  className="flex min-h-[44px] flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt"
                 >
                   <StatusChip status={r.status} />
                   <span className="min-w-0 flex-1">
@@ -335,26 +344,30 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
   const open = d.gates.filter((g) => g.status === 'OPEN');
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{d.run.title}</h1>
-          <StatusChip status={d.run.status} />
-          <AiBadge />
-          <Badge tone="info">SIMULATED</Badge>
-        </div>
-        <p className="text-sm text-text-muted">
-          Acting as {d.run.startedBy.name} ({d.run.startedBy.role.replace('_', ' ').toLowerCase()}) ·{' '}
-          {d.procurement ? (
-            <Link href={d.procurement.link} className="font-semibold underline">
-              {d.procurement.number}
-            </Link>
-          ) : (
-            'no request yet'
-          )}{' '}
-          · now: <span data-testid="current-action">{d.run.currentAction ?? 'starting'}</span> (
-          {d.run.currentAgentLabel})
-        </p>
-      </header>
+      <PageHeader
+        title={d.run.title}
+        actions={
+          <>
+            <StatusChip status={d.run.status} />
+            <AiBadge />
+            <Badge tone="info">SIMULATED</Badge>
+          </>
+        }
+        subtitle={
+          <>
+            Acting as {d.run.startedBy.name} ({d.run.startedBy.role.replace('_', ' ').toLowerCase()}) ·{' '}
+            {d.procurement ? (
+              <Link href={d.procurement.link} className="font-semibold underline">
+                {d.procurement.number}
+              </Link>
+            ) : (
+              'no request yet'
+            )}{' '}
+            · now: <span data-testid="current-action">{d.run.currentAction ?? 'starting'}</span> (
+            {d.run.currentAgentLabel})
+          </>
+        }
+      />
 
       <ol
         aria-label="Stage timeline"
@@ -444,9 +457,7 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
       </section>
 
       <section aria-labelledby="waiting" className="flex flex-col gap-3">
-        <h2 id="waiting" className="font-heading text-lg font-semibold">
-          Waiting for
-        </h2>
+        <SectionHeader id="waiting" title="Waiting for" />
         {open.length === 0 ? (
           <p className="text-text-muted">
             {finished ? 'Nothing: this run has finished.' : 'Nobody. The Copilot is moving on its own.'}
@@ -493,9 +504,7 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="feed" className="min-w-0">
-          <h2 id="feed" className="font-heading text-lg font-semibold">
-            Live activity
-          </h2>
+          <SectionHeader id="feed" title="Live activity" />
           <p className="text-xs text-text-muted">Updates every 3 seconds.</p>
           <ol
             className="mt-2 flex max-h-[28rem] flex-col gap-2 overflow-y-auto"
@@ -520,9 +529,7 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
         </section>
 
         <section aria-labelledby="problems" className="min-w-0">
-          <h2 id="problems" className="font-heading text-lg font-semibold">
-            Problems and repairs
-          </h2>
+          <SectionHeader id="problems" title="Problems and repairs" />
           {d.problems.length === 0 ? (
             <p className="mt-2 text-text-muted">No problems so far.</p>
           ) : (
@@ -579,9 +586,7 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
       </div>
 
       <section aria-labelledby="agents">
-        <h2 id="agents" className="font-heading text-lg font-semibold">
-          Specialist agents and hand-offs
-        </h2>
+        <SectionHeader id="agents" title="Specialist agents and hand-offs" />
         <ul className="mt-2 flex flex-wrap gap-2">
           {d.agents.map((a) => (
             <li key={a.key}>
@@ -601,9 +606,7 @@ export function RunPage({ id, csrf, canControl }: { id: string; csrf: string; ca
       </section>
 
       <section aria-labelledby="steps">
-        <h2 id="steps" className="font-heading text-lg font-semibold">
-          Step log
-        </h2>
+        <SectionHeader id="steps" title="Step log" />
         <ol className="mt-2 flex flex-col gap-2" data-testid="steps">
           {d.steps.map((s) => (
             <li key={s.id} className="rounded-md border border-border bg-surface p-3 text-sm">

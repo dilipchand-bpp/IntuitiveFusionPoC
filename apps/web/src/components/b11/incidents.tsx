@@ -1,6 +1,19 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, Field, Input, Select, Table, Td, Textarea, Th } from '@if/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  Select,
+  Table,
+  Td,
+  Textarea,
+  Th,
+  SectionHeader,
+} from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 const KINDS = [
@@ -77,7 +90,7 @@ function Report({ csrf, done }: { csrf: string; done: () => Promise<void> }) {
   });
   return (
     <Card>
-      <h2 className="font-heading text-xl font-bold">Report a suspected data breach</h2>
+      <SectionHeader title="Report a suspected data breach" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         Anyone can report. Legal, probity, the administrator and the executive are told at once, and the
         30-day assessment clock starts from when you became aware.
@@ -192,9 +205,14 @@ function Manage({ id, csrf, reload }: { id: string; csrf: string; reload: () => 
   return (
     <Card data-testid="incident-detail">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-heading text-lg font-bold">
-          {x.number}: {x.title}
-        </h3>
+        <SectionHeader
+          as="h3"
+          title={
+            <>
+              {x.number}: {x.title}
+            </>
+          }
+        />
         <Badge tone={TONE[x.status]}>{x.status.toLowerCase()}</Badge>
         {x.overdue && <Badge tone="error">Assessment overdue</Badge>}
       </div>
@@ -207,7 +225,7 @@ function Manage({ id, csrf, reload }: { id: string; csrf: string; reload: () => 
         {x.daysLeft >= 0 ? `${x.daysLeft} days left` : `${-x.daysLeft} days late`}).
       </p>
 
-      <h4 className="mt-5 text-sm font-bold uppercase tracking-wide text-text-muted">
+      <h4 className="mt-5 text-sm font-medium uppercase tracking-wide text-text-muted">
         Likelihood of serious harm
       </h4>
       <p className="mt-1 text-xs text-text-muted">{x.disclaimer}</p>
@@ -272,7 +290,7 @@ function Manage({ id, csrf, reload }: { id: string; csrf: string; reload: () => 
         </form>
       )}
 
-      <h4 className="mt-5 text-sm font-bold uppercase tracking-wide text-text-muted">Containment</h4>
+      <h4 className="mt-5 text-sm font-medium uppercase tracking-wide text-text-muted">Containment</h4>
       <ul className="mt-1">
         {x.containment.map((c) => (
           <li key={c.key}>
@@ -288,7 +306,7 @@ function Manage({ id, csrf, reload }: { id: string; csrf: string; reload: () => 
 
       {a?.recommendation === 'Notifiable' && (
         <>
-          <h4 className="mt-5 text-sm font-bold uppercase tracking-wide text-text-muted">
+          <h4 className="mt-5 text-sm font-medium uppercase tracking-wide text-text-muted">
             Notices (drafts; sending is simulated)
           </h4>
           <div className="mt-2 grid gap-4 lg:grid-cols-2">
@@ -417,7 +435,7 @@ export function IncidentsPanel({ csrf, roles }: { csrf: string; roles: readonly 
       <Report csrf={csrf} done={reload} />
       {(mine.data?.items ?? []).length > 0 && (
         <Card>
-          <h2 className="font-heading text-xl font-bold">Your reports</h2>
+          <SectionHeader title="Your reports" />
           <ul className="mt-2 list-disc pl-5 text-sm">
             {mine.data!.items.map((i) => (
               <li key={i.id}>
@@ -430,7 +448,7 @@ export function IncidentsPanel({ csrf, roles }: { csrf: string; roles: readonly 
       {manager && reg.data && (
         <Card>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-heading text-xl font-bold">Incident register</h2>
+            <SectionHeader title="Incident register" />
             <Button
               variant="secondary"
               loading={rem.busy === 'rem'}

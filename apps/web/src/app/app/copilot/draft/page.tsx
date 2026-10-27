@@ -1,3 +1,4 @@
+import { PageHeader } from '@if/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DraftPanel } from '@/components/copilot/draft-panel';
@@ -10,17 +11,16 @@ export default async function DraftPage() {
   if (!user) notFound();
   return (
     <div className="flex flex-col gap-6">
-      <header>
+      <div>
         <p className="text-sm">
           <Link href="/app/copilot">← Procurement Copilot</Link>
         </p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight">Draft with AI</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Describe a need by typing or speaking, and get a request, plan, job specification, tender document,
-          contract draft or evaluation criteria. Change it in plain language, see exactly what changed, and
-          undo. Simulated and rules-based.
-        </p>
-      </header>
+        <PageHeader
+          className="mt-1"
+          title="Draft with AI"
+          subtitle="Describe a need by typing or speaking, and get a request, plan, job specification, tender document, contract draft or evaluation criteria. Change it in plain language, see exactly what changed, and undo. Simulated and rules-based."
+        />
+      </div>
       <DraftPanel
         csrf={user.csrfToken}
         kinds={['REQUEST', 'JOB_SPEC', 'PLAN', 'TENDER_DOC', 'CONTRACT_DRAFT', 'EVAL_CRITERIA']}

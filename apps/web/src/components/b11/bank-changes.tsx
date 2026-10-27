@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 import { formatDateTime } from '@/lib/labels';
 
@@ -56,9 +56,7 @@ export function BankChangesPanel({ csrf, roles }: { csrf: string; roles: readonl
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <Card role="region" aria-labelledby="bank-h">
-        <h2 id="bank-h" className="font-heading text-xl font-bold">
-          Who sees bank details
-        </h2>
+        <SectionHeader id="bank-h" title="Who sees bank details" />
         <p className="mt-2 max-w-prose text-sm text-text-muted" data-testid="bank-rule">
           Only finance sees a supplier&apos;s BSB and account number in full (and the supplier on its own
           profile). Everyone else, administrators included, sees the BSB hidden and only the last three digits
@@ -71,9 +69,7 @@ export function BankChangesPanel({ csrf, roles }: { csrf: string; roles: readonl
       </Card>
 
       <section aria-labelledby="wait-h" className="flex flex-col gap-3">
-        <h2 id="wait-h" className="font-heading text-xl font-bold">
-          Waiting for finance
-        </h2>
+        <SectionHeader id="wait-h" title="Waiting for finance" />
         {changes.error && (
           <p role="alert" className="text-sm font-medium text-error">
             {changes.error}
@@ -181,9 +177,7 @@ export function BankChangesPanel({ csrf, roles }: { csrf: string; roles: readonl
       </section>
 
       <Card role="region" aria-labelledby="look-h">
-        <h2 id="look-h" className="font-heading text-xl font-bold">
-          A supplier&apos;s details
-        </h2>
+        <SectionHeader id="look-h" title="A supplier's details" />
         <div className="mt-3 max-w-md">
           <Field label="Supplier">
             <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>

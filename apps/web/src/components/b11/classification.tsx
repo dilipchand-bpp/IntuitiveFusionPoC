@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Finding {
@@ -120,7 +120,7 @@ export function ClassificationPanel({ csrf, roles }: { csrf: string; roles: read
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Findings by class</h2>
+          <SectionHeader title="Findings by class" />
           <Badge tone="info">Rules, simulated ({data.model})</Badge>
           {canScan && (
             <Button
@@ -152,7 +152,7 @@ export function ClassificationPanel({ csrf, roles }: { csrf: string; roles: read
           {s.byClass.map((c) => (
             <div key={c.class} className="rounded-lg border border-border bg-surface-alt p-3">
               <dt className="text-xs text-text-muted">{CLASS_LABEL[c.class]}</dt>
-              <dd className="mt-1 text-xl font-bold" data-testid={`class-${c.class}`}>
+              <dd className="mt-1 text-sm font-medium" data-testid={`class-${c.class}`}>
                 {c.count}
               </dd>
             </div>
@@ -173,7 +173,7 @@ export function ClassificationPanel({ csrf, roles }: { csrf: string; roles: read
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Findings</h2>
+        <SectionHeader title="Findings" />
         <div className="mt-3 flex flex-wrap items-end gap-4">
           <div className="w-48">
             <Field label="Status">

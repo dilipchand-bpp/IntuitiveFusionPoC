@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Card, EmptyState, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Card, EmptyState, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { useData } from '@/components/contract/b5-shared';
 import { aud } from '@/lib/labels';
 import type { OcrReport } from './ocr-types';
@@ -59,7 +59,7 @@ export function OcrReportView() {
       </p>
 
       <Card>
-        <h2 className="font-heading text-lg font-bold">Renewals due in {r.days} days</h2>
+        <SectionHeader title={<>Renewals due in {r.days} days</>} />
         {r.renewalsDue.length === 0 ? (
           <p className="mt-2 text-sm text-text-muted">None.</p>
         ) : (
@@ -93,7 +93,7 @@ export function OcrReportView() {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-lg font-bold">Notice windows</h2>
+        <SectionHeader title="Notice windows" />
         {r.noticeWindows.length === 0 ? (
           <p className="mt-2 text-sm text-text-muted">No notice deadline falls in this period.</p>
         ) : (
@@ -127,7 +127,7 @@ export function OcrReportView() {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-lg font-bold">Liability caps</h2>
+        <SectionHeader title="Liability caps" />
         <p className="mt-1 text-sm text-text-muted">
           {r.liabilityCaps.summary.fixed} fixed, {r.liabilityCaps.summary.feesBased} fee-based,{' '}
           {r.liabilityCaps.summary.unlimited} unlimited, {r.liabilityCaps.summary.notStated} not stated;{' '}
@@ -166,7 +166,7 @@ export function OcrReportView() {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-lg font-bold">Missing clauses</h2>
+        <SectionHeader title="Missing clauses" />
         <p className="mt-1 text-sm text-text-muted">
           {r.missingClauses.documentsWithMissingMandatory} of {r.missingClauses.documentsChecked} documents
           miss at least one mandatory clause.
@@ -196,7 +196,7 @@ export function OcrReportView() {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-lg font-bold">Concentration by supplier</h2>
+        <SectionHeader title="Concentration by supplier" />
         <p className="mt-1 text-sm text-text-muted">
           Total {aud.format(r.concentration.totalValue)}; the largest supplier holds{' '}
           {r.concentration.topShare}%; concentration index {r.concentration.hhi} (10,000 is one supplier).

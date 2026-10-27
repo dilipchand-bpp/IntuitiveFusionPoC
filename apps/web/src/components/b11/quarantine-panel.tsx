@@ -1,5 +1,5 @@
 'use client';
-import { Badge, Button, Card, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Table, Td, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Item {
@@ -49,7 +49,7 @@ export function QuarantinePanel({ csrf, roles }: { csrf: string; roles: readonly
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Scanner</h2>
+          <SectionHeader title="Scanner" />
           <Badge tone="info">SIMULATED: {data.scanner.engine}</Badge>
           <Badge tone={data.scanner.mode === 'UP' ? 'success' : 'error'}>
             <span data-testid="scanner-mode">{data.scanner.mode}</span>
@@ -82,7 +82,7 @@ export function QuarantinePanel({ csrf, roles }: { csrf: string; roles: readonly
         {act.messages}
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Quarantined and held uploads</h2>
+        <SectionHeader title="Quarantined and held uploads" />
         {data.items.length === 0 ? (
           <p className="mt-3 text-sm text-text-muted" data-testid="quarantine-empty">
             Nothing has been quarantined or held.

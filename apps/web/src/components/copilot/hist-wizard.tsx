@@ -1,6 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { AiBadge, Badge, Button, Card, Checkbox, Field, Input, KpiCard, Select, Stepper } from '@if/ui';
+import {
+  AiBadge,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  KpiCard,
+  Select,
+  Stepper,
+  SectionHeader,
+} from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { HistHistory } from './hist-history';
 import { HistMappingStep } from './hist-mapping-step';
@@ -122,9 +134,7 @@ export function HistWizard({
 
       {step === 0 && (
         <Card role="region" aria-labelledby="hist-s0">
-          <h2 id="hist-s0" className="font-heading text-xl font-bold">
-            1. Choose what to import and the file
-          </h2>
+          <SectionHeader id="hist-s0" title="1. Choose what to import and the file" />
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Field label="What are you importing?">
               <Select value={entity} onChange={(e) => setEntity(e.target.value)} data-testid="hist-entity">
@@ -185,7 +195,7 @@ export function HistWizard({
               Upload and suggest a mapping
             </Button>
           </div>
-          <h3 className="mt-6 font-heading text-base font-bold">Or try a sample</h3>
+          <SectionHeader as="h3" className="mt-6" title="Or try a sample" />
           <p className="text-sm text-text-muted">
             Invented data with realistic mess: mixed date formats, supplier name variants, bad ABNs and gaps.
             Load the supplier extract before the catalogue prices.
@@ -268,9 +278,7 @@ export function HistWizard({
 
       {step === 3 && batch && (
         <Card role="region" aria-labelledby="hist-s3">
-          <h2 id="hist-s3" className="font-heading text-xl font-bold">
-            4. Load
-          </h2>
+          <SectionHeader id="hist-s3" title="4. Load" />
           {batch.status === 'COMMITTED' && batch.commitSummary ? (
             <div className="mt-2 flex flex-col gap-3" data-testid="hist-committed">
               <p role="status" className="text-sm font-medium text-success">

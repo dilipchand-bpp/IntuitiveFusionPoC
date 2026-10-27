@@ -1,6 +1,19 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, Field, Input, Select, Table, Td, Th, type BadgeTone } from '@if/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  Select,
+  Table,
+  Td,
+  Th,
+  type BadgeTone,
+  SectionHeader,
+} from '@if/ui';
 import { ROLE_NAMES } from '@if/shared';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import type { ProcurementTable } from '@/components/reports/types';
@@ -128,9 +141,7 @@ export function AccessPoliciesPanel({ csrf }: { csrf: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <Card role="region" aria-labelledby="pol-h">
-        <h2 id="pol-h" className="font-heading text-xl font-bold">
-          How policies work
-        </h2>
+        <SectionHeader id="pol-h" title="How policies work" />
         <p className="mt-2 max-w-prose text-sm text-text-muted">
           The role rules decide who sees what by default. A policy is checked as well. A denial always wins:
           it hides a procurement from someone the role rules would show it to, and nothing overrides it. A
@@ -145,9 +156,7 @@ export function AccessPoliciesPanel({ csrf }: { csrf: string }) {
 
       <section aria-labelledby="list-h" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="list-h" className="font-heading text-xl font-bold">
-            Policies
-          </h2>
+          <SectionHeader id="list-h" title="Policies" />
           <Checkbox
             label="Show disabled, expired and deleted"
             checked={inactive}
@@ -246,9 +255,7 @@ export function AccessPoliciesPanel({ csrf }: { csrf: string }) {
       </section>
 
       <Card role="region" aria-labelledby="new-h">
-        <h2 id="new-h" className="font-heading text-xl font-bold">
-          New policy
-        </h2>
+        <SectionHeader id="new-h" title="New policy" />
         <form
           className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
           onSubmit={(e) => {
@@ -349,9 +356,7 @@ export function AccessPoliciesPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card role="region" aria-labelledby="sim-h">
-        <h2 id="sim-h" className="font-heading text-xl font-bold">
-          What can this person see?
-        </h2>
+        <SectionHeader id="sim-h" title="What can this person see?" />
         <div className="mt-4 grid gap-4 md:grid-cols-4">
           <Field label="Person">
             <Select value={sim.userId} onChange={(e) => setSim({ ...sim, userId: e.target.value })}>
@@ -442,9 +447,7 @@ export function AccessPoliciesPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card role="region" aria-labelledby="tag-h">
-        <h2 id="tag-h" className="font-heading text-xl font-bold">
-          Tags
-        </h2>
+        <SectionHeader id="tag-h" title="Tags" />
         <p className="mt-1 text-sm text-text-muted">
           A tag labels a procurement so a policy can select it, for example hr-sensitive.
         </p>

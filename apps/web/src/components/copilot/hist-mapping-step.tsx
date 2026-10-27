@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, Field, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Checkbox, Field, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import type { HistBatch, HistEntityDef } from './hist-types';
 
 /** Step 2: which column of the file is which field. The suggestion is a starting point; every choice can be changed and saved per source system. */
@@ -27,9 +27,7 @@ export function HistMappingStep({
   const conf = batch.suggestion?.confidence ?? {};
   return (
     <Card role="region" aria-labelledby="hist-s1" data-testid="hist-mapping">
-      <h2 id="hist-s1" className="font-heading text-xl font-bold">
-        2. Map the columns
-      </h2>
+      <SectionHeader id="hist-s1" title="2. Map the columns" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         {batch.filename}: {batch.rowCount} row(s), {batch.headers.length} column(s).{' '}
         {batch.suggestion?.usedSavedMapping

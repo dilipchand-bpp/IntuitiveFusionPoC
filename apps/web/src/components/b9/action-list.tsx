@@ -36,7 +36,7 @@ export function ActionList() {
         <li key={i.key} className="flex flex-col gap-2">
           <Link
             href={i.link}
-            className="flex min-h-[44px] flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 text-text no-underline shadow-sm hover:bg-surface-alt"
+            className="flex min-h-[44px] flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt"
           >
             <Badge tone="info">{i.kind}</Badge>
             <span className="min-w-0 flex-1">

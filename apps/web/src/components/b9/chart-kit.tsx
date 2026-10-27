@@ -268,7 +268,7 @@ export function CardsView({ points }: { points: Point[] }) {
       {points.map((p, i) => (
         <li key={`${p.label}-${i}`} className="min-w-0 rounded-md border border-border bg-surface-alt p-3">
           <p className="text-xs font-semibold text-text-muted">{p.label}</p>
-          <p className="mt-1 break-words text-xl font-extrabold">{show(p)}</p>
+          <p className="mt-1 break-words text-sm font-medium">{show(p)}</p>
         </li>
       ))}
     </ul>

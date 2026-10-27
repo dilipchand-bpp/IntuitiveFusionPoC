@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Counts {
@@ -162,7 +162,7 @@ export function ErpPanel({ csrf, canRun, canCheck }: { csrf: string; canRun: boo
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">ERP connection</h2>
+          <SectionHeader title="ERP connection" />
           <Badge tone="info">SIMULATED</Badge>
           {c && (
             <Badge tone={c.mode === 'DOWN' || !c.enabled ? 'error' : 'success'}>
@@ -247,7 +247,7 @@ export function ErpPanel({ csrf, canRun, canCheck }: { csrf: string; canRun: boo
 
       {o.manualTasks.length > 0 && (
         <Card>
-          <h2 className="font-heading text-xl font-bold">Do by hand while the ERP is down</h2>
+          <SectionHeader title="Do by hand while the ERP is down" />
           {o.manualTasks.map((t) => (
             <div key={t.id} className="mt-2 text-sm" data-testid="erp-manual-task">
               <p className="font-semibold">{t.title}</p>
@@ -265,7 +265,7 @@ export function ErpPanel({ csrf, canRun, canCheck }: { csrf: string; canRun: boo
       )}
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Cost centres and budgets ({o.financialYear})</h2>
+        <SectionHeader title={<>Cost centres and budgets ({o.financialYear})</>} />
         <Table caption="Imported cost centres">
           <thead>
             <tr>
@@ -314,7 +314,7 @@ export function ErpPanel({ csrf, canRun, canCheck }: { csrf: string; canRun: boo
 
       {canCheck && (
         <Card>
-          <h2 className="font-heading text-xl font-bold">Try the budget check</h2>
+          <SectionHeader title="Try the budget check" />
           <p className="mt-1 max-w-prose text-sm text-text-muted">
             Choose an imported cost centre or a unit name. The answer names where the figure came from.
           </p>
@@ -374,7 +374,7 @@ export function ErpPanel({ csrf, canRun, canCheck }: { csrf: string; canRun: boo
       )}
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Ledger ({o.ledgerCount} postings, newest first)</h2>
+        <SectionHeader title={<>Ledger ({o.ledgerCount} postings, newest first)</>} />
         <Table caption="Imported ledger postings">
           <thead>
             <tr>

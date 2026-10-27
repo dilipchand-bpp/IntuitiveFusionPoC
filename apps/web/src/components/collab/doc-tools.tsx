@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/labels';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
@@ -88,9 +88,7 @@ export function DocumentTools({
 
   return (
     <Card aria-labelledby={`dt-${id}`} role="region" data-testid="document-tools">
-      <h2 id={`dt-${id}`} className="font-heading text-xl font-bold">
-        Working together
-      </h2>
+      <SectionHeader id={`dt-${id}`} title={<>Working together</>} />
       <p className="mt-1 text-sm" data-testid="presence" role="status">
         {others.length === 0
           ? 'No one else is in this document right now.'

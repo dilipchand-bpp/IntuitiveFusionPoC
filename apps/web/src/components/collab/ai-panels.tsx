@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
@@ -49,9 +49,7 @@ export function RiskAssessmentPanel({
     r.run(`p-${key}`, async () => setA(await send<Assessment>(csrf, 'PATCH', `${base}/items/${key}`, body)));
   return (
     <Card aria-labelledby="risk-h" role="region" data-testid="risk-assessment">
-      <h2 id="risk-h" className="font-heading text-xl font-bold">
-        Risk assessment
-      </h2>
+      <SectionHeader id="risk-h" title="Risk assessment" />
       {a === undefined ? (
         <p className="mt-2 text-sm text-text-muted">Loading…</p>
       ) : a === null ? (
@@ -263,9 +261,7 @@ export function InstructBox({
     });
   return (
     <Card aria-labelledby={`${testId}-h`} role="region" data-testid={testId}>
-      <h2 id={`${testId}-h`} className="font-heading text-xl font-bold">
-        {title}
-      </h2>
+      <SectionHeader id={`${testId}-h`} title={<>{title}</>} />
       <form
         className="mt-2 flex flex-col gap-2"
         aria-label={title}
@@ -328,9 +324,7 @@ export function ResponseSummaries({ tenderId }: { tenderId: string }) {
   const { data, error } = useData<Summaries>(`/tenders/${tenderId}/response-summaries`);
   return (
     <Card aria-labelledby="rs-h" role="region" data-testid="response-summaries">
-      <h2 id="rs-h" className="font-heading text-xl font-bold">
-        Summary of the responses
-      </h2>
+      <SectionHeader id="rs-h" title="Summary of the responses" />
       {error && <p className="mt-2 text-sm text-text-muted">{error}</p>}
       {!data && !error && <p className="mt-2 text-sm text-text-muted">Loading…</p>}
       {data && (
@@ -397,9 +391,7 @@ export function ReferenceContent({ csrf, canRefresh }: { csrf: string; canRefres
   const r = useRun();
   return (
     <Card aria-labelledby="ref-h" role="region" data-testid="reference-content">
-      <h2 id="ref-h" className="font-heading text-xl font-bold">
-        Best-practice reference content
-      </h2>
+      <SectionHeader id="ref-h" title="Best-practice reference content" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         Variants of common role descriptions across categories, sectors and experience levels, kept in this
         organisation&apos;s own corpus and renewed

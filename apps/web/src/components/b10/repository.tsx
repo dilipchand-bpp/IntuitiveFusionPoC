@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { AiBadge, Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { AiBadge, Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
@@ -89,7 +89,7 @@ export function RepositoryPage({
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Simulated SharePoint</h2>
+          <SectionHeader title="Simulated SharePoint" />
           <AiBadge kind="simulated" />
         </div>
         <p className="mt-2 max-w-prose text-sm text-text-muted">
@@ -196,9 +196,14 @@ export function RepositoryPage({
           </Table>
           {history && (
             <Card data-testid="repo-history">
-              <h3 className="font-heading text-lg font-bold">
-                Versions of {history.folder}/{history.name}
-              </h3>
+              <SectionHeader
+                as="h3"
+                title={
+                  <>
+                    Versions of {history.folder}/{history.name}
+                  </>
+                }
+              />
               <ul className="mt-2 flex flex-col gap-1 text-sm">
                 {history.rows.map((v) => (
                   <li key={v.version}>
@@ -217,7 +222,7 @@ export function RepositoryPage({
           )}
           {canWrite && (
             <Card>
-              <h3 className="font-heading text-lg font-bold">Upload a small file</h3>
+              <SectionHeader as="h3" title="Upload a small file" />
               <p className="text-sm text-text-muted">
                 Up to 2 MB. If the name already exists you add the next version, starting from the one you
                 last saw.
@@ -274,7 +279,7 @@ export function RepositoryPage({
           )}
           {canPublish && (sources.data?.sources.length ?? 0) > 0 && (
             <Card>
-              <h3 className="font-heading text-lg font-bold">File a platform document</h3>
+              <SectionHeader as="h3" title="File a platform document" />
               <div className="mt-2 flex flex-wrap items-end gap-3">
                 <Field label="Document">
                   <Select value={src} onChange={(e) => setSrc(e.target.value)} data-testid="repo-source">

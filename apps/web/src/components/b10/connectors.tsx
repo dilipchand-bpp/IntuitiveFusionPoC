@@ -1,6 +1,19 @@
 'use client';
 import { useState } from 'react';
-import { AiBadge, Badge, Button, Card, Checkbox, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import {
+  AiBadge,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  Select,
+  Table,
+  Td,
+  Th,
+  SectionHeader,
+} from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Provider {
@@ -154,7 +167,7 @@ export function ConnectorsPage({ csrf, roles }: { csrf: string; roles: Connector
     <div className="flex min-w-0 flex-col gap-8">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Everything here is simulated</h2>
+          <SectionHeader title="Everything here is simulated" />
           <AiBadge kind="simulated" />
           <Badge tone="info">{data.model}</Badge>
         </div>
@@ -169,9 +182,7 @@ export function ConnectorsPage({ csrf, roles }: { csrf: string; roles: Connector
       {messages}
 
       <section aria-labelledby="cn-h" className="flex min-w-0 flex-col gap-3">
-        <h2 id="cn-h" className="font-heading text-xl font-bold">
-          Connected systems
-        </h2>
+        <SectionHeader id="cn-h" title="Connected systems" />
         <div className="grid gap-4 lg:grid-cols-2">
           {data.connectors.map((c) => (
             <ConnectorCard
@@ -189,9 +200,7 @@ export function ConnectorsPage({ csrf, roles }: { csrf: string; roles: Connector
       </section>
 
       <section aria-labelledby="mt-h" className="flex min-w-0 flex-col gap-3">
-        <h2 id="mt-h" className="font-heading text-xl font-bold">
-          Work to do by hand
-        </h2>
+        <SectionHeader id="mt-h" title="Work to do by hand" />
         <p className="max-w-prose text-sm text-text-muted">
           When a connected system is down, the work you started is not lost. It waits here with instructions.
           If the system recovers first, the platform sends it and the task is closed as superseded.
@@ -209,9 +218,7 @@ export function ConnectorsPage({ csrf, roles }: { csrf: string; roles: Connector
       {roles.events && (
         <section aria-labelledby="ev-h" className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 id="ev-h" className="font-heading text-xl font-bold">
-              Deliveries
-            </h2>
+            <SectionHeader id="ev-h" title="Deliveries" />
             <Button
               variant="secondary"
               className="ml-auto"
@@ -235,9 +242,7 @@ export function ConnectorsPage({ csrf, roles }: { csrf: string; roles: Connector
       )}
 
       <section aria-labelledby="sr-h" className="flex min-w-0 flex-col gap-3">
-        <h2 id="sr-h" className="font-heading text-xl font-bold">
-          Reconciliation runs
-        </h2>
+        <SectionHeader id="sr-h" title="Reconciliation runs" />
         <Table caption="Reconciliation runs">
           <thead>
             <tr>
@@ -328,7 +333,7 @@ function ConnectorCard({
   return (
     <Card data-testid="connector-card" data-kind={c.kind} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-heading text-lg font-bold">{kind.label}</h3>
+        <SectionHeader as="h3" title={<>{kind.label}</>} />
         <Badge tone={h.tone}>{h.text}</Badge>
         {c.openManualTasks > 0 && <Badge tone="warning">{c.openManualTasks} to do by hand</Badge>}
       </div>
@@ -501,7 +506,7 @@ function ManualTasks({
       {open.map((t) => (
         <Card key={t.id} data-testid="manual-task" className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-heading text-lg font-bold">{t.title}</h3>
+            <SectionHeader as="h3" title={<>{t.title}</>} />
             <Badge tone="warning">{t.connector}</Badge>
           </div>
           <p className="max-w-prose text-sm">{t.instructions}</p>
@@ -672,9 +677,7 @@ function SecretsSection({
   const names = [...new Set([...connectors.map((c) => c.secret.name), ...secrets.map((s) => s.name)])];
   return (
     <section aria-labelledby="sec-h" className="flex min-w-0 flex-col gap-3">
-      <h2 id="sec-h" className="font-heading text-xl font-bold">
-        Secrets
-      </h2>
+      <SectionHeader id="sec-h" title="Secrets" />
       <p className="max-w-prose text-sm text-text-muted">
         Integration credentials are kept encrypted in the platform&apos;s local secret store. A value cannot
         be read back after it is saved: only its name, version, fingerprint and when it was last changed are
@@ -759,9 +762,7 @@ function Evidence({ connectors }: { connectors: Conn[] }) {
   const sec = useData<Security>(`/connectors/${kind}/security`);
   return (
     <section aria-labelledby="ev2-h" className="flex min-w-0 flex-col gap-3">
-      <h2 id="ev2-h" className="font-heading text-xl font-bold">
-        Security of the integration leg
-      </h2>
+      <SectionHeader id="ev2-h" title="Security of the integration leg" />
       <Field label="Connector">
         <Select value={kind} onChange={(e) => setKind(e.target.value)} className="w-64">
           {connectors.map((c) => (

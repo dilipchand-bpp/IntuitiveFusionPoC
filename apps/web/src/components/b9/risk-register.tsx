@@ -1,6 +1,17 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Input, KpiCard, Select, Textarea } from '@if/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  KpiCard,
+  Select,
+  Textarea,
+  SectionHeader,
+} from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 const KINDS = ['RISK', 'AUDIT_FINDING', 'OBLIGATION'] as const;
@@ -189,7 +200,7 @@ function Overview({ s }: { s: Summary }) {
         Open by kind: {s.byKind.map((k) => `${KIND_TEXT[k.kind] ?? k.kind} ${k.open}`).join(', ')}.
       </p>
       <Card>
-        <h2 className="text-lg font-bold">Heat map of open risks</h2>
+        <SectionHeader title="Heat map of open risks" />
         <p className="text-sm text-text-muted">
           Likelihood (rows) against impact (columns). Each cell counts open risks.
         </p>
@@ -219,7 +230,7 @@ function Overview({ s }: { s: Summary }) {
                     return (
                       <td
                         key={c}
-                        className={`size-14 min-w-14 border border-surface text-base font-bold ${cellTone(l, c)}`}
+                        className={`size-14 min-w-14 border border-surface text-sm font-bold ${cellTone(l, c)}`}
                         aria-label={`Likelihood ${l}, impact ${c}: ${n} open risk${n === 1 ? '' : 's'}`}
                       >
                         {n}
@@ -434,7 +445,7 @@ function CreateForm({ csrf, onChange }: { csrf: string; onChange: () => Promise<
   const isRisk = f.kind === 'RISK';
   return (
     <Card>
-      <h2 className="text-lg font-bold">Add to the register</h2>
+      <SectionHeader title="Add to the register" />
       <form
         className="mt-3 grid gap-3 sm:grid-cols-2"
         aria-label="Add to the register"

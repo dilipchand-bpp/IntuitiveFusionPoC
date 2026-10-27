@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Badge, Button, Card, Field, Input, Table, Td, Th, type BadgeTone } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Table, Td, Th, type BadgeTone, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 import { formatDateTime } from '@/lib/labels';
 import { SectionForm, type FieldSpec } from './section-form';
@@ -65,9 +65,7 @@ export function CompliancePanel({ csrf, roles }: { csrf: string; roles: readonly
     <div className="flex min-w-0 flex-col gap-6">
       <Card role="region" aria-labelledby="comp-h">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="comp-h" className="font-heading text-xl font-bold">
-            Where the configuration stands
-          </h2>
+          <SectionHeader id="comp-h" title="Where the configuration stands" />
           <Badge tone={s.fail > 0 ? 'error' : s.warn > 0 ? 'warning' : 'success'}>
             <span data-testid="compliance-summary">
               {s.pass} pass, {s.warn} warning, {s.fail} fail

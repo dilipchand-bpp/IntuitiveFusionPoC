@@ -1,7 +1,7 @@
 'use client';
 import { GripVertical } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { send, useRun } from '@/components/contract/b5-shared';
 
 export interface LayoutSectionView {
@@ -53,9 +53,7 @@ export function LayoutDesigner({
   return (
     <Card aria-labelledby={`lay-${view.kind}`} role="region" data-testid={`layout-${view.kind}`}>
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id={`lay-${view.kind}`} className="font-heading text-xl font-bold">
-          {TITLE[view.kind]}
-        </h2>
+        <SectionHeader id={`lay-${view.kind}`} title={<>{TITLE[view.kind]}</>} />
         <Badge tone={view.isDefault ? 'neutral' : 'success'}>
           {view.isDefault ? 'System default' : view.name}
         </Badge>

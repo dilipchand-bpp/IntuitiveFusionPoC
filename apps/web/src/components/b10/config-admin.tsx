@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Badge, Button, Card, Table, Td, Textarea, Th } from '@if/ui';
+import { Badge, Button, Card, Table, Td, Textarea, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Section {
@@ -90,9 +90,7 @@ export function ConfigAdmin({ csrf }: { csrf: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-8">
       <section aria-labelledby="inv-h" className="flex flex-col gap-3">
-        <h2 id="inv-h" className="font-heading text-xl font-bold">
-          Every setting, and where to change it
-        </h2>
+        <SectionHeader id="inv-h" title="Every setting, and where to change it" />
         <p className="max-w-prose text-sm text-text-muted">
           All of an organisation&apos;s rules are settings that an administrator changes on screen. None needs
           a release. Each change is audited, and takes effect on the next request.
@@ -152,9 +150,7 @@ export function ConfigAdmin({ csrf }: { csrf: string }) {
       </section>
 
       <section aria-labelledby="port-h" className="flex flex-col gap-3">
-        <h2 id="port-h" className="font-heading text-xl font-bold">
-          Export and import
-        </h2>
+        <SectionHeader id="port-h" title="Export and import" />
         <Card className="flex flex-col gap-4">
           <div>
             <p className="max-w-prose text-sm text-text-muted">
@@ -215,9 +211,10 @@ export function ConfigAdmin({ csrf }: { csrf: string }) {
           </div>
           {preview && (
             <div data-testid="import-preview" aria-live="polite">
-              <h3 className="font-heading text-lg font-bold">
-                {preview.result.applied ? 'Applied' : 'Preview, nothing applied yet'}
-              </h3>
+              <SectionHeader
+                as="h3"
+                title={<>{preview.result.applied ? 'Applied' : 'Preview, nothing applied yet'}</>}
+              />
               {preview.result.errors.length > 0 && (
                 <ul className="mt-2 list-disc pl-5 text-sm text-error" role="alert">
                   {preview.result.errors.map((e) => (
@@ -255,9 +252,7 @@ export function ConfigAdmin({ csrf }: { csrf: string }) {
       </section>
 
       <section aria-labelledby="bl-h" className="flex flex-col gap-3">
-        <h2 id="bl-h" className="font-heading text-xl font-bold">
-          Browsers signing in
-        </h2>
+        <SectionHeader id="bl-h" title="Browsers signing in" />
         <p className="max-w-prose text-sm text-text-muted">
           Each browser reports itself once after sign-in and is judged against the{' '}
           <Link href="/browser-support" className="underline">

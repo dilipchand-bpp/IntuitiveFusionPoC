@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export interface MfaStatus {
@@ -46,9 +46,10 @@ export function MfaPanel({
 
   return (
     <Card role="region" aria-labelledby="mfa-h" data-testid="mfa-panel">
-      <h2 id="mfa-h" className="font-heading text-xl font-bold">
-        {gate ? 'Set up your authenticator app to continue' : 'Authenticator app'}
-      </h2>
+      <SectionHeader
+        id="mfa-h"
+        title={<>{gate ? 'Set up your authenticator app to continue' : 'Authenticator app'}</>}
+      />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         {gate
           ? 'Your organisation requires a second step at sign-in. Until you finish this, nothing else in the portal is available.'
@@ -79,7 +80,7 @@ export function MfaPanel({
             In your authenticator app choose to enter a setup key, and type this key. It is shown once.
           </p>
           <p
-            className="break-all rounded-md bg-surface-alt p-3 font-mono text-lg font-semibold"
+            className="break-all rounded-md bg-surface-alt p-3 font-mono text-sm font-medium"
             data-testid="mfa-secret"
           >
             {secret.secret}

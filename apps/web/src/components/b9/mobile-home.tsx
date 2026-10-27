@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Select, Textarea } from '@if/ui';
+import { Badge, Button, Card, EmptyState, Field, Select, Textarea, PageHeader, SectionHeader } from '@if/ui';
 import { allowedRolesForPath } from '@/lib/access';
 import { api } from '@/lib/api-client';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
@@ -32,7 +32,7 @@ interface Note {
 }
 
 const tile =
-  'flex min-h-[88px] flex-col justify-center rounded-lg border border-border bg-surface p-4 text-text no-underline shadow-sm hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+  'flex min-h-[88px] flex-col justify-center rounded-lg border border-border bg-surface p-4 text-text no-underline hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
 export function MobileHome({ csrf, name, roles }: { csrf: string; name: string; roles: readonly string[] }) {
   // only offer what this person can open
@@ -46,22 +46,20 @@ export function MobileHome({ csrf, name, roles }: { csrf: string; name: string; 
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5" data-testid="mobile-home">
-      <header>
-        <h1 className="text-2xl font-extrabold tracking-tight">Hello, {name.split(' ')[0]}</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Your approvals and alerts, and quick notes on suppliers.
-        </p>
-      </header>
+      <PageHeader
+        title={`Hello, ${name.split(' ')[0]}`}
+        subtitle="Your approvals and alerts, and quick notes on suppliers."
+      />
 
       <div className="grid grid-cols-2 gap-3">
         {canOpen('/app/approvals') && (
           <Link href="/app/approvals" className={tile}>
-            <span className="text-3xl font-extrabold">{waiting ?? '–'}</span>
+            <span className="text-sm font-medium">{waiting ?? '–'}</span>
             <span className="text-sm font-semibold">Approvals waiting</span>
           </Link>
         )}
         <a href="#alerts" className={tile}>
-          <span className="text-3xl font-extrabold">{notifications.data ? unread.length : '–'}</span>
+          <span className="text-sm font-medium">{notifications.data ? unread.length : '–'}</span>
           <span className="text-sm font-semibold">Unread notifications</span>
         </a>
       </div>
@@ -85,9 +83,7 @@ export function MobileHome({ csrf, name, roles }: { csrf: string; name: string; 
       </nav>
 
       <section id="alerts" aria-labelledby="alerts-h">
-        <h2 id="alerts-h" className="text-lg font-bold">
-          Notifications
-        </h2>
+        <SectionHeader id="alerts-h" title="Notifications" />
         {notifications.error && (
           <p role="alert" className="text-sm text-error">
             {notifications.error}
@@ -136,9 +132,7 @@ function ReviewNotes({ csrf }: { csrf: string }) {
 
   return (
     <section aria-labelledby="notes-h">
-      <h2 id="notes-h" className="text-lg font-bold">
-        Supplier review notes
-      </h2>
+      <SectionHeader id="notes-h" title="Supplier review notes" />
       <Card className="mt-2 flex flex-col gap-4 p-4">
         {targets.error && (
           <p role="alert" className="text-sm text-error">

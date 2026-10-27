@@ -14,6 +14,7 @@ import {
   Textarea,
   Th,
   type BadgeTone,
+  SectionHeader,
 } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
@@ -115,7 +116,7 @@ export function ContinuityPage({ csrf, canRaise }: { csrf: string; canRaise: boo
     <div className="flex min-w-0 flex-col gap-8">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Simulated SMS and email gateways</h2>
+          <SectionHeader title="Simulated SMS and email gateways" />
           <AiBadge kind="simulated" />
         </div>
         <p className="mt-2 max-w-prose text-sm text-text-muted">
@@ -138,9 +139,7 @@ export function ContinuityPage({ csrf, canRaise }: { csrf: string; canRaise: boo
         />
       )}
       <section aria-labelledby="ev-h" className="flex flex-col gap-3">
-        <h2 id="ev-h" className="font-heading text-xl font-bold">
-          Events
-        </h2>
+        <SectionHeader id="ev-h" title="Events" />
         <Table caption="Continuity events">
           <thead>
             <tr>
@@ -195,9 +194,14 @@ export function ContinuityPage({ csrf, canRaise }: { csrf: string; canRaise: boo
       {t && (
         <section aria-labelledby="tr-h" className="flex flex-col gap-4" data-testid="cb-tracker">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 id="tr-h" className="font-heading text-xl font-bold">
-              {t.event.number}: {t.event.title}
-            </h2>
+            <SectionHeader
+              id="tr-h"
+              title={
+                <>
+                  {t.event.number}: {t.event.title}
+                </>
+              }
+            />
             <Badge tone={t.event.status === 'OPEN' ? 'warning' : 'neutral'}>
               {t.event.status.toLowerCase()}
             </Badge>
@@ -252,7 +256,7 @@ export function ContinuityPage({ csrf, canRaise }: { csrf: string; canRaise: boo
           )}
           {links && links.length > 0 && (
             <Card data-testid="cb-links">
-              <h3 className="font-heading text-lg font-bold">One-time links (demonstration only)</h3>
+              <SectionHeader as="h3" title="One-time links (demonstration only)" />
               <p className="text-sm text-text-muted">
                 A real gateway puts each link in the person&apos;s message. They are shown once, here.
               </p>
@@ -348,7 +352,7 @@ export function ContinuityPage({ csrf, canRaise }: { csrf: string; canRaise: boo
           </Table>
           {canRaise && t.event.status === 'OPEN' && (
             <Card>
-              <h3 className="font-heading text-lg font-bold">Close the event</h3>
+              <SectionHeader as="h3" title="Close the event" />
               <div className="mt-2 max-w-lg">
                 <Field label="Closing note (optional)">
                   <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -380,7 +384,7 @@ export function ContinuityPage({ csrf, canRaise }: { csrf: string; canRaise: boo
           )}
           {t.event.summary && (
             <Card data-testid="cb-summary">
-              <h3 className="font-heading text-lg font-bold">Summary</h3>
+              <SectionHeader as="h3" title="Summary" />
               <p className="mt-2 whitespace-pre-line text-sm">{t.event.summary}</p>
             </Card>
           )}
@@ -420,9 +424,7 @@ function RaiseForm({
   const named = nName.trim() && nEmail.trim() ? [{ name: nName.trim(), email: nEmail.trim() }] : [];
   return (
     <Card aria-labelledby="rz-h" role="region">
-      <h2 id="rz-h" className="font-heading text-xl font-bold">
-        Raise an event
-      </h2>
+      <SectionHeader id="rz-h" title="Raise an event" />
       <div className="mt-3 grid gap-4 md:grid-cols-2">
         <Field label="Title" required>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} data-testid="cb-title" />

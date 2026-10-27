@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Table, Td, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Key {
@@ -67,7 +67,7 @@ export function KeysPanel({ csrf, roles }: { csrf: string; roles: readonly strin
           <Card key={p}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-heading text-xl font-bold">{p} key</h2>
+                <SectionHeader title={<>{p} key</>} />
                 <p className="text-sm text-text-muted">{meaning}</p>
               </div>
               {admin && (

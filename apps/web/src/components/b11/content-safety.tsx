@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Table, Td, Textarea, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Table, Td, Textarea, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Flag {
@@ -62,7 +62,7 @@ export function ContentSafetyPanel({ csrf }: { csrf: string }) {
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Recent flags</h2>
+          <SectionHeader title="Recent flags" />
           <Badge tone="info">Rules, simulated ({data.model})</Badge>
         </div>
         <p className="mt-2 max-w-prose text-sm">{data.rule}</p>
@@ -134,7 +134,7 @@ export function ContentSafetyPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">See how text is neutralised</h2>
+        <SectionHeader title="See how text is neutralised" />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           Paste some text. Nothing is stored. You will see what was found and the safe form an AI-labelled
           path is given.

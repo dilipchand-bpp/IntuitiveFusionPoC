@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Button, Card, Checkbox, Field, Input, Select } from '@if/ui';
+import { Button, Card, Checkbox, Field, Input, Select, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import { LIST_LIMITS } from '@/components/admin/settings-list-rules';
 
@@ -67,9 +67,7 @@ function Block({
   const full = add ? add.count >= add.max : false;
   return (
     <Card role="region" aria-labelledby={`${id}-h`} data-testid={`settings-${id}`}>
-      <h2 id={`${id}-h`} className="font-heading text-xl font-bold">
-        {title}
-      </h2>
+      <SectionHeader id={`${id}-h`} title={<>{title}</>} />
       <p className="mt-1 max-w-prose text-sm text-text-muted">{blurb}</p>
       {!add && fixed && (
         <p className="mt-1 max-w-prose text-xs text-text-muted" data-testid={`settings-${id}-fixed`}>

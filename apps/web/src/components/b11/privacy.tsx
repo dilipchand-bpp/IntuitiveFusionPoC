@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Textarea, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Textarea, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 type Context = 'SUPPLIER_REGISTRATION' | 'USER_ACTIVATION' | 'REQUEST_INTAKE' | 'PRIVACY_PAGE';
@@ -31,7 +31,7 @@ export function PrivacyNotice({ context, csrf }: { context: Context; csrf?: stri
       className="rounded-lg border border-border bg-surface-alt p-4 text-sm"
       data-testid={`privacy-notice-${context}`}
     >
-      <h2 className="font-heading text-base font-bold">How we handle your personal information</h2>
+      <SectionHeader title="How we handle your personal information" />
       <p className="mt-1 max-w-prose">{data.text}</p>
       <p className="mt-1 text-xs text-text-muted">
         {data.collectedFor} Notice version {data.version}.
@@ -108,7 +108,7 @@ export function PrivacyPanel({ csrf, context }: { csrf: string; context: Context
     <div className="flex min-w-0 flex-col gap-6">
       <PrivacyNotice context={context} csrf={csrf} />
       <Card>
-        <h2 className="font-heading text-xl font-bold">Ask about your personal information</h2>
+        <SectionHeader title="Ask about your personal information" />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           You can ask to see the personal information held about you, or to correct it. Because you are signed
           in, your identity is already verified. We respond within the number of days set by the organisation.
@@ -166,7 +166,7 @@ export function PrivacyPanel({ csrf, context }: { csrf: string; context: Context
         </form>
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Your requests</h2>
+        <SectionHeader title="Your requests" />
         {mine.error && (
           <p role="alert" className="mt-2 text-sm font-medium text-error">
             {mine.error}
@@ -285,9 +285,14 @@ function Detail({ r, csrf, done }: { r: Req; csrf: string; done: () => Promise<v
   return (
     <Card data-testid="privacy-detail">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-heading text-lg font-bold">
-          {r.number}: {r.kind === 'ACCESS' ? 'Access' : 'Correction'} request from {r.requesterName}
-        </h3>
+        <SectionHeader
+          as="h3"
+          title={
+            <>
+              {r.number}: {r.kind === 'ACCESS' ? 'Access' : 'Correction'} request from {r.requesterName}
+            </>
+          }
+        />
         <StatusBadge r={r} />
         {r.escalatedAt && <Badge tone="error">Escalated to the privacy officer</Badge>}
       </div>
@@ -458,7 +463,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Requests</h2>
+          <SectionHeader title="Requests" />
           <Button
             variant="secondary"
             loading={over.busy === 'over'}
@@ -492,7 +497,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
             ].map(([k, v]) => (
               <div key={k} className="rounded-lg border border-border bg-surface-alt p-3">
                 <dt className="text-xs text-text-muted">{k}</dt>
-                <dd className="mt-1 text-xl font-bold">{v}</dd>
+                <dd className="mt-1 text-sm font-medium">{v}</dd>
               </div>
             ))}
           </dl>
@@ -547,7 +552,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
       {chosen && <Detail key={chosen.id} r={chosen} csrf={csrf} done={reload} />}
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Log a request from a caller</h2>
+        <SectionHeader title="Log a request from a caller" />
         <form
           className="mt-3 grid max-w-3xl gap-3 sm:grid-cols-2"
           onSubmit={(e) => {
@@ -633,7 +638,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">AI conversation retention and legal holds</h2>
+        <SectionHeader title="AI conversation retention and legal holds" />
         {ret.data && (
           <>
             <p className="mt-2 max-w-prose text-sm text-text-muted">{ret.data.scope}</p>
@@ -702,7 +707,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
               )}
             </div>
             {retRun.messages}
-            <h3 className="mt-5 text-sm font-bold uppercase tracking-wide text-text-muted">Recent runs</h3>
+            <h3 className="mt-5 text-sm font-medium uppercase tracking-wide text-text-muted">Recent runs</h3>
             {ret.data.runs.length === 0 ? (
               <p className="mt-1 text-sm text-text-muted">No runs yet.</p>
             ) : (
@@ -740,7 +745,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
                 </Table>
               </div>
             )}
-            <h3 className="mt-5 text-sm font-bold uppercase tracking-wide text-text-muted">Legal holds</h3>
+            <h3 className="mt-5 text-sm font-medium uppercase tracking-wide text-text-muted">Legal holds</h3>
             {ret.data.holds.length === 0 ? (
               <p className="mt-1 text-sm text-text-muted">No legal holds.</p>
             ) : (
@@ -824,7 +829,7 @@ export function PrivacyManagePanel({ csrf, roles }: { csrf: string; roles: reado
 
       {admin && set && (
         <Card>
-          <h2 className="font-heading text-xl font-bold">Collection notice and request handling</h2>
+          <SectionHeader title="Collection notice and request handling" />
           <form
             className="mt-3 flex max-w-2xl flex-col gap-3"
             onSubmit={(e) => {

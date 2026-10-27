@@ -1,6 +1,18 @@
 'use client';
 import { Fragment, useMemo, useState } from 'react';
-import { AiBadge, Badge, Button, Card, Input, Select, Table, Td, Th, type BadgeTone } from '@if/ui';
+import {
+  AiBadge,
+  Badge,
+  Button,
+  Card,
+  Input,
+  Select,
+  Table,
+  Td,
+  Th,
+  type BadgeTone,
+  SectionHeader,
+} from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import { DOC_LABEL, DOC_TONE } from './ocr-ingest';
 import type { OcrClause, OcrCommitResult, OcrDocument, OcrField, OcrFinding, OcrSpan } from './ocr-types';
@@ -330,7 +342,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-heading text-xl font-bold">{doc.title ?? doc.fileName}</h2>
+          <SectionHeader title={<>{doc.title ?? doc.fileName}</>} />
           <Badge tone={DOC_TONE[doc.status] ?? 'neutral'}>{DOC_LABEL[doc.status] ?? doc.status}</Badge>
           {doc.simulated && <AiBadge kind="simulated" />}
         </div>
@@ -359,7 +371,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
           <div className="grid min-w-0 gap-6 lg:grid-cols-2">
             <Card>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-heading text-lg font-bold">Page text</h3>
+                <SectionHeader as="h3" title="Page text" />
                 {doc.pages.length > 1 && (
                   <div className="flex gap-1" role="group" aria-label="Page">
                     {doc.pages.map((p) => (
@@ -393,7 +405,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
             </Card>
 
             <Card>
-              <h3 className="font-heading text-lg font-bold">Extracted fields</h3>
+              <SectionHeader as="h3" title="Extracted fields" />
               <p className="mt-1 text-xs text-text-muted">
                 {flagged.length} to review. Corrections are kept with the value before and after.
               </p>
@@ -455,7 +467,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
           </div>
 
           <Card>
-            <h3 className="font-heading text-lg font-bold">Clauses against the library</h3>
+            <SectionHeader as="h3" title="Clauses against the library" />
             <div className="mt-2 overflow-x-auto">
               <Table caption="Clauses">
                 <thead>
@@ -480,7 +492,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
           </Card>
 
           <Card>
-            <h3 className="font-heading text-lg font-bold">Findings</h3>
+            <SectionHeader as="h3" title="Findings" />
             {doc.findings.length === 0 ? (
               <p className="mt-2 text-sm text-text-muted">Nothing to flag.</p>
             ) : (
@@ -497,7 +509,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
 
           {doc.corrections.length > 0 && (
             <Card>
-              <h3 className="font-heading text-lg font-bold">Corrections made</h3>
+              <SectionHeader as="h3" title="Corrections made" />
               <ul className="mt-2 grid gap-1 text-sm">
                 {doc.corrections.map((c) => (
                   <li key={c.id}>
@@ -510,7 +522,7 @@ export function OcrDocumentView({ id, csrf, canIngest }: { id: string; csrf: str
           )}
 
           <Card>
-            <h3 className="font-heading text-lg font-bold">Commit to the contract register</h3>
+            <SectionHeader as="h3" title="Commit to the contract register" />
             {doc.status === 'COMMITTED' ? (
               <p className="mt-2 text-sm" data-testid="ocr-committed">
                 Committed.{' '}

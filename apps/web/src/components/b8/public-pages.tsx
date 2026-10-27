@@ -2,7 +2,7 @@
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Badge, Button, Card, Field, Input, Logo, ThemeToggle } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Logo, PageHeader, ThemeToggle, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { message, useRun } from '@/components/contract/b5-shared';
 
@@ -17,7 +17,7 @@ export function PublicFrame({ title, children }: { title: string; children: Reac
         <ThemeToggle />
       </header>
       <main id="main" className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-16 pt-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
+        <PageHeader title={title} />
         {children}
       </main>
     </div>
@@ -83,7 +83,7 @@ export function ApproveLink({ token }: { token: string }) {
       {!data && !error && <p className="text-text-muted">Loading…</p>}
       {done && (
         <Card data-testid="link-done">
-          <p role="status" className="flex items-center gap-2 text-lg font-bold text-success">
+          <p role="status" className="flex items-center gap-2 text-sm font-medium text-success">
             <CheckCircle2 className="size-5" aria-hidden="true" />
             {done === 'APPROVE' ? 'Approved. Thank you.' : 'Returned with your reason. Thank you.'}
           </p>
@@ -99,8 +99,8 @@ export function ApproveLink({ token }: { token: string }) {
             {data.kind} · for {data.approver}
           </p>
           {data.procurement && (
-            <h2 className="mt-1 font-heading text-2xl font-bold">
-              <span className="font-mono text-base text-text-muted">{data.procurement.number}</span>{' '}
+            <h2 className="mt-1 font-heading text-sm font-medium">
+              <span className="font-mono text-sm text-text-muted">{data.procurement.number}</span>{' '}
               {data.procurement.title}
             </h2>
           )}
@@ -114,7 +114,7 @@ export function ApproveLink({ token }: { token: string }) {
               <dd className="font-semibold">{new Date(data.expiresAt).toLocaleString('en-AU')}</dd>
             </div>
           </dl>
-          <h3 className="mt-5 font-heading text-lg font-bold">Checklist</h3>
+          <SectionHeader as="h3" className="mt-5" title="Checklist" />
           <ul className="mt-2 flex flex-col gap-2" data-testid="checklist">
             {data.checks.map((c) => (
               <li key={c.label} className="flex items-start gap-2 text-sm">
@@ -256,8 +256,8 @@ export function CounselPortal({ token }: { token: string }) {
             <p className="text-sm text-text-muted">
               For {page.name} · {page.party === 'SUPPLIER' ? "supplier's legal team" : 'external counsel'}
             </p>
-            <h2 className="mt-1 font-heading text-2xl font-bold">
-              <span className="font-mono text-base text-text-muted">{page.contract.number}</span>{' '}
+            <h2 className="mt-1 font-heading text-sm font-medium">
+              <span className="font-mono text-sm text-text-muted">{page.contract.number}</span>{' '}
               {page.contract.title ?? ''}
             </h2>
             {page.finalVersion ? (
@@ -285,7 +285,7 @@ export function CounselPortal({ token }: { token: string }) {
               return (
                 <li key={c.id}>
                   <Card>
-                    <h3 className="font-heading text-lg font-bold">
+                    <h3 className="font-heading text-sm font-medium">
                       {i + 1}. {c.title} {c.redacted && <Badge tone="neutral">Redacted</Badge>}
                     </h3>
                     <p className="mt-1 whitespace-pre-wrap text-sm">{c.text}</p>

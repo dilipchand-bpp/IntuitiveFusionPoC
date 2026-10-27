@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Result {
@@ -145,7 +145,7 @@ export function HrFeedPanel({ csrf }: { csrf: string }) {
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">HR system</h2>
+          <SectionHeader title="HR system" />
           <Badge tone="info">SIMULATED</Badge>
           {c && (
             <Badge tone={c.enabled && c.mode === 'UP' ? 'success' : 'error'}>
@@ -217,7 +217,7 @@ export function HrFeedPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Needs a person ({o.exceptions.length})</h2>
+        <SectionHeader title={<>Needs a person ({o.exceptions.length})</>} />
         {o.exceptions.length === 0 ? (
           <p className="mt-2 text-sm text-text-muted">Nothing needs attention.</p>
         ) : (
@@ -234,7 +234,7 @@ export function HrFeedPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Acting delegates</h2>
+        <SectionHeader title="Acting delegates" />
         <Table caption="Delegations from the feed">
           <thead>
             <tr>
@@ -278,7 +278,7 @@ export function HrFeedPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Leavers: work to reassign</h2>
+        <SectionHeader title="Leavers: work to reassign" />
         <Table caption="Open items of leavers">
           <thead>
             <tr>
@@ -335,7 +335,7 @@ export function HrFeedPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">History</h2>
+        <SectionHeader title="History" />
         <p className="mt-1 text-sm text-text-muted">
           {o.batches.length} batch{o.batches.length === 1 ? '' : 'es'} applied.{' '}
           {o.starters.filter((s) => s.awaitingActivation).length} starter(s) still to activate; issue a new

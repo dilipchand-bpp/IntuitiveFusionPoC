@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, type BadgeTone } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, type BadgeTone, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 import { formatDateTime } from '@/lib/labels';
 import { SectionForm, type FieldSpec } from './section-form';
@@ -89,9 +89,7 @@ export function SecurityAlertsPanel({ csrf, roles }: { csrf: string; roles: read
     <div className="flex min-w-0 flex-col gap-6">
       <Card role="region" aria-labelledby="mon-h">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="mon-h" className="font-heading text-xl font-bold">
-            The monitor
-          </h2>
+          <SectionHeader id="mon-h" title="The monitor" />
           <Badge tone="info">Rules, simulated: {status.data?.model ?? 'rules-simulated-v1'}</Badge>
           {status.data && (
             <Badge tone={status.data.enabled ? 'success' : 'neutral'}>
@@ -171,9 +169,7 @@ export function SecurityAlertsPanel({ csrf, roles }: { csrf: string; roles: read
 
       <section aria-labelledby="alerts-h" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
-          <h2 id="alerts-h" className="font-heading text-xl font-bold">
-            Alerts
-          </h2>
+          <SectionHeader id="alerts-h" title="Alerts" />
           <Field label="Show">
             <Select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
               <option value="OPEN">Open alerts</option>
@@ -202,7 +198,7 @@ export function SecurityAlertsPanel({ csrf, roles }: { csrf: string; roles: read
             <li key={a.id} data-testid="alert-card" data-rule={a.rule} data-status={a.status}>
               <Card>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-heading text-lg font-bold">{a.ruleLabel}</h3>
+                  <SectionHeader as="h3" title={<>{a.ruleLabel}</>} />
                   <Badge tone={SEV[a.severity]}>{a.severity.toLowerCase()}</Badge>
                   <Badge tone={STATE[a.status].tone}>{STATE[a.status].text}</Badge>
                 </div>

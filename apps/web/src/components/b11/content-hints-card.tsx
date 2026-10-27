@@ -1,5 +1,5 @@
 'use client';
-import { Badge, Card } from '@if/ui';
+import { Badge, Card, SectionHeader } from '@if/ui';
 import { useData } from '@/components/contract/b5-shared';
 import { SourceChip, type PopulationSource } from './source-chip';
 
@@ -31,9 +31,7 @@ export function ContentHintsCard({ requestId }: { requestId: string }) {
   if (!h) return null;
   return (
     <Card role="region" aria-labelledby="hints-h" data-testid="content-hints-card">
-      <h2 id="hints-h" className="font-heading text-xl font-bold">
-        Reference content for this procurement
-      </h2>
+      <SectionHeader id="hints-h" title="Reference content for this procurement" />
       <p className="mt-1 text-sm text-text-muted">
         Filled from the organisation&apos;s own records and from outside content that is refreshed regularly.
         Each suggestion says where it came from.

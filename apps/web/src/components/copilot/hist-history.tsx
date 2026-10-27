@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Dialog, Field, Input, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Dialog, Field, Input, Table, Td, Th, SectionHeader } from '@if/ui';
 import type { HistBatch, HistBatchListItem } from './hist-types';
 
 const TONE = {
@@ -41,9 +41,7 @@ export function HistHistory({
   return (
     <Card role="region" aria-labelledby="hist-s4" data-testid="hist-history">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="hist-s4" className="font-heading text-xl font-bold">
-          History
-        </h2>
+        <SectionHeader id="hist-s4" title="History" />
         <Button onClick={onNew} data-testid="hist-new">
           Start another import
         </Button>
@@ -94,7 +92,7 @@ export function HistHistory({
           data-status={selected.status}
           aria-label="Selected batch"
         >
-          <h3 className="font-heading text-base font-bold">
+          <h3 className="font-heading text-sm font-medium">
             {selected.filename}{' '}
             <span className="font-normal text-text-muted">from {selected.sourceSystem}</span>
           </h3>

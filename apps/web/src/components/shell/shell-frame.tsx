@@ -67,7 +67,7 @@ export function ShellFrame({
             aria-label={`${product} home page`}
           >
             <Logo size={32} />
-            <span className="hidden whitespace-nowrap font-heading text-lg font-medium tracking-[var(--if-heading-tracking)] sm:inline">
+            <span className="hidden whitespace-nowrap font-heading text-lg font-medium tracking-heading sm:inline">
               {product}
             </span>
           </Link>

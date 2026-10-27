@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 const money = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' });
@@ -248,7 +248,7 @@ function CataloguePanel({ csrf, procurement }: { csrf: string; procurement: bool
       )}
 
       <Card>
-        <h2 className="text-lg font-bold">Your basket</h2>
+        <SectionHeader title="Your basket" />
         {lines.length === 0 ? (
           <p className="mt-2 text-sm text-text-muted">Enter a quantity against an item to add it.</p>
         ) : (
@@ -327,7 +327,7 @@ function ManageItems({
   const suppliers = Array.isArray(sup.data) ? sup.data : [];
   return (
     <Card data-testid="manage-catalogue">
-      <h2 className="text-lg font-bold">Manage the catalogue</h2>
+      <SectionHeader title="Manage the catalogue" />
       <p className="mt-1 text-sm text-text-muted">
         Procurement only. Items from a supplier on hold cannot be ordered.
       </p>
@@ -556,9 +556,14 @@ function DescribePanel({ csrf }: { csrf: string }) {
 
       {shown && (
         <section aria-labelledby="short-h" className="flex flex-col gap-4" data-testid="shortlist">
-          <h2 id="short-h" className="text-xl font-bold">
-            Shortlist for “{shown.need}” (quantity {shown.quantity})
-          </h2>
+          <SectionHeader
+            id="short-h"
+            title={
+              <>
+                Shortlist for “{shown.need}” (quantity {shown.quantity})
+              </>
+            }
+          />
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Badge tone={STATUS_TONE[shown.status] ?? 'neutral'}>
               {STATUS_TEXT[shown.status] ?? shown.status}
@@ -686,9 +691,7 @@ function DescribePanel({ csrf }: { csrf: string }) {
       )}
 
       <section aria-labelledby="prev-h">
-        <h2 id="prev-h" className="mb-2 text-xl font-bold">
-          Previous proposals
-        </h2>
+        <SectionHeader id="prev-h" className="mb-2" title="Previous proposals" />
         {list.error && (
           <p role="alert" className="text-sm text-error">
             {list.error}

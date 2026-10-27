@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import type { ProcurementTable } from '@/components/reports/types';
 
@@ -102,9 +102,7 @@ export function AuditPackPanel({ csrf }: { csrf: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <Card role="region" aria-labelledby="pack-h">
-        <h2 id="pack-h" className="font-heading text-xl font-bold">
-          Make a pack
-        </h2>
+        <SectionHeader id="pack-h" title="Make a pack" />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           A pack holds the audit events for the period as a hash chain (each event with its hash), the probity
           records (declarations, allocations, witnesses, signed documents, deviations, approvals with an
@@ -157,9 +155,7 @@ export function AuditPackPanel({ csrf }: { csrf: string }) {
       {requestId && (
         <section aria-labelledby="cov-h" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 id="cov-h" className="font-heading text-xl font-bold">
-              What an external auditor would look for
-            </h2>
+            <SectionHeader id="cov-h" title="What an external auditor would look for" />
             {cov.data && (
               <Badge tone={cov.data.ready ? 'success' : 'warning'}>
                 <span data-testid="coverage-summary">
@@ -203,9 +199,7 @@ export function AuditPackPanel({ csrf }: { csrf: string }) {
       )}
 
       <Card role="region" aria-labelledby="verify-h">
-        <h2 id="verify-h" className="font-heading text-xl font-bold">
-          Check a pack
-        </h2>
+        <SectionHeader id="verify-h" title="Check a pack" />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           Choose a pack you were given (the zip, or the single JSON file) or paste the JSON. Every file is
           compared with the manifest, the signature and every event hash are checked, and the events are

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, GripVertical, Trash2 } from 'lucide-react';
+import { Button, Panel, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { PHASE_LABEL, aud } from '@/lib/labels';
 import { message, send, useData, useRun } from '@/components/contract/b5-shared';
@@ -155,12 +156,12 @@ function useSource(path: string, cache: Cache) {
 function Widget({ def, placed, cache }: { def: Def; placed: Placed; cache: Cache }) {
   const { data, error } = useSource(def.source, cache);
   return (
-    <section
+    <Panel
       aria-label={def.title}
       data-testid={`widget-${def.key}`}
-      className={`min-w-0 rounded-lg border border-border bg-surface p-5 shadow-sm ${SPAN[placed.size]}`}
+      className={`min-w-0 ${SPAN[placed.size]}`}
     >
-      <h2 className="font-heading text-lg font-semibold">{def.title}</h2>
+      <SectionHeader title={def.title} />
       <p className="mb-3 mt-0.5 text-sm text-text-muted">{def.description}</p>
       {error ? (
         <p role="alert" className="text-sm font-medium text-error">
@@ -173,7 +174,7 @@ function Widget({ def, placed, cache }: { def: Def; placed: Placed; cache: Cache
       ) : (
         <ChartView style={placed.style} caption={def.title} points={toPoints(def.key, data)} />
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -257,10 +258,8 @@ export function MyDashboard({ csrf, roles }: { csrf: string; roles: readonly str
       </div>
 
       {editing && (
-        <section aria-labelledby="edit-h" className="rounded-lg border border-border-strong bg-surface p-5">
-          <h2 id="edit-h" className="font-heading text-lg font-semibold">
-            Edit my dashboard
-          </h2>
+        <Panel aria-labelledby="edit-h">
+          <SectionHeader id="edit-h" title="Edit my dashboard" />
           <p className="mt-1 text-sm text-text-muted">
             Drag a widget by its handle, or use the Up and Down buttons, to change the order. Up to{' '}
             {MAX_WIDGETS} widgets.
@@ -400,9 +399,8 @@ export function MyDashboard({ csrf, roles }: { csrf: string; roles: readonly str
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <button
+            <Button
               type="button"
-              className="bg-brand-gradient min-h-[44px] rounded-md px-5 text-sm font-semibold text-gradient-fg disabled:opacity-50"
               disabled={busy !== null || draft.length === 0}
               onClick={() =>
                 void run(
@@ -416,7 +414,7 @@ export function MyDashboard({ csrf, roles }: { csrf: string; roles: readonly str
               }
             >
               {busy === 'save' ? 'Saving…' : 'Save'}
-            </button>
+            </Button>
             <button type="button" className={btnCls} disabled={busy !== null} onClick={() => setDraft(null)}>
               Cancel
             </button>
@@ -441,7 +439,7 @@ export function MyDashboard({ csrf, roles }: { csrf: string; roles: readonly str
           <div aria-live="polite" className="sr-only">
             {announce}
           </div>
-        </section>
+        </Panel>
       )}
       {messages}
 

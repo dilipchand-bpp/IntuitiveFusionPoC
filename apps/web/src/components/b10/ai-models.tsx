@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Handling {
@@ -84,7 +84,7 @@ export function AiModelsPanel({ csrf, roles }: { csrf: string; roles: readonly s
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Active model</h2>
+          <SectionHeader title="Active model" />
           <Badge tone="info">{active.simulated ? 'Simulated' : 'Live'}</Badge>
         </div>
         <p className="mt-2 text-sm" data-testid="active-model">
@@ -116,7 +116,7 @@ export function AiModelsPanel({ csrf, roles }: { csrf: string; roles: readonly s
             <li key={m.id} data-testid="ai-model-card" data-model={m.id}>
               <Card className="flex h-full flex-col gap-3">
                 <div>
-                  <h3 className="font-heading text-lg font-bold">{m.label}</h3>
+                  <SectionHeader as="h3" title={<>{m.label}</>} />
                   <p className="font-mono text-xs text-text-muted">{m.id}</p>
                   <p className="text-sm text-text-muted">{m.provider}</p>
                 </div>

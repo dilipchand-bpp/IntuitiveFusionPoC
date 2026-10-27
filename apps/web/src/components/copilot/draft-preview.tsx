@@ -1,5 +1,5 @@
 'use client';
-import { Badge } from '@if/ui';
+import { Badge, SectionHeader } from '@if/ui';
 import { FIELD_NAMES, SOURCE_NAME, type DiffEntry, type DraftSource, type DraftView } from './draft-types';
 
 const valueText = (k: string, v: string) =>
@@ -30,7 +30,7 @@ export function DraftPreview({ view }: { view: DraftView }) {
   return (
     <div data-testid="draft-preview" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-heading text-xl font-bold">{view.title}</h3>
+        <SectionHeader as="h3" title={<>{view.title}</>} />
         <Badge tone="info">SIMULATED · {view.engine}</Badge>
         <Badge tone="neutral">Revision {view.revision}</Badge>
       </div>
@@ -66,7 +66,7 @@ export function DraftPreview({ view }: { view: DraftView }) {
       </dl>
       {view.doc.sections.map((s) => (
         <section key={s.key} aria-label={s.title} data-section={s.key}>
-          <h4 className="font-heading text-base font-semibold">{s.title}</h4>
+          <SectionHeader as="h4" title={<>{s.title}</>} />
           {s.type === 'CRITERIA' && (
             <p className="text-xs text-text-muted">
               Total weight: {s.items.reduce((n, i) => n + (i.weight ?? 0), 0)}%

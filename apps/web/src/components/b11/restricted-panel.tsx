@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Select, Table, Td, Textarea, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Select, Table, Td, Textarea, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Project {
@@ -41,7 +41,7 @@ export function RestrictedPanel({ csrf, roles }: { csrf: string; roles: readonly
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
-        <h2 className="font-heading text-xl font-bold">Projects in your sourcing group</h2>
+        <SectionHeader title="Projects in your sourcing group" />
         <p className="mt-2 max-w-prose text-sm text-text-muted">
           Only the requester, the assigned procurement manager, the panel, the allocated probity adviser and
           named delegates can see that a restricted project exists. Everyone else gets “not found”, in lists,
@@ -82,7 +82,7 @@ export function RestrictedPanel({ csrf, roles }: { csrf: string; roles: readonly
       </Card>
       {canSet && (
         <Card>
-          <h2 className="font-heading text-xl font-bold">Restrict a procurement</h2>
+          <SectionHeader title="Restrict a procurement" />
           <form
             className="mt-4 flex max-w-xl flex-col gap-4"
             onSubmit={(e) => {

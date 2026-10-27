@@ -1,3 +1,4 @@
+import { PageHeader, SectionHeader } from '@if/ui';
 import { LayoutDesigner, type LayoutViewData } from '@/components/collab/layout-designer';
 import { ReferenceContent } from '@/components/collab/ai-panels';
 import { apiGet, getSessionUser } from '@/lib/session';
@@ -33,17 +34,12 @@ export default async function CollaborationPage() {
     user?.roles.some((r) => ['ADMIN', 'PROCUREMENT', 'LEGAL', 'REQUESTER'].includes(r)) ?? false;
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Collaboration</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Work on documents together, design how they are laid out, and let the platform draft and summarise.
-          The drafting help is rule-based and labelled as simulated.
-        </p>
-      </header>
+      <PageHeader
+        title="Collaboration"
+        subtitle="Work on documents together, design how they are laid out, and let the platform draft and summarise. The drafting help is rule-based and labelled as simulated."
+      />
       <section aria-labelledby="tools-h">
-        <h2 id="tools-h" className="font-heading text-xl font-bold">
-          Where to find things
-        </h2>
+        <SectionHeader id="tools-h" title="Where to find things" />
         <dl className="mt-2 grid gap-3 md:grid-cols-2">
           {TOOLS.map(([t, d]) => (
             <div key={t} className="rounded-lg border border-border bg-surface p-4">
@@ -55,9 +51,7 @@ export default async function CollaborationPage() {
       </section>
       {layouts && (
         <section aria-labelledby="lay-h" className="flex flex-col gap-4">
-          <h2 id="lay-h" className="font-heading text-xl font-bold">
-            Document layouts
-          </h2>
+          <SectionHeader id="lay-h" title="Document layouts" />
           {layouts.map((l) => (
             <LayoutDesigner key={l.kind} initial={l} csrf={user!.csrfToken} canEdit={canDesign} />
           ))}

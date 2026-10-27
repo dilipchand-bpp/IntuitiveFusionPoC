@@ -1,5 +1,5 @@
 'use client';
-import { Badge, Button, Card, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Table, Td, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import { formatDateTime } from '@/lib/labels';
 
@@ -54,9 +54,7 @@ export function AuditChainPanel({ csrf }: { csrf: string }) {
     <div className="flex min-w-0 flex-col gap-6">
       <Card role="region" aria-labelledby="chain-h">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="chain-h" className="font-heading text-xl font-bold">
-            Chain status
-          </h2>
+          <SectionHeader id="chain-h" title="Chain status" />
           <Badge tone={data.ok ? 'success' : 'error'}>
             <span data-testid="chain-status" data-status={data.status}>
               {data.ok ? 'Intact' : `Broken at event ${data.brokenAtSeq}`}
@@ -121,9 +119,7 @@ export function AuditChainPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <Card role="region" aria-labelledby="guards-h">
-        <h2 id="guards-h" className="font-heading text-xl font-bold">
-          What stops the record being changed
-        </h2>
+        <SectionHeader id="guards-h" title="What stops the record being changed" />
         <ul className="mt-2 list-disc pl-6 text-sm" data-testid="chain-guards">
           <li>
             The application&apos;s database role can only add and read audit events; update, delete and
@@ -142,9 +138,7 @@ export function AuditChainPanel({ csrf }: { csrf: string }) {
       </Card>
 
       <section aria-labelledby="recent-h" className="flex flex-col gap-3">
-        <h2 id="recent-h" className="font-heading text-xl font-bold">
-          Recent administrative events
-        </h2>
+        <SectionHeader id="recent-h" title="Recent administrative events" />
         <Table caption="Recent administrative events">
           <thead>
             <tr>

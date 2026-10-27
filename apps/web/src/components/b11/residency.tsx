@@ -1,6 +1,19 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, Field, Input, Select, Table, Td, Textarea, Th } from '@if/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  Input,
+  Select,
+  Table,
+  Td,
+  Textarea,
+  Th,
+  SectionHeader,
+} from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface PathRow {
@@ -61,7 +74,7 @@ function Stat({ label, value, testid }: { label: string; value: string | number;
   return (
     <div className="rounded-lg border border-border bg-surface-alt p-3">
       <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="mt-1 text-xl font-bold" data-testid={testid}>
+      <dd className="mt-1 text-sm font-medium" data-testid={testid}>
         {value}
       </dd>
     </div>
@@ -140,7 +153,7 @@ export function ResidencyPanel({ csrf, roles }: { csrf: string; roles: readonly 
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Hosting country</h2>
+          <SectionHeader title="Hosting country" />
           <Badge tone="info">Simulated: no real network is used ({data.model})</Badge>
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -259,7 +272,7 @@ export function ResidencyPanel({ csrf, roles }: { csrf: string; roles: readonly 
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Outbound paths</h2>
+        <SectionHeader title="Outbound paths" />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           Every way data can leave the application, the region it lands in, and whether the elected country
           and the egress allow-list let it through now.
@@ -302,7 +315,7 @@ export function ResidencyPanel({ csrf, roles }: { csrf: string; roles: readonly 
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Recent refusals</h2>
+        <SectionHeader title="Recent refusals" />
         <dl className="mt-3 grid grid-cols-3 gap-3">
           <Stat label="Residency refusals" value={data.refusals.residency} testid="res-count" />
           <Stat label="Egress blocks" value={data.refusals.egress} testid="egr-count" />
@@ -314,11 +327,11 @@ export function ResidencyPanel({ csrf, roles }: { csrf: string; roles: readonly 
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Egress allow-list</h2>
+        <SectionHeader title="Egress allow-list" />
         <p className="mt-2 max-w-prose text-sm" data-testid="egress-evidence">
           {data.egress.evidence}
         </p>
-        <h3 className="mt-4 text-sm font-bold uppercase tracking-wide text-text-muted">Allowed hosts</h3>
+        <h3 className="mt-4 text-sm font-medium uppercase tracking-wide text-text-muted">Allowed hosts</h3>
         <ul className="mt-1 list-disc pl-5 text-sm" data-testid="egress-hosts">
           {data.egress.allowedHosts.map((h) => (
             <li key={h}>
@@ -411,7 +424,7 @@ export function ResidencyPanel({ csrf, roles }: { csrf: string; roles: readonly 
             </form>
           </div>
         )}
-        <h3 className="mt-6 text-sm font-bold uppercase tracking-wide text-text-muted">
+        <h3 className="mt-6 text-sm font-medium uppercase tracking-wide text-text-muted">
           Attempts blocked ({data.egress.blocked})
         </h3>
         <div className="mt-2">

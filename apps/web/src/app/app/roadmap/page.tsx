@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { KpiCard } from '@if/ui';
+import { KpiCard, PageHeader, SectionHeader } from '@if/ui';
 import { ROADMAP, groupBy } from '@if/shared';
 import { RoadmapList } from '@/components/roadmap/roadmap-list';
 import { navFor, resolveNav } from '@/lib/nav';
@@ -18,14 +18,10 @@ export default async function RoadmapPage() {
   const canOpen = (path: string) => offered.has(path);
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Roadmap</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Every requirement that began as a stub, with its id from the traceability matrix and where it
-          stands: built in a roadmap batch, partly built, or coming soon. The second list is out of scope for
-          the proof of concept.
-        </p>
-      </header>
+      <PageHeader
+        title="Roadmap"
+        subtitle="Every requirement that began as a stub, with its id from the traceability matrix and where it stands: built in a roadmap batch, partly built, or coming soon. The second list is out of scope for the proof of concept."
+      />
 
       <section aria-label="Totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Built" value={String(stubs.filter((i) => i.status === 'BUILT').length)} />
@@ -35,15 +31,13 @@ export default async function RoadmapPage() {
       </section>
 
       <section aria-labelledby="soon" className="flex flex-col gap-6">
-        <h2 id="soon" className="font-heading text-2xl font-bold">
-          Stubbed requirements, by area
-        </h2>
+        <SectionHeader id="soon" title="Stubbed requirements, by area" />
         {areas.map(([area, items]) => {
           const nav = resolveNav(area);
           const name = nav?.label ?? area;
           return (
             <section key={area} aria-labelledby={`area-${area}`} className="flex flex-col gap-2">
-              <h3 id={`area-${area}`} className="font-heading text-lg font-semibold">
+              <h3 id={`area-${area}`} className="font-heading text-sm font-semibold">
                 {canOpen(area) ? (
                   <Link href={area} className="underline underline-offset-4">
                     {name}
@@ -60,9 +54,7 @@ export default async function RoadmapPage() {
       </section>
 
       <section aria-labelledby="later" className="flex flex-col gap-3">
-        <h2 id="later" className="font-heading text-2xl font-bold">
-          Not in the proof of concept
-        </h2>
+        <SectionHeader id="later" title="Not in the proof of concept" />
         {groupBy(deferred, (i) => i.category).map(([category, items]) => (
           <details key={category} className="rounded-md border border-border p-3">
             <summary className="min-h-[44px] cursor-pointer font-semibold">

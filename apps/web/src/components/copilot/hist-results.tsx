@@ -1,5 +1,5 @@
 'use client';
-import { Badge, Button, Card, KpiCard, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, KpiCard, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import type { HistBatch, HistRow } from './hist-types';
 
 const TONE = {
@@ -44,9 +44,7 @@ export function HistResults({
   const s = batch.summary!;
   return (
     <Card role="region" aria-labelledby="hist-s2" data-testid="hist-results">
-      <h2 id="hist-s2" className="font-heading text-xl font-bold">
-        3. Dry run
-      </h2>
+      <SectionHeader id="hist-s2" title="3. Dry run" />
       <p className="mt-1 text-sm text-text-muted" role="status">
         Nothing has been loaded. This is what a load of {batch.filename} would do.
       </p>

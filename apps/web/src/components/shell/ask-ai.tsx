@@ -142,7 +142,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
           role="dialog"
           aria-label="Ask"
           data-testid="ask-ai-panel"
-          className="flex h-[min(34rem,calc(100vh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+          className="flex h-[min(34rem,calc(100vh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-border bg-surface"
         >
           <header className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold text-text">
             <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-text-muted">
@@ -331,7 +331,7 @@ export function AskAi({ csrf, supplier = false }: { csrf: string; supplier?: boo
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         data-testid="ask-ai-button"
-        className="flex min-h-[44px] items-center gap-2 rounded-full border border-border-strong bg-surface px-4 text-sm font-medium text-text shadow-md hover:bg-surface-alt"
+        className="flex min-h-[44px] items-center gap-2 rounded-full border border-border-strong bg-surface px-4 text-sm font-medium text-text hover:bg-surface-alt"
       >
         <Sparkles className="size-4" aria-hidden="true" />
         Ask

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Table, Td, Th, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Field {
@@ -54,7 +54,7 @@ function Stat({ label, value, testid }: { label: string; value: string | number;
   return (
     <div className="rounded-lg border border-border bg-surface-alt p-3">
       <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="mt-1 text-xl font-bold" data-testid={testid}>
+      <dd className="mt-1 text-sm font-medium" data-testid={testid}>
         {value}
       </dd>
     </div>
@@ -79,7 +79,7 @@ export function EvidencePanel({ csrf, roles }: { csrf: string; roles: readonly s
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">At rest</h2>
+          <SectionHeader title="At rest" />
           <Badge tone="info">Measured from the database now</Badge>
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -156,7 +156,7 @@ export function EvidencePanel({ csrf, roles }: { csrf: string; roles: readonly s
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">In transit</h2>
+        <SectionHeader title="In transit" />
         <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat label="Mode" value={t.mode} testid="ev-mode" />
           <Stat
@@ -178,7 +178,7 @@ export function EvidencePanel({ csrf, roles }: { csrf: string; roles: readonly s
             ? 'in place.'
             : 'NOT all in place.'}
         </p>
-        <h3 className="mt-4 text-sm font-bold">Not evidenced here</h3>
+        <h3 className="mt-4 text-sm font-medium">Not evidenced here</h3>
         <ul className="mt-1 list-disc pl-5 text-sm text-text-muted" data-testid="not-evidenced">
           {t.notEvidencedHere.map((x) => (
             <li key={x}>{x}</li>
@@ -187,7 +187,7 @@ export function EvidencePanel({ csrf, roles }: { csrf: string; roles: readonly s
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Key versions in use</h2>
+        <SectionHeader title="Key versions in use" />
         <div className="mt-4">
           <Table caption="Key versions in use">
             <thead>
@@ -217,7 +217,7 @@ export function EvidencePanel({ csrf, roles }: { csrf: string; roles: readonly s
       </Card>
 
       <Card>
-        <h2 className="font-heading text-xl font-bold">Data stays in the tenancy</h2>
+        <SectionHeader title="Data stays in the tenancy" />
         <p className="mt-2 max-w-prose text-sm text-text-muted">
           Every row carries its tenant. The cross-tenant test ({data.isolation.apiTest}) calls every read
           route as a user of one tenant against a populated second tenant. The live check below looks at the

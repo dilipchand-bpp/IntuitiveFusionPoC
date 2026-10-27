@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { AiBadge, Badge, Button, Card, Field, Textarea } from '@if/ui';
+import { AiBadge, Badge, Button, Card, Field, Textarea, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { PublicFrame } from '@/components/b8/public-pages';
 import { message, useData, useRun } from '@/components/contract/b5-shared';
@@ -44,9 +44,13 @@ export function RespondLink({ token }: { token: string }) {
       {data && (
         <Card data-testid="respond-card">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-heading text-xl font-bold">
-              {data.number}: {data.title}
-            </h2>
+            <SectionHeader
+              title={
+                <>
+                  {data.number}: {data.title}
+                </>
+              }
+            />
             <Badge tone={data.severity === 'CRITICAL' || data.severity === 'HIGH' ? 'error' : 'warning'}>
               {data.severity.toLowerCase()}
             </Badge>

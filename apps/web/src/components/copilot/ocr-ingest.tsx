@@ -1,7 +1,18 @@
 'use client';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { AiBadge, Badge, Button, Card, EmptyState, Table, Td, Th, type BadgeTone } from '@if/ui';
+import {
+  AiBadge,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Table,
+  Td,
+  Th,
+  type BadgeTone,
+  SectionHeader,
+} from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import { ApiError } from '@/lib/api-client';
 import type { OcrBatch, OcrBatchRow, OcrSample } from './ocr-types';
@@ -62,7 +73,7 @@ export function OcrIngestHome({ csrf, canIngest }: { csrf: string; canIngest: bo
       {canIngest && (
         <Card>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-heading text-xl font-bold">Upload contracts</h2>
+            <SectionHeader title="Upload contracts" />
             <AiBadge kind="simulated" />
           </div>
           <p className="mt-2 max-w-prose text-sm text-text-muted">
@@ -95,7 +106,7 @@ export function OcrIngestHome({ csrf, canIngest }: { csrf: string; canIngest: bo
           {messages}
           {samples.data && (
             <div className="mt-4">
-              <h3 className="text-sm font-bold">Or try a synthetic sample</h3>
+              <h3 className="text-sm font-medium">Or try a synthetic sample</h3>
               <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                 {samples.data.samples.map((s) => (
                   <li
@@ -127,9 +138,7 @@ export function OcrIngestHome({ csrf, canIngest }: { csrf: string; canIngest: bo
       )}
 
       <section aria-labelledby="ocr-batches" className="flex flex-col gap-3">
-        <h2 id="ocr-batches" className="font-heading text-xl font-bold">
-          Batches
-        </h2>
+        <SectionHeader id="ocr-batches" title="Batches" />
         {!batches.data ? (
           <p className="text-sm text-text-muted">Loading…</p>
         ) : batches.data.items.length === 0 ? (
@@ -179,9 +188,7 @@ export function OcrIngestHome({ csrf, canIngest }: { csrf: string; canIngest: bo
 
       {open && detail.data && (
         <section aria-labelledby="ocr-docs" className="flex flex-col gap-3" data-testid="ocr-batch-detail">
-          <h2 id="ocr-docs" className="font-heading text-xl font-bold">
-            Documents in this batch
-          </h2>
+          <SectionHeader id="ocr-docs" title="Documents in this batch" />
           {detail.data.skipped.length > 0 && (
             <p className="text-sm text-text-muted">
               Skipped: {detail.data.skipped.map((s) => `${s.name} (${s.reason})`).join('; ')}
@@ -191,11 +198,11 @@ export function OcrIngestHome({ csrf, canIngest }: { csrf: string; canIngest: bo
             {detail.data.documents.map((d) => (
               <li
                 key={d.id}
-                className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 shadow-sm"
+                className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4"
                 data-testid="ocr-doc"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-heading text-lg font-semibold">{d.title ?? d.fileName}</p>
+                  <p className="text-sm font-medium">{d.title ?? d.fileName}</p>
                   <Badge tone={DOC_TONE[d.status] ?? 'neutral'}>{DOC_LABEL[d.status] ?? d.status}</Badge>
                   <Badge tone={d.simulated ? 'warning' : 'info'}>{d.label}</Badge>
                   {d.duplicateOf && <Badge tone="warning">Same file seen before</Badge>}

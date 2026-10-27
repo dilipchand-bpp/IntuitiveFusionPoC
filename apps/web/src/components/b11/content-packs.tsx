@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Table, Td, Th, type BadgeTone } from '@if/ui';
+import { Badge, Button, Card, Table, Td, Th, type BadgeTone, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 type State = 'CURRENT' | 'STALE' | 'FAILED' | 'NONE';
@@ -114,7 +114,7 @@ export function ContentPacks({ csrf }: { csrf: string }) {
     <div className="flex min-w-0 flex-col gap-4">
       <Card>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-heading text-xl font-bold">Packs</h2>
+          <SectionHeader title="Packs" />
           <Badge tone="neutral">Simulated outside source</Badge>
           {!o.settings.useOutsideContent && <Badge tone="warning">Switched off in settings</Badge>}
         </div>

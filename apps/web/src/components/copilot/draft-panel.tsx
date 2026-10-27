@@ -2,7 +2,7 @@
 import { ChevronDown, Sparkles, Undo2, Wand2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { AiBadge, Badge, Button, cn } from '@if/ui';
+import { AiBadge, Badge, Button, cn, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { appendSpoken, useDictation } from '../voice/use-dictation';
 import { VoiceButton, VoiceStatus } from '../voice/voice-button';
@@ -166,7 +166,7 @@ export function DraftPanel({
           aria-expanded={open}
           aria-controls={id('body')}
           onClick={() => setOpen((o) => !o)}
-          className="flex min-h-[44px] w-full items-center gap-2 px-4 py-3 text-left font-heading text-lg font-semibold focus-visible:outline-2 focus-visible:outline-ring"
+          className="flex min-h-[44px] w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring"
         >
           <Sparkles className="size-5 text-accent" aria-hidden="true" />
           {heading}
@@ -335,7 +335,7 @@ export function DraftPanel({
             )}
             {last && last.applied && (
               <div data-testid={id('change')} className="flex flex-col gap-2">
-                <h4 className="font-heading text-base font-semibold">What changed</h4>
+                <SectionHeader as="h4" title="What changed" />
                 <p role="status" className="text-sm">
                   {last.summary}
                 </p>

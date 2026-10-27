@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Button, Card, Checkbox, Field, Input } from '@if/ui';
+import { Button, Card, Checkbox, Field, Input, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 export interface FieldSpec {
@@ -47,9 +47,7 @@ export function SectionForm({
   const set = (k: string, v: unknown) => setDraft({ ...draft, [k]: v });
   return (
     <Card role="region" aria-labelledby={`${section}-h`}>
-      <h2 id={`${section}-h`} className="font-heading text-xl font-bold">
-        {title}
-      </h2>
+      <SectionHeader id={`${section}-h`} title={<>{title}</>} />
       <p className="mt-1 max-w-prose text-sm text-text-muted">{intro}</p>
       <form
         className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"

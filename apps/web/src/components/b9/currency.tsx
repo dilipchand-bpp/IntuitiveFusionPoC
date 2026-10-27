@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import { api } from '@/lib/api-client';
 
@@ -66,7 +66,7 @@ export function CurrencyAdmin({ csrf, canEdit }: { csrf: string; canEdit: boolea
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">How rates are set</h2>
+          <SectionHeader title="How rates are set" />
           <Badge tone={data.mode === 'ANNUAL' ? 'info' : 'success'}>
             {data.mode === 'ANNUAL' ? 'Annual rates' : 'Live rates'}
           </Badge>
@@ -87,9 +87,7 @@ export function CurrencyAdmin({ csrf, canEdit }: { csrf: string; canEdit: boolea
 
       <section aria-labelledby="fx-now-h" className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="fx-now-h" className="font-heading text-xl font-bold">
-            Rates in force today
-          </h2>
+          <SectionHeader id="fx-now-h" title="Rates in force today" />
           {canEdit && data.mode === 'LIVE' && (
             <Button
               variant="secondary"
@@ -143,9 +141,7 @@ export function CurrencyAdmin({ csrf, canEdit }: { csrf: string; canEdit: boolea
 
       {data.mode === 'ANNUAL' && (
         <section aria-labelledby="fx-fy-h" className="flex min-w-0 flex-col gap-3">
-          <h2 id="fx-fy-h" className="font-heading text-xl font-bold">
-            Annual rates, {fyLabel(data.financialYear)}
-          </h2>
+          <SectionHeader id="fx-fy-h" title={<>Annual rates, {fyLabel(data.financialYear)}</>} />
           {fyRows.length === 0 ? (
             <p className="text-sm text-text-muted">No annual rates have been set for this financial year.</p>
           ) : (
@@ -226,9 +222,7 @@ export function CurrencyAdmin({ csrf, canEdit }: { csrf: string; canEdit: boolea
       )}
 
       <section aria-labelledby="fx-conv-h" className="flex min-w-0 flex-col gap-3">
-        <h2 id="fx-conv-h" className="font-heading text-xl font-bold">
-          Convert an amount
-        </h2>
+        <SectionHeader id="fx-conv-h" title="Convert an amount" />
         <form
           aria-label="Convert an amount"
           className="flex flex-wrap items-end gap-3"

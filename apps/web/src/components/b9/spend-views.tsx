@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Badge, Button, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, Button, EmptyState, Table, Td, Th, SectionHeader } from '@if/ui';
 import { aud, formatDateTime } from '@/lib/labels';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
@@ -142,17 +142,17 @@ export function CommitmentView({ csrf, roles = [] }: { csrf: string; roles?: rea
         <h2 id="cm-tot" className="sr-only">
           Totals by contract basis
         </h2>
-        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <p className="text-sm font-semibold text-text-muted">Fixed-value contracts</p>
-          <p className="mt-1 text-2xl font-extrabold">{aud.format(fixedFirm)}</p>
+          <p className="mt-1 text-sm font-medium">{aud.format(fixedFirm)}</p>
           <p className="mt-1 text-sm text-text-muted">
             Firm commitment across {fixed.length} contract{fixed.length === 1 ? '' : 's'}: what remains to be
             paid.
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <p className="text-sm font-semibold text-text-muted">Ceiling contracts</p>
-          <p className="mt-1 text-2xl font-extrabold">
+          <p className="mt-1 text-sm font-medium">
             {ceiling.length === 0 ? 'None' : `${aud.format(ceilLow)} to ${aud.format(ceilHigh)}`}
           </p>
           <p className="mt-1 text-sm text-text-muted">
@@ -163,13 +163,8 @@ export function CommitmentView({ csrf, roles = [] }: { csrf: string; roles?: rea
         </div>
       </section>
 
-      <section
-        aria-labelledby="cm-fy"
-        className="min-w-0 rounded-lg border border-border bg-surface p-6 shadow-sm"
-      >
-        <h2 id="cm-fy" className="font-heading text-lg font-semibold">
-          Commitment by financial year
-        </h2>
+      <section aria-labelledby="cm-fy" className="min-w-0 rounded-lg border border-border bg-surface p-6">
+        <SectionHeader id="cm-fy" title="Commitment by financial year" />
         <p className="mt-1 text-sm text-text-muted">
           Estimates from the {data.model} model, as at {formatDateTime(data.asOf)}. Years run 1 July to 30
           June.
@@ -247,9 +242,7 @@ export function CommitmentView({ csrf, roles = [] }: { csrf: string; roles?: rea
 
       {data.rows.length > 0 && (
         <section aria-labelledby="cm-by" className="flex min-w-0 flex-col gap-3">
-          <h2 id="cm-by" className="font-heading text-xl font-bold">
-            By {byLabel}
-          </h2>
+          <SectionHeader id="cm-by" title={<>By {byLabel}</>} />
           <Table caption={`Expected commitment by ${byLabel} and financial year`}>
             <thead>
               <tr>
@@ -282,9 +275,7 @@ export function CommitmentView({ csrf, roles = [] }: { csrf: string; roles?: rea
       )}
 
       <section aria-labelledby="cm-ct" className="flex min-w-0 flex-col gap-3">
-        <h2 id="cm-ct" className="font-heading text-xl font-bold">
-          Contracts and their amount basis
-        </h2>
+        <SectionHeader id="cm-ct" title="Contracts and their amount basis" />
         {data.contracts.length === 0 ? (
           <EmptyState title="No current contracts" body="Contracts that have not ended appear here." />
         ) : (
@@ -336,9 +327,7 @@ export function CommitmentView({ csrf, roles = [] }: { csrf: string; roles?: rea
       </section>
 
       <section aria-labelledby="cm-ext" className="flex min-w-0 flex-col gap-3">
-        <h2 id="cm-ext" className="font-heading text-xl font-bold">
-          Options to extend
-        </h2>
+        <SectionHeader id="cm-ext" title="Options to extend" />
         {extensions.length === 0 ? (
           <p className="text-text-muted">No unexercised options to extend.</p>
         ) : (
@@ -358,9 +347,7 @@ export function CommitmentView({ csrf, roles = [] }: { csrf: string; roles?: rea
       </section>
 
       <section aria-labelledby="cm-st" className="rounded-lg border border-border bg-surface-alt p-5">
-        <h2 id="cm-st" className="font-heading text-base font-semibold">
-          How these figures are worked out
-        </h2>
+        <SectionHeader id="cm-st" title="How these figures are worked out" />
         <ul className="mt-2 list-disc pl-5 text-sm text-text-muted">
           {data.stated.map((s) => (
             <li key={s}>{s}</li>
@@ -473,14 +460,12 @@ export function OptimisationView({ csrf, roles = [] }: { csrf: string; roles?: r
       <AnalyticsBadge csrf={csrf} roles={roles} model={data.model} onRefreshed={reload} />
 
       <section aria-labelledby="op-sum" className="flex flex-col gap-3">
-        <h2 id="op-sum" className="font-heading text-xl font-bold">
-          Potential saving (estimates)
-        </h2>
+        <SectionHeader id="op-sum" title="Potential saving (estimates)" />
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tiles.map(([label, v, note]) => (
-            <li key={label} className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+            <li key={label} className="rounded-lg border border-border bg-surface p-5">
               <p className="text-sm font-semibold text-text-muted">{label}</p>
-              <p className="mt-1 text-2xl font-extrabold">
+              <p className="mt-1 text-sm font-medium">
                 <span className="sr-only">Estimated </span>
                 {aud.format(v)}
               </p>
@@ -494,9 +479,7 @@ export function OptimisationView({ csrf, roles = [] }: { csrf: string; roles?: r
       </section>
 
       <section aria-labelledby="op-con" className="flex min-w-0 flex-col gap-3">
-        <h2 id="op-con" className="font-heading text-xl font-bold">
-          Consolidation
-        </h2>
+        <SectionHeader id="op-con" title="Consolidation" />
         {data.consolidation.length === 0 ? (
           <Empty text="No category is spread across more than one supplier." />
         ) : (
@@ -537,9 +520,7 @@ export function OptimisationView({ csrf, roles = [] }: { csrf: string; roles?: r
       </section>
 
       <section aria-labelledby="op-dup" className="flex min-w-0 flex-col gap-3">
-        <h2 id="op-dup" className="font-heading text-xl font-bold">
-          Possible duplicate contracts
-        </h2>
+        <SectionHeader id="op-dup" title="Possible duplicate contracts" />
         {data.duplicates.length === 0 ? (
           <Empty text="No overlapping contracts with the same supplier were found." />
         ) : (
@@ -576,9 +557,7 @@ export function OptimisationView({ csrf, roles = [] }: { csrf: string; roles?: r
       </section>
 
       <section aria-labelledby="op-rate" className="flex min-w-0 flex-col gap-3">
-        <h2 id="op-rate" className="font-heading text-xl font-bold">
-          Rate-card gaps
-        </h2>
+        <SectionHeader id="op-rate" title="Rate-card gaps" />
         {data.rateCards.length === 0 ? (
           <Empty text="No item is priced differently on more than one rate card." />
         ) : (
@@ -624,9 +603,7 @@ export function OptimisationView({ csrf, roles = [] }: { csrf: string; roles?: r
       </section>
 
       <section aria-labelledby="op-var" className="flex min-w-0 flex-col gap-3">
-        <h2 id="op-var" className="font-heading text-xl font-bold">
-          Price variance
-        </h2>
+        <SectionHeader id="op-var" title="Price variance" />
         <p className="max-w-prose text-sm text-text-muted">
           Flags an invoice more than {pct(a.varianceThresholdPct)} from its contract rate, or the same item
           invoiced more than {pct(a.driftThresholdPct)} apart by one supplier.
@@ -673,9 +650,7 @@ export function OptimisationView({ csrf, roles = [] }: { csrf: string; roles?: r
       </section>
 
       <section aria-labelledby="op-cat" className="flex min-w-0 flex-col gap-3">
-        <h2 id="op-cat" className="font-heading text-xl font-bold">
-          Where to look first, by category
-        </h2>
+        <SectionHeader id="op-cat" title="Where to look first, by category" />
         {data.categories.length === 0 ? (
           <Empty text="No categories to show." />
         ) : (

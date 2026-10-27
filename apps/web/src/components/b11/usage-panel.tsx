@@ -1,5 +1,5 @@
 'use client';
-import { Badge, Card, Table, Td, Th } from '@if/ui';
+import { Badge, Card, Table, Td, Th, SectionHeader } from '@if/ui';
 import { Bar, useData } from '@/components/contract/b5-shared';
 
 interface Plan {
@@ -41,7 +41,7 @@ export function UsagePanel() {
     <div className="flex min-w-0 flex-col gap-4" data-testid="usage-panel">
       <Card>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-heading text-xl font-bold">Your plan</h2>
+          <SectionHeader title="Your plan" />
           <Badge tone="info">
             <span data-testid="plan-name">{u.plan.name}</span>
           </Badge>
@@ -57,7 +57,7 @@ export function UsagePanel() {
           ].map(([k, v]) => (
             <div key={k} className="rounded-lg border border-border bg-surface-alt p-3">
               <dt className="text-xs text-text-muted">{k}</dt>
-              <dd className="mt-1 text-lg font-bold">{v}</dd>
+              <dd className="mt-1 text-sm font-medium">{v}</dd>
             </div>
           ))}
         </dl>
@@ -69,7 +69,7 @@ export function UsagePanel() {
         </p>
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Used today ({u.today.day})</h2>
+        <SectionHeader title={<>Used today ({u.today.day})</>} />
         <div className="mt-3 flex flex-col gap-3">
           <Bar
             label={`Requests: ${n(u.today.requests)} of ${n(u.plan.dailyRequests)}`}
@@ -95,7 +95,7 @@ export function UsagePanel() {
         </p>
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Last week</h2>
+        <SectionHeader title="Last week" />
         <Table caption="Requests per day for the last week">
           <thead>
             <tr>
@@ -118,7 +118,7 @@ export function UsagePanel() {
         </Table>
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Available plans</h2>
+        <SectionHeader title="Available plans" />
         <Table caption="Usage plans">
           <thead>
             <tr>

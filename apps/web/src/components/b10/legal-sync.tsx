@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Ev {
@@ -64,9 +64,7 @@ export function LegalSyncCard({
   return (
     <Card role="region" aria-labelledby="ls-h" data-testid="legal-sync">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 id="ls-h" className="font-heading text-xl font-bold">
-          Legal system status
-        </h2>
+        <SectionHeader id="ls-h" title="Legal system status" />
         <Badge tone="info">SIMULATED</Badge>
         {v.data.connector && (
           <span className="text-sm text-text-muted">

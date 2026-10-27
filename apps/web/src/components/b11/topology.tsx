@@ -1,6 +1,6 @@
 'use client';
 import type { ReactNode } from 'react';
-import { Badge, Card } from '@if/ui';
+import { Badge, Card, SectionHeader } from '@if/ui';
 import { useData } from '@/components/contract/b5-shared';
 
 interface Option {
@@ -195,7 +195,7 @@ function Diagram({ o }: { o: Option }) {
 function List({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <h4 className="text-xs font-bold uppercase tracking-wide text-text-muted">{title}</h4>
+      <h4 className="text-xs font-medium uppercase tracking-wide text-text-muted">{title}</h4>
       <ul className="mt-1 list-disc pl-5 text-sm">
         {items.map((i) => (
           <li key={i}>{i}</li>
@@ -228,7 +228,7 @@ export function TopologyPanel() {
       </div>
       {data.options.map((o) => (
         <Card key={o.id} data-testid={`option-${o.id}`}>
-          <h2 className="font-heading text-xl font-bold">{o.name}</h2>
+          <SectionHeader title={<>{o.name}</>} />
           <p className="mt-1 max-w-prose text-sm text-text-muted">{o.summary}</p>
           <div className="mt-4">
             <Diagram o={o} />

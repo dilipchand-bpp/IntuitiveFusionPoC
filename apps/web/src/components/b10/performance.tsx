@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Summary {
@@ -24,7 +24,7 @@ function Stat({ label, value, testid }: { label: string; value: string; testid?:
   return (
     <div className="rounded-lg border border-border bg-surface-alt p-3">
       <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="mt-1 text-xl font-bold" data-testid={testid}>
+      <dd className="mt-1 text-sm font-medium" data-testid={testid}>
         {value}
       </dd>
     </div>
@@ -48,7 +48,7 @@ export function PerformancePanel({ csrf }: { csrf: string }) {
     <div className="flex min-w-0 flex-col gap-6">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl font-bold">Budget check inside the conversation</h2>
+          <SectionHeader title="Budget check inside the conversation" />
           {data.pass === null ? (
             <Badge tone="neutral">No measurements yet</Badge>
           ) : (
@@ -81,7 +81,7 @@ export function PerformancePanel({ csrf }: { csrf: string }) {
         </p>
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Target</h2>
+        <SectionHeader title="Target" />
         <form
           className="mt-3 flex max-w-sm flex-col gap-3"
           onSubmit={(e) => {

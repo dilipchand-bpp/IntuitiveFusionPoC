@@ -107,7 +107,7 @@ export function SearchView({ csrf, initialQuery }: { csrf: string; initialQuery:
           )}
           {result.groups.map((g) => (
             <section key={g.kind} aria-labelledby={`g-${g.kind}`}>
-              <h2 id={`g-${g.kind}`} className="text-lg font-bold">
+              <h2 id={`g-${g.kind}`} className="text-sm font-medium">
                 {g.label}{' '}
                 <span className="text-sm font-normal text-text-muted">
                   ({g.total}
@@ -142,7 +142,7 @@ function ExternalPanel({ ext }: { ext: External }) {
   return (
     <section aria-labelledby="ext-h" data-testid="external-panel">
       <Card>
-        <h2 id="ext-h" className="flex flex-wrap items-center gap-2 text-lg font-bold">
+        <h2 id="ext-h" className="flex flex-wrap items-center gap-2 text-sm font-medium">
           Outside source
           {ext.simulated && <Badge tone="warning">SIMULATED</Badge>}
         </h2>
@@ -157,11 +157,11 @@ function ExternalPanel({ ext }: { ext: External }) {
               Source: {ext.provider}. These results are made-up examples, not real market data.
             </p>
             <div>
-              <h3 className="text-sm font-bold">Exactly what was sent</h3>
+              <h3 className="text-sm font-medium">Exactly what was sent</h3>
               <p className="mt-1 rounded-md bg-surface-alt p-3 font-mono text-sm break-words">{ext.sent}</p>
             </div>
             <div>
-              <h3 className="text-sm font-bold">What was withheld</h3>
+              <h3 className="text-sm font-medium">What was withheld</h3>
               {ext.withheld.length === 0 ? (
                 <p className="mt-1 text-sm text-text-muted">Nothing needed to be withheld.</p>
               ) : (
@@ -173,7 +173,7 @@ function ExternalPanel({ ext }: { ext: External }) {
               )}
             </div>
             <div>
-              <h3 className="text-sm font-bold">Results</h3>
+              <h3 className="text-sm font-medium">Results</h3>
               {ext.hits.length === 0 ? (
                 <p className="mt-1 text-sm text-text-muted">The outside source had nothing on this.</p>
               ) : (
