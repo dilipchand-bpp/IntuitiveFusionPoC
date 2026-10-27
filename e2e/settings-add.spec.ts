@@ -281,7 +281,11 @@ test.describe('an administrator adds items in several sections, saves, reloads a
 
     // the change log says in words what was added
     await page.goto('/app/audit');
-    const row = page.getByTestId('audit-row').filter({ hasText: 'settings.intake' }).first();
+    const row = page
+      .getByTestId('audit-row')
+      .filter({ hasText: 'settings.intake' })
+      .filter({ hasText: RULE })
+      .first();
     await expect(row).toContainText(`Added review rule: ${RULE} (FINANCE)`);
   });
 });

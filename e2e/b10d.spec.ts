@@ -14,8 +14,10 @@ const card = (page: Page, id: string) => page.locator(`[data-testid="ai-model-ca
 
 async function askAi(page: Page, q: string) {
   const answers = page.getByTestId('ai-answer');
-  const before = await answers.count();
   if (!(await page.getByTestId('ask-ai-panel').isVisible())) await page.getByTestId('ask-ai-button').click();
+  await expect(page.getByLabel('Your question')).toBeVisible();
+  // count only once the panel is open: earlier answers are restored from the session when it opens
+  const before = await answers.count();
   await page.getByLabel('Your question').fill(q);
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(answers).toHaveCount(before + 1);
@@ -194,7 +196,9 @@ test.describe('NFR-C08 browser and operating-system baseline', () => {
       '/browser-support',
     );
     // never blocking: the page is usable with the notice showing
-    await expect(page.getByRole('link', { name: 'Requests' }).first()).toBeVisible();
+    await expect(
+      page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Requests' }),
+    ).toBeVisible();
     await scan(page);
     await notice.getByRole('button', { name: 'Dismiss browser notice' }).click();
     await expect(notice).toHaveCount(0);

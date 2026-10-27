@@ -27,6 +27,8 @@ export default defineConfig({
       env: {
         NODE_ENV: 'test',
         SESSION_SECRET: 'e2e-only-secret-not-for-production-use-0123456789',
+        // pin the root key so the seed (which also reads the developer's .env) and the API wrap/unwrap keys with the same one
+        SECRET_STORE_KEY: 'e2e-only-secret-store-key-not-for-production-0123456789',
         API_PORT: '4100',
         DATABASE_URL: 'pglite://./var/e2e-db',
         SEED_PASSWORD: E2E_PASSWORD,

@@ -64,8 +64,7 @@ test('self-hosted fonts load (no third-party requests)', async ({ page }) => {
     await document.fonts.ready;
     return [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family);
   });
-  expect(fonts.join(',')).toMatch(/Inter/);
-  expect(fonts.join(',')).toMatch(/Plus Jakarta/);
+  expect(fonts.join(',')).toMatch(/Manrope/);
   expect(external).toEqual([]);
 });
 

@@ -38,12 +38,14 @@ test.describe('US-INT-05 my requests', () => {
     page,
   }) => {
     await signIn(page, 'requester');
-    await page.goto('/app/requests');
+    // other specs add many requests as this requester, so look the seeded ones up rather than rely on page one
+    await page.goto('/app/requests?q=Facilities%20cleaning');
     await expect(page.getByRole('heading', { name: 'Requests' })).toBeVisible();
     const table = page.getByRole('table', { name: 'Requests' });
     await expect(table).toContainText('Facilities cleaning services');
     await expect(table).toContainText('PR-2026-0001');
-    await expect(table.getByText('Critical').first()).toBeVisible();
+    await page.goto('/app/requests?q=Managed%20IT');
+    await expect(page.getByRole('table', { name: 'Requests' }).getByText('Critical').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'New request' })).toBeVisible();
   });
 
@@ -63,7 +65,7 @@ test.describe('US-INT-05 my requests', () => {
     page,
   }) => {
     await signIn(page, 'requester');
-    await page.goto('/app/requests');
+    await page.goto('/app/requests?q=Managed%20IT');
     await page.getByRole('link', { name: 'Managed IT services' }).click();
     await expect(page.getByRole('heading', { name: 'Managed IT services', level: 1 })).toBeVisible();
     await expect(page.getByText('Complexity: Critical')).toBeVisible();
@@ -378,6 +380,9 @@ test.describe('visual regression @visual', () => {
     await page.goto('/app/requests/new');
     await say(page, HEADLINE);
     await page.evaluate(() => document.fonts.ready);
+    // the privacy notice changes height once acknowledged (another spec does that), so it is left out of the picture
+    await page.addStyleTag({ content: '[data-testid^="privacy-notice-"] { display: none !important; }' });
+    await page.evaluate(() => window.scrollTo(0, 0)); // the sticky header must sit at the top of a full-page capture
     await expect(page).toHaveScreenshot('intake-chat-light-desktop.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.02,
@@ -391,6 +396,9 @@ test.describe('visual regression @visual', () => {
     await page.goto('/app/requests/new');
     await say(page, HEADLINE);
     await page.evaluate(() => document.fonts.ready);
+    // the privacy notice changes height once acknowledged (another spec does that), so it is left out of the picture
+    await page.addStyleTag({ content: '[data-testid^="privacy-notice-"] { display: none !important; }' });
+    await page.evaluate(() => window.scrollTo(0, 0)); // the sticky header must sit at the top of a full-page capture
     await expect(page).toHaveScreenshot('intake-chat-dark-mobile.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.02,

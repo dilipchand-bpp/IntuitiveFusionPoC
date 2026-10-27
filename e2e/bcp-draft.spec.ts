@@ -36,7 +36,9 @@ test.describe('CP-04 draft from text on the stand-alone page', () => {
     page,
   }) => {
     await signIn(page, 'requester');
-    await page.getByRole('link', { name: 'Draft with AI' }).first().click();
+    // the page sits under the Requests tab of the top navigation
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Requests' }).click();
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Draft with AI' }).click();
     await expect(page.getByRole('heading', { name: 'Draft with AI', level: 1 })).toBeVisible();
     await page.getByLabel('What to draft').selectOption('REQUEST');
     await page.getByTestId('aidraft-text').fill(PRINT);
