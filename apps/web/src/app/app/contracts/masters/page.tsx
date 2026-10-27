@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { EmptyState, Table, Td, Th } from '@if/ui';
+import { PageHeader, EmptyState, Table, Td, Th } from '@if/ui';
 import { aud } from '@/lib/labels';
 import { apiGet } from '@/lib/session';
 
@@ -37,12 +37,10 @@ export default async function MastersPage() {
       <p className="text-sm">
         <Link href="/app/contracts">← Contracts</Link>
       </p>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Master agreements</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Each master agreement and the work orders raised under it, reported at both levels.
-        </p>
-      </header>
+      <PageHeader
+        title="Master agreements"
+        subtitle={<>Each master agreement and the work orders raised under it, reported at both levels.</>}
+      />
       {!r ? (
         <EmptyState title="The report is unavailable" body="Please refresh the page." />
       ) : r.masters.length === 0 ? (

@@ -14,6 +14,7 @@ import {
   Td,
   Textarea,
   Th,
+  SectionHeader,
 } from '@if/ui';
 import { ArtefactBadge } from '@/components/b9/artefact-badge';
 import { aud, formatDateTime } from '@/lib/labels';
@@ -231,9 +232,7 @@ export function ContractManagementTabs({ c, csrf, roles }: Props) {
   ];
   return (
     <Card aria-labelledby="b5-h" role="region" data-testid="contract-management">
-      <h2 id="b5-h" className="font-heading text-xl font-bold">
-        Managing this contract
-      </h2>
+      <SectionHeader id="b5-h" title="Managing this contract" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         Spend against the contract, the prices it allows, the plans that keep it on track, and what to do
         next.
@@ -271,7 +270,7 @@ function OverviewTab({ c, csrf }: { c: ContractView; csrf: string }) {
         </p>
       )}
       <section aria-labelledby="next-h">
-        <h3 id="next-h" className="font-heading font-semibold">
+        <h3 id="next-h" className="font-heading text-sm font-medium">
           What to do next
         </h3>
         {m.nextSteps.steps.length === 0 ? (
@@ -297,29 +296,29 @@ function OverviewTab({ c, csrf }: { c: ContractView; csrf: string }) {
       </section>
 
       <section aria-labelledby="hist-h">
-        <h3 id="hist-h" className="font-heading font-semibold">
+        <h3 id="hist-h" className="font-heading text-sm font-medium">
           Variations, extensions and value
         </h3>
         <dl className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
           <div>
             <dt className="text-text-muted">Variations</dt>
-            <dd className="text-lg font-semibold" data-testid="variation-count">
+            <dd className="text-sm font-medium" data-testid="variation-count">
               {m.variationCount}
             </dd>
           </div>
           <div>
             <dt className="text-text-muted">Extensions taken up</dt>
-            <dd className="text-lg font-semibold" data-testid="extensions-used">
+            <dd className="text-sm font-medium" data-testid="extensions-used">
               {m.extensions.exercised} of {m.extensions.total}
             </dd>
           </div>
           <div>
             <dt className="text-text-muted">Extensions left</dt>
-            <dd className="text-lg font-semibold">{m.extensions.remaining}</dd>
+            <dd className="text-sm font-medium">{m.extensions.remaining}</dd>
           </div>
           <div>
             <dt className="text-text-muted">Cumulative value</dt>
-            <dd className="text-lg font-semibold" data-testid="cumulative-value">
+            <dd className="text-sm font-medium" data-testid="cumulative-value">
               {aud.format(m.cumulative.value)}
             </dd>
           </div>
@@ -382,7 +381,7 @@ function OverviewTab({ c, csrf }: { c: ContractView; csrf: string }) {
       </section>
 
       <section aria-labelledby="link-h">
-        <h3 id="link-h" className="font-heading font-semibold">
+        <h3 id="link-h" className="font-heading text-sm font-medium">
           Procurements linked to this contract
         </h3>
         {m.procurements.length === 0 ? (
@@ -568,7 +567,7 @@ function SpendTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
       )}
       {s ? (
         <section aria-labelledby="sp-h" className="flex flex-col gap-3">
-          <h3 id="sp-h" className="font-heading font-semibold">
+          <h3 id="sp-h" className="font-heading text-sm font-medium">
             Spend against the contract
           </h3>
           <Bar label={`Spend: ${aud.format(s.invoiced)} of ${aud.format(s.value)}`} pct={s.spentPct} />
@@ -606,7 +605,7 @@ function SpendTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
       )}
 
       <section aria-labelledby="po-h">
-        <h3 id="po-h" className="font-heading font-semibold">
+        <h3 id="po-h" className="font-heading text-sm font-medium">
           Purchase orders
         </h3>
         {com.data && !com.data.erpIntegrated && (
@@ -691,7 +690,7 @@ function SpendTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
       </section>
 
       <section aria-labelledby="inv-h">
-        <h3 id="inv-h" className="font-heading font-semibold">
+        <h3 id="inv-h" className="font-heading text-sm font-medium">
           Invoices and the three-way match
         </h3>
         {(invs.data ?? []).length === 0 ? (
@@ -808,7 +807,7 @@ function TermsTab({ c, csrf }: { c: ContractView; csrf: string }) {
   return (
     <div className="flex flex-col gap-5" data-testid="mgmt-terms">
       <section aria-labelledby="rate-h">
-        <h3 id="rate-h" className="font-heading font-semibold">
+        <h3 id="rate-h" className="font-heading text-sm font-medium">
           Rate card
         </h3>
         <p className="text-sm text-text-muted">
@@ -906,7 +905,7 @@ function TermsTab({ c, csrf }: { c: ContractView; csrf: string }) {
       </section>
 
       <section aria-labelledby="esc-h">
-        <h3 id="esc-h" className="font-heading font-semibold">
+        <h3 id="esc-h" className="font-heading text-sm font-medium">
           Price escalation
         </h3>
         <p className="text-sm text-text-muted">
@@ -1023,7 +1022,7 @@ function TermsTab({ c, csrf }: { c: ContractView; csrf: string }) {
       </section>
 
       <section aria-labelledby="reb-h">
-        <h3 id="reb-h" className="font-heading font-semibold">
+        <h3 id="reb-h" className="font-heading text-sm font-medium">
           Rebates
         </h3>
         {t.rebates.length === 0 ? (
@@ -1250,7 +1249,7 @@ function PlansTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
             </details>
           ))}
           <section aria-labelledby="act-h">
-            <h3 id="act-h" className="font-heading font-semibold">
+            <h3 id="act-h" className="font-heading text-sm font-medium">
               Activities ({p.activities.filter((a) => a.status === 'OPEN').length} open)
             </h3>
             <Table caption="Contract management activities" className="mt-2">
@@ -1329,7 +1328,7 @@ function PlansTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles: st
       )}
       {canTemplate && (
         <section aria-labelledby="tpl-h">
-          <h3 id="tpl-h" className="font-heading font-semibold">
+          <h3 id="tpl-h" className="font-heading text-sm font-medium">
             Use your own template
           </h3>
           <form
@@ -1636,9 +1635,7 @@ function TriggersTab({ c, csrf, roles }: { c: ContractView; csrf: string; roles:
 export function VariationInfo({ v }: { v: NonNullable<ContractView['variation']> }) {
   return (
     <Card aria-labelledby="var-h" role="region" data-testid="variation-info">
-      <h2 id="var-h" className="font-heading text-xl font-bold">
-        Business case and variance
-      </h2>
+      <SectionHeader id="var-h" title="Business case and variance" />
       <p className="mt-2 text-sm">{v.businessCase}</p>
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <dt className="text-text-muted">Measured</dt>

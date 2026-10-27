@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Textarea, type BadgeTone } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Textarea, type BadgeTone, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from './b5-shared';
 
 type Level = 'SES' | 'AES' | 'QES';
@@ -80,9 +80,7 @@ export function SignatureLevelCard({
   return (
     <Card role="region" aria-labelledby="siglevel-h" data-testid="signature-level-card">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id="siglevel-h" className="font-heading text-xl font-bold">
-          Signature level
-        </h2>
+        <SectionHeader id="siglevel-h" title="Signature level" />
         <Badge tone={LEVEL_TONE[c.required.level]}>
           <span data-testid="required-level">Needs {c.required.level}</span>
         </Badge>
@@ -178,11 +176,16 @@ export function SignatureLevelCard({
             );
           }}
         >
-          <h3 className="font-heading text-base font-bold">
-            {c.required.level === 'QES'
-              ? 'Sign through the qualified provider'
-              : 'Sign at the advanced level'}
-          </h3>
+          <SectionHeader
+            as="h3"
+            title={
+              <>
+                {c.required.level === 'QES'
+                  ? 'Sign through the qualified provider'
+                  : 'Sign at the advanced level'}
+              </>
+            }
+          />
           {c.required.level === 'QES' ? (
             <p className="text-sm text-text-muted">
               This contract needs a qualified signature.{' '}
@@ -248,7 +251,7 @@ export function SignatureLevelCard({
             );
           }}
         >
-          <h3 className="font-heading text-base font-bold">Set the level for this contract</h3>
+          <SectionHeader as="h3" title="Set the level for this contract" />
           {c.override && (
             <p className="text-sm text-text-muted" data-testid="override-note">
               Set to {c.override.level} by {c.override.setBy ?? 'Legal'}: {c.override.reason}

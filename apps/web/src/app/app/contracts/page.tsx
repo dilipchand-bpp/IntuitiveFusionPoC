@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, EmptyState, Table, Td, Th, Button, PageHeader, SectionHeader } from '@if/ui';
 import { DraftContract } from '@/components/contract/draft-contract';
 import { NewDocument } from '@/components/contract/new-document';
 import type { ContractAward, ContractSummary } from '@/components/contract/types';
@@ -20,90 +20,66 @@ export default async function ContractsPage() {
   const waiting = (awards ?? []).filter((a) => !a.contractId && a.recommended.length > 0);
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Contracts</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          A contract is drafted from the approved evaluation report, reviewed by legal, then signed by people
-          who hold signing authority. Once signed it is locked.
-        </p>
-        {drafter && (
-          <div className="mt-3">
-            <NewDocument csrf={user!.csrfToken} />
-          </div>
-        )}
-        {manager && (
-          <nav aria-label="Contract management" className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/app/contracts/expiring"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Expiring contracts
-            </Link>
-            <Link
-              href="/app/contracts/alerts"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Alerts
-            </Link>
-            <Link
-              href="/app/contracts/mine"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              My contracts and next steps
-            </Link>
-            <Link
-              href="/app/contracts/masters"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Master agreements
-            </Link>
-            {user?.roles.some((r) => ['FINANCE', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC'].includes(r)) && (
-              <Link
-                href="/app/contracts/invoices"
-                className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-              >
-                Invoices
-              </Link>
+      <PageHeader
+        title="Contracts"
+        subtitle={
+          <>
+            A contract is drafted from the approved evaluation report, reviewed by legal, then signed by
+            people who hold signing authority. Once signed it is locked.
+          </>
+        }
+        actions={
+          <>
+            {drafter && <NewDocument csrf={user!.csrfToken} />}
+            {manager && (
+              <nav aria-label="Contract management" className="flex flex-wrap gap-2">
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/app/contracts/expiring">Expiring contracts</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/app/contracts/alerts">Alerts</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/app/contracts/mine">My contracts and next steps</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/app/contracts/masters">Master agreements</Link>
+                </Button>
+                {user?.roles.some((r) => ['FINANCE', 'CONTRACT_MGR', 'PROCUREMENT', 'EXEC'].includes(r)) && (
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href="/app/contracts/invoices">Invoices</Link>
+                  </Button>
+                )}
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/app/contracts/ingest">Contract ingestion (read from documents)</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/app/contracts/disclosures">Register disclosures</Link>
+                </Button>
+                {user?.roles.some((r) => ['LEGAL', 'EXEC', 'PROBITY'].includes(r)) && (
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href="/app/contracts/deleted">Deleted contracts</Link>
+                  </Button>
+                )}
+              </nav>
             )}
-            <Link
-              href="/app/contracts/ingest"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Contract ingestion (read from documents)
-            </Link>
-            <Link
-              href="/app/contracts/disclosures"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Register disclosures
-            </Link>
-            {user?.roles.some((r) => ['LEGAL', 'EXEC', 'PROBITY'].includes(r)) && (
-              <Link
-                href="/app/contracts/deleted"
-                className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-              >
-                Deleted contracts
-              </Link>
-            )}
-          </nav>
-        )}
-      </header>
+          </>
+        }
+      />
 
       {waiting.length > 0 && (
         <section aria-labelledby="await-h" className="flex flex-col gap-3">
-          <h2 id="await-h" className="font-heading text-xl font-bold">
-            Awards ready for a contract
-          </h2>
+          <SectionHeader id="await-h" title="Awards ready for a contract" />
           <ul className="grid gap-3" aria-label="Approved awards without a contract">
             {waiting.map((a) => (
               <li
                 key={a.evaluationId}
-                className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center"
+                className="flex flex-col gap-3 border border-border p-4 sm:flex-row sm:items-center"
                 data-testid="award-ready"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs text-text-muted">{a.requestNumber}</p>
-                  <p className="font-heading text-lg font-semibold">{a.title}</p>
+                  <p className="text-sm font-medium">{a.title}</p>
                   <p className="text-sm text-text-muted">
                     Recommended: {a.recommended.map((r) => `${r.company} (${r.score} / 100)`).join(', ')}
                   </p>
@@ -121,9 +97,7 @@ export default async function ContractsPage() {
       )}
 
       <section aria-labelledby="all-h" className="flex flex-col gap-3">
-        <h2 id="all-h" className="font-heading text-xl font-bold">
-          All contracts
-        </h2>
+        <SectionHeader id="all-h" title="All contracts" />
         {!contracts ? (
           <EmptyState title="Contracts unavailable" body="The list could not be loaded. Please refresh." />
         ) : contracts.length === 0 ? (

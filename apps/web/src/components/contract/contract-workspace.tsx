@@ -7,7 +7,19 @@ import { SignatureLevelCard } from './signature-level-card';
 import { useRouter } from 'next/navigation';
 import { Fragment, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Badge, Button, Card, Dialog, Field, Input, Select, Stepper, Textarea, type BadgeTone } from '@if/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  Field,
+  Input,
+  Select,
+  Stepper,
+  Textarea,
+  type BadgeTone,
+  SectionHeader,
+} from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
 import { ContractManagementTabs, VariationInfo } from './b5-management';
@@ -207,14 +219,12 @@ export function ContractWorkspace({
   const panel_clauses = (
     <>
       <Card aria-labelledby="clauses-h" role="region">
-        <h2 id="clauses-h" className="font-heading text-xl font-bold">
-          Clauses
-        </h2>
+        <SectionHeader id="clauses-h" title="Clauses" />
         <ol className="mt-3 flex flex-col gap-4" data-testid="clauses">
           {c.clauses.map((k) => (
             <li key={k.id} className="rounded-md border border-border p-3" data-testid={`clause-${k.id}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-heading font-semibold">{k.title}</h3>
+                <h3 className="font-heading text-sm font-medium">{k.title}</h3>
                 {k.mandatory && <Badge tone="neutral">Mandatory</Badge>}
                 {k.changedFromTemplate && <Badge tone="warning">Changed from template</Badge>}
                 {k.inserted && <Badge tone="info">Added by Legal</Badge>}
@@ -279,9 +289,7 @@ export function ContractWorkspace({
   const panel_deviations = (
     <>
       <Card aria-labelledby="dev-h" role="region">
-        <h2 id="dev-h" className="font-heading text-xl font-bold">
-          Deviations from the template
-        </h2>
+        <SectionHeader id="dev-h" title="Deviations from the template" />
         {c.deviations.length === 0 ? (
           <p className="mt-2 text-sm text-text-muted" data-testid="no-deviations">
             No clause differs from the standard template.
@@ -426,8 +434,8 @@ export function ContractWorkspace({
     <div className="flex flex-col gap-6" data-testid="contract-workspace">
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="font-mono text-lg text-text-muted">{c.number}</span> {c.title ?? 'Contract'}
+          <h1 className="font-heading text-4xl font-medium tracking-heading text-text">
+            <span className="font-mono text-sm text-text-muted">{c.number}</span> {c.title ?? 'Contract'}
           </h1>
           <Badge tone={tone}>{statusLabel}</Badge>
           {c.docType && c.docType !== 'CONTRACT' && (
@@ -485,9 +493,7 @@ export function ContractWorkspace({
 
         <aside className="flex flex-col gap-6">
           <Card aria-labelledby="terms-h" role="region">
-            <h2 id="terms-h" className="font-heading text-xl font-bold">
-              Terms
-            </h2>
+            <SectionHeader id="terms-h" title="Terms" />
             <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="text-text-muted">Supplier</dt>
               <dd className="font-semibold">{c.supplierName}</dd>
@@ -558,9 +564,7 @@ export function ContractWorkspace({
           </Card>
 
           <Card aria-labelledby="sign-h" role="region">
-            <h2 id="sign-h" className="font-heading text-xl font-bold">
-              Signatures
-            </h2>
+            <SectionHeader id="sign-h" title="Signatures" />
             <ul className="mt-3 flex flex-col gap-2" data-testid="signature-chain">
               {c.chain.map((s) => (
                 <li key={s.role} className="rounded-md border border-border p-2 text-sm">

@@ -1,4 +1,4 @@
-import { EmptyState } from '@if/ui';
+import { PageHeader, EmptyState } from '@if/ui';
 import { SharedProjects, type Project } from '@/components/shared/shared-projects';
 import { apiGet, getSessionUser } from '@/lib/session';
 
@@ -14,13 +14,15 @@ export default async function SharedPage() {
   ]);
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Shared documents</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Time-bound access to one project&apos;s documents, for committee members, auditors and advisors.
-          Access ends on its own at the date or event it was given for.
-        </p>
-      </header>
+      <PageHeader
+        title="Shared documents"
+        subtitle={
+          <>
+            Time-bound access to one project&apos;s documents, for committee members, auditors and advisors.
+            Access ends on its own at the date or event it was given for.
+          </>
+        }
+      />
       {!mine || !user ? (
         <EmptyState title="Shared documents are unavailable" body="Please refresh the page." />
       ) : (

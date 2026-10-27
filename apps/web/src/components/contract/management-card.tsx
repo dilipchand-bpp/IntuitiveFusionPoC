@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, Dialog, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Checkbox, Dialog, Field, Input, Select, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { ALERT_KIND, CHANNEL_LABEL, formatDateTime } from '@/lib/labels';
 import { Gantt } from './gantt';
@@ -59,9 +59,7 @@ export function ManagementCard({
 
   return (
     <Card aria-labelledby="mgmt-h" role="region" data-testid="management-card">
-      <h2 id="mgmt-h" className="font-heading text-xl font-bold">
-        Contract management
-      </h2>
+      <SectionHeader id="mgmt-h" title="Contract management" />
       {note && (
         <p role="status" className="mt-2 text-sm font-medium text-success">
           {note}
@@ -107,7 +105,7 @@ export function ManagementCard({
         </div>
       )}
 
-      <h3 className="mt-4 font-heading font-semibold">Term and optional extensions</h3>
+      <h3 className="mt-4 font-heading text-sm font-medium">Term and optional extensions</h3>
       <Gantt rows={[{ id: 'this', label: 'This contract', bars: record.bars }]} />
       {editable && (
         <Button
@@ -127,7 +125,7 @@ export function ManagementCard({
         </Button>
       )}
 
-      <h3 className="mt-4 font-heading font-semibold">Milestones</h3>
+      <h3 className="mt-4 font-heading text-sm font-medium">Milestones</h3>
       <ul className="mt-1 flex flex-col gap-1 text-sm" aria-label="Milestones">
         {record.milestones.length === 0 && <li className="text-text-muted">No milestones.</li>}
         {record.milestones.map((m) => (
@@ -151,7 +149,7 @@ export function ManagementCard({
         </Button>
       )}
 
-      <h3 className="mt-4 font-heading font-semibold">Alerts</h3>
+      <h3 className="mt-4 font-heading text-sm font-medium">Alerts</h3>
       <ul className="mt-1 flex flex-col gap-2 text-sm" aria-label="Alerts" data-testid="alerts">
         {record.alerts.map((a) => (
           <li key={a.id} className="rounded-md border border-border p-2">

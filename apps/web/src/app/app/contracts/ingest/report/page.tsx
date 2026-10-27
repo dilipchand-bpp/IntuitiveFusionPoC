@@ -1,3 +1,4 @@
+import { PageHeader } from '@if/ui';
 import Link from 'next/link';
 import { OcrReportView } from '@/components/copilot/ocr-report';
 
@@ -9,13 +10,15 @@ export default function Page() {
       <p className="text-sm">
         <Link href="/app/contracts/ingest">← Contract ingestion</Link>
       </p>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Ingested contracts report</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Renewals due, notice windows, liability caps, missing clauses and concentration by supplier across
-          the contracts read from documents.
-        </p>
-      </header>
+      <PageHeader
+        title="Ingested contracts report"
+        subtitle={
+          <>
+            Renewals due, notice windows, liability caps, missing clauses and concentration by supplier across
+            the contracts read from documents.
+          </>
+        }
+      />
       <OcrReportView />
     </div>
   );

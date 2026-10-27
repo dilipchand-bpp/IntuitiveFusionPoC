@@ -38,7 +38,7 @@ export function Gantt({
                 className={
                   b.optional
                     ? 'absolute top-1 h-5 rounded border border-dashed border-border-strong bg-surface'
-                    : 'absolute top-1 h-5 rounded bg-brand-gradient'
+                    : 'absolute top-1 h-5 rounded bg-accent'
                 }
                 style={{ left: pct(t(b.start)), width: width(b.start, b.end) }}
               />

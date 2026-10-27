@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, Button, EmptyState, PageHeader, Table, Td, Th } from '@if/ui';
 import { PRIORITY_TONE } from '@/components/contract/b5-shared';
 import { CONTRACT_STATUS, aud } from '@/lib/labels';
 import { apiGet } from '@/lib/session';
@@ -42,19 +42,19 @@ export default async function MyContractsPage({
       <p className="text-sm">
         <Link href="/app/contracts">← Contracts</Link>
       </p>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">
-          {res?.scope === 'TEAM' ? 'My contracts' : 'Search contracts'}
-        </h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          {res?.note ?? 'Search the contracts you can see.'} As a contract nears its end you are shown what to
-          do next.
-        </p>
-      </header>
+      <PageHeader
+        title={res?.scope === 'TEAM' ? 'My contracts' : 'Search contracts'}
+        subtitle={
+          <>
+            {res?.note ?? 'Search the contracts you can see.'} As a contract nears its end you are shown what
+            to do next.
+          </>
+        }
+      />
       <form
         role="search"
         aria-label="Search contracts"
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4"
+        className="flex flex-wrap items-end gap-3 border border-border p-4"
       >
         <label className="flex min-w-64 flex-1 flex-col gap-1 text-sm font-semibold">
           Search
@@ -62,16 +62,11 @@ export default async function MyContractsPage({
             name="q"
             defaultValue={q}
             placeholder="Number, title or supplier"
-            className="min-h-[44px] rounded-md border border-border-strong bg-surface px-3 text-base font-normal"
+            className="min-h-[44px] rounded-md border border-border-strong bg-surface px-3 text-sm font-normal"
           />
         </label>
         {within && <input type="hidden" name="within" value={within} />}
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-md bg-brand-gradient px-5 text-sm font-semibold text-gradient-fg"
-        >
-          Search
-        </button>
+        <Button type="submit">Search</Button>
         <nav aria-label="Ending within" className="flex basis-full flex-wrap items-center gap-2">
           <span className="text-sm font-semibold">Ending within</span>
           {[['', 'Any time'], ...WINDOWS.map((w) => [String(w), `${w} days`])].map(([k, l]) => (

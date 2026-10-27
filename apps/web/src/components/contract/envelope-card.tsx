@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { AiBadge, Badge, Button, Card, Select, type BadgeTone } from '@if/ui';
+import { AiBadge, Badge, Button, Card, Select, type BadgeTone, SectionHeader } from '@if/ui';
 import { has, send, useData, useRun } from './b5-shared';
 
 interface Signatory {
@@ -76,9 +76,7 @@ export function EnvelopeCard({
   return (
     <Card role="region" aria-labelledby="env-h" data-testid="envelope-card">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id="env-h" className="font-heading text-xl font-bold">
-          E-signature envelope
-        </h2>
+        <SectionHeader id="env-h" title="E-signature envelope" />
         <AiBadge kind="simulated" />
       </div>
       {!e && (

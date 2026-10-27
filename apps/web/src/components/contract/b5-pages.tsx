@@ -1,6 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, EmptyState, Field, Input, Table, Td, Th } from '@if/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  EmptyState,
+  Field,
+  Input,
+  Table,
+  Td,
+  Th,
+  SectionHeader,
+} from '@if/ui';
 import { aud, formatDateTime } from '@/lib/labels';
 import { Bar, has, send, useData, useRun } from './b5-shared';
 import { InvoicePayments, usePayments } from '../b10/payments';
@@ -70,11 +82,7 @@ export function InvoiceQueue({ csrf, roles }: { csrf: string; roles: string[] })
       )}
       <ul className="flex flex-col gap-3" data-testid="invoice-queue">
         {(data ?? []).map((i) => (
-          <li
-            key={i.id}
-            className="rounded-lg border border-border bg-surface p-4 shadow-sm"
-            data-invoice-status={i.status}
-          >
+          <li key={i.id} className="border border-border p-4" data-invoice-status={i.status}>
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs">{i.number}</span>
               <Badge tone={TONE[i.status]}>{LABEL[i.status]}</Badge>
@@ -204,7 +212,7 @@ export function DisclosureTasks({ csrf, roles }: { csrf: string; roles: string[]
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col gap-3" data-testid="disclosure-tasks">
         {data.map((t) => (
-          <li key={t.id} className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+          <li key={t.id} className="border border-border p-4">
             <div className="flex flex-wrap items-center gap-2">
               <a href={`/app/contracts/${t.contractId}`} className="font-semibold">
                 {t.contractNumber}
@@ -295,9 +303,7 @@ export function AlertPreferences({ csrf }: { csrf: string }) {
   return (
     <section aria-labelledby="pref-h" className="grid gap-4 md:grid-cols-2" data-testid="alert-preferences">
       <Card>
-        <h2 id="pref-h" className="font-heading text-xl font-bold">
-          Your alerts
-        </h2>
+        <SectionHeader id="pref-h" title="Your alerts" />
         <p className="mt-1 text-sm text-text-muted">Choose which kinds of reminder you receive.</p>
         <fieldset className="mt-3 flex flex-col">
           <legend className="sr-only">Alerts you receive</legend>
@@ -313,7 +319,7 @@ export function AlertPreferences({ csrf }: { csrf: string }) {
         {r.messages}
       </Card>
       <Card>
-        <h2 className="font-heading text-xl font-bold">Fixed alerts</h2>
+        <SectionHeader title="Fixed alerts" />
         <ul className="mt-2 flex flex-col gap-2 text-sm" data-testid="fixed-alerts">
           {rules.data.fixed.map((f) => (
             <li key={f.kind}>
@@ -399,7 +405,7 @@ export function Envelopes({ csrf, roles }: { csrf: string; roles: string[] }) {
           <li key={e.id}>
             <Card data-testid={`envelope-${e.name}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-heading text-lg font-bold">{e.name}</h2>
+                <SectionHeader title={<>{e.name}</>} />
                 {e.exhausted ? (
                   <Badge tone="error">Fully committed</Badge>
                 ) : e.nearing ? (
@@ -550,9 +556,7 @@ export function Envelopes({ csrf, roles }: { csrf: string; roles: string[] }) {
       </ul>
       {canCreate && (
         <Card aria-labelledby="new-env-h" role="region">
-          <h2 id="new-env-h" className="font-heading text-xl font-bold">
-            Approve a funding envelope
-          </h2>
+          <SectionHeader id="new-env-h" title="Approve a funding envelope" />
           <p className="mt-1 max-w-prose text-sm text-text-muted">
             You approve the allocation once, within your delegated authority. The people you nominate then
             approve individual commitments against it, and you are told as it nears exhaustion.

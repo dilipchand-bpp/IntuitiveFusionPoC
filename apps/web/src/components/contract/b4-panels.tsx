@@ -1,7 +1,7 @@
 'use client';
 import { FileDown } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Badge, Button, Card, Field, Input, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Textarea, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/labels';
 import type { ContractView } from './types';
@@ -97,7 +97,7 @@ export function ChecksCard({ c, csrf, roles, onChange }: Common) {
   const group = (title: string, rows: typeof all) =>
     rows.length === 0 ? null : (
       <section aria-label={title} className="mt-3">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-sm font-medium">{title}</h3>
         <ul className="mt-1 flex flex-col gap-2 text-sm">
           {rows.map((x) => (
             <li key={`${x.kind}-${x.key}`} data-check={x.key} data-result={x.result}>
@@ -144,9 +144,7 @@ export function ChecksCard({ c, csrf, roles, onChange }: Common) {
     );
   return (
     <Card role="region" aria-labelledby="checks-h" data-testid="checks-card">
-      <h2 id="checks-h" className="font-heading text-xl font-bold">
-        Checks before signing
-      </h2>
+      <SectionHeader id="checks-h" title="Checks before signing" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         The draft is compared with what was tendered, the supplier&apos;s name, tax and banking are verified,
         and after a long negotiation the counterparty is screened again. A failure holds release or signing
@@ -201,9 +199,7 @@ export function EndorsementsCard({ c, csrf, onChange }: Common) {
   if (e.required.length === 0) return null;
   return (
     <Card role="region" aria-labelledby="endorse-h" data-testid="endorsements">
-      <h2 id="endorse-h" className="font-heading text-xl font-bold">
-        Endorsements before release
-      </h2>
+      <SectionHeader id="endorse-h" title="Endorsements before release" />
       <ul className="mt-3 flex flex-col gap-2 text-sm">
         {e.required.map((role) => {
           const d = e.done.find((x) => x.role === role);
@@ -274,9 +270,7 @@ export function SigningCard({ c, csrf, roles }: Common) {
   if (!data || data.invitations.length === 0) return null;
   return (
     <Card role="region" aria-labelledby="inv-h" data-testid="signing-progress">
-      <h2 id="inv-h" className="font-heading text-xl font-bold">
-        Signing progress
-      </h2>
+      <SectionHeader id="inv-h" title="Signing progress" />
       <p className="mt-1 text-sm text-text-muted">
         {data.signed} of {data.required} signature(s). Each signatory was invited by email and in the app.
       </p>
@@ -363,9 +357,7 @@ export function QuestionsCard({ c, csrf, roles }: Common) {
   if (rows.length === 0 && !canAsk) return null;
   return (
     <Card role="region" aria-labelledby="q-h" data-testid="questions-card">
-      <h2 id="q-h" className="font-heading text-xl font-bold">
-        Questions
-      </h2>
+      <SectionHeader id="q-h" title="Questions" />
       <ul className="mt-2 flex flex-col gap-2 text-sm" aria-label="Questions">
         {rows.length === 0 && <li className="text-text-muted">No questions have been raised.</li>}
         {rows.map((q) => (
@@ -473,9 +465,7 @@ export function RiskSummaryCard({ c, csrf, roles }: Common) {
   return (
     <Card role="region" aria-labelledby="risk-h" data-testid="risk-summary">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id="risk-h" className="font-heading text-xl font-bold">
-          Risk summary
-        </h2>
+        <SectionHeader id="risk-h" title="Risk summary" />
         <Badge
           tone={
             s.generated.level === 'HIGH' ? 'error' : s.generated.level === 'MEDIUM' ? 'warning' : 'success'
@@ -730,9 +720,7 @@ export function CollabCard({ c, csrf, roles }: Common) {
   const legal = roles.includes('LEGAL') && !c.locked;
   return (
     <Card role="region" aria-labelledby="collab-h" data-testid="collab-card">
-      <h2 id="collab-h" className="font-heading text-xl font-bold">
-        Working on the draft
-      </h2>
+      <SectionHeader id="collab-h" title="Working on the draft" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         Legal edits clauses directly above, and the change is in the draft at once. Comment here, download the
         current draft, or upload a draft amended outside the platform.
@@ -848,9 +836,7 @@ export function StrategyCard({ c, roles }: Common) {
   if (!has(roles, 'LEGAL', 'PROCUREMENT', 'DELEGATE', 'EXEC') || c.status === 'EXECUTED') return null;
   return (
     <Card role="region" aria-labelledby="strat-h" data-testid="strategy-card">
-      <h2 id="strat-h" className="font-heading text-xl font-bold">
-        Negotiation strategy
-      </h2>
+      <SectionHeader id="strat-h" title="Negotiation strategy" />
       <p className="mt-1 text-xs text-text-muted">
         A rules model, not an outside service: it frames the negotiation and sets graduated positions.
       </p>

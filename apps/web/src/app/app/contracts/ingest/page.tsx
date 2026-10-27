@@ -1,3 +1,4 @@
+import { Button, PageHeader } from '@if/ui';
 import Link from 'next/link';
 import { OcrIngestHome } from '@/components/copilot/ocr-ingest';
 import { getSessionUser } from '@/lib/session';
@@ -12,22 +13,23 @@ export default async function Page() {
       <p className="text-sm">
         <Link href="/app/contracts">← Contracts</Link>
       </p>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Contract ingestion</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Read existing contracts, extract the key dates, value, parties and clauses with a confidence for
-          each, review what is uncertain, then create the contract record and its renewal, notice and expiry
-          reminders.
-        </p>
-        <nav aria-label="Ingestion" className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href="/app/contracts/ingest/report"
-            className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-          >
-            Report across ingested contracts
-          </Link>
-        </nav>
-      </header>
+      <PageHeader
+        title="Contract ingestion"
+        subtitle={
+          <>
+            Read existing contracts, extract the key dates, value, parties and clauses with a confidence for
+            each, review what is uncertain, then create the contract record and its renewal, notice and expiry
+            reminders.
+          </>
+        }
+        actions={
+          <nav aria-label="Ingestion" className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/app/contracts/ingest/report">Report across ingested contracts</Link>
+            </Button>
+          </nav>
+        }
+      />
       <OcrIngestHome csrf={user!.csrfToken} canIngest={canIngest} />
     </div>
   );

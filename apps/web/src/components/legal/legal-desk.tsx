@@ -1,7 +1,7 @@
 'use client';
 import { PlatformSync } from './platform-sync';
 import { useCallback, useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Textarea, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export interface Matter {
@@ -104,9 +104,7 @@ export function LegalDesk({
       )}
       <section aria-labelledby="board-h" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="board-h" className="font-heading text-xl font-bold">
-            Matters
-          </h2>
+          <SectionHeader id="board-h" title="Matters" />
           <Badge tone="info">{board.totalHours.toFixed(2)} review hours logged</Badge>
         </div>
         {canEdit && (
@@ -146,14 +144,14 @@ export function LegalDesk({
               className="rounded-lg border border-border bg-surface-alt/50 p-3"
               data-lane={l.lane}
             >
-              <h3 className="text-sm font-bold uppercase tracking-wide text-text-muted">
+              <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
                 {LANE[l.lane]} ({l.matters.length})
               </h3>
               <ul className="mt-2 flex flex-col gap-2">
                 {l.matters.map((m) => (
                   <li
                     key={m.id}
-                    className="rounded-md border border-border bg-surface p-3 text-sm shadow-sm"
+                    className="rounded-md border border-border bg-surface p-3 text-sm"
                     data-testid="matter"
                   >
                     <p className="font-semibold">{m.title}</p>
@@ -238,9 +236,7 @@ export function LegalDesk({
       </section>
 
       <section aria-labelledby="kb-h" className="flex flex-col gap-3">
-        <h2 id="kb-h" className="font-heading text-xl font-bold">
-          Knowledge base
-        </h2>
+        <SectionHeader id="kb-h" title="Knowledge base" />
         <p className="max-w-prose text-sm text-text-muted">
           Policies, historical advice, corporate fallback positions and mandatory boilerplate. The advisers
           use them when they explain a deviation or suggest a negotiation strategy.
@@ -279,9 +275,7 @@ export function LegalDesk({
         </ul>
         {canEdit && (
           <Card role="region" aria-labelledby="addkb-h">
-            <h3 id="addkb-h" className="font-heading text-lg font-bold">
-              Add to the knowledge base
-            </h3>
+            <SectionHeader id="addkb-h" as="h3" title="Add to the knowledge base" />
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <Field label="Kind">
                 <Select value={nk.kind} onChange={(e) => setNk({ ...nk, kind: e.target.value })}>

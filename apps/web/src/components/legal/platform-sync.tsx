@@ -1,5 +1,5 @@
 'use client';
-import { Badge, Button } from '@if/ui';
+import { Badge, Button, SectionHeader } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 interface Ev {
@@ -20,15 +20,9 @@ export function PlatformSync({ csrf }: { csrf: string }) {
   if (rows.length === 0) return null;
   const failed = rows.filter((e) => e.status !== 'DELIVERED').length;
   return (
-    <section
-      aria-labelledby="sync-h"
-      className="rounded-lg border border-border bg-surface p-4"
-      data-testid="platform-sync"
-    >
+    <section aria-labelledby="sync-h" className="border border-border p-4" data-testid="platform-sync">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 id="sync-h" className="font-heading text-lg font-bold">
-          Legal platform sync
-        </h2>
+        <SectionHeader id="sync-h" title="Legal platform sync" />
         <Badge tone={failed ? 'error' : 'success'}>
           {failed ? `${failed} not delivered` : 'all delivered'}
         </Badge>

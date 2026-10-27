@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { EmptyState, Table, Td, Th } from '@if/ui';
+import { PageHeader, EmptyState, Table, Td, Th } from '@if/ui';
 import { StatusBadges } from '@/components/supplier/status-badges';
 import type { SupplierRow } from '@/components/supplier/types';
 import { formatDateTime } from '@/lib/labels';
@@ -12,13 +12,15 @@ export default async function SuppliersPage() {
   const [rows, user] = await Promise.all([apiGet<SupplierRow[]>('/suppliers'), getSessionUser()]);
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Suppliers</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Every supplier in the directory, with the status of its sanctions screening and insurance. In this
-          proof of concept the screening is simulated.
-        </p>
-      </header>
+      <PageHeader
+        title="Suppliers"
+        subtitle={
+          <>
+            Every supplier in the directory, with the status of its sanctions screening and insurance. In this
+            proof of concept the screening is simulated.
+          </>
+        }
+      />
       {user && (
         <DuplicatesCard
           csrf={user.csrfToken}

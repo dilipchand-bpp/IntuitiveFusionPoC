@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Badge, Card, EmptyState } from '@if/ui';
+import { Badge, Card, EmptyState, PageHeader, SectionHeader } from '@if/ui';
 import { AddContact } from '@/components/supplier/add-contact';
 import { ContactActions } from '@/components/supplier/contact-actions';
 import { RatingsCard, RiskCard } from '@/components/supplier/b8-staff';
@@ -27,14 +27,20 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
       <p className="text-sm">
         <Link href="/app/suppliers">← Suppliers</Link>
       </p>
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">{s.company}</h1>
-        <p className="font-mono text-sm text-text-muted">ABN {s.abn}</p>
+      <PageHeader
+        title={s.company}
+        subtitle={
+          <>
+            <span className="font-mono">ABN {s.abn}</span>
+          </>
+        }
+      />
+      <div className="flex flex-col gap-2">
         <StatusBadges sanctions={s.sanctionsStatus} insurance={s.insuranceStatus} />
         <p className="text-sm text-text-muted">
           Last checked {formatDateTime(s.lastCheckedAt)} (simulated screening)
         </p>
-      </header>
+      </div>
 
       {s.sanctionsStatus === 'MATCH' &&
         (user.roles.includes('PROCUREMENT') || user.roles.includes('LEGAL')) && (
@@ -62,9 +68,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
           />
         )}
         <Card aria-labelledby="contacts-h" role="region">
-          <h2 id="contacts-h" className="font-heading text-xl font-bold">
-            Contacts
-          </h2>
+          <SectionHeader id="contacts-h" title="Contacts" />
           <ul className="mt-3 flex flex-col gap-2" data-testid="contacts">
             {s.contacts.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -92,9 +96,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
         </Card>
 
         <Card aria-labelledby="tenders-h" role="region">
-          <h2 id="tenders-h" className="font-heading text-xl font-bold">
-            Tenders and contracts
-          </h2>
+          <SectionHeader id="tenders-h" title="Tenders and contracts" />
           {s.tenders.length === 0 && s.contracts.length === 0 && (
             <p className="mt-2 text-sm text-text-muted">Nothing yet.</p>
           )}

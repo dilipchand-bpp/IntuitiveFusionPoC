@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { has, send, useData, useRun } from './b5-shared';
 import type { ContractView } from './types';
@@ -75,9 +75,7 @@ export function LegalToolsCard({
     });
   return (
     <Card role="region" aria-labelledby="lt-h" data-testid="legal-tools">
-      <h2 id="lt-h" className="font-heading text-xl font-bold">
-        Legal edits and redlines
-      </h2>
+      <SectionHeader id="lt-h" title="Legal edits and redlines" />
       {legal && open && (
         <form
           className="mt-2 flex flex-col gap-2"
@@ -121,7 +119,7 @@ export function LegalToolsCard({
           </p>
         </form>
       )}
-      <h3 className="mt-4 font-heading text-lg font-semibold">Proposed changes</h3>
+      <SectionHeader as="h3" title="Proposed changes" />
       <ul className="mt-2 flex flex-col gap-3" data-testid="redlines">
         {(reds.data?.redlines ?? []).length === 0 && (
           <li className="text-sm text-text-muted">None proposed.</li>
@@ -169,9 +167,7 @@ export function LegalToolsCard({
       </ul>
       {legal && open && (
         <div className="mt-4 border-t border-border pt-4">
-          <h3 className="font-heading text-lg font-semibold">
-            Outside counsel or the supplier&apos;s legal team
-          </h3>
+          <SectionHeader as="h3" title="Outside counsel or the supplier's legal team" />
           <p className="mt-1 max-w-prose text-sm text-text-muted">
             Send a one-time link. They see the clauses (not the price or the bids), propose wording, and
             cannot change anything themselves. Once the contract is released for signature the version is

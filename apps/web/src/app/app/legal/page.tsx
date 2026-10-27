@@ -1,4 +1,4 @@
-import { EmptyState } from '@if/ui';
+import { PageHeader, EmptyState } from '@if/ui';
 import { LegalDesk, type Board, type Knowledge } from '@/components/legal/legal-desk';
 import { apiGet, getSessionUser } from '@/lib/session';
 
@@ -12,13 +12,15 @@ export default async function LegalPage() {
   ]);
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Legal desk</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Legal matters on a board, the hours spent reviewing each, and the policies and fallback positions
-          legal keeps for the platform to draw on.
-        </p>
-      </header>
+      <PageHeader
+        title="Legal desk"
+        subtitle={
+          <>
+            Legal matters on a board, the hours spent reviewing each, and the policies and fallback positions
+            legal keeps for the platform to draw on.
+          </>
+        }
+      />
       {!board || !kb || !user ? (
         <EmptyState title="The legal desk is unavailable" body="Please refresh the page." />
       ) : (

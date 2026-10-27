@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, Button, EmptyState, PageHeader, Table, Td, Th, SectionHeader } from '@if/ui';
 import { Gantt } from '@/components/contract/gantt';
 import type { ExpiringContract } from '@/components/contract/types';
 import { aud } from '@/lib/labels';
@@ -19,29 +19,29 @@ export default async function ExpiringPage({ searchParams }: { searchParams: Pro
       <p className="text-sm">
         <Link href="/app/contracts">← Contracts</Link>
       </p>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Contracts expiring</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Executed contracts that end within the next {days} days, soonest first. The chart shows the initial
-          term and any optional extensions.
-        </p>
-        <nav aria-label="Window" className="mt-3 flex flex-wrap gap-2">
-          {WINDOWS.map((w) => (
-            <Link
-              key={w}
-              href={`/app/contracts/expiring?days=${w}`}
-              aria-current={w === days ? 'page' : undefined}
-              className={
-                w === days
-                  ? 'rounded-full bg-brand-gradient px-4 py-2 text-sm font-semibold text-gradient-fg no-underline'
-                  : 'rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline'
-              }
-            >
-              {w} days
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <PageHeader
+        title="Contracts expiring"
+        subtitle={
+          <>
+            Executed contracts that end within the next {days} days, soonest first. The chart shows the
+            initial term and any optional extensions.
+          </>
+        }
+        actions={
+          <nav aria-label="Window" className="flex flex-wrap gap-2">
+            {WINDOWS.map((w) => (
+              <Button key={w} asChild variant={w === days ? 'primary' : 'secondary'} size="sm">
+                <Link
+                  href={`/app/contracts/expiring?days=${w}`}
+                  aria-current={w === days ? 'page' : undefined}
+                >
+                  {w} days
+                </Link>
+              </Button>
+            ))}
+          </nav>
+        }
+      />
 
       {!rows ? (
         <EmptyState title="The report is unavailable" body="Please refresh the page." />
@@ -52,13 +52,8 @@ export default async function ExpiringPage({ searchParams }: { searchParams: Pro
         />
       ) : (
         <>
-          <section
-            aria-labelledby="gantt-h"
-            className="rounded-lg border border-border bg-surface p-4 shadow-sm"
-          >
-            <h2 id="gantt-h" className="font-heading text-xl font-bold">
-              Terms and extensions
-            </h2>
+          <section aria-labelledby="gantt-h" className="border border-border p-4">
+            <SectionHeader id="gantt-h" title="Terms and extensions" />
             <Gantt
               today={today}
               rows={rows.map((r) => ({ id: r.contractId, label: `${r.number} ${r.supplier}`, bars: r.bars }))}

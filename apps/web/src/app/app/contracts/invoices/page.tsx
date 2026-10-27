@@ -1,3 +1,4 @@
+import { PageHeader } from '@if/ui';
 import Link from 'next/link';
 import { InvoiceQueue } from '@/components/contract/b5-pages';
 import { getSessionUser } from '@/lib/session';
@@ -11,14 +12,16 @@ export default async function InvoicesPage() {
       <p className="text-sm">
         <Link href="/app/contracts">← Contracts</Link>
       </p>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Invoices</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Each invoice is matched to its purchase order and the contract rate card before it can be paid. One
-          that applies an unapproved price increase, or an escalation outside the clause, is blocked until
-          finance releases it with a reason.
-        </p>
-      </header>
+      <PageHeader
+        title="Invoices"
+        subtitle={
+          <>
+            Each invoice is matched to its purchase order and the contract rate card before it can be paid.
+            One that applies an unapproved price increase, or an escalation outside the clause, is blocked
+            until finance releases it with a reason.
+          </>
+        }
+      />
       <InvoiceQueue csrf={user!.csrfToken} roles={user!.roles} />
     </div>
   );
