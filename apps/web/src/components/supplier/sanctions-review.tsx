@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Button, Card, Field, Input } from '@if/ui';
+import { Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 /** A supplier is on hold because screening matched a watchlist: release it or confirm the hold, with a reason (FR-0180). */
@@ -31,9 +31,7 @@ export function SanctionsReview({ supplierId, csrf }: { supplierId: string; csrf
 
   return (
     <Card role="region" aria-labelledby="sanc-h" data-testid="sanctions-review">
-      <h2 id="sanc-h" className="font-heading text-xl font-bold">
-        Screening match: supplier on hold
-      </h2>
+      <SectionHeader id="sanc-h" title="Screening match: supplier on hold" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         This supplier cannot see tender documents or bid until the match is reviewed. Say what you found; the
         decision is recorded.

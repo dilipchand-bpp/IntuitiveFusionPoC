@@ -113,7 +113,7 @@ export function ContactActions({
       >
         {link ? (
           <div className="flex flex-col gap-2" data-testid="reassign-link">
-            <p className="text-sm font-semibold">Send this link to {name}. It is shown only now.</p>
+            <p className="text-sm font-medium">Send this link to {name}. It is shown only now.</p>
             <input
               readOnly
               aria-label="Activation link"

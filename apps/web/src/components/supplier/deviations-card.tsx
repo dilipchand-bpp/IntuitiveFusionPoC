@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Field, Input, Textarea } from '@if/ui';
+import { Button, Card, Field, Input, SectionHeader, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 interface Deviation {
@@ -44,9 +44,7 @@ export function DeviationsCard({ tenderId, open, csrf }: { tenderId: string; ope
 
   return (
     <Card role="region" aria-labelledby="dev-h" data-testid="supplier-deviations">
-      <h2 id="dev-h" className="font-heading text-xl font-bold">
-        Proposed changes to the contract
-      </h2>
+      <SectionHeader id="dev-h" title="Proposed changes to the contract" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         If you need a clause to read differently, say so here. Each change is listed separately for the
         buyer&apos;s legal team. Nothing here is agreed until the buyer says so.
@@ -60,7 +58,7 @@ export function DeviationsCard({ tenderId, open, csrf }: { tenderId: string; ope
             data-testid="my-deviation"
           >
             <span>
-              <span className="font-semibold">{d.clauseRef}</span>
+              <span className="font-medium">{d.clauseRef}</span>
               <span className="block">{d.proposal}</span>
               {d.reason && <span className="block text-xs text-text-muted">{d.reason}</span>}
             </span>

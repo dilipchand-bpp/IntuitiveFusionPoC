@@ -77,9 +77,9 @@ export function DevicePreview({
       <div
         role="toolbar"
         aria-label="Device preview controls"
-        className="glass sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-border px-3 py-2"
+        className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-border bg-bg/90 px-3 py-2 backdrop-blur"
       >
-        <span className="mr-2 hidden font-heading font-bold sm:inline">Device preview</span>
+        <span className="mr-2 hidden font-heading font-medium sm:inline">Device preview</span>
         <div role="group" aria-label="Device" className="flex gap-1">
           {(Object.keys(DEVICES) as Device[]).map((d) => {
             const { label, Icon } = DEVICES[d];
@@ -132,14 +132,14 @@ export function DevicePreview({
             key={`d-${path}`}
             src={path}
             title="App preview, desktop"
-            className="h-[calc(100vh-5rem)] w-full rounded-lg border border-border bg-bg shadow-lg"
+            className="h-[calc(100vh-5rem)] w-full rounded-lg border border-border bg-bg"
           />
         ) : (
           <div style={{ width: w * scale, height: h * scale }} className="shrink-0">
             <div
               style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: 'top left' }}
               className={cn(
-                'overflow-hidden border-[10px] border-text bg-bg shadow-lg',
+                'overflow-hidden border-[10px] border-text bg-bg',
                 device === 'phone' ? 'rounded-[2.5rem]' : 'rounded-[1.75rem]',
               )}
             >

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { PageHeader } from '@if/ui';
 import { SiteFooter, SiteHeader } from '@/components/landing/site-chrome';
 
 const PAGES: Record<string, { title: string; body: string[] }> = {
@@ -42,7 +43,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
     <>
       <SiteHeader />
       <main id="main" className="mx-auto max-w-3xl px-4 py-14">
-        <h1 className="text-4xl font-bold">{page.title}</h1>
+        <PageHeader title={page.title} />
         <p className="mt-2 rounded-sm border border-warning bg-warning-bg px-3 py-2 text-sm font-medium text-warning">
           Placeholder text pending legal review.
         </p>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState } from '@if/ui';
+import { Badge, EmptyState, PageHeader, RowList } from '@if/ui';
 import { apiGet } from '@/lib/session';
 
 export const metadata = { title: 'Contracts – Intuitive Fusion' };
@@ -16,29 +16,26 @@ interface Row {
 export default async function SupplierContractsPage() {
   const data = await apiGet<{ contracts: Row[] }>('/supplier/contracts');
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Contracts</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Contracts out for signature or signed. You can read the full text and ask questions before it is
-          signed.
-        </p>
-      </header>
+    <div className="flex flex-col gap-12">
+      <PageHeader
+        title="Contracts"
+        subtitle="Contracts out for signature or signed. You can read the full text and ask questions before it is signed."
+      />
       {!data || data.contracts.length === 0 ? (
         <EmptyState
           title="No contracts yet"
           body="When a contract is released for signature you will be told, and it appears here."
         />
       ) : (
-        <ul className="grid gap-3" aria-label="Contracts">
+        <RowList aria-label="Contracts">
           {data.contracts.map((c) => (
             <li
               key={c.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-4 shadow-sm"
+              className="flex min-h-[64px] flex-wrap items-center gap-3 px-1 py-3"
               data-testid="supplier-contract-row"
             >
               <span className="font-mono text-xs text-text-muted">{c.number}</span>
-              <Link href={`/supplier/contracts/${c.id}`} className="font-heading text-lg font-semibold">
+              <Link href={`/supplier/contracts/${c.id}`} className="text-sm font-medium">
                 {c.title ?? 'Contract'}
               </Link>
               <Badge tone={c.status === 'EXECUTED' ? 'success' : 'warning'}>
@@ -46,7 +43,7 @@ export default async function SupplierContractsPage() {
               </Badge>
             </li>
           ))}
-        </ul>
+        </RowList>
       )}
     </div>
   );

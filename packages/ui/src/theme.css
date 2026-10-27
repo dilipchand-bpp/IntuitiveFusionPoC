@@ -217,6 +217,7 @@
   --color-gradient-to: var(--if-color-gradient-to);
   --color-gradient-fg: var(--if-color-gradient-fg);
   --color-overlay: var(--if-color-overlay);
+  --tracking-heading: var(--if-heading-tracking);
   --text-xs: var(--if-text-xs);
   --text-xs--line-height: var(--if-leading-xs);
   --text-sm: var(--if-text-sm);

@@ -22,3 +22,8 @@ next-env.d.ts
 ~$*
 _work/*.log
 _work/shots/
+# temporary per-run e2e builds and configs (never scan or commit)
+.next-*/
+tmp[0-9a-z]*/
+_pw*/
+playwright.*.config.ts

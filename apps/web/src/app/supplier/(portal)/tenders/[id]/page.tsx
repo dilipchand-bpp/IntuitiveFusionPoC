@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { EmptyState } from '@if/ui';
+import { EmptyState, PageHeader } from '@if/ui';
 import { SupplierTender } from '@/components/supplier/supplier-tender';
 import type { SupplierTenderView } from '@/components/tender/types';
 import { apiGetResult, getSessionUser } from '@/lib/session';
@@ -16,15 +16,13 @@ export default async function SupplierTenderPage({ params }: { params: Promise<{
   ]);
   if (!user || res.status === 404 || res.status === 403) notFound(); // not invited = not there
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
       <p className="text-sm">
         <Link href="/supplier">← My tenders</Link>
       </p>
       {res.data ? (
         <>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="font-mono text-lg text-text-muted">{res.data.number}</span> {res.data.title}
-          </h1>
+          <PageHeader eyebrow={<span className="font-mono">{res.data.number}</span>} title={res.data.title} />
           <SupplierTender initial={res.data} csrf={user.csrfToken} />
         </>
       ) : (

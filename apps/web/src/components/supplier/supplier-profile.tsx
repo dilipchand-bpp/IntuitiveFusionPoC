@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { CertificateUploader, EsgCard, RateEnterpriseCard } from './b8-cards';
 
@@ -108,9 +108,7 @@ export function SupplierProfile({
       )}
 
       <Card role="region" aria-labelledby="status-h">
-        <h2 id="status-h" className="font-heading text-xl font-bold">
-          {p.company}
-        </h2>
+        <SectionHeader id="status-h" title={<>{p.company}</>} />
         <p className="font-mono text-sm text-text-muted">ABN {p.abn}</p>
         <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
           Screening:{' '}
@@ -130,9 +128,7 @@ export function SupplierProfile({
       </Card>
 
       <Card role="region" aria-labelledby="ins-h" data-testid="insurance-card">
-        <h2 id="ins-h" className="font-heading text-xl font-bold">
-          Insurance certificate
-        </h2>
+        <SectionHeader id="ins-h" title="Insurance certificate" />
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label="Insurer">
             <Input value={ins.insurer} onChange={(e) => setIns({ ...ins, insurer: e.target.value })} />
@@ -193,9 +189,7 @@ export function SupplierProfile({
       <RateEnterpriseCard csrf={csrf} />
 
       <Card role="region" aria-labelledby="priv-h" data-testid="privacy-card">
-        <h2 id="priv-h" className="font-heading text-xl font-bold">
-          Privacy
-        </h2>
+        <SectionHeader id="priv-h" title="Privacy" />
         {(
           [
             ['shareProfile', 'Let buyers at the organisations you respond to see my company profile'],
@@ -224,9 +218,7 @@ export function SupplierProfile({
       </Card>
 
       <Card role="region" aria-labelledby="contacts-h" data-testid="supplier-contacts">
-        <h2 id="contacts-h" className="font-heading text-xl font-bold">
-          People who can sign in for {p.company}
-        </h2>
+        <SectionHeader id="contacts-h" title={<>People who can sign in for {p.company}</>} />
         <ul className="mt-3 flex flex-col gap-3" aria-label="Contacts">
           {p.contacts.map((c) => (
             <li
@@ -235,7 +227,7 @@ export function SupplierProfile({
               data-testid="contact-row"
             >
               <span>
-                <span className="font-semibold">{c.name}</span>
+                <span className="font-medium">{c.name}</span>
                 {c.id === meId && <span className="ml-2 text-xs text-text-muted">(you)</span>}
                 <span className="block text-text-muted">{c.email}</span>
               </span>
@@ -307,7 +299,7 @@ export function SupplierProfile({
         </div>
         {link && (
           <div className="mt-3 flex flex-col gap-1" data-testid="contact-link">
-            <p className="text-sm font-semibold">
+            <p className="text-sm font-medium">
               Pass this one-time link to your colleague so they can choose a password. It is shown only now.
             </p>
             <input
@@ -346,9 +338,7 @@ function BankCard({ csrf }: { csrf: string }) {
   }
   return (
     <Card role="region" aria-labelledby="bank-h" data-testid="bank-card">
-      <h2 id="bank-h" className="font-heading text-xl font-bold">
-        Banking details
-      </h2>
+      <SectionHeader id="bank-h" title="Banking details" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         The account name must match your company&apos;s legal name. The buyer checks this before a contract is
         signed. Only the last three digits are ever shown back to you.

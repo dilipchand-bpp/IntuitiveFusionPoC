@@ -337,6 +337,7 @@ ${paletteCss()}
 }
 @theme inline {
 ${tailwindColors}
+  --tracking-heading: var(--if-heading-tracking);
 ${tailwindText}
 ${tailwindWeights}
   --font-heading: var(--if-font-heading);

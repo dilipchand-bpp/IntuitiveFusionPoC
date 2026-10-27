@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState } from '@if/ui';
+import { Badge, EmptyState, PageHeader, Panel, SectionHeader } from '@if/ui';
 import type { SupplierTenderSummary } from '@/components/tender/types';
 import {
   SUBMISSION_LABEL,
@@ -18,13 +18,11 @@ export default async function SupplierHome() {
   const rows = res.data;
   const onHold = res.code === 'SUPPLIER_QUARANTINED';
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">My tenders</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          You can only see tenders you have been invited to, or that are open to every registered supplier.
-        </p>
-      </header>
+    <div className="flex flex-col gap-12">
+      <PageHeader
+        title="My tenders"
+        subtitle="You can only see tenders you have been invited to, or that are open to every registered supplier."
+      />
       {onHold ? (
         <EmptyState
           title="Your account is on hold"
@@ -40,11 +38,7 @@ export default async function SupplierHome() {
       ) : (
         <ul className="grid gap-4" aria-label="Your tenders">
           {rows.map((t) => (
-            <li
-              key={t.id}
-              className="card-lift rounded-lg border border-border bg-surface p-5 shadow-sm"
-              data-testid="supplier-tender"
-            >
+            <Panel as="li" key={t.id} className="flex flex-col gap-3" data-testid="supplier-tender">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone={TENDER_STATUS_TONE[t.status] ?? 'neutral'}>
                   {TENDER_STATUS_LABEL[t.status] ?? t.status}
@@ -54,14 +48,12 @@ export default async function SupplierHome() {
                   {SUBMISSION_LABEL[t.submissionStatus] ?? t.submissionStatus}
                 </Badge>
               </div>
-              <h2 className="mt-3 font-heading text-xl font-bold">
-                <Link href={`/supplier/tenders/${t.id}`}>{t.title}</Link>
-              </h2>
+              <SectionHeader title={<Link href={`/supplier/tenders/${t.id}`}>{t.title}</Link>} />
               <p className="text-sm text-text-muted">
                 <span className="font-mono">{t.number}</span> · closes {formatDateTime(t.closesAt)}
                 {t.receipt ? ` · receipt ${t.receipt}` : ''}
               </p>
-            </li>
+            </Panel>
           ))}
         </ul>
       )}

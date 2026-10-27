@@ -74,7 +74,7 @@ export function RegisterForm({
         className="rounded-md border border-success bg-success-bg p-4 text-success"
         data-testid="registered"
       >
-        <p className="font-bold">You are registered.</p>
+        <p className="font-medium">You are registered.</p>
         {done.held && (
           <p className="mt-1 text-sm" data-testid="held-notice">
             Your account is on hold while a screening result is reviewed by the buyer. You will be told when
@@ -171,7 +171,7 @@ export function RegisterForm({
         </Field>
       ))}
       <fieldset className="rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-semibold">Your privacy choices</legend>
+        <legend className="px-1 text-sm font-medium">Your privacy choices</legend>
         <label className="flex min-h-[44px] items-center gap-3 text-sm">
           <input
             type="checkbox"

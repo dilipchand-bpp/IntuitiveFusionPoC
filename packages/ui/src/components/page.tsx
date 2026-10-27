@@ -48,10 +48,7 @@ export function PageHeader({
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
         <h1
           id={id}
-          className={cn(
-            'font-heading text-4xl font-medium tracking-[var(--if-heading-tracking)] text-text',
-            eyebrow && 'mt-3',
-          )}
+          className={cn('font-heading text-4xl font-medium tracking-heading text-text', eyebrow && 'mt-3')}
         >
           {title}
         </h1>
@@ -88,10 +85,7 @@ export function SectionHeader({
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
         <Tag
           id={id}
-          className={cn(
-            'font-heading text-2xl font-medium tracking-[var(--if-heading-tracking)] text-text',
-            eyebrow && 'mt-1.5',
-          )}
+          className={cn('font-heading text-xl font-medium tracking-heading text-text', eyebrow && 'mt-1.5')}
         >
           {title}
         </Tag>
@@ -162,9 +156,7 @@ export function KpiCell({
   return (
     <div className="relative flex flex-col gap-2 px-5 py-6">
       <Eyebrow>{label}</Eyebrow>
-      <p className="font-heading text-4xl font-medium leading-none tracking-[var(--if-heading-tracking)] text-text">
-        {value}
-      </p>
+      <p className="font-heading text-4xl font-medium leading-none tracking-heading text-text">{value}</p>
       <p className="flex items-center gap-2 text-xs text-text-muted">
         <span>{caption}</span>
         {href && (

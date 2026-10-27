@@ -1,6 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { Logo, ThemeToggle } from '@if/ui';
+import { Logo, PageHeader, Panel, ThemeToggle } from '@if/ui';
 import { PrivacyNotice } from '@/components/b11/privacy';
 import { RegisterForm } from './register-form';
 
@@ -30,7 +30,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const invitation = token ? await lookup(token) : null;
   const badLink = Boolean(token) && !invitation;
   return (
-    <div className="bg-hero-mesh min-h-screen">
+    <div className="min-h-screen bg-bg text-text">
       <header className="flex items-center justify-between p-4">
         <Link href="/" className="text-text no-underline" aria-label="Intuitive Fusion home">
           <Logo withName size={36} />
@@ -38,15 +38,15 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
         <ThemeToggle />
       </header>
       <main id="main" className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 pb-16 pt-4">
-        <div className="flex flex-col gap-6 rounded-lg border border-border bg-surface p-8 shadow-lg">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Register as a supplier</h1>
-            <p className="mt-1 text-text-muted">
-              {invitation
+        <Panel className="flex flex-col gap-6">
+          <PageHeader
+            title="Register as a supplier"
+            subtitle={
+              invitation
                 ? `${invitation.organisation} has invited ${invitation.company} to tender. Create your account to see the tender documents.`
-                : 'Create a supplier account. You will see tenders you are invited to and any that are open to all suppliers.'}
-            </p>
-          </div>
+                : 'Create a supplier account. You will see tenders you are invited to and any that are open to all suppliers.'
+            }
+          />
           {badLink ? (
             <p
               role="alert"
@@ -67,7 +67,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
             Your company is screened against watchlists when you register. Already registered?{' '}
             <Link href="/login">Sign in</Link>.
           </p>
-        </div>
+        </Panel>
       </main>
     </div>
   );

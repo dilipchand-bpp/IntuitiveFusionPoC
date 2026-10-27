@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, SectionHeader, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export interface SupplierContract {
@@ -46,22 +46,18 @@ export function SupplierContractView({ initial, csrf }: { initial: SupplierContr
         </span>
       </div>
       <Card role="region" aria-labelledby="sc-h">
-        <h2 id="sc-h" className="font-heading text-xl font-bold">
-          The contract
-        </h2>
+        <SectionHeader id="sc-h" title="The contract" />
         <ol className="mt-3 flex flex-col gap-4">
           {c.clauses.map((k) => (
             <li key={k.id}>
-              <h3 className="font-heading font-semibold">{k.title}</h3>
+              <h3 className="font-medium">{k.title}</h3>
               <p className="mt-1 whitespace-pre-line text-sm">{k.text}</p>
             </li>
           ))}
         </ol>
       </Card>
       <Card role="region" aria-labelledby="sq-h">
-        <h2 id="sq-h" className="font-heading text-xl font-bold">
-          Your questions
-        </h2>
+        <SectionHeader id="sq-h" title="Your questions" />
         <ul className="mt-2 flex flex-col gap-2 text-sm" aria-label="Your questions">
           {c.questions.length === 0 && <li className="text-text-muted">You have not asked a question.</li>}
           {c.questions.map((q) => (

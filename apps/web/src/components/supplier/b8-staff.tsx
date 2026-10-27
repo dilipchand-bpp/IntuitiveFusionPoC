@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader, Select, Table, Td, Th } from '@if/ui';
 import { Bar, send, useData, useRun } from '@/components/contract/b5-shared';
 import { aud } from '@/lib/labels';
 
@@ -36,9 +36,7 @@ export function DuplicatesCard({ csrf, canDismiss }: { csrf: string; canDismiss:
     );
   return (
     <Card role="region" aria-labelledby="dup-h" data-testid="duplicates">
-      <h2 id="dup-h" className="font-heading text-xl font-bold">
-        Possible duplicate suppliers ({data.pairs.length})
-      </h2>
+      <SectionHeader id="dup-h" title={<>Possible duplicate suppliers ({data.pairs.length})</>} />
       <p className="mt-1 text-sm text-text-muted">
         These look like the same business under two names. Check, then merge by hand or say they are
         different.
@@ -136,9 +134,7 @@ export function RatingsCard({
   const dims = data.dimensions.ENTERPRISE_RATES_SUPPLIER ?? [];
   return (
     <Card role="region" aria-labelledby="rat-h" data-testid="ratings">
-      <h2 id="rat-h" className="font-heading text-xl font-bold">
-        Ratings
-      </h2>
+      <SectionHeader id="rat-h" title="Ratings" />
       <p className="mt-2 text-sm">
         Our rating of them:{' '}
         {data.ofSupplier.average === null ? (
@@ -267,9 +263,7 @@ export function RiskCard({
   return (
     <Card role="region" aria-labelledby="risk-h" data-testid="risk-card" className="lg:col-span-2">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 id="risk-h" className="font-heading text-xl font-bold">
-          Risk, resilience and ESG
-        </h2>
+        <SectionHeader id="risk-h" title="Risk, resilience and ESG" />
         <Badge tone={LEVEL_TONE[data.level]}>
           {data.score} out of 100 · {data.level.toLowerCase()} risk
         </Badge>
@@ -306,7 +300,7 @@ export function RiskCard({
       </ul>
       {data.recommendations.length > 0 && (
         <div className="mt-4">
-          <h3 className="font-semibold">What to do</h3>
+          <h3 className="font-medium">What to do</h3>
           <ul className="mt-1 list-disc pl-5 text-sm" data-testid="recommendations">
             {data.recommendations.map((x) => (
               <li key={x}>{x}</li>
@@ -316,7 +310,7 @@ export function RiskCard({
       )}
       {data.alternatives.length > 0 && (
         <div className="mt-4">
-          <h3 className="font-semibold">Alternative suppliers in the same category</h3>
+          <h3 className="font-medium">Alternative suppliers in the same category</h3>
           <ul className="mt-1 flex flex-col gap-1 text-sm" data-testid="alternatives">
             {data.alternatives.map((a) => (
               <li key={a.supplierId}>
@@ -350,9 +344,7 @@ export function SupplierScores({ canOpen }: { canOpen: boolean }) {
   if (!data) return null;
   return (
     <Card role="region" aria-labelledby="sc-h" data-testid="supplier-scores">
-      <h2 id="sc-h" className="font-heading text-xl font-bold">
-        Supplier scores, lowest first
-      </h2>
+      <SectionHeader id="sc-h" title="Supplier scores, lowest first" />
       <Table caption="Supplier risk, resilience and ESG scores" className="mt-2">
         <thead>
           <tr>
@@ -402,9 +394,7 @@ export function DiversityCard() {
   if (!data) return null;
   return (
     <Card role="region" aria-labelledby="div-h" data-testid="diversity">
-      <h2 id="div-h" className="font-heading text-xl font-bold">
-        Diverse suppliers and carbon
-      </h2>
+      <SectionHeader id="div-h" title="Diverse suppliers and carbon" />
       <Table caption="Committed spend by supplier ownership" className="mt-2">
         <thead>
           <tr>

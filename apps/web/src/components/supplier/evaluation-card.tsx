@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, Field, Input, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/labels';
 
@@ -137,9 +137,7 @@ export function SupplierEvaluationCard({
 
       {requests.length > 0 && (
         <Card role="region" aria-labelledby="req-h" data-testid="supplier-requests">
-          <h2 id="req-h" className="font-heading text-xl font-bold">
-            Requests from the buyer
-          </h2>
+          <SectionHeader id="req-h" title="Requests from the buyer" />
           <ul className="mt-3 flex flex-col gap-3" aria-label="Requests">
             {requests.map((r) => (
               <li
@@ -208,9 +206,7 @@ export function SupplierEvaluationCard({
 
       {rounds.length > 0 && (
         <Card role="region" aria-labelledby="bafo-h" data-testid="supplier-bafo">
-          <h2 id="bafo-h" className="font-heading text-xl font-bold">
-            Best and final offer
-          </h2>
+          <SectionHeader id="bafo-h" title="Best and final offer" />
           <ul className="mt-3 flex flex-col gap-3" aria-label="Rounds">
             {rounds.map((r) => {
               const f = offer[r.id] ?? { base: '', impl: '0', run: '0', years: '1', note: '' };
@@ -321,9 +317,7 @@ export function SupplierEvaluationCard({
 
       {showPricing && (
         <Card role="region" aria-labelledby="pricing-h" data-testid="supplier-pricing">
-          <h2 id="pricing-h" className="font-heading text-xl font-bold">
-            Your pricing
-          </h2>
+          <SectionHeader id="pricing-h" title="Your pricing" />
           <p className="mt-1 max-w-prose text-sm text-text-muted">
             Enter your price and the costs over the term, so the buyer can compare total cost of ownership.
             This is in addition to your pricing files, and stays sealed until the tender closes.

@@ -3,7 +3,7 @@ import { ResponseFormCard } from './b8-cards';
 import { CheckCircle2, Clock, FileUp, Lock, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Accordion, Badge, Button, Card, Field, Select, Textarea } from '@if/ui';
+import { Accordion, Badge, Button, Card, Field, SectionHeader, Select, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
   SUBMISSION_LABEL,
@@ -146,7 +146,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
         className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 ${open ? 'border-border bg-surface' : 'border-warning bg-warning-bg text-warning'}`}
         data-testid="closing-banner"
       >
-        <p className="flex items-center gap-2 font-semibold">
+        <p className="flex items-center gap-2 font-medium">
           {open ? (
             <Clock className="size-5" aria-hidden="true" />
           ) : (
@@ -159,7 +159,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
               : 'This tender is closed. Nothing can be uploaded or submitted.'}
         </p>
         {open && !t.lateAccess && left !== null && (
-          <p className="font-mono text-lg font-bold" data-testid="countdown">
+          <p className="font-mono text-sm font-medium" data-testid="countdown">
             {remaining(left)}
           </p>
         )}
@@ -193,18 +193,16 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
 
       {/* ------------------------------------------------------------ your bid */}
       <Card role="region" aria-labelledby="bid-h">
-        <h2 id="bid-h" className="font-heading text-xl font-bold">
-          Your bid
-        </h2>
+        <SectionHeader id="bid-h" title="Your bid" />
 
         {submitted && (
           <div className="mt-3 rounded-md border-2 border-success p-4 text-success" data-testid="receipt">
-            <p className="flex items-center gap-2 font-bold">
+            <p className="flex items-center gap-2 font-medium">
               <CheckCircle2 className="size-5" aria-hidden="true" /> Bid received
             </p>
             <p className="mt-1 text-sm">
               Receipt{' '}
-              <span className="font-mono font-bold" data-testid="receipt-number">
+              <span className="font-mono font-medium" data-testid="receipt-number">
                 {sub.receipt}
               </span>{' '}
               · {formatDateTime(sub.submittedAt)}
@@ -224,7 +222,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
               data-testid="bid-file"
             >
               <span className="min-w-0">
-                <span className="font-semibold break-all">{f.name}</span>{' '}
+                <span className="font-medium break-all">{f.name}</span>{' '}
                 <span className="text-text-muted">
                   · {SECTION_LABEL[f.section]} · {size(f.sizeBytes)}
                   {f.carriedForward ? ' · kept from your earlier stage' : ''}
@@ -263,7 +261,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
                 </Select>
               </Field>
               <div>
-                <label htmlFor="bid-file" className="text-sm font-semibold">
+                <label htmlFor="bid-file" className="text-sm font-medium">
                   Choose a file to upload
                 </label>
                 <p className="text-sm text-text-muted">
@@ -277,7 +275,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
                     type="file"
                     disabled={busy === 'upload'}
                     onChange={(e) => void onFile(e.target.files?.[0])}
-                    className="min-h-[44px] w-full text-sm file:mr-3 file:min-h-[44px] file:cursor-pointer file:rounded-md file:border-0 file:bg-accent/10 file:px-4 file:font-semibold file:text-accent hover:file:bg-accent/20"
+                    className="min-h-[44px] w-full text-sm file:mr-3 file:min-h-[44px] file:cursor-pointer file:rounded-md file:border-0 file:bg-accent/10 file:px-4 file:font-medium file:text-accent hover:file:bg-accent/20"
                   />
                 </div>
               </div>
@@ -341,7 +339,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
 
         {lastReceipt && submitted && (
           <details className="mt-3 text-sm">
-            <summary className="cursor-pointer font-semibold">What was received</summary>
+            <summary className="cursor-pointer font-medium">What was received</summary>
             <ul className="mt-2 flex flex-col gap-1">
               {lastReceipt.files.map((f) => (
                 <li key={f.name}>
@@ -356,9 +354,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
 
       {/* ------------------------------------------------------------ pack */}
       <section aria-labelledby="pack-h" className="flex flex-col gap-3">
-        <h2 id="pack-h" className="font-heading text-xl font-bold">
-          Tender documents
-        </h2>
+        <SectionHeader id="pack-h" title="Tender documents" />
         <Accordion
           items={t.fields.map((f) => ({
             q: f.label,
@@ -377,21 +373,19 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
 
       {/* ------------------------------------------------------------ Q&A and addenda */}
       <Card role="region" aria-labelledby="qa-h">
-        <h2 id="qa-h" className="font-heading text-xl font-bold">
-          Questions and addenda
-        </h2>
+        <SectionHeader id="qa-h" title="Questions and addenda" />
         <p className="mt-1 text-sm text-text-muted">
           Questions are answered for every supplier at once, without saying who asked.
         </p>
         <ul className="mt-3 flex flex-col gap-3" aria-label="Addenda">
           {t.addenda.map((a) => (
             <li key={a.id} className="rounded-md border border-border p-3 text-sm" data-testid="addendum">
-              <p className="font-semibold">
+              <p className="font-medium">
                 Addendum {a.number} · {formatDateTime(a.issuedAt)}
               </p>
               <p>{a.summary}</p>
               {a.newClosesAt && (
-                <p className="font-semibold">New closing time: {formatDateTime(a.newClosesAt)}</p>
+                <p className="font-medium">New closing time: {formatDateTime(a.newClosesAt)}</p>
               )}
             </li>
           ))}
@@ -406,7 +400,7 @@ export function SupplierTender({ initial, csrf }: { initial: SupplierTenderView;
               className="rounded-md border border-border p-3 text-sm"
               data-testid="published-question"
             >
-              <p className="font-semibold">Q: {q.text}</p>
+              <p className="font-medium">Q: {q.text}</p>
               <p>
                 A: {q.answer}
                 {q.audience === 'SINGLE' && (

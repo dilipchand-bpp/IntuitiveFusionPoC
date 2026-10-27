@@ -1,30 +1,23 @@
 import Link from 'next/link';
 import { BASELINE } from '@if/shared';
-import { Logo, Table, Td, Th } from '@if/ui';
+import { Logo, PageHeader, SectionHeader, Table, Td, Th } from '@if/ui';
 
 export const metadata = { title: 'Supported browsers – Intuitive Fusion' };
 
 /** The published browser and operating-system baseline (NFR-C08). Public: no sign-in needed to read it. */
 export default function BrowserSupport() {
   return (
-    <main id="main" className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-4 py-10">
+    <main id="main" className="mx-auto flex min-h-screen max-w-3xl flex-col gap-12 px-4 py-10">
       <Link href="/" className="w-fit text-text no-underline" aria-label="Home page">
         <Logo withName size={40} />
       </Link>
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Supported browsers and devices</h1>
-        <p className="mt-2 max-w-prose text-text-muted">
-          The portal is tested on the current and recent releases below. Older browsers may still work, but
-          some pages may look or behave differently. After you sign in the portal checks your browser, and if
-          it is older than this baseline it shows a short, dismissible note. It never stops you working. Last
-          reviewed {BASELINE.reviewed}.
-        </p>
-      </header>
+      <PageHeader
+        title="Supported browsers and devices"
+        subtitle={`The portal is tested on the current and recent releases below. Older browsers may still work, but some pages may look or behave differently. After you sign in the portal checks your browser, and if it is older than this baseline it shows a short, dismissible note. It never stops you working. Last reviewed ${BASELINE.reviewed}.`}
+      />
 
       <section aria-labelledby="b-h" className="flex flex-col gap-3">
-        <h2 id="b-h" className="font-heading text-xl font-bold">
-          Browsers
-        </h2>
+        <SectionHeader id="b-h" title="Browsers" />
         <Table caption="Supported browsers and their oldest supported version">
           <thead>
             <tr>
@@ -46,9 +39,7 @@ export default function BrowserSupport() {
       </section>
 
       <section aria-labelledby="m-h" className="flex flex-col gap-3">
-        <h2 id="m-h" className="font-heading text-xl font-bold">
-          Phones and tablets
-        </h2>
+        <SectionHeader id="m-h" title="Phones and tablets" />
         <Table caption="Supported mobile browsers">
           <thead>
             <tr>
@@ -72,9 +63,7 @@ export default function BrowserSupport() {
       </section>
 
       <section aria-labelledby="o-h" className="flex flex-col gap-3">
-        <h2 id="o-h" className="font-heading text-xl font-bold">
-          Operating systems
-        </h2>
+        <SectionHeader id="o-h" title="Operating systems" />
         <Table caption="Supported operating systems">
           <thead>
             <tr>
@@ -94,9 +83,7 @@ export default function BrowserSupport() {
       </section>
 
       <section aria-labelledby="f-h" className="flex flex-col gap-2">
-        <h2 id="f-h" className="font-heading text-xl font-bold">
-          What the portal needs from a browser
-        </h2>
+        <SectionHeader id="f-h" title="What the portal needs from a browser" />
         <ul className="list-disc pl-6 text-sm">
           {BASELINE.features.map((f) => (
             <li key={f.key}>{f.label}</li>

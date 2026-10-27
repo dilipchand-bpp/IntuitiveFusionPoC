@@ -1,7 +1,7 @@
 'use client';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader, Select } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 import { aud } from '@/lib/labels';
 
@@ -62,7 +62,7 @@ export function CertificateUploader({ csrf, onDone }: { csrf: string; onDone?: (
           data-testid="certificate-result"
         >
           <p
-            className={`flex items-center gap-2 font-semibold ${result.readable ? 'text-success' : 'text-warning'}`}
+            className={`flex items-center gap-2 font-medium ${result.readable ? 'text-success' : 'text-warning'}`}
           >
             {result.readable ? (
               <CheckCircle2 className="size-4" aria-hidden="true" />
@@ -133,13 +133,11 @@ export function ResponseFormCard({
   const locked = !open || data.submitted;
   return (
     <Card role="region" aria-labelledby="rf-h" data-testid="response-form-card">
-      <h2 id="rf-h" className="font-heading text-xl font-bold">
-        Your response
-      </h2>
+      <SectionHeader id="rf-h" title="Your response" />
       {data.requiredCover !== null && (
         <div className="mt-2 rounded-md border border-border p-3 text-sm" data-testid="cover-status">
           <p
-            className={`flex items-center gap-2 font-semibold ${data.cover.ok ? 'text-success' : 'text-warning'}`}
+            className={`flex items-center gap-2 font-medium ${data.cover.ok ? 'text-success' : 'text-warning'}`}
           >
             {data.cover.ok ? (
               <CheckCircle2 className="size-4" aria-hidden="true" />
@@ -251,9 +249,7 @@ export function EsgCard({ csrf }: { csrf: string }) {
   const set = (k: string, v: string | boolean) => setF({ ...(f ?? {}), [k]: v });
   return (
     <Card role="region" aria-labelledby="esg-h" data-testid="esg-card">
-      <h2 id="esg-h" className="font-heading text-xl font-bold">
-        Sustainability and ownership
-      </h2>
+      <SectionHeader id="esg-h" title="Sustainability and ownership" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         Your customer asks for this to look after the environment, to report on diverse suppliers and to check
         for modern slavery.
@@ -341,9 +337,7 @@ export function RateEnterpriseCard({ csrf }: { csrf: string }) {
   const todo = data.contracts.filter((c) => !c.rated);
   return (
     <Card role="region" aria-labelledby="rate-h" data-testid="rate-card">
-      <h2 id="rate-h" className="font-heading text-xl font-bold">
-        Ratings
-      </h2>
+      <SectionHeader id="rate-h" title="Ratings" />
       {data.received ? (
         <p className="mt-2 text-sm">
           How your customer rated you: <strong>{data.received.average ?? 'no ratings yet'}</strong> out of 5

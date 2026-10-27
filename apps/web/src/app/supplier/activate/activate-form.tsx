@@ -37,7 +37,7 @@ export function ActivateForm({ token, name, email }: { token: string; name: stri
         className="rounded-md border border-success bg-success-bg p-4 text-success"
         data-testid="activated"
       >
-        <p className="font-bold">Your account is ready.</p>
+        <p className="font-medium">Your account is ready.</p>
         <p className="mt-1 text-sm">
           <Link href="/login">Sign in</Link> with {email} and the password you just chose.
         </p>
@@ -61,7 +61,7 @@ export function ActivateForm({ token, name, email }: { token: string; name: stri
         </p>
       )}
       <p className="text-sm">
-        <span className="font-semibold">{name}</span> · {email}
+        <span className="font-medium">{name}</span> · {email}
       </p>
       <Field
         label="Choose a password"
