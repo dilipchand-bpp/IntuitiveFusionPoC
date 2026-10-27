@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader, Select } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 const KIND: Record<string, string> = {
@@ -60,12 +60,10 @@ export function LessonsPanel({
   const closed = phase === 'CLOSED';
   return (
     <Card role="region" aria-labelledby="les-h" data-testid="lessons">
-      <h2 id="les-h" className="font-heading text-xl font-bold">
-        Lessons learned
-      </h2>
+      <SectionHeader id="les-h" title="Lessons learned" />
       {recall.data && recall.data.lessons.length > 0 && (
         <div className="mt-2 rounded-md border border-accent/40 bg-accent/5 p-3" data-testid="recall">
-          <p className="text-sm font-semibold">From similar procurements</p>
+          <p className="text-sm font-medium">From similar procurements</p>
           <ul className="mt-1 flex flex-col gap-2 text-sm">
             {recall.data.lessons.map((l) => (
               <li key={l.id}>

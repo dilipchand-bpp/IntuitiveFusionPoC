@@ -14,7 +14,19 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { AiBadge, Badge, Button, Dialog, Field, Input, Stamp, Textarea, cn } from '@if/ui';
+import {
+  AiBadge,
+  Badge,
+  Button,
+  Dialog,
+  Field,
+  Input,
+  Panel as KitPanel,
+  SectionHeader,
+  Stamp,
+  Textarea,
+  cn,
+} from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
   COI_LABEL,
@@ -48,44 +60,30 @@ function Panel({
   testId?: string;
 }) {
   return (
-    <section
+    <KitPanel
       aria-labelledby={id}
       data-testid={testId}
-      className={cn(
-        'relative overflow-hidden rounded-lg border bg-surface p-5 shadow-sm',
-        accent === 'accent' && 'border-accent',
-        accent === 'warning' && 'border-warning',
-        !accent && 'border-border',
-      )}
+      className={cn(accent === 'accent' && 'border-accent', accent === 'warning' && 'border-warning')}
     >
-      {accent && (
-        <span
-          aria-hidden="true"
-          className={cn(
-            'absolute inset-x-0 top-0 h-1',
-            accent === 'accent' ? 'bg-brand-gradient' : 'bg-warning',
-          )}
-        />
-      )}
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id={id} className="font-heading text-lg font-bold">
+        <h2 id={id} className="font-heading text-sm font-medium">
           {title}
         </h2>
         {badge}
       </div>
       {children}
-    </section>
+    </KitPanel>
   );
 }
 
 function Fact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
   return (
     <div className="min-w-0 rounded-lg border border-border bg-surface-alt/60 p-3">
-      <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-text-muted">
+      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-text-muted">
         <Icon className="size-4 shrink-0 text-accent" aria-hidden="true" />
         {label}
       </dt>
-      <dd className="mt-1 min-w-0 break-words font-heading text-lg font-bold leading-tight">{children}</dd>
+      <dd className="mt-1 min-w-0 break-words text-sm font-medium leading-tight">{children}</dd>
     </div>
   );
 }
@@ -235,16 +233,9 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
       )}
 
       {/* Key points first: on a phone the approver sees what they need, then the decision, then the detail. */}
-      <section
-        aria-labelledby="kp-h"
-        className="relative overflow-hidden rounded-lg border border-border bg-surface p-5 shadow-sm"
-        data-testid="key-points"
-      >
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" />
+      <KitPanel aria-labelledby="kp-h" data-testid="key-points">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 id="kp-h" className="font-heading text-xl font-bold">
-            Key points
-          </h2>
+          <SectionHeader id="kp-h" title="Key points" />
           <AiBadge />
         </div>
 
@@ -294,7 +285,7 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
             )}
           </ul>
         )}
-      </section>
+      </KitPanel>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
         {/* The rail comes first in the page so a phone shows the decision before the long plan text. */}
@@ -526,17 +517,11 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
 
         <div className="flex min-w-0 flex-col gap-4 lg:order-1">
           <section aria-labelledby="sec-h" className="flex flex-col gap-4">
-            <h2 id="sec-h" className="font-heading text-2xl font-extrabold tracking-tight">
-              Plan
-            </h2>
+            <SectionHeader id="sec-h" title="Plan" />
             {plan.fields.map((f) => (
-              <div
-                key={f.key}
-                className="rounded-lg border border-border bg-surface p-5 shadow-sm"
-                data-field={f.key}
-              >
+              <KitPanel as="div" key={f.key} data-field={f.key}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-heading text-lg font-bold">{f.label}</h3>
+                  <h3 className="font-heading text-sm font-medium">{f.label}</h3>
                   {f.aiDrafted && <AiBadge kind="drafted" />}
                   {p.canEdit && editKey !== f.key && (
                     <Button
@@ -573,11 +558,11 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
                     </div>
                   </div>
                 ) : (
-                  <ol className="mt-3 flex flex-col gap-3 text-base leading-relaxed">
+                  <ol className="mt-3 flex flex-col gap-3 text-sm leading-relaxed">
                     {f.paragraphs.map((para, i) => (
                       <li key={i} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
                         <span
-                          className="mt-1 inline-flex size-6 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent"
+                          className="mt-1 inline-flex size-6 items-center justify-center rounded-full bg-accent/10 text-xs font-medium text-accent"
                           aria-label={`Paragraph ${i + 1}`}
                         >
                           {i + 1}
@@ -593,15 +578,12 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
                     {f.paragraphs.length === 0 && <li className="text-text-muted">Not set</li>}
                   </ol>
                 )}
-              </div>
+              </KitPanel>
             ))}
           </section>
 
           {(p.canSubmit || p.canReopen) && (
-            <section
-              aria-labelledby="act-h"
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface p-4 shadow-sm"
-            >
+            <KitPanel aria-labelledby="act-h" className="flex flex-wrap items-center gap-2 p-4 sm:p-4">
               <h2 id="act-h" className="sr-only">
                 Plan actions
               </h2>
@@ -619,7 +601,7 @@ export function PlanWorkspace({ plan, csrf, userId }: { plan: PlanView; csrf: st
                   Reopen plan
                 </Button>
               )}
-            </section>
+            </KitPanel>
           )}
         </div>
       </div>
@@ -722,7 +704,7 @@ function ConflictPanel(props: {
           }}
         >
           <fieldset className="flex flex-col gap-1">
-            <legend className="text-sm font-semibold">Your declaration</legend>
+            <legend className="text-sm font-medium">Your declaration</legend>
             <label className="flex min-h-[44px] items-center gap-2 text-sm">
               <input type="radio" name="coi" checked={mode === 'none'} onChange={() => setMode('none')} /> I
               have no conflict of interest

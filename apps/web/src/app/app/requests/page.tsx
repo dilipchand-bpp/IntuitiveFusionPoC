@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { Badge, Button, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, Button, EmptyState, PageHeader, Panel, Table, Td, Th } from '@if/ui';
 import { COMPLEXITY_LABEL, COMPLEXITY_TONE, PHASE_LABEL, STATUS_LABEL, STATUS_TONE, aud } from '@/lib/labels';
 import { apiGet, getSessionUser } from '@/lib/session';
 
@@ -62,25 +62,25 @@ export default async function RequestsPage({
   const own = user?.roles.length === 1 && user.roles[0] === 'REQUESTER';
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold">{own ? 'My requests' : 'Requests'}</h1>
-          <p className="mt-1 max-w-prose text-text-muted">
-            {own
-              ? 'Everything you have asked for, and where it is up to.'
-              : 'Procurement requests across the organisation.'}
-          </p>
-        </div>
-        {canCreate && (
-          <Button asChild variant="accent" size="lg">
-            <Link href="/app/requests/new" className="text-gradient-fg no-underline">
-              <Plus className="size-5" aria-hidden="true" />
-              New request
-            </Link>
-          </Button>
-        )}
-      </header>
+    <div className="flex flex-col gap-12">
+      <PageHeader
+        title={own ? 'My requests' : 'Requests'}
+        subtitle={
+          own
+            ? 'Everything you have asked for, and where it is up to.'
+            : 'Procurement requests across the organisation.'
+        }
+        actions={
+          canCreate && (
+            <Button asChild variant="accent">
+              <Link href="/app/requests/new" className="no-underline">
+                <Plus className="size-5" aria-hidden="true" />
+                New request
+              </Link>
+            </Button>
+          )
+        }
+      />
 
       <form role="search" aria-label="Search requests" className="flex flex-wrap gap-2">
         <label htmlFor="q" className="sr-only">
@@ -126,7 +126,7 @@ export default async function RequestsPage({
               key={k}
               href={`/app/requests?${params}`}
               aria-current={layout === k ? 'true' : undefined}
-              className={`flex min-h-[44px] items-center rounded-md border px-3 text-sm font-semibold no-underline ${layout === k ? 'border-accent bg-accent/10 text-accent' : 'border-border text-text'}`}
+              className={`flex min-h-[44px] items-center rounded-md border px-3 text-sm font-medium no-underline ${layout === k ? 'border-accent bg-accent/10 text-accent' : 'border-border text-text'}`}
             >
               {name}
             </Link>
@@ -150,7 +150,7 @@ export default async function RequestsPage({
           action={
             canCreate && !q && !status ? (
               <Button asChild variant="accent">
-                <Link href="/app/requests/new" className="text-gradient-fg no-underline">
+                <Link href="/app/requests/new" className="no-underline">
                   Start your first request
                 </Link>
               </Button>
@@ -162,24 +162,17 @@ export default async function RequestsPage({
           {layout === 'KANBAN' ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6" data-testid="board">
               {PHASE_ORDER.map((ph) => (
-                <section
-                  key={ph}
-                  aria-label={PHASE_LABEL[ph] ?? ph}
-                  className="min-w-0 rounded-lg border border-border bg-surface-alt/50 p-3"
-                >
-                  <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-text-muted">
+                <Panel key={ph} aria-label={PHASE_LABEL[ph] ?? ph} className="min-w-0 p-3 sm:p-3">
+                  <h2 className="text-xs font-medium uppercase text-text-muted">
                     {PHASE_LABEL[ph] ?? ph} ({data.items.filter((r) => r.phase === ph).length})
                   </h2>
                   <ul className="mt-2 flex flex-col gap-2">
                     {data.items
                       .filter((r) => r.phase === ph)
                       .map((r) => (
-                        <li
-                          key={r.id}
-                          className="rounded-md border border-border bg-surface p-3 text-sm shadow-sm"
-                        >
+                        <li key={r.id} className="rounded-md border border-border p-3 text-sm">
                           <span className="block font-mono text-xs text-text-muted">{r.number}</span>
-                          <Link href={`/app/requests/${r.id}`} className="font-semibold">
+                          <Link href={`/app/requests/${r.id}`} className="font-medium">
                             {r.title}
                           </Link>
                           <LinkedBadge r={r} />
@@ -189,14 +182,14 @@ export default async function RequestsPage({
                         </li>
                       ))}
                   </ul>
-                </section>
+                </Panel>
               ))}
             </div>
           ) : layout === 'CALENDAR' ? (
             <div className="flex flex-col gap-4" data-testid="calendar">
               {[...new Set(data.items.map((r) => month.format(new Date(r.updatedAt))))].map((m) => (
                 <section key={m} aria-label={m}>
-                  <h2 className="font-heading text-lg font-bold">{m}</h2>
+                  <h2 className="font-heading text-sm font-medium">{m}</h2>
                   <ul className="mt-2 flex flex-col divide-y divide-border rounded-md border border-border">
                     {data.items
                       .filter((r) => month.format(new Date(r.updatedAt)) === m)
@@ -204,7 +197,7 @@ export default async function RequestsPage({
                         <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
                           <span className="w-28 text-text-muted">{when.format(new Date(r.updatedAt))}</span>
                           <span className="font-mono text-xs text-text-muted">{r.number}</span>
-                          <Link href={`/app/requests/${r.id}`} className="font-semibold">
+                          <Link href={`/app/requests/${r.id}`} className="font-medium">
                             {r.title}
                           </Link>
                           <LinkedBadge r={r} />

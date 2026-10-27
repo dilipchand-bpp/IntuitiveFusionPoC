@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Badge, Button } from '@if/ui';
+import { Badge, Button, PageHeader, Panel } from '@if/ui';
 import { InstructBox, RiskAssessmentPanel } from '@/components/collab/ai-panels';
 import { DraftPanel } from '@/components/requests/draft-panel';
 import { LessonsPanel } from '@/components/requests/lessons';
@@ -70,36 +70,38 @@ export default async function RequestDetail({ params }: { params: Promise<{ id: 
     ),
   };
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-3">
+    <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-4">
         <p className="text-sm">
           <Link href="/app/requests">← Requests</Link>
         </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-md bg-surface-alt px-2 py-1 font-mono text-sm font-semibold text-text-muted">
-            {view.number}
-          </span>
-          <Badge tone={STATUS_TONE[view.status] ?? 'neutral'}>
-            {STATUS_LABEL[view.status] ?? view.status}
-          </Badge>
-        </div>
-        <h1 className="text-3xl font-extrabold tracking-tight">{view.title}</h1>
-        {view.status !== 'DRAFT' && (
-          <div>
-            <Button asChild variant="secondary">
-              <Link href={`/app/plans/${view.id}`} className="text-text no-underline">
-                Open the procurement plan
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
-        )}
-      </header>
+        <PageHeader
+          eyebrow={
+            <span className="inline-flex flex-wrap items-center gap-3">
+              <span className="font-mono">{view.number}</span>
+              <Badge tone={STATUS_TONE[view.status] ?? 'neutral'}>
+                {STATUS_LABEL[view.status] ?? view.status}
+              </Badge>
+            </span>
+          }
+          title={view.title}
+          actions={
+            view.status !== 'DRAFT' && (
+              <Button asChild variant="secondary">
+                <Link href={`/app/plans/${view.id}`} className="text-text no-underline">
+                  Open the procurement plan
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
+            )
+          }
+        />
+      </div>
       {keys.includes('progress') && <ProgressJourney requestId={view.id} />}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="min-w-0 rounded-lg border border-border bg-surface p-5 shadow-sm">
+        <Panel className="min-w-0">
           <DraftPanel view={view} hideHeader />
-        </div>
+        </Panel>
         <div className="flex min-w-0 flex-col gap-4">
           {order.map((k) => (
             <Fragment key={k}>{panels[k]}</Fragment>

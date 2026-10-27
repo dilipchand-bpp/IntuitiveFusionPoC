@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Textarea, type BadgeTone } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader, Textarea, type BadgeTone } from '@if/ui';
 import { send, useData, useRun } from '@/components/contract/b5-shared';
 
 type Status = 'PASS' | 'AT_RISK' | 'BREACH' | 'NO_DATA';
@@ -84,7 +84,7 @@ function MetricRow({
   return (
     <li className="rounded-md border border-border p-3" data-testid={`esg-${m.key}`}>
       <div className="flex flex-wrap items-center gap-2">
-        <p className="font-semibold">{m.label}</p>
+        <p className="font-medium">{m.label}</p>
         <Badge tone={TONE[m.status]}>
           <span data-testid={`esg-status-${m.key}`}>{LABEL[m.status]}</span>
         </Badge>
@@ -168,7 +168,7 @@ function MetricRow({
       )}
       {t.canEdit && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-sm font-semibold">Change the figure or the limit</summary>
+          <summary className="cursor-pointer text-sm font-medium">Change the figure or the limit</summary>
           <form
             className="mt-2 grid gap-3 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -269,9 +269,7 @@ export function EsgTargetsCard({ planId, csrf }: { planId: string; csrf: string 
   return (
     <Card role="region" aria-labelledby="esgt-h" data-testid="esg-targets-card">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id="esgt-h" className="font-heading text-xl font-bold">
-          ESG and socio-economic limits
-        </h2>
+        <SectionHeader id="esgt-h" title="ESG and socio-economic limits" />
         {t.gate.status === 'REQUIRED' && (
           <Badge tone="error">
             <span data-testid="esg-gate">Holds the plan: {t.gate.breaches} in breach</span>
@@ -297,7 +295,7 @@ export function EsgTargetsCard({ planId, csrf }: { planId: string; csrf: string 
       </ul>
       {t.bids.length > 0 && (
         <div className="mt-4 border-t border-border pt-3 text-sm" data-testid="esg-bids">
-          <p className="font-semibold">Bids received</p>
+          <p className="font-medium">Bids received</p>
           <p className="text-text-muted">
             {t.bids.map((b) => `${b.company} (${aud(b.tco)})`).join(', ')}. What each declared about
             ownership, emissions and modern slavery is used once a contract is awarded.

@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Button, Field, Select } from '@if/ui';
+import { Button, Field, SectionHeader, Select } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { message } from '@/components/contract/b5-shared';
 import type { PlanField } from './types';
@@ -60,7 +60,7 @@ export function AmendmentFallback({
       data-testid="amend-fallback"
       className="mt-3 flex flex-col gap-3 rounded-md border border-border bg-surface-alt p-3 text-sm"
     >
-      <h3 className="font-heading text-base font-bold">Another way to make this change</h3>
+      <SectionHeader as="h3" title="Another way to make this change" />
       <Field label="Section to change">
         <Select value={key} onChange={(e) => setKey(e.target.value)}>
           {fields.map((f) => (
@@ -71,7 +71,7 @@ export function AmendmentFallback({
         </Select>
       </Field>
       <div>
-        <p className="font-semibold">1. Copy this into your AI chat</p>
+        <p className="font-medium">1. Copy this into your AI chat</p>
         <textarea
           readOnly
           aria-label="Text to copy"
@@ -90,7 +90,7 @@ export function AmendmentFallback({
         </Button>
       </div>
       <div>
-        <label htmlFor="amended-text" className="font-semibold">
+        <label htmlFor="amended-text" className="font-medium">
           2. Paste the amended text here
         </label>
         <textarea
@@ -106,11 +106,7 @@ export function AmendmentFallback({
       </div>
       <p>
         Or{' '}
-        <button
-          type="button"
-          className="font-semibold text-accent underline"
-          onClick={() => onEdit(field.key)}
-        >
+        <button type="button" className="font-medium text-accent underline" onClick={() => onEdit(field.key)}>
           edit {field.label.toLowerCase()} yourself
         </button>
         .

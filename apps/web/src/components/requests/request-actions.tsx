@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Dialog, Field, Input, Select, Textarea } from '@if/ui';
+import { Button, Dialog, Field, Input, SectionHeader, Select, Textarea } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import type { FieldView, RequestView } from './types';
 
@@ -139,9 +139,7 @@ export function RequestActions({
       aria-labelledby="actions-h"
       className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4"
     >
-      <h2 id="actions-h" className="font-heading text-lg font-semibold">
-        Actions
-      </h2>
+      <SectionHeader id="actions-h" title="Actions" />
       {formError && (
         <div
           role="alert"

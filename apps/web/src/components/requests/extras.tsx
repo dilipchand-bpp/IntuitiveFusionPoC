@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select } from '@if/ui';
+import { Badge, Button, Card, Field, Input, SectionHeader, Select } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { SourceChip, type PopulationSource } from '../b11/source-chip';
 import type { RequestView } from './types';
@@ -142,9 +142,7 @@ function ProcessCard({
   const pending = data.variations.find((v) => v.status === 'PENDING');
   return (
     <Card role="region" aria-labelledby="process-h" data-testid="process-card">
-      <h2 id="process-h" className="font-heading text-lg font-bold">
-        Process
-      </h2>
+      <SectionHeader id="process-h" title="Process" />
       <p className="text-sm text-text-muted">
         {wf.name}
         {wf.subWorkflow !== 'general' ? ` · ${wf.subWorkflow} procurement` : ''}
@@ -156,7 +154,7 @@ function ProcessCard({
             className="flex items-center justify-between gap-2 text-sm"
             data-step-state={s.state}
           >
-            <span className={s.state === 'CURRENT' ? 'font-bold' : ''}>
+            <span className={s.state === 'CURRENT' ? 'font-medium' : ''}>
               {s.label}
               {s.variation === 'ADDED' && (
                 <span className="ml-2 text-xs text-text-muted">(added for this procurement)</span>
@@ -214,7 +212,7 @@ function ProcessCard({
       )}
       {canEdit && !pending && view.status !== 'COMPLETE' && (
         <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3">
-          <h3 className="text-sm font-semibold">Add a step for this procurement</h3>
+          <h3 className="text-sm font-medium">Add a step for this procurement</h3>
           <p className="text-xs text-text-muted">
             A delegate must approve it. Mandatory steps cannot be removed.
           </p>
@@ -258,12 +256,10 @@ function ClassificationCard({ view, csrf, canEdit }: { view: ExtendedView; csrf:
   const t = view.taxonomy;
   return (
     <Card role="region" aria-labelledby="class-h" data-testid="classification-card">
-      <h2 id="class-h" className="font-heading text-lg font-bold">
-        Classification
-      </h2>
+      <SectionHeader id="class-h" title="Classification" />
       <p className="mt-1 text-sm">
         {t.scheme}{' '}
-        <span className="font-mono font-semibold" data-testid="taxonomy-code">
+        <span className="font-mono font-medium" data-testid="taxonomy-code">
           {t.code}
         </span>{' '}
         <Badge tone={t.confirmed ? 'success' : 'warning'}>
@@ -326,13 +322,11 @@ function EngagementsCard({ view }: { view: ExtendedView }) {
   if (view.engagements.length === 0) return null;
   return (
     <Card role="region" aria-labelledby="eng-h" data-testid="engagements-card">
-      <h2 id="eng-h" className="font-heading text-lg font-bold">
-        Reviews this request needs
-      </h2>
+      <SectionHeader id="eng-h" title="Reviews this request needs" />
       <ul className="mt-2 flex flex-col gap-2 text-sm">
         {view.engagements.map((e) => (
           <li key={e.label}>
-            <span className="font-semibold">{e.label}.</span>{' '}
+            <span className="font-medium">{e.label}.</span>{' '}
             <span className="text-text-muted">{e.reason}</span>
           </li>
         ))}
@@ -359,9 +353,7 @@ function SuppliersCard({
   if (data.suppliers.length === 0) return null;
   return (
     <Card role="region" aria-labelledby="sup-h" data-testid="suppliers-card">
-      <h2 id="sup-h" className="font-heading text-lg font-bold">
-        Suggested suppliers
-      </h2>
+      <SectionHeader id="sup-h" title="Suggested suppliers" />
       <p className="text-sm text-text-muted">
         From your supplier directory, for this category. You can change the list.
       </p>
@@ -383,7 +375,7 @@ function SuppliersCard({
                 aria-label={s.company}
               />
               <span>
-                <span className="font-semibold">{s.company}</span>
+                <span className="font-medium">{s.company}</span>
                 <span className="block text-xs text-text-muted">
                   Sanctions: {s.sanctionsStatus.toLowerCase()} · Insurance: {s.insuranceStatus.toLowerCase()}
                   {s.contacts.length > 0
@@ -464,9 +456,7 @@ function EcvCard({
   );
   return (
     <Card role="region" aria-labelledby="ecv-h" data-testid="ecv-card">
-      <h2 id="ecv-h" className="font-heading text-lg font-bold">
-        Estimated contract value
-      </h2>
+      <SectionHeader id="ecv-h" title="Estimated contract value" />
       <p className="text-sm text-text-muted">
         Every cost over the whole term. The result sets the request value, which decides the workflow and the
         approver.
@@ -539,9 +529,7 @@ function DelegatesCard({
   const [pick, setPick] = useState<Record<string, string>>({});
   return (
     <Card role="region" aria-labelledby="del-h" data-testid="delegates-card">
-      <h2 id="del-h" className="font-heading text-lg font-bold">
-        Who approves each stage
-      </h2>
+      <SectionHeader id="del-h" title="Who approves each stage" />
       <p className="text-sm text-text-muted">
         Set by value: the lowest authority that is enough. Approvals already given stay with the person who
         gave them.
@@ -549,7 +537,7 @@ function DelegatesCard({
       <ul className="mt-2 flex flex-col gap-3">
         {data.delegates.map((d) => (
           <li key={d.stage} className="text-sm" data-stage={d.stage}>
-            <span className="font-semibold">{d.label}:</span>{' '}
+            <span className="font-medium">{d.label}:</span>{' '}
             {d.delegate ? (
               d.delegate.name
             ) : (
@@ -605,14 +593,12 @@ function DelegatesCard({
 function ArtefactsCard({ data }: { data: ExtrasData }) {
   return (
     <Card role="region" aria-labelledby="art-h" data-testid="artefacts-card">
-      <h2 id="art-h" className="font-heading text-lg font-bold">
-        Filled in from this request
-      </h2>
+      <SectionHeader id="art-h" title="Filled in from this request" />
       <p className="text-sm text-text-muted">What was created downstream, so nothing is typed twice.</p>
       <ul className="mt-2 flex flex-col gap-2 text-sm">
         {data.artefacts.map((a) => (
           <li key={a.kind}>
-            <Link href={a.link} className="font-semibold">
+            <Link href={a.link} className="font-medium">
               {a.label}
             </Link>{' '}
             <Badge tone="neutral">{a.status.replace(/_/g, ' ').toLowerCase()}</Badge>
@@ -637,9 +623,7 @@ function CustomFieldsCard({ view, csrf, canEdit }: { view: ExtendedView; csrf: s
   const editable = canEdit && view.status === 'DRAFT';
   return (
     <Card role="region" aria-labelledby="cf-h" data-testid="custom-fields-card">
-      <h2 id="cf-h" className="font-heading text-lg font-bold">
-        Additional details
-      </h2>
+      <SectionHeader id="cf-h" title="Additional details" />
       <div className="mt-2 flex flex-col gap-3">
         {custom.map((f) => (
           <Field key={f.key} label={f.label} required={f.missing}>

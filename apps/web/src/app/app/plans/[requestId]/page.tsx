@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { EmptyState } from '@if/ui';
+import { EmptyState, PageHeader } from '@if/ui';
 import { DocumentTools } from '@/components/collab/doc-tools';
 import { ContentHintsCard } from '@/components/b11/content-hints-card';
 import { DraftPanel } from '@/components/copilot/draft-panel';
@@ -23,16 +23,19 @@ export default async function PlanPage({ params }: { params: Promise<{ requestId
   if (res.status === 404 || res.status === 403) notFound(); // not visible = not there
   const esg = res.data ? await apiGet<EsgData>(`/plans/${res.data.id}/esg`) : null;
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm">
+    <div className="flex flex-col gap-12">
+      <p className="-mb-8 text-sm">
         <Link href="/app/plans">← Procurement plans</Link>
       </p>
       {res.data ? (
         <>
-          <h1 className="text-3xl font-bold">
-            <span className="font-mono text-lg text-text-muted">{res.data.requestNumber}</span>{' '}
-            {res.data.title}
-          </h1>
+          <PageHeader
+            title={
+              <>
+                <span className="font-mono text-text-muted">{res.data.requestNumber}</span> {res.data.title}
+              </>
+            }
+          />
           <PlanWorkspace plan={res.data} csrf={user.csrfToken} userId={user.id} />
           <DocumentTools type="plan" id={res.data.id} csrf={user.csrfToken} />
           {esg && (

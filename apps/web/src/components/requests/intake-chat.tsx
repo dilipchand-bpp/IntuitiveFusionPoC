@@ -2,7 +2,7 @@
 import { Banknote, Bot, Building2, FileText, Send, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { AiBadge, Button } from '@if/ui';
+import { AiBadge, Button, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { appendSpoken, useDictation } from '../voice/use-dictation';
 import { VoiceButton, VoiceStatus } from '../voice/voice-button';
@@ -90,12 +90,10 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
         className="flex min-h-[28rem] min-w-0 flex-col rounded-md border border-border bg-surface"
       >
         <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-gradient-fg">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-accent-fg">
             <Bot className="size-5" aria-hidden="true" />
           </span>
-          <h2 id="chat-h" className="font-heading text-lg font-semibold">
-            Procurement assistant
-          </h2>
+          <SectionHeader id="chat-h" title="Procurement assistant" />
           <span className="ml-auto">
             <AiBadge />
           </span>
@@ -116,7 +114,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
               data-role={m.role}
               className={
                 m.role === 'USER'
-                  ? 'ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-lg rounded-br-sm bg-brand-gradient px-3 py-2 text-sm shadow-sm'
+                  ? 'ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-lg rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-fg'
                   : 'max-w-[90%] whitespace-pre-wrap break-words rounded-lg rounded-bl-sm bg-surface-alt px-3 py-2 text-sm text-text'
               }
             >
@@ -177,7 +175,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
             <DraftPanel view={view} />
             <div className="mt-5 flex flex-wrap gap-2">
               <Button asChild variant="accent">
-                <Link href={`/app/requests/${view.id}`} className="text-gradient-fg no-underline">
+                <Link href={`/app/requests/${view.id}`} className="no-underline">
                   Review and submit
                 </Link>
               </Button>
@@ -186,7 +184,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
         ) : (
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="font-heading text-xl font-bold">Your request draft</h2>
+              <SectionHeader title="Your request draft" />
               <p className="mt-1 text-sm text-text-muted">
                 As you describe your need, the draft appears here. You can change any field before submitting.
               </p>
@@ -204,7 +202,7 @@ export function IntakeChat({ csrf, requestId }: { csrf: string; requestId?: stri
                     key={title as string}
                     className="flex items-start gap-3 rounded-lg border border-dashed border-border-strong p-3"
                   >
-                    <span className="icon-tile !size-9 shrink-0">
+                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border-strong text-text-muted">
                       <I className="size-4" aria-hidden="true" />
                     </span>
                     <span className="min-w-0 text-sm">

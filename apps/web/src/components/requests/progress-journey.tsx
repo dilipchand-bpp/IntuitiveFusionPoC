@@ -110,7 +110,7 @@ export function ProgressJourney({ requestId }: { requestId: string }) {
   return (
     <Card role="region" aria-labelledby="jr-h" data-testid="journey" className="relative overflow-hidden">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 id="jr-h" className="font-heading text-xl font-bold">
+        <h2 id="jr-h" className="font-heading text-sm font-medium">
           {data.complete ? 'All done' : 'Journey to completion'}
         </h2>
         <p className="text-sm text-text-muted" data-testid="journey-count">
@@ -121,7 +121,7 @@ export function ProgressJourney({ requestId }: { requestId: string }) {
       <div className="relative mt-5 pb-1" aria-hidden="true">
         <div className="h-2 w-full rounded-full bg-surface-alt">
           <div
-            className="h-2 rounded-full bg-brand-gradient transition-[width] duration-700"
+            className="h-2 rounded-full bg-accent transition-[width] duration-700"
             style={{ width: `${data.percent}%` }}
             data-testid="journey-bar"
           />
@@ -141,7 +141,7 @@ export function ProgressJourney({ requestId }: { requestId: string }) {
           <li
             key={m.key}
             aria-current={m.current ? 'step' : undefined}
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${m.current ? 'border-accent bg-accent/5 font-semibold' : 'border-border'}`}
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${m.current ? 'border-accent bg-accent/5 font-medium' : 'border-border'}`}
           >
             {m.done ? (
               <Check className="size-4 shrink-0 text-success" aria-hidden="true" />
@@ -175,7 +175,7 @@ export function ProgressJourney({ requestId }: { requestId: string }) {
           )}
           <p
             role="status"
-            className="relative rounded-md border border-success bg-success-bg p-3 text-sm font-semibold text-success"
+            className="relative rounded-md border border-success bg-success-bg p-3 text-sm font-medium text-success"
           >
             Milestone reached: {cheer}
           </p>

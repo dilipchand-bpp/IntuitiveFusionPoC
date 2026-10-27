@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Button, Card, Field, Input } from '@if/ui';
+import { Button, Card, Field, Input, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export interface EsgData {
@@ -66,9 +66,7 @@ export function EsgCard({
   }
   return (
     <Card role="region" aria-labelledby="esg-h" data-testid="esg-card">
-      <h2 id="esg-h" className="font-heading text-xl font-bold">
-        ESG and social objectives
-      </h2>
+      <SectionHeader id="esg-h" title="ESG and social objectives" />
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         These are stored against the plan, shown in the plan, and carried into the tender pack so suppliers
         see them.
@@ -105,7 +103,7 @@ export function EsgCard({
         </Field>
       </div>
       <fieldset className="mt-3 flex flex-wrap gap-x-4">
-        <legend className="text-sm font-semibold">Socio-economic tags</legend>
+        <legend className="text-sm font-medium">Socio-economic tags</legend>
         {initial.options.map((o) => (
           <label key={o} className="flex min-h-[44px] items-center gap-2 text-sm">
             <input

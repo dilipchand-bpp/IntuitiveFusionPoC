@@ -30,7 +30,7 @@ function Value({ f }: { f: FieldView }): ReactNode {
   if (f.value) return displayValue(f.key, f.value);
   if (f.missing)
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-sm font-semibold text-warning">
+      <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-sm font-medium text-warning">
         <AlertTriangle className="size-4" aria-hidden="true" />
         Needed
       </span>
@@ -38,19 +38,14 @@ function Value({ f }: { f: FieldView }): ReactNode {
   return <span className="font-normal text-text-muted">Not set</span>;
 }
 
-function Tile({ f, big = false }: { f: FieldView; big?: boolean }) {
+function Tile({ f }: { f: FieldView }) {
   return (
     <div className="min-w-0 rounded-lg border border-border bg-surface-alt/60 p-3" data-field={f.key}>
-      <dt className="flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-text-muted">
+      <dt className="flex items-center justify-between gap-2 text-xs font-medium uppercase tracking-wide text-text-muted">
         <span>{f.label}</span>
         {f.aiDrafted && f.value && <AiBadge kind="drafted" />}
       </dt>
-      <dd
-        className={cn(
-          'mt-1 min-w-0 break-words font-semibold text-text',
-          big ? 'font-heading text-2xl' : 'text-base',
-        )}
-      >
+      <dd className={cn('mt-1 min-w-0 break-words font-medium text-text', 'text-sm')}>
         <Value f={f} />
       </dd>
     </div>
@@ -69,8 +64,8 @@ export function DraftPanel({ view, hideHeader = false }: { view: RequestView; hi
     <div className="@container flex flex-col gap-6" data-testid="draft-panel">
       {!hideHeader && (
         <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h2 className="font-heading text-xl font-bold">
-            <span className="mr-2 rounded-md bg-surface-alt px-2 py-0.5 font-mono text-sm font-semibold text-text-muted">
+          <h2 className="font-heading text-sm font-medium">
+            <span className="mr-2 rounded-md bg-surface-alt px-2 py-0.5 font-mono text-sm font-medium text-text-muted">
               {view.number}
             </span>
             {view.title}
@@ -84,7 +79,7 @@ export function DraftPanel({ view, hideHeader = false }: { view: RequestView; hi
       <section aria-label="Key facts">
         <dl className="grid gap-3 @md:grid-cols-2">
           {facts.map((f) => (
-            <Tile key={f.key} f={f} big={f.key === 'estimatedValue'} />
+            <Tile key={f.key} f={f} />
           ))}
         </dl>
         {view.currency && view.currency !== 'AUD' && view.originalAmount !== undefined && view.fxRate && (
@@ -101,7 +96,7 @@ export function DraftPanel({ view, hideHeader = false }: { view: RequestView; hi
             {pick(NARRATIVE).map((f) => (
               <div key={f.key} className="min-w-0 rounded-lg border border-border p-4" data-field={f.key}>
                 <dt className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-heading text-base font-bold">{f.label}</span>
+                  <span className="text-sm font-medium">{f.label}</span>
                   {f.aiDrafted && f.value && <AiBadge kind="drafted" />}
                 </dt>
                 <dd className="mt-2 max-w-prose break-words leading-relaxed text-text">
@@ -124,7 +119,7 @@ export function DraftPanel({ view, hideHeader = false }: { view: RequestView; hi
       )}
 
       <section aria-labelledby="gov-h" className="flex flex-col gap-4 rounded-lg bg-surface-alt/60 p-4">
-        <h3 id="gov-h" className="flex items-center gap-2 font-heading text-lg font-bold">
+        <h3 id="gov-h" className="flex items-center gap-2 text-sm font-medium">
           <ShieldCheck className="size-5 text-accent" aria-hidden="true" />
           Complexity and governance
         </h3>
@@ -177,12 +172,12 @@ export function DraftPanel({ view, hideHeader = false }: { view: RequestView; hi
                     <CircleDashed className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
                   )}
                   <span className="min-w-0 flex-1 text-sm">
-                    <strong className="block text-base">{g.label}</strong>
+                    <strong className="block font-medium">{g.label}</strong>
                     <span className="text-text-muted">{g.reason}</span>
                   </span>
                   <span
                     className={cn(
-                      'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold',
+                      'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
                       done ? 'bg-success-bg text-success' : 'bg-warning-bg text-warning',
                     )}
                   >

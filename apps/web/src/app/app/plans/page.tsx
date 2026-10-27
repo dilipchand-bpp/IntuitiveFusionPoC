@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, EmptyState, PageHeader, Table, Td, Th } from '@if/ui';
 import { COMPLEXITY_LABEL, COMPLEXITY_TONE, PLAN_STATUS_LABEL, PLAN_STATUS_TONE, aud } from '@/lib/labels';
 import { apiGet } from '@/lib/session';
 
@@ -20,14 +20,11 @@ const when = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium' });
 export default async function PlansPage() {
   const rows = await apiGet<Row[]>('/plans');
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-bold">Procurement plans</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Each submitted request gets a plan, drafted for you from what was asked. Review it, change anything
-          in plain language, then send it for approval.
-        </p>
-      </header>
+    <div className="flex flex-col gap-12">
+      <PageHeader
+        title="Procurement plans"
+        subtitle="Each submitted request gets a plan, drafted for you from what was asked. Review it, change anything in plain language, then send it for approval."
+      />
       {!rows ? (
         <EmptyState title="Plans unavailable" body="The list could not be loaded. Please refresh the page." />
       ) : rows.length === 0 ? (
