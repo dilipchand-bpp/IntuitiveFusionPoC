@@ -1,6 +1,6 @@
 'use client';
 import { useState, type ReactNode } from 'react';
-import { cn } from '@if/ui';
+import { SectionHeader, cn } from '@if/ui';
 import { ApiError } from '@/lib/api-client';
 
 export const problem = (e: unknown) =>
@@ -31,23 +31,18 @@ export function Card({
       aria-labelledby={id}
       data-testid={testId}
       className={cn(
-        'relative overflow-hidden rounded-lg border bg-surface p-5 shadow-sm',
+        'relative overflow-hidden rounded-lg border p-5',
         tone === 'accent' ? 'border-accent' : tone === 'warning' ? 'border-warning' : 'border-border',
       )}
     >
       {tone && (
         <span
           aria-hidden="true"
-          className={cn(
-            'absolute inset-x-0 top-0 h-1',
-            tone === 'accent' ? 'bg-brand-gradient' : 'bg-warning',
-          )}
+          className={cn('absolute inset-x-0 top-0 h-1', tone === 'accent' ? 'bg-accent' : 'bg-warning')}
         />
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id={id} className="font-heading text-lg font-bold">
-          {title}
-        </h2>
+        <SectionHeader id={id} title={title} />
         {badge}
       </div>
       {children}

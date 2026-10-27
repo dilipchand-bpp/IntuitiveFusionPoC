@@ -346,7 +346,7 @@ export function NegotiationPanel({
             );
           }}
         >
-          <h3 className="font-heading text-base font-bold">Open a round</h3>
+          <h3 className="font-heading text-sm font-medium">Open a round</h3>
           <fieldset className="flex flex-col gap-1">
             <legend className="text-sm font-semibold">Invite</legend>
             {ev.suppliers.map((s) => (
@@ -575,7 +575,7 @@ export function RankingEntry({
             className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
             data-testid="rank-row"
           >
-            <span className="inline-flex size-8 items-center justify-center rounded-full bg-brand-gradient text-sm font-extrabold">
+            <span className="inline-flex size-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-fg">
               {i + 1}
             </span>
             <strong className="min-w-0 flex-1">{s.displayName}</strong>

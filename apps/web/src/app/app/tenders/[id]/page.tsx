@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { EmptyState } from '@if/ui';
+import { EmptyState, PageHeader } from '@if/ui';
 import { DocumentTools } from '@/components/collab/doc-tools';
 import { InstructBox, ResponseSummaries } from '@/components/collab/ai-panels';
 import { DraftPanel } from '@/components/copilot/draft-panel';
@@ -22,10 +22,14 @@ export default async function TenderPage({ params }: { params: Promise<{ id: str
       </p>
       {res.data ? (
         <>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="font-mono text-lg text-text-muted">{res.data.requestNumber}</span>{' '}
-            {res.data.title}
-          </h1>
+          <PageHeader
+            title={
+              <>
+                <span className="font-mono text-sm text-text-muted">{res.data.requestNumber}</span>{' '}
+                {res.data.title}
+              </>
+            }
+          />
           <TenderWorkspace initial={res.data} csrf={user.csrfToken} roles={user.roles} />
           {user.roles.includes('PROCUREMENT') && res.data.status === 'STAGED' && (
             <InstructBox

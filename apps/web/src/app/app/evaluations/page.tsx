@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th, type BadgeTone } from '@if/ui';
+import { Badge, EmptyState, Table, Td, Th, type BadgeTone, PageHeader, SectionHeader } from '@if/ui';
 import { OpenEvaluation } from '@/components/evaluation/open-evaluation';
 import type { EvalSummary, ReadyTender } from '@/components/evaluation/types';
 import { TENDER_TYPE_LABEL, formatDateTime } from '@/lib/labels';
@@ -34,13 +34,16 @@ export default async function EvaluationsPage({
         : '';
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Evaluations</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Panel members declare conflicts first, score independently without seeing each other&apos;s scores,
-          and the chair brings the scores together, with differences recorded, before the report is written.
-        </p>
-      </header>
+      <PageHeader
+        title="Evaluations"
+        subtitle={
+          <>
+            Panel members declare conflicts first, score independently without seeing each other&apos;s
+            scores, and the chair brings the scores together, with differences recorded, before the report is
+            written.
+          </>
+        }
+      />
 
       {conflict === '1' && (
         <p
@@ -55,19 +58,17 @@ export default async function EvaluationsPage({
 
       {(data?.ready ?? []).length > 0 && (
         <section aria-labelledby="ready-h" className="flex flex-col gap-3">
-          <h2 id="ready-h" className="font-heading text-xl font-bold">
-            Closed tenders ready to evaluate
-          </h2>
+          <SectionHeader id="ready-h" title={<>Closed tenders ready to evaluate</>} />
           <ul className="grid gap-3" aria-label="Closed tenders without an evaluation">
             {data!.ready.map((t) => (
               <li
                 key={t.tenderId}
-                className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center"
+                className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center"
                 data-testid="ready-tender"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs text-text-muted">{t.requestNumber}</p>
-                  <p className="font-heading text-lg font-semibold">{t.title}</p>
+                  <p className="font-heading text-sm font-medium">{t.title}</p>
                   <p className="text-sm text-text-muted">
                     {TENDER_TYPE_LABEL[t.type] ?? t.type} · {t.bids} bid(s) received
                   </p>
@@ -86,11 +87,16 @@ export default async function EvaluationsPage({
       )}
 
       <section aria-labelledby="all-h" className="flex flex-col gap-3">
-        <h2 id="all-h" className="font-heading text-xl font-bold">
-          {user?.roles.includes('EVALUATOR') || user?.roles.includes('CHAIR')
-            ? 'Your evaluations'
-            : 'All evaluations'}
-        </h2>
+        <SectionHeader
+          id="all-h"
+          title={
+            <>
+              {user?.roles.includes('EVALUATOR') || user?.roles.includes('CHAIR')
+                ? 'Your evaluations'
+                : 'All evaluations'}
+            </>
+          }
+        />
         {!data ? (
           <EmptyState
             title="Evaluations unavailable"

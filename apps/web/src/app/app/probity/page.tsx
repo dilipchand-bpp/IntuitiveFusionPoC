@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th, type BadgeTone } from '@if/ui';
+import { Badge, EmptyState, Table, Td, Th, type BadgeTone, PageHeader } from '@if/ui';
 import { apiGet } from '@/lib/session';
 
 export const metadata = { title: 'Probity portal – Intuitive Fusion' };
@@ -31,14 +31,16 @@ export default async function ProbityPortalPage() {
   const data = await apiGet<Portal>('/probity/portal');
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Probity portal</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          {data?.external
-            ? 'Read-only oversight of the procurements you are allocated to. You can place a hold to freeze an evaluation on suspected bias or a process breach, and you write and sign the probity plan and outcomes report.'
-            : 'Oversight of every procurement. You can place a hold to freeze an evaluation on suspected bias or a process breach, and you write and sign the probity plan and outcomes report.'}
-        </p>
-      </header>
+      <PageHeader
+        title="Probity portal"
+        subtitle={
+          <>
+            {data?.external
+              ? 'Read-only oversight of the procurements you are allocated to. You can place a hold to freeze an evaluation on suspected bias or a process breach, and you write and sign the probity plan and outcomes report.'
+              : 'Oversight of every procurement. You can place a hold to freeze an evaluation on suspected bias or a process breach, and you write and sign the probity plan and outcomes report.'}
+          </>
+        }
+      />
       {!data ? (
         <EmptyState title="The portal is unavailable" body="Please refresh the page." />
       ) : data.procurements.length === 0 ? (

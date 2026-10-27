@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, EmptyState, Table, Td, Th, PageHeader, SectionHeader } from '@if/ui';
 import { CreateTenderForm } from '@/components/tender/create-tender-form';
 import type { TenderSummary } from '@/components/tender/types';
 import {
@@ -33,28 +33,24 @@ export default async function TendersPage() {
   const ready = (plans ?? []).filter((p) => !have.has(p.requestId));
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Tenders</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Build the tender pack from an approved plan, keep it staged until a delegate gives permission, then
-          publish, answer supplier questions and watch bids arrive sealed until close.
-        </p>
-      </header>
+      <PageHeader
+        title="Tenders"
+        subtitle={
+          <>
+            Build the tender pack from an approved plan, keep it staged until a delegate gives permission,
+            then publish, answer supplier questions and watch bids arrive sealed until close.
+          </>
+        }
+      />
 
       {ready.length > 0 && (
         <section aria-labelledby="ready-h" className="flex flex-col gap-3">
-          <h2 id="ready-h" className="font-heading text-xl font-bold">
-            Ready for a tender pack
-          </h2>
+          <SectionHeader id="ready-h" title={<>Ready for a tender pack</>} />
           <ul className="grid gap-3" aria-label="Approved plans without a tender">
             {ready.map((p) => (
-              <li
-                key={p.requestId}
-                className="rounded-lg border border-border bg-surface p-4 shadow-sm"
-                data-testid="ready-plan"
-              >
+              <li key={p.requestId} className="rounded-lg border border-border p-4" data-testid="ready-plan">
                 <p className="font-mono text-xs text-text-muted">{p.requestNumber}</p>
-                <p className="font-heading text-lg font-semibold">{p.title}</p>
+                <p className="font-heading text-sm font-medium">{p.title}</p>
                 <p className="mb-3 text-sm text-text-muted">
                   {aud.format(p.estimatedValue)} · plan approved and locked
                 </p>
@@ -66,9 +62,7 @@ export default async function TendersPage() {
       )}
 
       <section aria-labelledby="all-h" className="flex flex-col gap-3">
-        <h2 id="all-h" className="font-heading text-xl font-bold">
-          All tenders
-        </h2>
+        <SectionHeader id="all-h" title={<>All tenders</>} />
         {!tenders ? (
           <EmptyState
             title="Tenders unavailable"

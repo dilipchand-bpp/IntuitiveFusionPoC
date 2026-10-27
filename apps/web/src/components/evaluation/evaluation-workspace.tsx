@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Dialog, Field, Input, Select, Stepper, Textarea, cn } from '@if/ui';
+import { Badge, Button, Dialog, Field, Input, SectionHeader, Select, Stepper, Textarea, cn } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { TENDER_TYPE_LABEL, formatDateTime } from '@/lib/labels';
 import { ArtefactBadge } from '@/components/b9/artefact-badge';
@@ -271,9 +271,9 @@ export function EvaluationWorkspace({
                 : '–',
           ],
         ].map(([k, v]) => (
-          <div key={k} className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-            <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{k}</dt>
-            <dd className="mt-1 font-heading text-lg font-bold">{v}</dd>
+          <div key={k} className="rounded-lg border border-border p-4">
+            <dt className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">{k}</dt>
+            <dd className="mt-1 font-heading text-sm font-medium">{v}</dd>
           </div>
         ))}
       </dl>
@@ -420,7 +420,7 @@ export function EvaluationWorkspace({
                     key={r.supplierId}
                     className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-2"
                   >
-                    <span className="inline-flex size-8 items-center justify-center rounded-full bg-brand-gradient text-sm font-extrabold">
+                    <span className="inline-flex size-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-fg">
                       {r.rank ?? '–'}
                     </span>
                     <strong className="min-w-0 flex-1">{r.displayName}</strong>
@@ -602,7 +602,7 @@ function ScoreInput({
       step={0.5}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="min-h-[44px] w-28 rounded-md border border-border-strong bg-surface px-3 text-base text-text"
+      className="min-h-[44px] w-28 rounded-md border border-border-strong bg-surface px-3 text-sm text-text"
     />
   );
 }
@@ -702,7 +702,7 @@ function ScoringSheet({ ev, csrf, onDone }: { ev: EvalView; csrf: string; onDone
             className="rounded-lg border border-border p-4"
             data-testid="score-supplier"
           >
-            <legend className="px-1 font-heading text-base font-bold">{s.displayName}</legend>
+            <legend className="px-1 font-heading text-sm font-medium">{s.displayName}</legend>
             <ul className="flex flex-col gap-3">
               {data.criteria.map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
@@ -856,7 +856,7 @@ function ConsensusPanel({
             className="rounded-lg border border-border p-4"
             data-testid="consensus-supplier"
           >
-            <legend className="px-1 font-heading text-base font-bold">{s.displayName}</legend>
+            <legend className="px-1 font-heading text-sm font-medium">{s.displayName}</legend>
             <ul className="flex flex-col gap-4">
               {ev.criteria
                 .filter((c) => row(s.supplierId, c.id))
@@ -1077,7 +1077,7 @@ function ReportPanel({
               .filter((x) => x.paragraphs.length > 0)
               .map((s) => (
                 <section key={s.key} aria-label={s.label} data-report-section={s.key}>
-                  <h3 className="font-heading text-base font-bold">{s.label}</h3>
+                  <h3 className="font-heading text-sm font-medium">{s.label}</h3>
                   <div className="mt-1 flex flex-col gap-2 text-sm">
                     {s.paragraphs.map((t, i) => (
                       <p key={i} className="max-w-prose whitespace-pre-wrap">
@@ -1188,15 +1188,13 @@ function StageGuide({ ev }: { ev: EvalView }) {
     <section
       aria-labelledby="stage-h"
       data-testid="stage-guide"
-      className="flex items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-sm"
+      className="flex items-start gap-3 rounded-lg border border-border p-5"
     >
-      <span className="icon-tile shrink-0">
+      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-accent">
         <Info className="size-5" aria-hidden="true" />
       </span>
       <div className="min-w-0">
-        <h2 id="stage-h" className="font-heading text-lg font-bold">
-          {s.title}
-        </h2>
+        <SectionHeader id="stage-h" title={s.title} />
         <p className="mt-1 text-sm text-text-muted">{s.body}</p>
       </div>
     </section>

@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, Textarea, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/labels';
 import type { TenderView } from './types';
@@ -127,9 +127,7 @@ export function TenderB2Panel({ t, roles, csrf }: { t: TenderView; roles: string
       )}
 
       <Card role="region" aria-labelledby="stages-h" data-testid="stages-card">
-        <h2 id="stages-h" className="font-heading text-xl font-bold">
-          Stages
-        </h2>
+        <SectionHeader id="stages-h" title={<>Stages</>} />
         <ol className="mt-2 flex flex-col gap-2 text-sm" aria-label="Stages of this procurement">
           {stages.map((s) => (
             <li key={s.tenderId} data-testid="stage-row" data-stage={s.stage}>
@@ -215,9 +213,7 @@ export function TenderB2Panel({ t, roles, csrf }: { t: TenderView; roles: string
 
       {closed && (
         <Card role="region" aria-labelledby="late-h" data-testid="late-card">
-          <h2 id="late-h" className="font-heading text-xl font-bold">
-            Late submissions
-          </h2>
+          <SectionHeader id="late-h" title={<>Late submissions</>} />
           <p className="text-sm text-text-muted">
             A supplier with a good reason can be given extra time, before evaluation begins. It is recorded
             and the supplier is told.
@@ -311,9 +307,7 @@ export function TenderB2Panel({ t, roles, csrf }: { t: TenderView; roles: string
       {(legal || procurement) && (
         <Card role="region" aria-labelledby="dev-h" data-testid="deviations-card">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 id="dev-h" className="font-heading text-xl font-bold">
-              Deviation register
-            </h2>
+            <SectionHeader id="dev-h" title={<>Deviation register</>} />
             {register && !register.sealed && register.items.length > 0 && (
               <span className="ml-auto flex gap-2">
                 <Button asChild variant="secondary">
@@ -449,9 +443,7 @@ export function TenderB2Panel({ t, roles, csrf }: { t: TenderView; roles: string
 
       {notices.length > 0 && (
         <Card role="region" aria-labelledby="notice-h" data-testid="notices-card">
-          <h2 id="notice-h" className="font-heading text-xl font-bold">
-            Public notices
-          </h2>
+          <SectionHeader id="notice-h" title={<>Public notices</>} />
           <ul className="mt-2 flex flex-col gap-1 text-sm" aria-label="Public notices">
             {notices.map((n) => (
               <li key={n.id}>

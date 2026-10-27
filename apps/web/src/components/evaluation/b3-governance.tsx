@@ -532,7 +532,7 @@ export function PanelTools({ ev, csrf, roles, onChange }: Common) {
             );
           }}
         >
-          <h3 className="font-heading text-base font-bold">Replace an evaluator</h3>
+          <h3 className="font-heading text-sm font-medium">Replace an evaluator</h3>
           <p className="text-sm text-text-muted">
             The leaver&apos;s marks stay as read-only history and are left out of the averages. The
             replacement declares any conflict and starts with a clean scoring matrix.
@@ -677,7 +677,7 @@ export function ProbityDocs({ ev, csrf, roles }: Omit<Common, 'onChange'>) {
               data-testid={`probity-${kind.toLowerCase()}`}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-heading text-base font-bold">{KIND_LABEL[kind]}</h3>
+                <h3 className="font-heading text-sm font-medium">{KIND_LABEL[kind]}</h3>
                 {d && (
                   <Badge tone={d.status === 'SIGNED' ? 'success' : 'neutral'}>
                     {d.status === 'SIGNED' ? 'Signed' : 'Draft'} · version {d.version}
@@ -949,7 +949,7 @@ export function ReportCoi({ ev, csrf, roles, reportId }: Omit<Common, 'onChange'
       className="mt-4 border-t border-border pt-4"
       data-testid="report-coi"
     >
-      <h3 className="font-heading text-base font-bold">Conflicts of interest on this report</h3>
+      <h3 className="font-heading text-sm font-medium">Conflicts of interest on this report</h3>
       <p className="mt-1 max-w-prose text-sm text-text-muted">
         As at the plan, anyone who prepares or approves the report declares any conflict. A conflict that is
         not cleared stops that person approving.

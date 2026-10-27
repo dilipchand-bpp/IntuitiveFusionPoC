@@ -1,7 +1,7 @@
 'use client';
 import { Lock, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { Bar, has, send, useData, useRun } from '@/components/contract/b5-shared';
 import { aud } from '@/lib/labels';
 import type { TenderView } from './types';
@@ -73,9 +73,7 @@ export function ResponseFormPanel({
   return (
     <div className="flex flex-col gap-4" data-testid="response-form">
       <Card role="region" aria-labelledby="rf-h">
-        <h2 id="rf-h" className="font-heading text-xl font-bold">
-          Response form
-        </h2>
+        <SectionHeader id="rf-h" title={<>Response form</>} />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           Instead of attaching documents, a supplier answers these questions in the portal. Their answers are
           checked as they type, and a bid with a required question blank cannot be submitted.
@@ -198,9 +196,7 @@ export function ResponseFormPanel({
       </Card>
 
       <Card role="region" aria-labelledby="req-h">
-        <h2 id="req-h" className="font-heading text-xl font-bold">
-          What a bidder must hold, and how the bids are opened
-        </h2>
+        <SectionHeader id="req-h" title={<>What a bidder must hold, and how the bids are opened</>} />
         {canEdit ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Field
@@ -300,9 +296,7 @@ function AnswersPanel({ t }: { t: TenderView }) {
   if (!data || data.rows.length === 0) return null;
   return (
     <Card role="region" aria-labelledby="ans-h" data-testid="answers-matrix">
-      <h2 id="ans-h" className="font-heading text-xl font-bold">
-        Answers side by side
-      </h2>
+      <SectionHeader id="ans-h" title={<>Answers side by side</>} />
       <Table caption="Supplier answers to the response form" className="mt-2">
         <thead>
           <tr>
@@ -379,9 +373,7 @@ export function OpeningPanel({
   if (!data) return null;
   return (
     <Card role="region" aria-labelledby="open-h" className="mb-4" data-testid="opening">
-      <h2 id="open-h" className="font-heading text-xl font-bold">
-        Opening the bids
-      </h2>
+      <SectionHeader id="open-h" title={<>Opening the bids</>} />
       {data.opened ? (
         <p role="status" className="mt-2 text-sm font-medium text-success">
           Opened by two witnesses

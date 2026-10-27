@@ -3,7 +3,7 @@ import { OpeningPanel, ResponseFormPanel } from './b8-panels';
 import { CheckCircle2, Copy, Lock, Send } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { FileDown } from 'lucide-react';
-import { Badge, Button, Card, Field, Input, Select, Stepper, Tabs, Textarea } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Stepper, Tabs, Textarea, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import {
   TENDER_STATUS_LABEL,
@@ -108,18 +108,16 @@ export function TenderWorkspace({
             t.submissions.sealed ? `${t.submissions.count} (sealed)` : String(t.submissions.count),
           ],
         ].map(([k, v]) => (
-          <div key={k} className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-            <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{k}</dt>
-            <dd className="mt-1 font-heading text-lg font-bold">{v}</dd>
+          <div key={k} className="rounded-lg border border-border p-4">
+            <dt className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">{k}</dt>
+            <dd className="mt-1 font-heading text-sm font-medium">{v}</dd>
           </div>
         ))}
       </dl>
 
       {/* ---------------------------------------------------------- publish gate */}
       <Card role="region" aria-labelledby="publish-h">
-        <h2 id="publish-h" className="font-heading text-xl font-bold">
-          Permission and publishing
-        </h2>
+        <SectionHeader id="publish-h" title={<>Permission and publishing</>} />
         {t.permission.granted ? (
           <p
             className="mt-2 flex items-start gap-2 rounded-md border-2 border-success px-3 py-2 text-sm font-semibold text-success"
@@ -232,9 +230,7 @@ export function TenderWorkspace({
             label: 'Tender pack',
             content: (
               <section aria-labelledby="pack-h" className="flex flex-col gap-3">
-                <h2 id="pack-h" className="font-heading text-xl font-bold">
-                  Tender pack
-                </h2>
+                <SectionHeader id="pack-h" title={<>Tender pack</>} />
                 {!t.permissions.canEdit && (
                   <p className="text-sm text-text-muted">
                     {t.status === 'STAGED'
@@ -283,9 +279,7 @@ export function TenderWorkspace({
               <>
                 <OpeningPanel t={t} csrf={csrf} roles={roles} onDone={refresh} />
                 <Card role="region" aria-labelledby="bids-h">
-                  <h2 id="bids-h" className="font-heading text-xl font-bold">
-                    Bids
-                  </h2>
+                  <SectionHeader id="bids-h" title={<>Bids</>} />
                   {t.submissions.sealed ? (
                     <p
                       className="mt-2 flex items-start gap-2 text-sm text-text-muted"
@@ -368,7 +362,7 @@ function PackSection({
   return (
     <Card className="p-5" data-testid={`pack-${field.key}`}>
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-heading text-lg font-bold">{field.label}</h3>
+        <h3 className="font-heading text-sm font-medium">{field.label}</h3>
         {canEdit && !editing && (
           <Button
             variant="secondary"
@@ -447,9 +441,7 @@ function InvitePanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone:
   }
   return (
     <Card role="region" aria-labelledby="inv-h">
-      <h2 id="inv-h" className="font-heading text-xl font-bold">
-        Supplier invitations
-      </h2>
+      <SectionHeader id="inv-h" title={<>Supplier invitations</>} />
       <p className="mt-1 text-sm text-text-muted">
         {t.access === 'OPEN'
           ? 'This tender is open access: any registered supplier can see it. You can still invite specific suppliers.'
@@ -553,9 +545,7 @@ function QaPanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone: () 
   const ready = t.questions.filter((q) => q.status === 'ANSWERED');
   return (
     <Card role="region" aria-labelledby="qa-h">
-      <h2 id="qa-h" className="font-heading text-xl font-bold">
-        Questions and addenda
-      </h2>
+      <SectionHeader id="qa-h" title={<>Questions and addenda</>} />
       <p className="mt-1 text-sm text-text-muted">
         Questions are shown here without saying who asked. Answers reach every supplier at the same time, as
         an addendum.
@@ -661,7 +651,7 @@ function QaPanel({ t, csrf, onDone }: { t: TenderView; csrf: string; onDone: () 
             });
           }}
         >
-          <h3 className="font-heading text-lg font-bold">Issue an addendum to all suppliers</h3>
+          <h3 className="font-heading text-sm font-medium">Issue an addendum to all suppliers</h3>
           {ready.length > 0 && (
             <fieldset className="flex flex-col gap-1">
               <legend className="text-sm font-semibold">Include these answered questions</legend>
