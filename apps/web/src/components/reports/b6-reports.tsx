@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, EmptyState, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { api } from '@/lib/api-client';
 import { aud } from '@/lib/labels';
 import { Bar, send, useData, useRun } from '@/components/contract/b5-shared';
@@ -164,7 +164,7 @@ export function ScheduleGantt({ csrf }: { csrf: string }) {
                           role="img"
                           aria-label={`${PHASE_NAME[s.phase]}: ${s.startDate} to ${s.endDate}`}
                           title={`${PHASE_NAME[s.phase]} ${s.startDate} to ${s.endDate}${data.canMove ? ' (drag to move)' : ''}`}
-                          className={`absolute top-0 flex h-8 items-center overflow-hidden rounded-sm border border-surface text-[10px] font-semibold text-bg ${PHASE_FILL[k % PHASE_FILL.length]} ${data.canMove ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          className={`absolute top-0 flex h-8 items-center overflow-hidden rounded-sm border border-surface text-[11px] font-semibold text-bg ${PHASE_FILL[k % PHASE_FILL.length]} ${data.canMove ? 'cursor-grab active:cursor-grabbing' : ''}`}
                           style={{
                             left: `${pct(ms(s.startDate))}%`,
                             width: `${Math.max(1, pct(ms(s.endDate)) - pct(ms(s.startDate)))}%`,
@@ -249,9 +249,7 @@ export function ScheduleGantt({ csrf }: { csrf: string }) {
       )}
 
       <section aria-labelledby="cal-h">
-        <h2 id="cal-h" className="font-heading text-xl font-bold">
-          Delegate calendar
-        </h2>
+        <SectionHeader id="cal-h" title="Delegate calendar" />
         <Table caption="Dates a delegate is asked to act" className="mt-2" data-testid="delegate-calendar">
           <thead>
             <tr>
@@ -322,7 +320,7 @@ export function Dashboards() {
             {d.data.kpis.map((k) => (
               <Card key={k.label}>
                 <dt className="text-sm text-text-muted">{k.label}</dt>
-                <dd className="mt-1 text-2xl font-extrabold">
+                <dd className="mt-1 text-sm font-medium">
                   {typeof k.value === 'number' && /value|committed|invoiced/i.test(k.label)
                     ? aud.format(k.value)
                     : k.value}
@@ -409,9 +407,7 @@ export function Performance() {
   return (
     <div className="flex flex-col gap-6" data-testid="performance">
       <section aria-labelledby="cs-h">
-        <h2 id="cs-h" className="font-heading text-xl font-bold">
-          Category spend
-        </h2>
+        <SectionHeader id="cs-h" title="Category spend" />
         <ul className="mt-2 flex flex-col gap-2">
           {data.categorySpend.map((c) => (
             <li key={c.category}>
@@ -428,9 +424,7 @@ export function Performance() {
         </ul>
       </section>
       <section aria-labelledby="mv-h">
-        <h2 id="mv-h" className="font-heading text-xl font-bold">
-          Maverick spend: {aud.format(data.maverick.total)}
-        </h2>
+        <SectionHeader id="mv-h" title={<>Maverick spend: {aud.format(data.maverick.total)}</>} />
         <p className="text-sm text-text-muted">
           Invoices released outside the contract match, and purchases that reached delivery with no executed
           contract.
@@ -459,9 +453,7 @@ export function Performance() {
         </Table>
       </section>
       <section aria-labelledby="sv-h">
-        <h2 id="sv-h" className="font-heading text-xl font-bold">
-          Captured savings: {aud.format(data.savings.captured)}
-        </h2>
+        <SectionHeader id="sv-h" title={<>Captured savings: {aud.format(data.savings.captured)}</>} />
         <Table caption="Savings against the estimate" className="mt-2">
           <thead>
             <tr>
@@ -492,14 +484,19 @@ export function Performance() {
         </Table>
       </section>
       <section aria-labelledby="vl-h">
-        <h2 id="vl-h" className="font-heading text-xl font-bold">
-          Procurement velocity{' '}
-          {data.velocity.bottleneck && (
-            <Badge tone="warning">
-              Bottleneck: {PHASE_NAME[data.velocity.bottleneck] ?? data.velocity.bottleneck}
-            </Badge>
-          )}
-        </h2>
+        <SectionHeader
+          id="vl-h"
+          title={
+            <>
+              Procurement velocity{' '}
+              {data.velocity.bottleneck && (
+                <Badge tone="warning">
+                  Bottleneck: {PHASE_NAME[data.velocity.bottleneck] ?? data.velocity.bottleneck}
+                </Badge>
+              )}
+            </>
+          }
+        />
         <Table caption="Time in each phase" className="mt-2" data-testid="velocity">
           <thead>
             <tr>
@@ -547,9 +544,14 @@ export function Performance() {
       </section>
       {drill && (
         <Card aria-labelledby="dr-h" role="region" data-testid="drill">
-          <h2 id="dr-h" className="font-heading text-lg font-bold">
-            {drill.label}: {drill.data.total} procurement(s)
-          </h2>
+          <SectionHeader
+            id="dr-h"
+            title={
+              <>
+                {drill.label}: {drill.data.total} procurement(s)
+              </>
+            }
+          />
           <ul className="mt-2 text-sm">
             {drill.data.rows.map((x) => (
               <li key={x.id}>
@@ -663,9 +665,7 @@ export function SupplierRisk({ csrf, canEdit }: { csrf: string; canEdit: boolean
         </tbody>
       </Table>
       <section aria-labelledby="sp-h">
-        <h2 id="sp-h" className="font-heading text-xl font-bold">
-          Single points of failure
-        </h2>
+        <SectionHeader id="sp-h" title="Single points of failure" />
         <ul className="mt-2 list-disc pl-5 text-sm" data-testid="single-points">
           {data.singlePoints.length === 0 && <li>None found.</li>}
           {data.singlePoints.map((s, k) => (
@@ -680,9 +680,7 @@ export function SupplierRisk({ csrf, canEdit }: { csrf: string; canEdit: boolean
       </section>
       {canEdit && (
         <Card aria-labelledby="loc-h" role="region">
-          <h2 id="loc-h" className="font-heading text-xl font-bold">
-            Record a supplier location
-          </h2>
+          <SectionHeader id="loc-h" title="Record a supplier location" />
           <form
             aria-label="Record a supplier location"
             className="mt-2 flex flex-wrap items-end gap-3"
@@ -862,21 +860,19 @@ export function CapacityView({ csrf, canAssign }: { csrf: string; canAssign: boo
         ].map(([k, v]) => (
           <Card key={k as string}>
             <dt className="text-sm text-text-muted">{k}</dt>
-            <dd className="mt-1 text-2xl font-extrabold">{v}</dd>
+            <dd className="mt-1 text-sm font-medium">{v}</dd>
           </Card>
         ))}
       </dl>
 
       <section aria-labelledby="mgrs-h" className="flex flex-col gap-3">
-        <h2 id="mgrs-h" className="font-heading text-xl font-bold">
-          Managers
-        </h2>
+        <SectionHeader id="mgrs-h" title="Managers" />
         <ul className="grid gap-4 lg:grid-cols-2">
           {data.managers.map((m) => (
             <li key={m.managerId}>
               <Card data-testid={`manager-${m.name}`} className="h-full">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-heading text-lg font-bold">{m.name}</h3>
+                  <h3 className="font-heading text-sm font-medium">{m.name}</h3>
                   {m.overloaded && <Badge tone="error">Over capacity</Badge>}
                   <span className="ml-auto text-sm text-text-muted">{aud.format(m.exposure)} exposure</span>
                 </div>
@@ -929,9 +925,7 @@ export function CapacityView({ csrf, canAssign }: { csrf: string; canAssign: boo
       {data.unassigned.length > 0 && (
         <section aria-labelledby="un-h" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 id="un-h" className="font-heading text-xl font-bold">
-              Not yet assigned to a manager ({data.unassigned.length})
-            </h2>
+            <SectionHeader id="un-h" title={<>Not yet assigned to a manager ({data.unassigned.length})</>} />
             {canAssign && (
               <div className="ml-auto flex items-center gap-2">
                 <Select
@@ -1132,9 +1126,7 @@ export function AskPanel({ csrf, initial = '' }: { csrf: string; initial?: strin
       {r.messages}
       {ans && (
         <section aria-labelledby="ans-h" data-testid="answer">
-          <h2 id="ans-h" className="font-heading text-lg font-bold">
-            {ans.total} result(s)
-          </h2>
+          <SectionHeader id="ans-h" title={<>{ans.total} result(s)</>} />
           <p className="text-sm text-text-muted" data-testid="interpretation">
             I read this as: {ans.interpretation}. ({ans.model})
           </p>
@@ -1200,9 +1192,7 @@ export function AskPanel({ csrf, initial = '' }: { csrf: string; initial?: strin
         </section>
       )}
       <section aria-labelledby="sv2-h">
-        <h2 id="sv2-h" className="font-heading text-lg font-bold">
-          Saved views
-        </h2>
+        <SectionHeader id="sv2-h" title="Saved views" />
         <ul className="mt-2 flex flex-col gap-2 text-sm" data-testid="saved-views">
           {(views.data ?? []).length === 0 && (
             <li className="text-text-muted">None yet. Ask a question and save it.</li>

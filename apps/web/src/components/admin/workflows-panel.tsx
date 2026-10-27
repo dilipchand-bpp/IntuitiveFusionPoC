@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import { Badge, Button, Card, Dialog, Field, Input } from '@if/ui';
+import { Badge, Button, Card, Dialog, Field, Input, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export interface WorkflowRow {
@@ -88,9 +88,7 @@ export function WorkflowsPanel({
           <li key={w.id}>
             <Card aria-labelledby={`wf-${w.id}`} role="region" data-testid={`workflow-${w.id}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 id={`wf-${w.id}`} className="font-heading text-lg font-bold">
-                  {w.name}
-                </h2>
+                <SectionHeader id={`wf-${w.id}`} title={<>{w.name}</>} />
                 <Badge tone="info">{TIER[w.tier]}</Badge>
               </div>
               <ol className="mt-3 flex flex-col gap-1 text-sm">

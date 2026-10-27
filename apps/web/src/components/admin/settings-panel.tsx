@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { B11dSettings } from '@/components/b11/settings-sections';
 import { ApiError, api } from '@/lib/api-client';
 import {
@@ -237,9 +237,7 @@ export function Section({
   const full = add ? add.count >= add.max : false;
   return (
     <Card role="region" aria-labelledby={`${id}-h`} data-testid={`settings-${id}`}>
-      <h2 id={`${id}-h`} className="font-heading text-xl font-bold">
-        {title}
-      </h2>
+      <SectionHeader id={`${id}-h`} title={<>{title}</>} />
       <p className="mt-1 max-w-prose text-sm text-text-muted">{blurb}</p>
       {!add && fixed && (
         <p className="mt-1 max-w-prose text-xs text-text-muted" data-testid={`settings-${id}-fixed`}>

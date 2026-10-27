@@ -50,7 +50,7 @@ export function SupplierMap({ pins }: { pins: Pin[] }) {
       const points: Array<[number, number]> = [];
       for (const p of pins) {
         const el = document.createElement('span');
-        el.className = `flex size-8 items-center justify-center rounded-full border-2 border-surface text-base font-bold shadow-md ${FILL[p.level] ?? FILL.UNKNOWN}`;
+        el.className = `flex size-8 items-center justify-center rounded-full border-2 border-surface text-sm font-semibold ${FILL[p.level] ?? FILL.UNKNOWN}`;
         el.textContent = SHAPE[p.level] ?? SHAPE.UNKNOWN!;
         const icon = L.divIcon({
           html: el,

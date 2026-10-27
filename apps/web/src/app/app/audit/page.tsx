@@ -1,5 +1,17 @@
 import Link from 'next/link';
-import { Badge, EmptyState, Table, Td, Th, type BadgeTone } from '@if/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  Table,
+  Td,
+  Th,
+  type BadgeTone,
+} from '@if/ui';
 import type { AuditPage, ProcurementTable } from '@/components/reports/types';
 import { formatDateTime } from '@/lib/labels';
 import { apiGet, getSessionUser } from '@/lib/session';
@@ -32,15 +44,12 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   ]);
   const link = (o: number) =>
     `/app/audit?${new URLSearchParams({ ...Object.fromEntries(query), offset: String(o) })}`;
-  const input = 'min-h-[44px] rounded-md border border-border-strong bg-surface px-3 font-normal';
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Audit trail</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Who did what and when, newest first, with what changed. Entries cannot be edited or removed.
-        </p>
-      </header>
+    <div className="flex flex-col gap-12">
+      <PageHeader
+        title="Audit trail"
+        subtitle="Who did what and when, newest first, with what changed. Entries cannot be edited or removed."
+      />
 
       <form
         method="get"
@@ -48,40 +57,32 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         aria-label="Filter the audit trail"
         className="flex flex-wrap items-end gap-3"
       >
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          Procurement
-          <select name="requestId" defaultValue={filters.requestId} className={`${input} w-64`}>
-            <option value="">All activity</option>
-            {(procs?.items ?? []).map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.number} {r.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          Action starts with
-          <input
-            name="action"
-            defaultValue={filters.action}
-            placeholder="plan."
-            className={`${input} w-40`}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          From
-          <input type="date" name="from" defaultValue={filters.from} className={input} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          To
-          <input type="date" name="to" defaultValue={filters.to} className={input} />
-        </label>
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-md border border-border-strong bg-surface px-4 text-sm font-semibold hover:bg-surface-alt"
-        >
+        <div className="w-64 max-w-full">
+          <Field label="Procurement">
+            <Select name="requestId" defaultValue={filters.requestId}>
+              <option value="">All activity</option>
+              {(procs?.items ?? []).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.number} {r.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+        <div className="w-40">
+          <Field label="Action starts with">
+            <Input name="action" defaultValue={filters.action} placeholder="plan." />
+          </Field>
+        </div>
+        <Field label="From">
+          <Input type="date" name="from" defaultValue={filters.from} />
+        </Field>
+        <Field label="To">
+          <Input type="date" name="to" defaultValue={filters.to} />
+        </Field>
+        <Button type="submit" variant="secondary">
           Search
-        </button>
+        </Button>
         {query.size > 0 && (
           <Link href="/app/audit" className="min-h-[44px] py-3 text-sm">
             Clear
@@ -98,13 +99,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               {page.page.total} event(s)
             </p>
             {canExport && (
-              <a
-                href={`/api/v1/audit-events/export${query.size ? `?${query}` : ''}`}
-                download
-                className="ml-auto inline-flex min-h-[44px] items-center rounded-md bg-brand-gradient px-4 text-sm font-semibold text-gradient-fg no-underline"
-              >
-                Export CSV
-              </a>
+              <Button asChild className="ml-auto">
+                <a href={`/api/v1/audit-events/export${query.size ? `?${query}` : ''}`} download>
+                  Export CSV
+                </a>
+              </Button>
             )}
           </div>
           {page.items.length === 0 ? (

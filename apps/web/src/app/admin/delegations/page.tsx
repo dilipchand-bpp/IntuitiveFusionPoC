@@ -1,4 +1,4 @@
-import { EmptyState } from '@if/ui';
+import { EmptyState, PageHeader } from '@if/ui';
 import {
   AlertSettingsForm,
   DelegationsPanel,
@@ -18,14 +18,11 @@ export default async function DelegationsPage() {
     apiGet<AlertSettings>('/admin/alert-settings'),
   ]);
   return (
-    <div className="flex min-w-0 flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Delegations and alert timing</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Who may approve and sign up to what value, and how early contract alerts go out. Every change is
-          audited and takes effect immediately. Administrators cannot read bid content.
-        </p>
-      </header>
+    <div className="flex min-w-0 flex-col gap-12">
+      <PageHeader
+        title="Delegations and alert timing"
+        subtitle="Who may approve and sign up to what value, and how early contract alerts go out. Every change is audited and takes effect immediately. Administrators cannot read bid content."
+      />
       {!delegations || !users || !user ? (
         <EmptyState title="Delegations are unavailable" body="Please refresh the page." />
       ) : (

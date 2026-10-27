@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Badge, Button, Card, Dialog, Field, Input, KpiCard, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Card, Dialog, Field, Input, KpiCard, Table, Td, Th, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 interface Issue {
@@ -119,9 +119,7 @@ export function MigrationPanel({
       )}
 
       <Card role="region" aria-labelledby="up-h">
-        <h2 id="up-h" className="font-heading text-xl font-bold">
-          Upload an extract
-        </h2>
+        <SectionHeader id="up-h" title="Upload an extract" />
         <p className="mt-1 max-w-prose text-sm text-text-muted">
           A CSV of legacy contracts. Required columns: contract_number, title, supplier, start_date, end_date,
           value. Optional: procurement_ref (links the contract to its originating procurement), owner,
@@ -181,9 +179,7 @@ export function MigrationPanel({
 
       {batches.length > 0 && (
         <section aria-labelledby="batches-h" className="flex flex-col gap-2">
-          <h2 id="batches-h" className="font-heading text-xl font-bold">
-            Batches
-          </h2>
+          <SectionHeader id="batches-h" title="Batches" />
           <Table caption="Migration batches">
             <thead>
               <tr>
@@ -233,10 +229,15 @@ export function MigrationPanel({
           data-testid="batch-detail"
           data-status={open.status}
         >
-          <h2 id="batch-h" className="font-heading text-xl font-bold">
-            {open.filename}{' '}
-            <span className="text-base font-normal text-text-muted">from {open.sourceSystem}</span>
-          </h2>
+          <SectionHeader
+            id="batch-h"
+            title={
+              <>
+                {open.filename}{' '}
+                <span className="text-sm font-normal text-text-muted">from {open.sourceSystem}</span>
+              </>
+            }
+          />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             <KpiCard label="Records" value={open.total} />
             <KpiCard label="Ready" value={open.valid} />

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
-import { Badge, EmptyState, Table, Td, Th } from '@if/ui';
+import { Badge, Button, EmptyState, PageHeader, Panel, SectionHeader, Table, Td, Th } from '@if/ui';
 import { Gantt } from '@/components/contract/gantt';
 import { SpendChart } from '@/components/reports/spend-chart';
 import type { SpendReport, WorkloadReport } from '@/components/reports/types';
@@ -17,14 +17,13 @@ export default async function ReportsPage() {
     has('EXEC', 'PROCUREMENT') ? apiGet<WorkloadReport>('/reports/workload') : Promise.resolve(null),
   ]);
   return (
-    <div className="flex min-w-0 flex-col gap-8">
-      <header>
-        <h1 className="text-3xl font-extrabold tracking-tight">Reports</h1>
-        <p className="mt-1 max-w-prose text-text-muted">
-          Where the money goes, who is carrying the work, and what is coming up. Figures come from synthetic
-          demo data.
-        </p>
-        <nav aria-label="More reports" className="mt-3 flex flex-wrap gap-2">
+    <div className="flex min-w-0 flex-col gap-12">
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Reports"
+          subtitle="Where the money goes, who is carrying the work, and what is coming up. Figures come from synthetic demo data."
+        />
+        <nav aria-label="More reports" className="flex flex-wrap gap-2">
           {[
             [
               '/app/reports/ask',
@@ -52,38 +51,25 @@ export default async function ReportsPage() {
           ]
             .filter(([, , roles]) => has(...(roles as string[])))
             .map(([href, label]) => (
-              <Link
-                key={href as string}
-                href={href as string}
-                className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-              >
-                {label as string}
-              </Link>
+              <Button key={href as string} asChild variant="secondary">
+                <Link href={href as string}>{label as string}</Link>
+              </Button>
             ))}
         </nav>
         {has('CONTRACT_MGR', 'PROCUREMENT', 'LEGAL', 'EXEC') && (
-          <nav aria-label="Related reports" className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/app/contracts/expiring"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Contracts expiring
-            </Link>
-            <Link
-              href="/app/contracts/alerts"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Contract alerts
-            </Link>
-            <Link
-              href="/app/contracts/ingest/report"
-              className="rounded-full border border-border-strong px-4 py-2 text-sm font-semibold no-underline"
-            >
-              Ingested contracts (clauses, caps, notice)
-            </Link>
+          <nav aria-label="Related reports" className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/app/contracts/expiring">Contracts expiring</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/app/contracts/alerts">Contract alerts</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/app/contracts/ingest/report">Ingested contracts (clauses, caps, notice)</Link>
+            </Button>
           </nav>
         )}
-      </header>
+      </div>
 
       {!spend && !work && (
         <EmptyState
@@ -96,10 +82,8 @@ export default async function ReportsPage() {
         <>
           <section aria-labelledby="cat-h" className="grid min-w-0 gap-6 lg:grid-cols-2">
             <SpendChart report={spend} />
-            <div className="min-w-0 rounded-lg border border-border bg-surface p-6 shadow-sm">
-              <h2 id="cat-h" className="font-heading text-lg font-semibold">
-                What is behind each category
-              </h2>
+            <Panel as="div" className="min-w-0">
+              <SectionHeader id="cat-h" title="What is behind each category" />
               <p className="mt-1 text-sm text-text-muted">
                 Open a category to see its requests and contracts.
               </p>
@@ -132,13 +116,11 @@ export default async function ReportsPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Panel>
           </section>
 
           <section aria-labelledby="sup-h" className="flex min-w-0 flex-col gap-3">
-            <h2 id="sup-h" className="font-heading text-xl font-bold">
-              Committed spend by supplier
-            </h2>
+            <SectionHeader id="sup-h" title="Committed spend by supplier" />
             {spend.bySupplier.length === 0 ? (
               <EmptyState
                 title="No executed contracts yet"
@@ -175,15 +157,20 @@ export default async function ReportsPage() {
           </section>
 
           <section aria-labelledby="mav-h" className="flex min-w-0 flex-col gap-3">
-            <h2 id="mav-h" className="flex items-center gap-2 font-heading text-xl font-bold">
-              Off-contract spend
-              {spend.offContract.length > 0 && (
-                <Badge tone="warning">
-                  <AlertTriangle className="size-3.5" aria-hidden="true" />
-                  {aud.format(spend.totalOffContract)}
-                </Badge>
-              )}
-            </h2>
+            <SectionHeader
+              id="mav-h"
+              title={
+                <span className="flex items-center gap-2">
+                  Off-contract spend
+                  {spend.offContract.length > 0 && (
+                    <Badge tone="warning">
+                      <AlertTriangle className="size-3.5" aria-hidden="true" />
+                      {aud.format(spend.totalOffContract)}
+                    </Badge>
+                  )}
+                </span>
+              }
+            />
             {spend.offContract.length === 0 ? (
               <p className="text-text-muted">
                 Every purchase that reached delivery has a contract behind it.
@@ -231,9 +218,7 @@ export default async function ReportsPage() {
       {work && (
         <>
           <section aria-labelledby="work-h" className="flex min-w-0 flex-col gap-3">
-            <h2 id="work-h" className="font-heading text-xl font-bold">
-              Workload by owner
-            </h2>
+            <SectionHeader id="work-h" title="Workload by owner" />
             <p className="max-w-prose text-sm text-text-muted">{work.note}</p>
             {work.owners.length === 0 ? (
               <EmptyState
@@ -272,13 +257,8 @@ export default async function ReportsPage() {
             )}
           </section>
 
-          <section
-            aria-labelledby="tl-h"
-            className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-sm"
-          >
-            <h2 id="tl-h" className="font-heading text-xl font-bold">
-              Procurement timeline
-            </h2>
+          <Panel aria-labelledby="tl-h" className="flex min-w-0 flex-col gap-4">
+            <SectionHeader id="tl-h" title="Procurement timeline" />
             <Gantt
               today={work.today}
               rows={work.timeline.map((r) => ({
@@ -287,7 +267,7 @@ export default async function ReportsPage() {
                 bars: r.bars,
               }))}
             />
-          </section>
+          </Panel>
         </>
       )}
     </div>

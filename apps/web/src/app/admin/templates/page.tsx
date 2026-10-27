@@ -1,4 +1,4 @@
-import { Badge, Button, EmptyState } from '@if/ui';
+import { Badge, Button, EmptyState, PageHeader, Panel, SectionHeader } from '@if/ui';
 import { apiGet } from '@/lib/session';
 
 export const metadata = { title: 'Templates – Intuitive Fusion' };
@@ -22,41 +22,32 @@ export default async function TemplatesPage() {
   const list = await apiGet<TemplateRow[]>('/admin/templates');
   const types = [...new Set((list ?? []).map((t) => t.type))];
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <header className="flex flex-wrap items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">Templates and clause library</h1>
-          <p className="mt-1 max-w-prose text-text-muted">
-            The documents the platform starts from. A contract template lists the clauses assembled into every
-            new contract; mandatory clauses can never be left out.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" disabled aria-label="Create a template (coming soon)">
-            Create a template
-          </Button>
-          <Badge tone="warning">Coming soon</Badge>
-        </div>
-      </header>
+    <div className="flex min-w-0 flex-col gap-12">
+      <PageHeader
+        title="Templates and clause library"
+        subtitle="The documents the platform starts from. A contract template lists the clauses assembled into every new contract; mandatory clauses can never be left out."
+        actions={
+          <>
+            <Button variant="secondary" disabled aria-label="Create a template (coming soon)">
+              Create a template
+            </Button>
+            <Badge tone="warning">Coming soon</Badge>
+          </>
+        }
+      />
       {!list ? (
         <EmptyState title="Templates are unavailable" body="Please refresh the page." />
       ) : (
         types.map((ty) => (
           <section key={ty} aria-labelledby={`t-${ty}`} className="flex flex-col gap-3">
-            <h2 id={`t-${ty}`} className="font-heading text-xl font-bold">
-              {TYPE[ty] ?? ty}
-            </h2>
+            <SectionHeader id={`t-${ty}`} title={TYPE[ty] ?? ty} />
             <ul className="grid gap-3 lg:grid-cols-2">
               {list
                 .filter((t) => t.type === ty)
                 .map((t) => (
-                  <li
-                    key={t.id}
-                    className="rounded-lg border border-border bg-surface p-4 shadow-sm"
-                    data-testid={`template-${t.id}`}
-                  >
+                  <Panel as="li" key={t.id} className="p-4" data-testid={`template-${t.id}`}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-heading font-semibold">{t.name}</h3>
+                      <h3 className="font-heading text-sm font-medium">{t.name}</h3>
                       <Badge tone="neutral">Version {t.version}</Badge>
                       <Badge tone={t.status === 'ACTIVE' ? 'success' : 'neutral'}>
                         {t.status === 'ACTIVE' ? 'Active' : t.status}
@@ -82,7 +73,7 @@ export default async function TemplatesPage() {
                         </ul>
                       </details>
                     )}
-                  </li>
+                  </Panel>
                 ))}
             </ul>
           </section>

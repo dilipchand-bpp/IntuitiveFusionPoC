@@ -1,4 +1,5 @@
 import { aud } from '@/lib/labels';
+import { Panel, SectionHeader } from '@if/ui';
 import type { SpendReport } from './types';
 
 const compact = new Intl.NumberFormat('en-AU', {
@@ -12,10 +13,8 @@ const compact = new Intl.NumberFormat('en-AU', {
 export function SpendChart({ report }: { report: SpendReport }) {
   const max = Math.max(1, ...report.byCategory.map((c) => c.pipeline + c.committed));
   return (
-    <div className="min-w-0 rounded-lg border border-border p-6" data-testid="spend-chart">
-      <h2 id="spend-h" className="font-heading text-lg font-semibold">
-        Spend by category
-      </h2>
+    <Panel as="div" className="min-w-0" data-testid="spend-chart">
+      <SectionHeader id="spend-h" title="Spend by category" />
       <p className="mt-1 text-sm text-text-muted">
         Pipeline is the estimated value of active requests; committed is the value of executed contracts.
       </p>
@@ -39,7 +38,7 @@ export function SpendChart({ report }: { report: SpendReport }) {
           </ul>
           <p className="mt-2 flex gap-4 text-xs text-text-muted" aria-hidden="true">
             <span>
-              <span className="mr-1 inline-block size-2 rounded-full bg-brand-gradient" />
+              <span className="mr-1 inline-block size-2 rounded-full bg-accent" />
               Committed
             </span>
             <span>
@@ -75,6 +74,6 @@ export function SpendChart({ report }: { report: SpendReport }) {
           </div>
         </>
       )}
-    </div>
+    </Panel>
   );
 }

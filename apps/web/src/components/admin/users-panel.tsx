@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Dialog, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Dialog, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 
 export interface AdminUser {
@@ -141,9 +141,7 @@ export function UsersPanel({
   return (
     <section aria-labelledby="users-h" className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 id="users-h" className="font-heading text-xl font-bold">
-          People
-        </h2>
+        <SectionHeader id="users-h" title="People" />
         <Button
           className="ml-auto"
           onClick={() => {

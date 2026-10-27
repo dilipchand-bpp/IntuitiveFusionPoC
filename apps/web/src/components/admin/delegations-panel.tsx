@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Badge, Button, Dialog, Field, Input, Select, Table, Td, Th } from '@if/ui';
+import { Badge, Button, Dialog, Field, Input, Select, Table, Td, Th, SectionHeader } from '@if/ui';
 import { ApiError, api } from '@/lib/api-client';
 import { aud } from '@/lib/labels';
 
@@ -117,9 +117,7 @@ export function DelegationsPanel({
   return (
     <section aria-labelledby="del-h" className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 id="del-h" className="font-heading text-xl font-bold">
-          Limits of authority
-        </h2>
+        <SectionHeader id="del-h" title="Limits of authority" />
         <Button
           variant="secondary"
           className="ml-auto"
@@ -343,9 +341,7 @@ export function AlertSettingsForm({ initial, csrf }: { initial: AlertSettings; c
   );
   return (
     <section aria-labelledby="alert-h" className="flex min-w-0 flex-col gap-3">
-      <h2 id="alert-h" className="font-heading text-xl font-bold">
-        Contract alert timing
-      </h2>
+      <SectionHeader id="alert-h" title="Contract alert timing" />
       <form
         className="grid max-w-3xl gap-4 sm:grid-cols-2"
         aria-label="Contract alert timing"
